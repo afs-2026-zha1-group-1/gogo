@@ -122,15 +122,15 @@ Verification is stated inside each checkbox.
 - [x] 5.2 Write `g2-decision.md` — verify it stays **NOT RECORDED** until a named
   VL signs. It must cite this change's local-verify report and this change's
   pipeline report, never REQ-001's.
-- [ ] 5.3 Write `change-summary.md` and the P5 quality-checklist report — verify the
+- [x] 5.3 Write `change-summary.md` and the P5 quality-checklist report — verify the
   summary lists delivered behavior, evidence paths, the superseded REQ-001
   decisions (D1, D4) and every residual risk with its owner.
-- [ ] 5.4 Write `g3-decision.md` — verify it stays **NOT RECORDED** until a named
+- [x] 5.4 Write `g3-decision.md` — verify it stays **NOT RECORDED** until a named
   SA signs.
 - [ ] 5.5 Ask the user for explicit merge-ready confirmation before living-merge —
   verify the confirmation is recorded in the change folder before any merge or
   archive step runs. Do not infer it from the REQ-001 authorization.
-- [ ] 5.6 Record the knowledge-base update as `Skipped (not configured)` per
+- [x] 5.6 Record the knowledge-base update as `Skipped (not configured)` per
   `scripts/README.md` — verify it is never reported as Pass.
 
 ## Workflow follow-up
