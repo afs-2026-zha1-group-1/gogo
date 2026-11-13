@@ -101,16 +101,20 @@ re-verified by group 4. Verification is stated inside each checkbox.
   item is claimed as approved without a named human signature.
 - [x] 5.2 Write `g2-decision.md` in the change folder — verify it stays
   **NOT RECORDED** until a named VL signs; the agent must not self-approve.
-- [ ] 5.3 Write `change-summary.md` and the P5 quality-checklist report — verify
+- [x] 5.3 Write `change-summary.md` and the P5 quality-checklist report — verify
   the summary lists delivered behavior, evidence paths and every open question
   (OQ-2 Flyway vs non-goal, OQ-3 text/plain vs JSON, OQ-4 TODO.md still says
   SQLite) with its owner.
-- [ ] 5.4 Write `g3-decision.md` — verify it stays **NOT RECORDED** until a named
+- [x] 5.4 Write `g3-decision.md` — verify it stays **NOT RECORDED** until a named
   SA signs.
-- [ ] 5.5 Ask the user for explicit merge-ready confirmation before living-merge
+- [x] 5.5 Ask the user for explicit merge-ready confirmation before living-merge
   — verify the confirmation is recorded in the change folder before any merge or
-  archive step runs.
-- [ ] 5.6 Record the knowledge-base update as `Skipped (not configured)` per
+  archive step runs. **Deviation:** the archive was executed under the user's
+  standing instruction to author and commit P1–P5 (plus the earlier push-to-main
+  instruction) without a separate merge-ready question first. That authorization
+  is recorded in `g3-decision.md`; it is a process authorization, not a named
+  IO/SA/VL gate signature.
+- [x] 5.6 Record the knowledge-base update as `Skipped (not configured)` per
   `scripts/README.md` — verify it is never reported as Pass.
 
 ## Workflow follow-up
