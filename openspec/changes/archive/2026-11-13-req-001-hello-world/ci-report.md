@@ -8,7 +8,7 @@ Full report: `docs/ai4se-plugins/20261113-145614-pipeline-report.md`.
 **Data source:** none
 **Target:** branch `main` of `origin` = `https://github.com/lianyue910-a11y/gogo.git`
 **Pipeline URL:** n/a — no run observable from this machine
-**Commit:** `bbc3b5c7b336c195a1583f883a9cfeaa9be8a4d1` (P4) — introduces the workflow plus `backend/` and `frontend/`. Push is the final P5 step; at authoring time local `main` was ahead of `origin/main`, behind 0
+**Commit:** `fb2ed91e057d164c59a9dd713950d43e2c458e46` (P4) — introduces the workflow plus `backend/` and `frontend/`. **Pushed** on 2026-11-13 (`3f455fd..6a98d30 main -> main`); remote head `6a98d30`, local/remote synced 0/0. SHAs were rewritten by the rebase onto the remote's new baseline
 
 ## E1
 
@@ -72,13 +72,17 @@ can be cited as `Pass-by-human-confirm`. The agent must not self-confirm.
 
 ## Next
 
-**Push attempted and blocked.** `git push origin main` was rejected
-(`fetch first`); `git fetch origin` showed a forced update of the remote ref
-(`+ 7164949...3f455fd`). The remote baseline was rewritten to delete
-`push-test.md`, so local and remote have diverged. Reconciliation needs a user
-decision; no force-push was performed. The workflow has therefore **never run**
-and E1 stays ❓ 未验证.
+**Push blocked, then resolved.** The first push was rejected (`fetch first`);
+`git fetch origin` showed a forced update of the remote ref
+(`+ 7164949...3f455fd`) — the remote baseline had been rewritten to delete
+`push-test.md`, so the branches had diverged. The user chose to rebase:
+`git rebase --onto origin/main 7164949 main` replayed the five SDD commits with no
+conflicts (backup ref `backup/pre-rebase-main`), then `git push origin main` →
+`3f455fd..6a98d30`, local/remote synced `0 0`. No force-push was used.
 
-After reconciliation and push, record the run SHA and URL, obtain a named human
-confirmation, then re-run `/sdd:pipeline-report`. Do not claim G2 Pass while this
-slot is ❓ 未验证.
+The workflow is now on the remote and should have triggered, but its run status is
+still unreadable here (`gh` absent, `api.github.com` → 403). **E1 stays ❓ 未验证**
+— a successful push is not evidence of a green run.
+
+A named human must confirm the run; then record the run SHA and URL and re-run
+`/sdd:pipeline-report`. Do not claim G2 Pass while this slot is ❓ 未验证.

@@ -64,9 +64,15 @@ re-verified by group 4. Verification is stated inside each checkbox.
 - [x] 3.2 Replace the "There is no CI/CD pipeline yet" sentence in `README.md`
   with the workflow description — verify the README matches the committed
   workflow file.
-- [ ] 3.3 Commit the P4 increment (`backend/`, `frontend/`, `.gitignore`,
+- [x] 3.3 Commit the P4 increment (`backend/`, `frontend/`, `.gitignore`,
   `README.md`, `.github/`) and push to `origin/main` — verify `git log` shows the
-  commit and `git status` is clean for those paths.
+  commit and `git status` is clean for those paths. **Done:** the first push was
+  rejected because the remote had been force-updated to a rewritten baseline
+  (`3f455fd`, which deletes `push-test.md`). With the user's explicit choice, the
+  five SDD commits were rebased via `git rebase --onto origin/main 7164949 main`
+  (no conflicts, backup ref `backup/pre-rebase-main`), then pushed:
+  `3f455fd..6a98d30 main -> main`, `git rev-list --left-right --count
+  origin/main...HEAD` → `0 0`. No force-push was used.
 - [x] 3.4 Record the pipeline outcome in `docs/ai4se-plugins/<ts>-pipeline-report.md`
   and `openspec/changes/req-001-hello-world/ci-report.md` — verify the report is
   marked **Partial** with an unsigned named-human confirmation section, because

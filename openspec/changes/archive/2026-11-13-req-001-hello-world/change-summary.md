@@ -19,12 +19,18 @@ no NFR tests.
 
 | Area | Delivered | Commit |
 |---|---|---|
-| P1 intent & proposal | `requirement-workspace/` intent capture, REQ-001 six-field entry, deep-dive (⑨–⑫), impact brief, DoR self-check (BLOCKER 0), handoff note; `proposal.md` | `2a24577` |
-| P2 delta spec | `specs/greeting/spec.md` — 3 requirements, 6 scenarios; `dov-ac-review.md`; unsigned `g1-decision.md` | `35a13c5` |
-| P3 design & decomposition | `atdd-design.md` (API + E2E layers), `design.md` (D1–D8, R1–R6), `tasks.md` (30 tracked tasks) | `8be9c81` |
-| P4 implementation | `backend/` — Spring Boot 3.5.14 / Java 21, Flyway `V1__create_greeting.sql`, embedded H2 file at `backend/data/gogo.mv.db`, `JdbcTemplate` repository, read-only `GET /api/greeting` (`text/plain`), 3 acceptance tests. `frontend/` — React 19 + Vite 8, fetch-and-render `App.jsx` with a failure branch, `/api` dev proxy, public-registry lockfile. `.github/workflows/ci.yml` — backend `mvn -B test` (Java 21) + frontend `npm ci && npm run build` (Node 24). `README.md` run instructions and CI description; `.gitignore` for `data/` and `logs/` | `bbc3b5c` |
-| P4 verification records | local verify report + checkpoint log, pipeline report, `ci-report.md` (E1 slot), unsigned `g2-decision.md`, P4 quality checklist | `bbc3b5c` |
-| P5 archive & evolve | this summary, unsigned `g3-decision.md`, OpenSpec archive, P5 quality checklist | P5 commit |
+| P1 intent & proposal | `requirement-workspace/` intent capture, REQ-001 six-field entry, deep-dive (⑨–⑫), impact brief, DoR self-check (BLOCKER 0), handoff note; `proposal.md` | `b2d8cb1` |
+| P2 delta spec | `specs/greeting/spec.md` — 3 requirements, 6 scenarios; `dov-ac-review.md`; unsigned `g1-decision.md` | `9f55c8e` |
+| P3 design & decomposition | `atdd-design.md` (API + E2E layers), `design.md` (D1–D8, R1–R6), `tasks.md` (30 tracked tasks) | `55d907e` |
+| P4 implementation | `backend/` — Spring Boot 3.5.14 / Java 21, Flyway `V1__create_greeting.sql`, embedded H2 file at `backend/data/gogo.mv.db`, `JdbcTemplate` repository, read-only `GET /api/greeting` (`text/plain`), 3 acceptance tests. `frontend/` — React 19 + Vite 8, fetch-and-render `App.jsx` with a failure branch, `/api` dev proxy, public-registry lockfile. `.github/workflows/ci.yml` — backend `mvn -B test` (Java 21) + frontend `npm ci && npm run build` (Node 24). `README.md` run instructions and CI description; `.gitignore` for `data/` and `logs/` | `fb2ed91` |
+| P4 verification records | local verify report + checkpoint log, pipeline report, `ci-report.md` (E1 slot), unsigned `g2-decision.md`, P4 quality checklist | `fb2ed91` |
+| P5 archive & evolve | this summary, unsigned `g3-decision.md`, OpenSpec archive, P5 quality checklist | `6a98d30` |
+
+Commit SHAs above are post-rebase. The remote `main` had been force-updated to a
+rewritten baseline (`3f455fd`, deleting `push-test.md`), so the five stage commits
+were rebased with `git rebase --onto origin/main 7164949 main` after the user chose
+that reconciliation, then pushed (`3f455fd..6a98d30 main -> main`). No force-push
+was used; a backup ref `backup/pre-rebase-main` preserves the pre-rebase history.
 
 Specs merged: the `greeting` delta is applied to `openspec/specs/greeting/spec.md`
 by the archive step (verified in the P5 checklist report).
