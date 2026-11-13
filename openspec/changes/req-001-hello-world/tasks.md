@@ -22,12 +22,12 @@ re-verified by group 4. Verification is stated inside each checkbox.
 - [x] 1.5 API acceptance test for "Stored greeting is returned"
   (`GreetingApiTest.returnsHelloWorldFromDatabase`, in-memory H2 seeded by the same
   migration) — verify `mvn -o -B test` reports 1 test, 0 failures.
-- [ ] 1.6 API acceptance test for "Response reflects stored data, not a constant":
+- [x] 1.6 API acceptance test for "Response reflects stored data, not a constant":
   update the stored message through the data-access path, then assert the endpoint
   returns the new value — verify the new test passes **and** fails when the
   controller is temporarily changed to return a literal (mutation check, then
   revert). Closes `dov-ac-review.md` residual concern 3.
-- [ ] 1.7 Reverse check for the read-only non-goal: `POST`, `PUT` and `DELETE` to
+- [x] 1.7 Reverse check for the read-only non-goal: `POST`, `PUT` and `DELETE` to
   `/api/greeting` — verify each is rejected with 405 and the stored row is
   unchanged (MockMvc test or `curl -i -X`).
 - [x] 1.8 Document the backend run command, the H2 file location, the rebuild
@@ -48,7 +48,7 @@ re-verified by group 4. Verification is stated inside each checkbox.
   `https://registry.npmjs.org` (design D6), keeping the corporate mirror for local
   installs through npm's `replace-registry-host=npmjs` default — verify
   `grep -c artifact.oocl.com frontend/package-lock.json` returns 0.
-- [ ] 2.5 Verify D6 end to end: run `cd frontend && npm ci && npm run build` from
+- [x] 2.5 Verify D6 end to end: run `cd frontend && npm ci && npm run build` from
   the rewritten lockfile — verify the install completes against the configured
   local registry and the build succeeds. If npm does not rewrite the host, apply
   the recorded fallback (CI-side registry override) and update design D6/R1.
@@ -57,17 +57,17 @@ re-verified by group 4. Verification is stated inside each checkbox.
 
 ## 3. CI pipeline (owner: Dev; run status confirmed by a named human)
 
-- [ ] 3.1 Add `.github/workflows/ci.yml` with two jobs — backend `mvn -B test` on
+- [x] 3.1 Add `.github/workflows/ci.yml` with two jobs — backend `mvn -B test` on
   Java 21, frontend `npm ci && npm run build` on Node 24 — verify the YAML parses
   and that neither job invokes `scripts/init.sh`, `scripts/verify-links.sh` or
   `scripts/archive-change.sh` (documented placeholders that exit 1).
-- [ ] 3.2 Replace the "There is no CI/CD pipeline yet" sentence in `README.md`
+- [x] 3.2 Replace the "There is no CI/CD pipeline yet" sentence in `README.md`
   with the workflow description — verify the README matches the committed
   workflow file.
 - [ ] 3.3 Commit the P4 increment (`backend/`, `frontend/`, `.gitignore`,
   `README.md`, `.github/`) and push to `origin/main` — verify `git log` shows the
   commit and `git status` is clean for those paths.
-- [ ] 3.4 Record the pipeline outcome in `docs/ai4se-plugins/<ts>-pipeline-report.md`
+- [x] 3.4 Record the pipeline outcome in `docs/ai4se-plugins/<ts>-pipeline-report.md`
   and `openspec/changes/req-001-hello-world/ci-report.md` — verify the report is
   marked **Partial** with an unsigned named-human confirmation section, because
   `gh` is absent and `api.github.com` returns 403 here (risk R2). No API-verified
@@ -75,31 +75,31 @@ re-verified by group 4. Verification is stated inside each checkbox.
 
 ## 4. Runtime acceptance re-verification (owner: Dev; integration evidence)
 
-- [ ] 4.1 Scenario "First start creates and seeds the database": delete
+- [x] 4.1 Scenario "First start creates and seeds the database": delete
   `backend/data/`, start the backend detached — verify the file is recreated and
   an H2 query (`AUTO_SERVER=TRUE`) returns exactly one `Hello World` row.
-- [ ] 4.2 Scenario "Later start preserves the seeded greeting": restart against
+- [x] 4.2 Scenario "Later start preserves the seeded greeting": restart against
   the existing file — verify the row is still `Hello World` and the row count is
   still 1 (no duplicate).
-- [ ] 4.3 Scenario "Home page shows the served greeting": open
+- [x] 4.3 Scenario "Home page shows the served greeting": open
   http://localhost:5173/ in a browser — verify the `h1` text is `Hello World` and
   the value came from the endpoint response.
-- [ ] 4.4 Scenario "Backend unavailable": stop the backend, reload the page —
+- [x] 4.4 Scenario "Backend unavailable": stop the backend, reload the page —
   verify a load-failure message is displayed and no greeting heading appears.
-- [ ] 4.5 Reverse checks for the remaining non-goals — verify `frontend/src`
+- [x] 4.5 Reverse checks for the remaining non-goals — verify `frontend/src`
   contains no literal `Hello World`, `GET /api/greeting` without credentials
   returns 200, and the backend starts with no external database service.
-- [ ] 4.6 Write `docs/ai4se-plugins/<ts>-local-verify-report.md` plus the
+- [x] 4.6 Write `docs/ai4se-plugins/<ts>-local-verify-report.md` plus the
   checkpoint records — verify every delta-spec scenario and every reverse check
   has a command/output or browser observation attached, with unverified items
   marked Partial rather than Pass.
 
 ## 5. Stage artifacts and human gates (owner: Dev drafts; IO/SA/VL decide)
 
-- [ ] 5.1 Write `docs/ai4se-plugins/<ts>-quality-checklist-report.md` for P4 —
+- [x] 5.1 Write `docs/ai4se-plugins/<ts>-quality-checklist-report.md` for P4 —
   verify each P4 item is Pass / Partial / Skipped with evidence, and that no gate
   item is claimed as approved without a named human signature.
-- [ ] 5.2 Write `g2-decision.md` in the change folder — verify it stays
+- [x] 5.2 Write `g2-decision.md` in the change folder — verify it stays
   **NOT RECORDED** until a named VL signs; the agent must not self-approve.
 - [ ] 5.3 Write `change-summary.md` and the P5 quality-checklist report — verify
   the summary lists delivered behavior, evidence paths and every open question

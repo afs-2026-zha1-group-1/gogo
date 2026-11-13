@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: gogo-backend
+  datasource:
+    url: jdbc:h2:file:./data/gogo;AUTO_SERVER=TRUE
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+  flyway:
+    locations: classpath:db/migration
+
+server:
+  port: 8080

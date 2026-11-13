@@ -27,6 +27,10 @@ dist/
 .parcel-cache/
 *.tsbuildinfo
 
+# Local H2 database files and service logs
+data/
+logs/
+
 # Coverage and end-to-end test reports
 coverage/
 .nyc_output/
