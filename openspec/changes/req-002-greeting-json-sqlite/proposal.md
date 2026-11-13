@@ -22,7 +22,8 @@ cannot be reused: this change re-verifies and re-signs.
 - **MODIFIED** `greeting` → "Greeting read endpoint": `GET /api/greeting` returns
   `application/json` with body `{"message":"<stored message>"}` instead of a bare
   `text/plain` message. Read-only behavior is unchanged.
-- Replace the H2 runtime dependency with `org.xerial:sqlite-jdbc:3.46.1.0`;
+- Replace the H2 runtime dependency with `org.xerial:sqlite-jdbc`, version managed
+  by the Boot 3.5.14 BOM (3.49.1.0);
   datasource becomes `jdbc:sqlite:./data/gogo.db` with driver `org.sqlite.JDBC`.
 - Restate `V1__create_greeting.sql` in SQLite dialect (`INTEGER PRIMARY KEY`,
   `TEXT NOT NULL`). Edited in place, not superseded by a V2: the SQLite file is
@@ -65,10 +66,10 @@ None.
   to need no change.
 - **APIs**: `GET /api/greeting` changes media type and body. No other endpoint
   exists.
-- **Dependencies**: `com.h2database:h2` removed; `org.xerial:sqlite-jdbc:3.46.1.0`
-  added (runtime). Now present in the local Maven cache, downloaded through the
-  corporate mirror after the user supplied `settings 2.xml`. Flyway stays at the
-  Boot-managed 11.7.2; no extra Flyway module is needed for SQLite.
+- **Dependencies**: `com.h2database:h2` removed; `org.xerial:sqlite-jdbc:3.49.1.0`
+  added (runtime, BOM-managed). Downloaded through the corporate mirror after the
+  user supplied `settings 2.xml`. Flyway stays at the Boot-managed 11.7.2; no extra
+  Flyway module is needed for SQLite — confirmed by an actual migration run.
 - **Runtime**: backend port 8080, frontend dev port 5173, database file moves from
   `backend/data/gogo.mv.db` to `backend/data/gogo.db`. SQLite has no
   `AUTO_SERVER` equivalent; concurrent reads while the app holds the file are

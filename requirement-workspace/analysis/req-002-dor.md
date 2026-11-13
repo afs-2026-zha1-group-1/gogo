@@ -15,7 +15,7 @@
 | ④ | Scenarios / AC concrete | — | Pass | REQ-002 §Scenarios | AC1–AC6 plus reverse cases AC3-N and AC6-N, each with an observable outcome |
 | ⑤ | Exception / boundary | — | Pass | deep-dive §REQ-002 ⑩ | Backend-unreachable and non-JSON-200 branches both covered; out-of-scope rows carry reasons |
 | ⑥ | Results verifiable | — | Pass | REQ-002 §Scenarios | Media type + exact JSON body, file presence + row query, rendered `h1` text, 405 on write methods |
-| ⑦ | Dependencies / app-arch touchpoints | — | Pass | proposal §Impact | sqlite-jdbc 3.46.1.0 now cached via the corporate mirror; Flyway 11.7.2 SQLite support verified in the jar and to be confirmed by a real migration run; ports and file path unchanged |
+| ⑦ | Dependencies / app-arch touchpoints | — | Pass | proposal §Impact | sqlite-jdbc 3.49.1.0 (Boot-managed) now cached via the corporate mirror; Flyway 11.7.2 SQLite support verified in the jar and to be confirmed by a real migration run; ports and file path unchanged |
 | ⑧ | Open-questions gate | — | Pass | REQ-002 §Open questions | Blocking not-resolved = 0. All three inherited OQs resolved by the IO ruling; OQ-5/OQ-6 resolved with owners |
 | ⑨ | Data contract decided | — | Pass | deep-dive §REQ-002 ⑨ | Storage grain and both SQLite column types; wire grain and the single required `message` string field fixed by the ruling; no `{TBD}` |
 | ⑩ | Boundary enumerated | — | Pass | deep-dive §REQ-002 ⑩ | Every scenario branch has an in/out row, including the new non-JSON-200 case |

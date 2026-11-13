@@ -40,11 +40,15 @@ an implementation, so CI does not invoke them.
 ## Run the application
 
 REQ-001 serves a greeting that is stored in the database, not in the frontend.
-`GET /api/greeting` reads it, and the React home page renders the response.
+REQ-002 makes `GET /api/greeting` return it as JSON and moves the embedded engine
+from H2 to SQLite. The React home page parses the response and renders the
+`message` field.
 
-The database is H2 in file mode at `backend/data/gogo.mv.db`. The Flyway
-migration `V1__create_greeting.sql` creates the `greeting` table and seeds the
-`Hello World` row on first start. Delete `backend/data/` to rebuild it.
+The database is SQLite at `backend/data/gogo.db`. The Flyway migration
+`V1__create_greeting.sql` creates the `greeting` table and seeds the `Hello World`
+row on first start; the application creates the `data/` directory itself, because
+the SQLite driver creates the file but not its parent. Delete `backend/data/` to
+rebuild it.
 
 Backend on port 8080:
 
@@ -62,13 +66,23 @@ npm run dev
 ```
 
 Open http://localhost:5173/. Check the API directly with
-`curl http://localhost:8080/api/greeting` and the backend tests with
-`cd backend && mvn test`.
+`curl -i http://localhost:8080/api/greeting`, which returns
+`Content-Type: application/json` and the body `{"message":"Hello World"}`. Run the
+backend tests with `cd backend && mvn test`; they use the same SQLite engine and
+the same migration as production.
 
-`TODO.md` asks for SQLite. The implementation currently uses H2 so the stack can
-be verified without a SQLite driver; both are embedded file databases, so the
-switch is limited to the JDBC url, the driver dependency, and the migration
-dialect.
+Inspect the stored row without stopping the app (Python 3 ships `sqlite3`; no
+separate CLI is needed):
+
+```sh
+cd backend
+python -c "import sqlite3; c=sqlite3.connect('data/gogo.db'); print(c.execute('SELECT id, message FROM greeting').fetchall()); c.close()"
+```
+
+The engine and the media type follow the IO rulings of 2026-11-13: SQLite as
+`TODO.md` line 13 requires, Flyway kept, and a JSON body. Maven must be able to
+resolve `org.xerial:sqlite-jdbc` — through a corporate mirror locally, or Maven
+Central on a CI runner.
 
 ## Create your own skill
 

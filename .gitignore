@@ -27,7 +27,7 @@ dist/
 .parcel-cache/
 *.tsbuildinfo
 
-# Local H2 database files and service logs
+# Local database files and service logs
 data/
 logs/
 

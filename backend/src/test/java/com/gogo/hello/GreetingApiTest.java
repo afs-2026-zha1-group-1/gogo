@@ -5,17 +5,22 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
-// REQ-001
-@SpringBootTest(properties = "spring.datasource.url=jdbc:h2:mem:greeting-test;DB_CLOSE_DELAY=-1")
+// REQ-002
+@SpringBootTest(properties = {
+        "spring.datasource.url=jdbc:sqlite:file:greeting-test?mode=memory&cache=shared",
+        "spring.datasource.hikari.maximum-pool-size=1"
+})
 @AutoConfigureMockMvc
 class GreetingApiTest {
 
@@ -29,7 +34,8 @@ class GreetingApiTest {
     void returnsHelloWorldFromDatabase() throws Exception {
         mockMvc.perform(get("/api/greeting"))
                 .andExpect(status().isOk())
-                .andExpect(content().string("Hello World"));
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.message").value("Hello World"));
     }
 
     @Test
@@ -38,7 +44,7 @@ class GreetingApiTest {
         try {
             mockMvc.perform(get("/api/greeting"))
                     .andExpect(status().isOk())
-                    .andExpect(content().string("Guten Tag"));
+                    .andExpect(jsonPath("$.message").value("Guten Tag"));
         } finally {
             jdbcTemplate.update("UPDATE greeting SET message = ? WHERE id = 1", "Hello World");
         }
@@ -52,6 +58,6 @@ class GreetingApiTest {
 
         mockMvc.perform(get("/api/greeting"))
                 .andExpect(status().isOk())
-                .andExpect(content().string("Hello World"));
+                .andExpect(jsonPath("$.message").value("Hello World"));
     }
 }

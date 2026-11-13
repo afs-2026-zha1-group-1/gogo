@@ -13,8 +13,8 @@ public class GreetingController {
         this.greetingRepository = greetingRepository;
     }
 
-    @GetMapping(path = "/api/greeting", produces = MediaType.TEXT_PLAIN_VALUE)
-    public String greeting() {
-        return greetingRepository.findMessage();
+    @GetMapping(path = "/api/greeting", produces = MediaType.APPLICATION_JSON_VALUE)
+    public GreetingResponse greeting() {
+        return new GreetingResponse(greetingRepository.findMessage());
     }
 }

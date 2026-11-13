@@ -31,7 +31,7 @@
 
 1. **Stale CI evidence (VL, P4)** — REQ-001's `Pass-by-human-confirm` was recorded
    for a commit whose backend had no SQLite dependency. GitHub-hosted runners must
-   now resolve `org.xerial:sqlite-jdbc:3.46.1.0` from Maven Central. A **fresh**
+   now resolve `org.xerial:sqlite-jdbc:3.49.1.0` from Maven Central. A **fresh**
    four-field human confirmation for this change's commit is required; the old one
    must not be reused.
 2. **Flyway SQLite support (SA, P4)** — `flyway-core-11.7.2.jar` contains

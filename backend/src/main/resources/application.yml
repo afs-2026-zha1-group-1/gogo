@@ -2,10 +2,8 @@ spring:
   application:
     name: gogo-backend
   datasource:
-    url: jdbc:h2:file:./data/gogo;AUTO_SERVER=TRUE
-    username: sa
-    password: ""
-    driver-class-name: org.h2.Driver
+    url: jdbc:sqlite:./data/gogo.db
+    driver-class-name: org.sqlite.JDBC
   flyway:
     locations: classpath:db/migration
 

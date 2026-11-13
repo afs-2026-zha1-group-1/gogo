@@ -8,9 +8,9 @@ export default function App() {
     fetch('/api/greeting')
       .then((response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`)
-        return response.text()
+        return response.json()
       })
-      .then(setGreeting)
+      .then((data) => setGreeting(data.message))
       .catch((cause) => setError(`Failed to load the greeting: ${cause.message}`))
   }, [])
 
