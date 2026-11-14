@@ -108,7 +108,8 @@ surfaces plus failure states) — all Pass → **A0 Pass**, split permitted.
 - `X-User-Id` is trusted without verification (inherited from REQ-003); it must
   not be described as a security control.
 - The preview exposes destination and dates before acceptance, per screen 05;
-  the AC minimum is the name. IO to confirm at G1 (REQ-004 OQ-2).
+  the AC minimum is the name. User confirmed the five-field preview on
+  2026-11-14 (REQ-004 OQ-2); this is not a gate signature.
 - The main-plan state has no product mutation path until US-037; tests set it
   directly (REQ-004 OQ-1). Reverse case R-1 asserts no API sets it.
 - Revocation, expiry and the reminder notification are pictured but non-MVP;
