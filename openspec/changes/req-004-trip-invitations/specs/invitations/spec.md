@@ -101,9 +101,10 @@ unusable-invitation outcome.
 - **THEN** both responses report joined
 - **AND** exactly one membership of Eve in that trip is stored
 
-#### Scenario: An existing member accepts again
+#### Scenario: An existing member accepts again with joining open or closed
 
-- **WHEN** Ben (`X-User-Id: 2`), already a member, accepts the invitation
+- **WHEN** Ben (`X-User-Id: 2`), already a member, accepts the invitation before
+  or after main-plan confirmation
 - **THEN** the response status is 200 and reports joined with an already-member
   indication
 - **AND** no additional membership row is created
@@ -124,13 +125,21 @@ unusable-invitation outcome.
 - **AND** the response body carries `code` equal to `USER_REQUIRED`
 - **AND** no membership is created
 
+#### Scenario: Identity errors take precedence over an invalid token
+
+- **WHEN** an acceptance request has a missing or unknown caller identity and
+  a token that refers to no invitation
+- **THEN** the response status is 401
+- **AND** the response body carries `code` equal to `USER_REQUIRED`
+- **AND** no membership is created
+
 ### Requirement: Unusable invitation
 
-For a token that does not refer to any stored invitation, the system SHALL return
-a generic unusable-invitation outcome on both preview and acceptance: status 404
-with `code` equal to `INVITATION_NOT_FOUND`, no trip field values in the body, and
-no membership created or revealed. The outcome SHALL NOT distinguish why the
-token is unusable.
+For an unknown token, preview and acceptance SHALL return 404 with `code` equal
+to `INVITATION_NOT_FOUND`, no trip values and no membership created or revealed.
+The outcome SHALL NOT distinguish why the token is unusable. Acceptance SHALL
+validate caller identity first; this 404 applies only to a known caller. Preview
+SHALL remain identity-free.
 
 #### Scenario: Previewing an invalid invitation exposes nothing
 

@@ -19,7 +19,7 @@
 
 ## 1. Red acceptance checks (owner: Dev; before any production code)
 
-- [ ] 1.1 Author `InvitationApiTest` with I1–I5 (issuance), J1–J5 (preview and
+- [ ] 1.1 Author `InvitationApiTest` with I1–I5 (issuance), J1–J7 (preview and
       joining), U1–U2 (unusable), per fixtures §REQ-004; own in-memory SQLite
       file, Flyway `V1`–`V3`, pool size 1 (design D11)
 - [ ] 1.2 Add reverse checks R-1 (no confirmation route) and R-2 (no
@@ -45,8 +45,9 @@
       `USER_REQUIRED`, `TRIP_NOT_FOUND`, `NOT_ORGANIZER`
 - [ ] 3.2 `GET /api/invitations/{token}`: no identity; five-field whitelist;
       unknown token → 404 `INVITATION_NOT_FOUND` with no trip values
-- [ ] 3.3 `POST /api/invitations/{token}/accept`: identity → token → closure →
-      insert-or-ignore; 200 joined/alreadyMember; codes `USER_REQUIRED`,
+- [ ] 3.3 `POST /api/invitations/{token}/accept`: identity first, then token,
+      then existing-member check before closure and insert-or-ignore for non-members;
+      200 joined/alreadyMember, including existing members after closure; codes `USER_REQUIRED`,
       `INVITATION_NOT_FOUND`, `JOINING_CLOSED`
 - [ ] 3.4 Run `mvn test`: I/J/U/R checks green; greeting tests unchanged
 
@@ -74,7 +75,7 @@
       absolute URL and opens the same invitation, S2 preview→accept→joined and
       closed state, U3 unusable surface; capture observations
 - [ ] 5.3 Re-run every API scenario against the running backend with curl
-      (I1–I5, J1–J5, U1–U2, R-1, R-2), including the J4 test-only state flip
+      (I1–I5, J1–J7, U1–U2, R-1, R-2), including the J4/J6 test-only state flip
 - [ ] 5.4 Write `docs/feedback/verification-req-004.md` and the P4
       local-verify report; mark Partial where evidence is missing, never Pass
       by assertion
@@ -106,7 +107,7 @@
 |---|---|---|---|---|
 | Invitation issuance (5 scenarios) | D1, D2, D3, D4 | 2.1–2.3, 3.1, 1.1 | I1–I5 | Pass |
 | Invitation preview (2 scenarios) | D6 | 3.2, 1.1 | J1, U1 | Pass |
-| Invitation acceptance and joining (5 scenarios) | D5, D10 | 3.3, 1.1, 5.3 | J2–J5 | Pass |
+| Invitation acceptance and joining (6 scenarios) | D5, D10 | 3.3, 1.1, 5.3 | J2–J7 | Pass |
 | Unusable invitation (2 scenarios) | D6 | 3.2, 3.3, 1.1 | U1–U2, U3 | Pass |
 | Trip main-plan confirmation state (3 scenarios) | D1, D5, D10 | 2.1, 3.3, 1.2 | J4, R-1 | Pass |
 | Non-goals (US-037 flow, revocation/expiry, reminder, auth, ORM, single membership) | Goals/Non-Goals, D5, D9 | 1.2, 4.4 | R-1, R-2 + reverse table | Pass |

@@ -56,8 +56,9 @@ retries once and then fails the request.
 absent. Response: `token`, `joinPath` = `/join/<token>`, `tripId`, `tripName`.
 Status 200 on first and repeated calls.
 
-**D5 — Acceptance in one transaction.** Resolve token (404
-`INVITATION_NOT_FOUND` if unknown), resolve identity (401 `USER_REQUIRED`), read
+**D5 — Acceptance in one transaction.** Resolve identity first (401
+`USER_REQUIRED`, including when the token is unknown), then resolve token (404
+`INVITATION_NOT_FOUND` if unknown). Check existing membership before enforcing
 `main_plan_confirmed` (403 `JOINING_CLOSED` for a non-member when confirmed),
 then `INSERT OR IGNORE` the membership row and report `alreadyMember` from the
 inserted-row count. The existing PRIMARY KEY (trip_id, user_id) makes duplicates
@@ -107,9 +108,10 @@ Flyway migrations `V1`–`V3`; row counts asserted through `JdbcTemplate`.
 ## Risks / Trade-offs
 
 - **Impersonation (inherited).** `X-User-Id` is trusted; anyone can accept as
-  Eve. Accepted scaffold cost, never described as a security control.
+  Eve. User explicitly accepts this only in a controlled demo (2026-11-14),
+  never as a production security control.
 - **Preview privacy.** Destination/dates are exposed before acceptance per
-  screen 05 (OQ-2, IO to confirm at G1); members/itinerary/preferences are
+  screen 05 (OQ-2, user confirmed 2026-11-14); members/itinerary/preferences are
   structurally excluded by D6.
 - **State without a flow.** `main_plan_confirmed` looks like dead data until
   US-037; the reverse check and fixtures document why it exists now.

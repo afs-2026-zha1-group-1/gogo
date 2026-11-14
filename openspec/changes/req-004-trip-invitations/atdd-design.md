@@ -27,6 +27,8 @@ Pure-logic items are deferred to apply-time unit TDD.
 | J3 | Double acceptance; exactly one membership | API | consistency (idempotency) | row-count assertion |
 | J4 | Confirmed main plan rejects acceptance; list unchanged | API | — | test-only state flip, then 403 + `JOINING_CLOSED` |
 | J5 | Accept without/unknown identity | API | — | 401 + `USER_REQUIRED` |
+| J6 | Existing member accepts with joining open and closed | API | consistency (idempotency) | 200 joined, `alreadyMember` true, membership count unchanged in both states |
+| J7 | Missing/unknown identity combined with an invalid token | API | authorization precedence | 401 + `USER_REQUIRED`, no membership change; a known identity with the same invalid token receives 404 |
 | U1 | Invalid preview exposes nothing | API | privacy (advisory) | 404 + `INVITATION_NOT_FOUND` + absence assertion |
 | U2 | Invalid accept creates nothing | API | privacy (advisory) | 404 + no membership row |
 | U3 | Join page with invalid token shows generic unusable surface | E2E | — | user-visible privacy behavior |
@@ -38,7 +40,7 @@ Pure-logic items are deferred to apply-time unit TDD.
 
 ## 2. What is written before production code
 
-1. `InvitationApiTest` authored red first, covering I1–I5, J1–J5, U1–U2 and the
+1. `InvitationApiTest` authored red first, covering I1–I5, J1–J7, U1–U2 and the
    API halves of R-1/R-2, using the fixture users/trip and reading the token from
    the I1 response. It must fail against the current tree (no invitation code).
 2. The E2E check list (I6, U3, S1, S2) written as numbered browser steps with
