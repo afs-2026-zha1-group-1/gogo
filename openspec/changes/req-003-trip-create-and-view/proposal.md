@@ -24,7 +24,8 @@ case, without inventing an authentication feature that neither story asks for.
     verified credential.
   - "Trip creation" — `POST /api/trips` persists name, destination, start and end
     dates, start and end locations; the caller becomes organizer and first member;
-    blank name and inverted date range are rejected; nothing is stored on rejection.
+    blank name/destination and inverted date range are rejected; nothing is stored
+    on rejection. Locations are optional and normalize to null when unspecified.
   - "Trip detail read" — `GET /api/trips/{id}` returns the saved values to a
     member, denies a non-member with no trip values in the body, and reports a
     missing id separately from a denial.
@@ -97,5 +98,9 @@ screens plus their error states) — all Pass → **A0 Pass**, split permitted.
   AC wording; recorded as a trade-off in REQ-003 OQ-2.
 - The UI screenshots referenced by both stories are not in the repository. Layout
   is a design judgement from the AC text and the mandatory state list.
-- Whether `destination` and both locations are required is unstated. Default:
-  stored verbatim, no invented validation error (REQ-003 OQ-1).
+- User ruling 2026-11-14: destination required, both locations optional; null
+  represents an unspecified location. Under resolved OQ-6, US-031 fills only
+  missing locations during main-plan generation using submitted member
+  preferences, with random locations when preferences are absent or yield no
+  suitable result. User-supplied locations are never overwritten. Follow-up
+  owners: IO Emily / SA Johnson; no completion implementation in REQ-003/004.

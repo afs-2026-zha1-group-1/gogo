@@ -26,12 +26,12 @@ is out of scope.
 
 ### Requirement: Trip creation
 
-The system SHALL expose `POST /api/trips`, SHALL persist the submitted name,
-destination, start date, end date, start location and end location, and SHALL
-record the caller as the trip's organizer and as a member of that trip in the same
-operation. Dates SHALL be exchanged as ISO-8601 `YYYY-MM-DD` strings. The system
-SHALL reject a blank name and a start date later than the end date, and SHALL
-store nothing when a request is rejected.
+The system SHALL expose `POST /api/trips`, persist name, destination, ISO
+`YYYY-MM-DD` dates and optional locations, and atomically record the caller as
+organizer and member. It SHALL reject blank name or destination, invalid dates
+and inverted date ranges without writes. Unspecified locations SHALL normalize
+to null; supplied nonblank locations SHALL be preserved. Location completion
+belongs to later main-plan generation (US-031), not trip creation.
 
 #### Scenario: Trip is created with the submitted details
 
@@ -68,6 +68,23 @@ store nothing when a request is rejected.
 - **THEN** the response status is 400
 - **AND** the response body carries `code` equal to `INVALID_DATE`
 - **AND** no trip is stored
+
+#### Scenario: Missing destination is rejected
+
+- **WHEN** an otherwise valid create request omits `destination`, sends null,
+  or sends an empty or whitespace-only destination
+- **THEN** the response status is 400
+- **AND** the response body carries `code` equal to `DESTINATION_REQUIRED`
+- **AND** no trip or membership is stored
+
+#### Scenario: Optional locations may be unspecified
+
+- **WHEN** an otherwise valid create request omits either or both locations,
+  or sends null, empty or whitespace-only locations
+- **THEN** the response status is 201
+- **AND** unspecified locations are stored and returned as null
+- **AND** any supplied nonblank location is preserved
+- **AND** a subsequent member read returns the same saved values
 
 ### Requirement: Trip detail read
 

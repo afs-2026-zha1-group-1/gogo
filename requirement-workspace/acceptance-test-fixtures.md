@@ -2,8 +2,9 @@
 
 - Scope: sample values referenced by US-001 (issue #4), US-002 (issue #5), and
   US-008 (issue #6), US-010 (issue #7), US-012 (issue #8)
-- Source: every value below is taken verbatim from the acceptance-criteria sets.
-  Nothing is invented; if an AC does not state a value, no value is set.
+- Source: story acceptance criteria, extended by explicit user rulings on
+  2026-11-14 (required destination, optional locations and invitation boundaries).
+  Negative inputs below are test cases, not additional story fixture values.
 - Created: 2026-11-14. The stories refer to this file but it did not exist in the
   repository; see `intents/2026-11-14-req-003.md`.
 - Extended: 2026-11-14 for REQ-004; see `intents/2026-11-14-req-004.md`. The
@@ -49,6 +50,8 @@ response rather than assume a value.
 | C1 create | `POST /api/trips`, `X-User-Id: 1`, body `{"name":"Singapore Friends Day","destination":"Singapore","startDate":"2026-12-05","endDate":"2026-12-05","startLocation":"City Hall MRT","endLocation":"Merlion Park"}` | `201`, response echoes the six values, `organizerId = 1` |
 | C2 date order | same body with `"startDate":"2026-12-06"`, `"endDate":"2026-12-05"` | `400`, `code = INVALID_DATE_RANGE` |
 | C3 blank name | same body with `"name":"   "` | `400`, `code = NAME_REQUIRED` |
+| C6 required destination | C1 body with destination omitted, null, empty or whitespace-only | `400`, `code = DESTINATION_REQUIRED`; no trip or membership created |
+| C7 optional locations | C1 body with either/both locations omitted, null, empty or whitespace-only | `201`; unspecified locations saved and read as null, supplied nonblank locations unchanged; completion only during US-031 main-plan generation |
 | R1 member read | `GET /api/trips/{id}`, `X-User-Id: 2` | `200`, the six saved values |
 | R2 non-member read | `GET /api/trips/{id}`, `X-User-Id: 5` | `403`, `code = NOT_A_MEMBER`, no trip values |
 | R2-N no identity | `GET /api/trips/{id}` without `X-User-Id` | `401`, `code = USER_REQUIRED` |
@@ -62,7 +65,7 @@ response rather than assume a value.
 | New trip id | Assigned by the database in C1 |
 | `createdAt` | Not required by any AC |
 | Error message wording | Only the `code` is contractual; messages are implementation text |
-| Destination or location emptiness | No AC states an error for these fields; see REQ-003 OQ-1 |
+| Exact locations produced by later US-031 completion | At main-plan generation use submitted member preferences; random locations if preferences are absent or yield no suitable result. Preserve supplied locations. Do not fix exact randomized outputs or run completion during REQ-003/004 tests. Owners IO Emily / SA Johnson |
 
 ## REQ-004 — invitations (US-008 / US-010 / US-012)
 
@@ -92,6 +95,8 @@ after a successful acceptance she becomes a member and the R1 read applies to he
 | J3 double accept | J2 call twice | both `200` joined; exactly one `trip_member` row for (trip, 5) |
 | J4 closed | confirmed-main-plan setup, then J2 call | `403`, `code = JOINING_CLOSED`; member rows unchanged |
 | J5-N no identity | accept without `X-User-Id` | `401`, `code = USER_REQUIRED`; no membership |
+| J6 existing member | Ben accepts a valid token, once unconfirmed and once after confirmed-state setup | both `200` joined with `alreadyMember = true`; membership count unchanged |
+| J7 identity precedence | invalid-token accept with missing identity, then unknown user id `999999` | both `401`, `code = USER_REQUIRED`; no membership; known Eve with the same invalid token receives `404` |
 | U1 invalid preview | `GET /api/invitations/no-such-invitation` | `404`, `code = INVITATION_NOT_FOUND`; no trip values |
 | U2 invalid accept | `POST /api/invitations/no-such-invitation/accept`, `X-User-Id: 5` | `404`, `code = INVITATION_NOT_FOUND`; no membership |
 

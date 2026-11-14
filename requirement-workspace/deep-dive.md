@@ -117,7 +117,7 @@ existing stack). Two stories, one aggregate, one change.
 | Concept | Grain | Fields | State transitions |
 |---|---|---|---|
 | `app_user` | One row per seeded traveller | `id` INTEGER PRIMARY KEY; `display_name` TEXT NOT NULL | None. Seeded by `V2`; no user API in scope |
-| `trip` | One row per created trip | `id` INTEGER PRIMARY KEY AUTOINCREMENT; `name` TEXT NOT NULL; `destination` TEXT NOT NULL; `start_date` TEXT NOT NULL (ISO `YYYY-MM-DD`); `end_date` TEXT NOT NULL; `start_location` TEXT NOT NULL; `end_location` TEXT NOT NULL; `organizer_id` INTEGER NOT NULL REFERENCES `app_user(id)` | Created once. No update, delete or archive path is in scope |
+| `trip` | One row per created trip | `id` INTEGER PRIMARY KEY AUTOINCREMENT; `name` TEXT NOT NULL; `destination` TEXT NOT NULL; `start_date` TEXT NOT NULL (ISO `YYYY-MM-DD`); `end_date` TEXT NOT NULL; `start_location` TEXT NULL; `end_location` TEXT NULL; `organizer_id` INTEGER NOT NULL REFERENCES `app_user(id)` | Created once in REQ-003; location completion belongs to US-031 under resolved OQ-6. No edit, delete or archive endpoint in this change |
 | `trip_member` | One row per (trip, user) pair | `trip_id` INTEGER NOT NULL REFERENCES `trip(id)`; `user_id` INTEGER NOT NULL REFERENCES `app_user(id)`; PRIMARY KEY (`trip_id`, `user_id`) | Created with the trip for the creator only. No invite, leave or removal path is in scope |
 
 Creation is one transaction: insert `trip`, then insert the creator's
@@ -128,9 +128,9 @@ Wire contract:
 
 | Message | Fields | Notes |
 |---|---|---|
-| Create request | `name`, `destination`, `startDate`, `endDate`, `startLocation`, `endLocation` — all strings | Dates are ISO `YYYY-MM-DD`. Emptiness of `destination`/`startLocation`/`endLocation` is unspecified (OQ-1) |
-| Trip response | `id` (integer), `name`, `destination`, `startDate`, `endDate`, `startLocation`, `endLocation` (strings), `organizerId` (integer) | Same shape for `201` and for the `200` read |
-| Error response | `code` (stable string), `message` (human text) | `code` values: `NAME_REQUIRED`, `INVALID_DATE`, `INVALID_DATE_RANGE`, `USER_REQUIRED`, `TRIP_NOT_FOUND`, `NOT_A_MEMBER` |
+| Create request | Required `name`, `destination`, `startDate`, `endDate` strings; optional nullable `startLocation`, `endLocation` strings | Dates are ISO `YYYY-MM-DD`; missing/null/blank destination rejected; unspecified locations normalize to null |
+| Trip response | `id` (integer), `name`, `destination`, `startDate`, `endDate` (strings), `startLocation`, `endLocation` (string or null), `organizerId` (integer) | Same shape for `201` and for the `200` read |
+| Error response | `code` (stable string), `message` (human text) | `code` values: `NAME_REQUIRED`, `DESTINATION_REQUIRED`, `INVALID_DATE`, `INVALID_DATE_RANGE`, `USER_REQUIRED`, `TRIP_NOT_FOUND`, `NOT_A_MEMBER` |
 
 No `{TBD}` field remains.
 
@@ -141,6 +141,9 @@ No `{TBD}` field remains.
 | Valid create, dates in order (equal dates allowed) | in | C1; the fixture trip uses the same start and end date |
 | End date strictly before start date | out (rejected `400`) | C2 |
 | Blank or whitespace-only name | out (rejected `400`) | C3 |
+| Missing/null/blank destination | out (rejected `400`) | C6; `DESTINATION_REQUIRED`, no writes |
+| Missing/null/blank start or end location | in | C7; stored/read as null; supplied locations preserved |
+| Preference-based location completion | later US-031, outside REQ-003/004 | Resolved OQ-6: at main-plan generation use submitted member preferences for missing locations only; random locations if no preferences or suitable result; preserve user input. Owners IO Emily / SA Johnson |
 | Unparseable date | out (rejected `400`) | C4-N |
 | `X-User-Id` missing or not a seeded user | out (rejected `401`) | C5-N, R2-N |
 | Read by a member | in | R1 |
@@ -219,10 +222,11 @@ No `{TBD}` field remains.
 | Preview of a valid token, joining closed | in | J1 shape with `mainPlanConfirmed = true`; the join page shows the closed state instead of an accept action |
 | Accept by a non-member, joining open | in | J2; membership created, member read now allowed |
 | Accept twice, same identity | in | J3; exactly one membership row |
-| Accept by an existing member | in | J3 shape; `alreadyMember = true`, no new row |
-| Accept after main-plan confirmation | out (rejected `403`) | J4; member list unchanged |
+| Accept by an existing member, joining open or closed | in | J6; `alreadyMember = true`, no new row |
+| Accept by a non-member after main-plan confirmation | out (rejected `403`) | J4; member list unchanged |
 | Accept without identity / unknown identity | out (rejected `401`) | J5 |
-| Preview or accept of an unknown token | out (`404`) | U1/U2; generic unusable surface, no trip values, no membership |
+| Accept with missing/unknown identity and unknown token | out (`401`) | J7; `USER_REQUIRED` takes precedence, no membership |
+| Preview or identified accept of an unknown token | out (`404`) | U1/U2; generic unusable surface, no trip values, no membership |
 | Join page with unknown token | in (reverse privacy case) | U3; generic message only |
 | Revocation, expiry, reminder notification | out of scope | No endpoint, no field; R-2 reverse case |
 | Setting main-plan confirmation through an API | out of scope | No endpoint; R-1 reverse case; US-037 owns the flow |
