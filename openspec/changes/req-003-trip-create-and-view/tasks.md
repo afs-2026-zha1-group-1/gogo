@@ -60,11 +60,19 @@
 
 ## 6. CI and gates (owner: Dev drafts; IO/SA/VL decide)
 
-- [ ] 6.1 Push the branch and open the PR to `group1/main` only with separate
+- [x] 6.1 Push the branch and open the PR to `group1/main` only with separate
       typed authorization; read the fresh CI run with `gh`; pipeline report
-- [ ] 6.2 G2 decision record by named humans; P5 summary, G3, archive via
-      `/sdd:living-merge` after G2
+- [ ] 6.2 G2 decision record by a named VL — pending; user routes the signature
+      to another human via PR #30 (the in-session Johnson verdict was withdrawn
+      before recording)
 - [ ] 6.3 Update `README.md` run instructions and registry/handoff rows
+- [ ] 6.4 P5 change summary, G3 draft and archive via `/sdd:living-merge`
+- [ ] 6.5 Follow-up (post-G2, VL-directed): align frontend with
+      `ui-design-reference/` screens 02/03 component language — header bar with
+      back + subtitle, icon labels, two-column date/location rows, info note,
+      bottom gradient CTA, teal hero card and icon row list on details; keep
+      member list / invite / edit excluded (US-013 / REQ-004 / non-goal);
+      re-run build and browser verification afterwards
 
 ## 7. Stage artifacts (owner: Dev)
 
