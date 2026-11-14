@@ -48,10 +48,12 @@
 | 4 | Resolve OQ-4 (`TODO.md` still says SQLite) | **Decision made** (Johnson authorized H2); text alignment carried as G1 condition 2 |
 | 5 | Complete remaining tasks | **Closed.** `tasks.md` 30/30 |
 
-- Approvers: **SA = Johnson**. Signature authorized in session: "都签署我的名字即可
-  Johnson". Johnson also holds IO and VL for this change; one person covers all
-  three roles in this single-person project, recorded explicitly. AO asks: none
-  attached. The agent recorded the decision and did not self-approve.
+- Approvers: **SA = Johnson, Leo**. Johnson's signature was authorized in session:
+  "都签署我的名字即可Johnson". Johnson also holds IO and VL for this change; at
+  signing time one person covered all three roles in this single-person project,
+  recorded explicitly. **Leo co-signed as the second SA on 2026-11-14** under the
+  user instruction "补一下另外一个签名，签Leo". AO asks: none attached. The agent
+  recorded the decision and did not self-approve.
 - Timestamp: decision recorded 2026-11-13 15:35 (UTC+08:00). Unsigned draft prepared
   2026-11-13 15:07; superseded by this record.
 

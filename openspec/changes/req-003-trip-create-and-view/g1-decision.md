@@ -2,8 +2,8 @@
 
 - Change id: `req-003-trip-create-and-view`
 - Gate: G1 (Align)
-- Status: **NOT RECORDED** — IO Emily's Pass is recorded below; SA Johnson's
-  sign-off remains pending. This file is not evidence that G1 passed.
+- Status: **RECORDED — Pass** (2026-11-14). IO Emily Pass and SA Johnson Pass are
+  both recorded below; the gate is closed.
 
 ## Inputs
 
@@ -43,31 +43,27 @@
 
 ## Decision
 
-- Decision: **PENDING** — IO Emily has approved; the overall G1 verdict awaits
-  SA Johnson's explicit decision.
-- Conditions + owners: to be supplied. A `Conditional` decision is invalid without
-  remediation items and owners.
+- Decision: **Pass** — recorded 2026-11-14 once both required roles had decided.
+- Conditions + owners: none; no remediation items were supplied by either role.
 - User-designated approvers: **IO = Emily**, **SA = Johnson** (user supplied
   `IO emily SA johnson`).
 - IO sign-off: **Emily — Pass**, recorded 2026-11-14 from the user's exact
   statement `emily pass`, in response to the request covering both changes.
   No IO conditions were supplied. The agent records this statement, not an
   independently verified identity or an approval on behalf of the SA.
-- SA sign-off: **Johnson — PENDING**. No SA verdict or authorization to record
-  a signature has been supplied.
+- SA sign-off: **Johnson — Pass**, recorded 2026-11-14 from the user's explicit
+  verdict in session (answer `Pass` to the G1 SA question for this change, after
+  the IO-updated 12-scenario delta and the destination/optional-location rulings
+  were presented). No SA conditions were supplied.
 
-## What recording G1 requires
+## What recording G1 required (satisfied)
 
-1. IO Emily's Pass is recorded; obtain SA Johnson's explicit verdict and
-  authorization to record it. Do not infer the SA's approval from the IO's.
-2. Record the overall decision only once both required roles have decided;
-  if Conditional, include remediation items and owners.
-3. Retain the resolved OQ-6 and acknowledged demo-risk/ordering rulings above.
-
-The agent will write the final record only from the human's statement; it will not
-choose the approvers or the verdict.
+1. IO Emily's Pass and SA Johnson's Pass are both recorded from human statements.
+2. The overall decision is Pass with no conditions, so no remediation list is
+   needed.
+3. The resolved OQ-6 and the acknowledged demo-risk/ordering rulings above are
+   retained unchanged.
 
 ## Next
 
-On Pass → P3 (`/sdd:atdd-design`, `/sdd:task-plan`). On Fail → return to
-`/sdd:delta-craft`.
+G1 Pass → P3 (`/sdd:atdd-design`, `/sdd:task-plan`), then P4 implementation.
