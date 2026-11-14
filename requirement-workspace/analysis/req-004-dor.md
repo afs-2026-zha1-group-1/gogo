@@ -7,6 +7,19 @@
 
 ## Findings
 
+### Amendment after user review, 2026-11-14
+
+The original self-check below is historical. OQ-1 retains staged delivery with
+no confirmation product operation until US-037; OQ-2's five preview fields are
+explicitly confirmed by the user. OQ-6 is resolved by design D7. ATDD J6/J7 now
+cover existing members before/after closure and identity/token precedence.
+Local and upstream blocking OQ counts are now 0. The user's follow-up resolves
+REQ-003 OQ-6 to US-031, with submitted member preferences, random fallback and
+no overwrite; owners IO Emily / SA Johnson. Controlled-demo identity risk and
+implementation sequencing are acknowledged. Both G1 records remain unsigned:
+the named approvers are designated, but verdicts and recording authorization
+have not been supplied. Historical deferred statuses below are superseded.
+
 | # | Item | Severity | Status | Location | Issue / evidence |
 |---|---|---|---|---|---|
 | ① | Intent clear | — | Pass | REQ-004 §Intent | One invitation flow: issue, preview, accept once, closed after confirmation, unusable fails closed |
