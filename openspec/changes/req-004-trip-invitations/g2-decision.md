@@ -2,9 +2,8 @@
 
 - Change id: `req-004-trip-invitations`
 - Gate: G2 (Verify)
-- Status: **NOT RECORDED** — local verification is complete, but the remote CI
-  run and the named VL decision are outstanding. This file is not evidence that
-  G2 passed.
+- Status: **NOT RECORDED** — local verification and remote CI are complete; the
+  named VL decision is outstanding. This file is not evidence that G2 passed.
 
 ## Inputs
 
@@ -23,8 +22,10 @@
   `openspec validate --strict` valid.
 - Tasks: `tasks.md` — P0–P5 tasks complete except 6.1 (push/PR + CI) and 6.2
   (G2/G3/archive), which require human authorization.
-- CI: **not run for this change.** The branch is local/stacked and has not been
-  pushed; E1 stays Partial until a fresh PR run is read with `gh`.
+- CI: **Pass.** PR #31, run 43608236232, event `pull_request`, head SHA
+  `91dca1938b9c97a21c6dd91a551f8dae9990abba` equal to the branch head; Backend
+  tests and Frontend build both success.
+  `docs/ai4se-plugins/20261114-230558-pipeline-report.md` and `ci-report.md`.
 
 ## Dimension results
 
@@ -34,16 +35,14 @@
 | Static scan | Pass | no ORM, no expiry/revocation field, strict validate valid |
 | Code review | Pass | local-verify highlights; no CRITICAL findings |
 | Evidence V1–V8 | V1 Partial (gate tasks open); V2–V8 Pass | local-verify evidence table |
-| E1 machine | **Partial** | local commands only; remote CI pending push/PR |
+| E1 machine | Pass | pipeline report, fresh PR run 43608236232 on head `91dca19` |
 | E2 AI | Pass | local-verify report + verification doc |
 | E3 human | Pending | this draft awaits the VL |
 
 ## Defect grades
 
 - CRITICAL: none.
-- WARNING: 2 — remote CI not run (E1 Partial); G2/G3, README/registry and archive
-  were open while the report was authored (README/registry now updated, gates
-  remain open by design).
+- WARNING: 1 — G2/G3 and archive remain open by design pending the VL.
 - SUGGESTION: 3 — `jsqr` 1.4.0 is Apache-2.0 (plan text said MIT); automated
   clipboard read is denied by the test browser (copy handler argument verified
   by patching `writeText`); REQ-003's "no invitation route" reverse assertion
@@ -63,9 +62,9 @@
 
 ## What recording G2 requires
 
-1. Typed authorization to push the branch / open the PR (git writes are not
-   implied by the G1 or P4 approval).
-2. A fresh CI run read with `gh` and written into a pipeline report.
+1. ~~Typed authorization to push the branch / open the PR~~ — done: PR #31 is
+   open and CI is green on the branch head.
+2. ~~A fresh CI run read with `gh`~~ — done: run 43608236232, both jobs success.
 3. The named VL's explicit verdict (typed statement or recorded session answer).
 4. Acknowledgement of the remaining post-G2 work: archive via `/sdd:living-merge`
    after REQ-003, G3, and the follow-ups listed above.

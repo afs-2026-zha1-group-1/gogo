@@ -50,6 +50,8 @@ Iteration 0.
   organizer-only denial.
 - Evidence: `docs/feedback/verification-req-004.md`,
   `docs/ai4se-plugins/20261114-225027-local-verify-report.md`.
+- CI: PR #31, run 43608236232 on head `91dca19`, both jobs success
+  (`docs/ai4se-plugins/20261114-230558-pipeline-report.md`).
 
 ## Residual risks
 
@@ -61,7 +63,7 @@ Iteration 0.
   documented test-only update changes it.
 - Invitation URLs use the `#` hash route; QR equality is proven against that
   composed URL.
-- Remote CI and the G2/G3 human decisions remain open; the branch is not pushed.
+- G2/G3 and the archive remain open pending the VL; CI is green on PR #31.
 
 ## Links
 

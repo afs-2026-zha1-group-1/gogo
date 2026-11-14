@@ -83,9 +83,10 @@
 
 ## 6. CI and gates (owner: Dev drafts; IO/SA/VL decide)
 
-- [ ] 6.1 Push the feature branch and open the PR only with separate typed
+- [x] 6.1 Push the feature branch and open the PR only with separate typed
       authorization; read the fresh CI run with `gh` and write the pipeline
-      report (G2 evidence)
+      report (G2 evidence) — PR #31, run 43608236232 on head `91dca19`, both jobs
+      success
 - [ ] 6.2 G2 decision record by named humans; then P5 change summary, G3, and
       archive via `/sdd:living-merge` — archive order after REQ-003 for `trips`
 - [x] 6.3 Update `README.md` run instructions and the registry/handoff rows
@@ -113,6 +114,8 @@
   browser E2E S1/I6/S2/U3 and the organizer-denial panel pass.
 - Reports: `docs/feedback/verification-req-004.md`,
   `docs/ai4se-plugins/20261114-225027-local-verify-report.md`.
+- CI: PR #31, run 43608236232 on head `91dca19`; Backend tests and Frontend
+  build success (`docs/ai4se-plugins/20261114-230558-pipeline-report.md`).
 - Note: REQ-003's `POST /api/trips/{id}/invitation → 404` reverse assertion was
   retired because this change owns that route.
 
