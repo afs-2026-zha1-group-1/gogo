@@ -7,6 +7,18 @@
 
 ## Findings
 
+### Amendment after user review, 2026-11-14
+
+The tables below preserve the original self-check. Destination is now required
+and both locations are nullable. OQ-6 is resolved by the user's follow-up:
+US-031 fills missing locations at main-plan generation from submitted member
+preferences, or random locations if there are no preferences or suitable results;
+user-supplied locations are preserved. Follow-up owners: IO Emily / SA Johnson.
+Current blocking OQ count: **0**; the earlier reopening is closed for REQ-003.
+The user accepts controlled-demo identity and REQ-003-before-REQ-004 ordering.
+G1 remains NOT RECORDED because no gate verdict or completed signatures were
+provided. Original OQ-1/OQ-2 defaults below are superseded.
+
 | # | Item | Severity | Status | Location | Issue / evidence |
 |---|---|---|---|---|---|
 | ① | Intent clear | — | Pass | REQ-003 §Intent | Persist and read one shared trip aggregate; two named error cases for create, one denial for read |
