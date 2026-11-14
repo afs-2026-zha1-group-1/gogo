@@ -7,7 +7,7 @@ import java.nio.file.Path;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.gogo")
 public class HelloApplication {
 
     public static void main(String[] args) throws IOException {

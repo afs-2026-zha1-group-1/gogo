@@ -1,0 +1,108 @@
+:root {
+  --bg: #f4f3ef;
+  --surface: #ffffff;
+  --ink: #1c1917;
+  --ink-2: #57534e;
+  --ink-3: #a8a29e;
+  --line: #e9e7e2;
+  --brand: #0d9488;
+  --brand-ink: #0f766e;
+  --brand-soft: #ccfbf1;
+  --err: #dc2626;
+  --err-soft: #fee2e2;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.shell { max-width: 420px; margin: 0 auto; padding: 16px; }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0 16px;
+}
+
+.brand {
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--brand-ink);
+  text-decoration: none;
+}
+
+.identity { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+.identity select {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 6px 8px;
+  font-size: 14px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 1px 2px rgb(28 25 23 / 0.04);
+}
+
+h1 { font-size: 22px; margin: 0 0 12px; }
+
+.muted { color: var(--ink-3); font-size: 13px; }
+
+form { display: flex; flex-direction: column; gap: 12px; }
+label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: var(--ink-2); }
+input {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #faf9f7;
+  padding: 10px 12px;
+  font-size: 15px;
+  color: var(--ink);
+}
+input:focus { outline: 2px solid var(--brand-soft); border-color: var(--brand); }
+
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.button {
+  display: inline-block;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(90deg, var(--brand), #06b6d4);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 12px 16px;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.button:disabled { opacity: 0.6; cursor: default; }
+.button.secondary {
+  background: var(--surface);
+  color: var(--ink-2);
+  border: 1px solid var(--line);
+}
+
+.error {
+  background: var(--err-soft);
+  color: var(--err);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  margin: 0;
+}
+
+.details { display: flex; flex-direction: column; gap: 10px; margin: 0 0 16px; }
+.details div { display: flex; justify-content: space-between; gap: 12px; }
+.details dt { color: var(--ink-3); font-size: 13px; }
+.details dd { margin: 0; font-size: 15px; text-align: right; }
