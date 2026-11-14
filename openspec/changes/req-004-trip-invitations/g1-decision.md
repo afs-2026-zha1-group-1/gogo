@@ -2,8 +2,9 @@
 
 - Change id: `req-004-trip-invitations`
 - Gate: G1 (Align)
-- Status: **NOT RECORDED** — IO Emily's Pass is recorded below; SA Johnson's
-  sign-off remains pending. This file is not evidence that G1 passed.
+- Status: **RECORDED — Pass** (2026-11-14). IO Emily Pass and SA Johnson Pass are
+  both recorded below; the gate is closed. REQ-003 G1 was already recorded and
+  its P4 implementation landed on the stacked branch.
 
 ## Inputs
 
@@ -36,9 +37,10 @@
 - **Conflict between delta requirements:** none. Issuance produces the token that
   preview and acceptance consume; the trips state requirement is the single
   source of the closure flag that acceptance reads.
-- **Cross-change dependency:** REQ-003 is P2-complete, unimplemented, G1 unsigned.
-  REQ-004 P4 cannot start before REQ-003 P4 (`V3` alters `V2`'s tables). This is
-  an ordering constraint, not a spec conflict.
+- **Cross-change dependency:** at G1 time REQ-003 was P2-complete, unimplemented
+  and G1-unsigned. Its G1 is now recorded and its P4 landed before this change's
+  P4, because `V3` alters `V2`'s tables. This was an ordering constraint, not a
+  spec conflict.
 - **Content rulings, 2026-11-14:** OQ-1 retains staged delivery with no product
   confirmation operation until US-037; OQ-2 permits name, destination, dates and
   joining-open state before acceptance. No private member/itinerary/preferences.
@@ -49,36 +51,37 @@
   only for a controlled demo; REQ-003 implementation precedes REQ-004 (OQ-7).
   REQ-003 OQ-6 is resolved to later US-031 generation with submitted member
   preferences, random fallback and no overwrite. No blocking content question
-  remains. REQ-003 G1 must still be recorded first; content rulings are not signatures.
+  remains. REQ-003 G1 was recorded before this one, satisfying the prerequisite;
+  content rulings are not signatures.
 - Earlier validation/review evidence in Inputs predates the amended specs;
   it is historical, not proof of current runtime behavior.
 
 ## Decision
 
-- Decision: **PENDING** — IO Emily has approved; the overall G1 verdict awaits
-  SA Johnson's explicit decision and the REQ-003 G1 prerequisite.
-- Conditions + owners: to be supplied. A `Conditional` decision is invalid without
-  remediation items and owners.
+- Decision: **Pass** — recorded 2026-11-14 once both required roles had decided.
+- Conditions + owners: none; no remediation items were supplied by either role.
 - User-designated approvers: **IO = Emily**, **SA = Johnson** (user supplied
   `IO emily SA johnson`).
 - IO sign-off: **Emily — Pass**, recorded 2026-11-14 from the user's exact
   statement `emily pass`, in response to the request covering both changes.
   No IO conditions were supplied. The agent records this statement, not an
   independently verified identity or an approval on behalf of the SA.
-- SA sign-off: **Johnson — PENDING**. No SA verdict or authorization to record
-  a signature has been supplied.
+- SA sign-off: **Johnson — Pass**, recorded 2026-11-14 from the user's explicit
+  session answer `Pass` to the G1 SA question for this change, after the P2
+  deltas, DoV review and strict validation evidence were presented. No SA
+  conditions were supplied.
+- Prerequisite: REQ-003 G1 is recorded Pass and REQ-003 P4 (the `V2` tables)
+  landed on the stacked branch before this record.
 
-## What recording G1 requires
+## What recording G1 required (satisfied)
 
-1. IO Emily's Pass is recorded; obtain SA Johnson's explicit verdict and
-  authorization to record it. Do not infer the SA's approval from the IO's.
-2. Record the overall decision only once both required roles have decided;
-  if Conditional, include remediation items and owners.
-3. Retain OQ-1/OQ-2 rulings and the acknowledged controlled-demo identity risk.
-4. Record REQ-003 G1 first and preserve the accepted implementation dependency.
+1. IO Emily's Pass and SA Johnson's Pass are both recorded from human statements.
+2. The overall decision is Pass with no conditions, so no remediation list is
+   needed.
+3. OQ-1/OQ-2 rulings and the acknowledged controlled-demo identity risk are
+   retained unchanged.
 
-The agent will write the final record only from the human's statement; it will not
-choose the approvers or the verdict.
+The agent recorded only the humans' statements; it did not choose the verdict.
 
 ## Next
 

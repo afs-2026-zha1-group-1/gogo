@@ -79,8 +79,9 @@ routes `#/` (greeting/home), `#/create`, `#/trips/<id>` (REQ-003), and
 `<window.location.origin>/#/join/<token>`; the backend's `joinPath` stays
 origin-agnostic. QR encoding uses the MIT-licensed `qrcode` package (canvas
 render); the P4 QR-equality check decodes the rendered canvas locally with the
-MIT-licensed `jsqr` devDependency — no external upload, no decorative QR. Both
-licenses must be re-checked at install time against the corporate npm mirror.
+`jsqr` devDependency (installed 1.4.0 declares Apache-2.0) — no external upload,
+no decorative QR. Both licenses must be re-checked at install time against the
+corporate npm mirror.
 
 **D8 — Scaffold identity selector.** The shell gains a user switcher over the
 five seeded users (Alice/Ben/Chloe/Daniel/Eve) that sets the `X-User-Id` header

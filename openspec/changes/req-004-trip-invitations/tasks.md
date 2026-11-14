@@ -10,73 +10,74 @@
 
 ## 0. Preconditions (owner: Dev; IO/SA for gates)
 
-- [ ] 0.1 Confirm REQ-003 G1 recorded and REQ-003 P4 landed (`V2` tables exist);
+- [x] 0.1 Confirm REQ-003 G1 recorded and REQ-003 P4 landed (`V2` tables exist);
       if not, stop P4 here — P0–P3 artifacts remain valid (OQ-7)
-- [ ] 0.2 Confirm REQ-004 G1 recorded by named IO + SA (`g1-decision.md`);
+- [x] 0.2 Confirm REQ-004 G1 recorded by named IO + SA (`g1-decision.md`);
       rulings on OQ-1/OQ-2 captured or carried with owners
-- [ ] 0.3 Create the feature branch for this change; PR-based CI evidence path
+- [x] 0.3 Create the feature branch for this change; PR-based CI evidence path
       per the session decision
 
 ## 1. Red acceptance checks (owner: Dev; before any production code)
 
-- [ ] 1.1 Author `InvitationApiTest` with I1–I5 (issuance), J1–J7 (preview and
+- [x] 1.1 Author `InvitationApiTest` with I1–I5 (issuance), J1–J7 (preview and
       joining), U1–U2 (unusable), per fixtures §REQ-004; own in-memory SQLite
       file, Flyway `V1`–`V3`, pool size 1 (design D11)
-- [ ] 1.2 Add reverse checks R-1 (no confirmation route) and R-2 (no
+- [x] 1.2 Add reverse checks R-1 (no confirmation route) and R-2 (no
       revocation/expiry route or field) to the same class
-- [ ] 1.3 Run `mvn test`; confirm the new class fails for missing
+- [x] 1.3 Run `mvn test`; confirm the new class fails for missing
       tables/routes (red), and `GreetingApiTest` still passes
-- [ ] 1.4 Write the E2E check list (I6, U3, S1, S2) as numbered browser steps
+- [x] 1.4 Write the E2E check list (I6, U3, S1, S2) as numbered browser steps
       with expected observations, including the local QR decode step
 
 ## 2. Migration and repository (owner: Dev)
 
-- [ ] 2.1 `V3__create_invitation.sql`: `trip_invitation` (UNIQUE trip_id, UNIQUE
+- [x] 2.1 `V3__create_invitation.sql`: `trip_invitation` (UNIQUE trip_id, UNIQUE
       token) + `trip.main_plan_confirmed` default 0 (design D1)
-- [ ] 2.2 `InvitationTokens` generator: SecureRandom 16 bytes → 32 hex (D3);
+- [x] 2.2 `InvitationTokens` generator: SecureRandom 16 bytes → 32 hex (D3);
       unit checks deferred to apply-time TDD per ATDD design UT-1
-- [ ] 2.3 `InvitationRepository`: get-or-create issuance, token lookup, preview
+- [x] 2.3 `InvitationRepository`: get-or-create issuance, token lookup, preview
       projection, membership insert-or-ignore, state read (D4–D6)
 
 ## 3. Endpoints (owner: Dev)
 
-- [ ] 3.1 `POST /api/trips/{id}/invitation`: identity → trip → organizer check →
+- [x] 3.1 `POST /api/trips/{id}/invitation`: identity → trip → organizer check →
       get-or-create; 200 with token/joinPath/tripId/tripName; codes
       `USER_REQUIRED`, `TRIP_NOT_FOUND`, `NOT_ORGANIZER`
-- [ ] 3.2 `GET /api/invitations/{token}`: no identity; five-field whitelist;
+- [x] 3.2 `GET /api/invitations/{token}`: no identity; five-field whitelist;
       unknown token → 404 `INVITATION_NOT_FOUND` with no trip values
-- [ ] 3.3 `POST /api/invitations/{token}/accept`: identity first, then token,
+- [x] 3.3 `POST /api/invitations/{token}/accept`: identity first, then token,
       then existing-member check before closure and insert-or-ignore for non-members;
       200 joined/alreadyMember, including existing members after closure; codes `USER_REQUIRED`,
       `INVITATION_NOT_FOUND`, `JOINING_CLOSED`
-- [ ] 3.4 Run `mvn test`: I/J/U/R checks green; greeting tests unchanged
+- [x] 3.4 Run `mvn test`: I/J/U/R checks green; greeting tests unchanged
 
 ## 4. Frontend (owner: Dev)
 
-- [ ] 4.1 Hash router in the shell (`#/`, `#/create`, `#/trips/<id>`,
+- [x] 4.1 Hash router in the shell (`#/`, `#/create`, `#/trips/<id>`,
       `#/join/<token>`) shared with REQ-003 screens; no routing dependency (D7)
-- [ ] 4.2 Scaffold identity switcher over the five seeded users, labeled as
+- [x] 4.2 Scaffold identity switcher over the five seeded users, labeled as
       scaffold, sets `X-User-Id` on every request (D8)
-- [ ] 4.3 Invitation panel on the trip surface: link text, copy action with
+- [x] 4.3 Invitation panel on the trip surface: link text, copy action with
       fallback, QR canvas via `qrcode`, joining-open hint; loading/error/denied
       states (D9); install `qrcode` (MIT) through the corporate mirror and
       record the license check
-- [ ] 4.4 Join page: preview card, accept, joined, closed, unusable and
+- [x] 4.4 Join page: preview card, accept, joined, closed, unusable and
       loading/failure states; unusable surface shows no private field and no
       reminder workflow (D9)
-- [ ] 4.5 `npm run build` passes; add `jsqr` devDependency (MIT) for the P4
-      decode check and record the license check
+- [x] 4.5 `npm run build` passes; add `jsqr` devDependency for the P4
+      decode check and record the license check (installed 1.4.0 declares
+      Apache-2.0, not MIT; permissive, dev-only)
 
 ## 5. Runtime acceptance and E2E (owner: Dev; evidence in local-verify report)
 
-- [ ] 5.1 Start backend (8080) and frontend (5173); verify by port owner plus
+- [x] 5.1 Start backend (8080) and frontend (5173); verify by port owner plus
       endpoint response, not by logs alone
-- [ ] 5.2 Execute the E2E list: S1 panel/copy/QR, I6 QR decode equals the copied
+- [x] 5.2 Execute the E2E list: S1 panel/copy/QR, I6 QR decode equals the copied
       absolute URL and opens the same invitation, S2 preview→accept→joined and
       closed state, U3 unusable surface; capture observations
-- [ ] 5.3 Re-run every API scenario against the running backend with curl
+- [x] 5.3 Re-run every API scenario against the running backend with curl
       (I1–I5, J1–J7, U1–U2, R-1, R-2), including the J4/J6 test-only state flip
-- [ ] 5.4 Write `docs/feedback/verification-req-004.md` and the P4
+- [x] 5.4 Write `docs/feedback/verification-req-004.md` and the P4
       local-verify report; mark Partial where evidence is missing, never Pass
       by assertion
 
@@ -87,7 +88,7 @@
       report (G2 evidence)
 - [ ] 6.2 G2 decision record by named humans; then P5 change summary, G3, and
       archive via `/sdd:living-merge` — archive order after REQ-003 for `trips`
-- [ ] 6.3 Update `README.md` run instructions and the registry/handoff rows
+- [x] 6.3 Update `README.md` run instructions and the registry/handoff rows
 
 ## 7. Stage artifacts (owner: Dev)
 
@@ -99,7 +100,21 @@
 - [x] 7.4 P3 `atdd-design.md`, `design.md`, this `tasks.md`, alignment self-check
       below; P3 report persisted
 - [ ] 7.5 Record G1/G2/G3 only from named human statements; the agent never
-      self-signs a gate
+      self-signs a gate (G1 recorded 2026-11-14: IO Emily + SA Johnson Pass;
+      G2/G3 pending)
+
+## P4 evidence (2026-11-14)
+
+- Red first: `InvitationApiTest` 15 errors on the missing table; 16 existing
+  tests green. After apply: `mvn -B test` 31/31 (Greeting 3, Invitation 15,
+  Trip 13), `mvn -B package -DskipTests` and `npm run build` pass.
+- `openspec validate req-004-trip-invitations --strict` → valid.
+- Runtime: curl matrix I1–I5, J1–J7, U1–U2, R-1, R-2 all match the fixtures;
+  browser E2E S1/I6/S2/U3 and the organizer-denial panel pass.
+- Reports: `docs/feedback/verification-req-004.md`,
+  `docs/ai4se-plugins/20261114-225027-local-verify-report.md`.
+- Note: REQ-003's `POST /api/trips/{id}/invitation → 404` reverse assertion was
+  retired because this change owns that route.
 
 ## Alignment self-check (Spec ↔ Design ↔ Tasks ↔ ATDD)
 
