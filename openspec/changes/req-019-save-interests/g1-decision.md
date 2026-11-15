@@ -1,10 +1,23 @@
 # G1 decision — req-019-save-interests
 
+## Product review update (2026-11-15)
+
+The user accepts both open product choices: no Clear All action (deselect all and
+save instead), and seven English-only interest labels without localization. This
+resolves those questions. Following the user's separate explicit instruction,
+IO Emily approves the current five-requirement / 31-scenario package on 2026-11-15.
+The existing SA approval is unchanged. G1 remains Conditional while the recorded
+batch-readiness condition and validation remediation remain open; IO approval is
+no longer pending.
+Strict validation was run in the current environment and exited 1: five existing
+ADDED requirement bodies exceed 500 characters. This replaces any earlier claim
+that the CLI is unavailable; strict validation has not passed.
+
 - Change id: `req-019-save-interests`
 - Gate: G1 (Align)
-- Status: **RECORDED — Conditional; gate NOT closed** (2026-11-15). SA evelyn.huang has
-  signed Pass. IO Emily has not reviewed or signed; that signature is the only open
-  condition.
+- Status: **RECORDED — Conditional; gate NOT closed** (2026-11-15). SA evelyn.huang
+  has signed Pass; IO Emily approved the current package on 2026-11-15 per explicit
+  user instruction. Batch-readiness and validation follow-up remain open.
 
 ## Correction notice
 
@@ -12,7 +25,9 @@ This file supersedes the first version recorded earlier on 2026-11-15, which wro
 stated that IO Emily had already passed. The SA corrected that: only the SA has signed
 so far. The IO reviews the pushed feature branch once the SA's four requirements have
 all reached G1, and signs afterwards. The earlier "IO Emily — Pass" statement was an
-error made by the agent, not a human statement, and it is withdrawn here.
+error made by the agent, not a human statement, and it is withdrawn here. This is
+historical: the new Emily approval above is recorded from the user's later explicit
+instruction and does not retroactively validate the withdrawn statement.
 
 ## Inputs
 
@@ -37,9 +52,9 @@ error made by the agent, not a human statement, and it is withdrawn here.
   object collides with `member_preference`, and D4 keeps "main plan unconfirmed" as
   test context only, with no locking branch in this capability.
 - Structural check: `spec.md` follows `# Spec Delta` → `## ADDED Requirements` with
-  5 `### Requirement:` blocks and 31 `#### Scenario:` blocks. The OpenSpec CLI is not
-  on `PATH` in this environment, so **no `openspec validate` result is claimed** —
-  validation of the change package remains open if the team runs it elsewhere.
+  5 `### Requirement:` blocks and 31 `#### Scenario:` blocks. Current strict
+  validation exited 1 due to five overlong ADDED requirement bodies; remediation
+  and a passing rerun remain open.
 
 ## Findings (scope / ambiguity / conflict)
 
@@ -67,16 +82,18 @@ error made by the agent, not a human statement, and it is withdrawn here.
   §6 still describes `{data,error}`, `X-Member-Id`, `JdbcClient` and Ant Design 5 while
   the merged code uses bare DTOs, `X-User-Id`, `JdbcTemplate` and hand-written CSS;
   `AGENTS.md` still mandates shadcn/ui; IO asked whether the missing "clear all" action
-  and the English-only labels are acceptable. Owners: SA / IO / Dev as listed in
+  and the English-only labels are acceptable (both now accepted by the user,
+  2026-11-15; not a G1 signature). Owners: SA / IO / Dev as listed in
   `dov-ac-review.md` §6.
-- **Not known at recording time:** the IO review outcome and any IO conditions. They
-  cannot be inferred from the SA signature and are therefore left open.
+- **Current IO outcome:** Emily approves the current package on 2026-11-15 per
+  explicit user instruction. No additional IO product conditions were supplied.
 
 ## Decision
 
 - Decision: **Conditional** — recorded 2026-11-15.
-- Why not Pass: G1 requires a named IO signature as well as the SA signature. Only the
-  SA has signed, so a Pass record would misstate the gate.
+- Why not Pass: both role approvals are recorded, but the existing batch-readiness
+  condition is not certified complete and strict validation still exits 1.
+  Emily's approval does not certify those checks or waive the remaining conditions.
 - Why not Fail: the delta itself cleared AC 4/4 and DoV 5/5 with zero blocking
   ambiguity, and no reviewer has asked for rework.
 - Conditions + owners:
@@ -84,13 +101,15 @@ error made by the agent, not a human statement, and it is withdrawn here.
 | # | Condition | Owner | State |
 |---|---|---|---|
 | 1 | Finish the SA's four requirements to G1 on `feat/travel_preference`, then push the branch for review | evelyn.huang (SA) | open |
-| 2 | Review the pushed delta and sign G1 Pass for this change | Emily (IO) | open; entry is condition 1 |
-| 3 | Fold any IO finding into `specs/preferences/spec.md` (and `dov-ac-review.md`) before P4 implementation | evelyn.huang | open; triggered by condition 2 |
+| 2 | IO approval of current five-requirement / 31-scenario package | Emily (IO) | closed 2026-11-15; explicit user instruction; approval recorded without certifying condition 1 |
+| 3 | Fold IO product decisions into requirements and review records | evelyn.huang / Dev | closed 2026-11-15; no Clear All action and English-only labels accepted, no delta behavior change |
+| 4 | Resolve overlong requirement bodies and rerun strict validation | Dev | open; current strict exit 1, five length warnings |
 
-- Approvers: **IO = Emily — pending**, **SA = evelyn.huang — Pass**.
+- Approvers: **IO = Emily — Pass (2026-11-15)**, **SA = evelyn.huang — Pass**.
 - SA sign-off: **evelyn.huang — Pass**, recorded 2026-11-15 from the SA's statement
   that the SA has already signed and agreed to pass. No SA conditions were supplied.
-- IO sign-off: **not recorded**. No IO review or signature exists at this time.
+- IO sign-off: **Emily — Pass**, 2026-11-15; current five-requirement / 31-scenario
+  package, recorded from the user's separate explicit signing instruction.
 - The agent records human statements only. It does not verify identities, does not sign
   on behalf of either role, and the withdrawn IO statement above is evidence that it
   must not be inferred from a signature request.
@@ -100,17 +119,15 @@ error made by the agent, not a human statement, and it is withdrawn here.
 - Allowed: P3 design work (`/sdd:atdd-design`, `/sdd:task-plan`) on the SA-signed
   delta, because the delta itself is stable and A0/DoV clean.
 - Not allowed: claiming G1 is closed; presenting `preferences` as aligned in the
-  registry; starting P4 implementation on the assumption that no IO condition will
-  arrive.
-- If the IO signs without findings, this file is amended to Pass with the IO signature
-  row filled in. If the IO raises findings, they are added as conditions here and the
-  delta is revised before P4.
+  registry; starting P4 implementation while recorded blocking conditions remain open.
+- IO approval is recorded; close the remaining conditions explicitly before
+  changing the overall gate to Pass. No automatic gate closure is implied.
 
 ## Next
 
 1. Complete the remaining SA-owned requirements to G1.
-2. Push `feat/travel_preference` for IO review.
-3. IO Emily reviews and signs; this record flips to Pass or gains new conditions.
+2. Push the revised documents and Emily approval record on `feat/travel_preference`.
+3. Resolve strict validation warnings and explicitly close remaining gate conditions.
 4. P3 can start in parallel: settle the error-advice package scope (own advice for
    `com.gogo.preference` versus widening `TripErrorAdvice` to `com.gogo`). The
    migration order is settled: `V3` is on `main`, so `V4` lands next and must stay
