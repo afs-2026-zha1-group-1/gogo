@@ -76,7 +76,7 @@ ruling).
 
 The system SHALL let trip members read the current draft at
 `GET /api/trips/{id}/main-plan`, responding 200 with the draft projection
-(`version`, `confirmed`, `stale`, `costPerPersonCents`, `inputRevisions`,
+(`tripId`, `version`, `confirmed`, `stale`, `costPerPersonCents`, `inputRevisions`,
 ordered `stops` with times and travel legs). After confirmation the same read
 SHALL return the confirmed version. `stale` SHALL be computed on read, not
 stored, and applies to unconfirmed drafts only; the confirmed version SHALL be
@@ -117,7 +117,7 @@ frozen (P2 lint ruling 2026-11-15).
 ### Requirement: Generation inputs read projection
 
 The system SHALL let trip members read a generation-inputs summary at
-`GET /api/trips/{id}/main-plan/inputs`, responding 200 with `readyCount`,
+`GET /api/trips/{id}/main-plan/inputs`, responding 200 with `tripId`, `readyCount`,
 `memberCount`, `members` (`userId`, `displayName`, `ready`,
 `preferenceRevision`), `commonInterests`, `mustDo`, per-member `budgets` (null
 `hardBudgetCents` = no limit) and the `rules` list.

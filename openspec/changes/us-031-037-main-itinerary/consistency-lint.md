@@ -152,3 +152,126 @@ cross-branch write-sync alignment with `feat/travel_preference`) before
 claiming overall G1 Pass. C1/C2 are answered with user-selected defaults and
 landed; the selections are not the owners' sign-offs, and Emily's recorded
 approval covers the pre-C1/C2 package.
+
+---
+
+## P2 re-run — 2026-11-15 (artifact level 3 + design; P3 products in scope)
+
+- Trigger: user request "检查是否完善，是否矛盾" after P3 (`/sdd:atdd-design` +
+  `/sdd:task-plan`) completed. This run supersedes the historical "Next" above
+  (G1 is Pass; C1/C2 ratified; P3 artifacts now exist).
+- Phase: p2 (change open, pre-implementation). Focus: full change package
+  (proposal + delta + design.md + tasks.md + atdd-design.md) + fixtures +
+  workdir status rows.
+- Artifact level: 3 + design. T/D rules and C2 now active (N/A in first run).
+- Tooling: openspec CLI 1.16.1 (global); `validate --strict` + plain both
+  "is valid" (re-run). Node mechanical checks: 7 requirements / 24 scenarios,
+  24/24 GIVEN/WHEN/THEN complete, D1–D12 numbered, fixtures M1–M14 / V1–V7 all
+  resolve, zero broken .md cross-links across the 5 artifacts.
+
+### Verdict
+
+**Pass (post-remediation, 2026-11-15 same session)** — first verdict was
+Partial (BLOCKER 0 / WARNING 2 / SUGGESTION 6 / N/A 3: T1, citations, p5);
+all 8 findings remediated under the user's explicit "修复" instruction — see
+§Remediation & re-check (re-run) below.
+**No behavior or contract contradiction found** across spec ↔ design ↔ tasks ↔
+atdd-design ↔ fixtures ↔ proposal ↔ deep-dive ↔ registry/DoR. The WARNINGs were
+design-rationale hygiene and stale workdir status notes, not conflicting rules.
+This report is not a Gate decision.
+
+### Findings
+
+| id | Severity | Phase | Location | Issue | Suggested fix | Evidence | Authority | Fact/Inference |
+|---|---|---|---|---|---|---|---|---|
+| W1 | WARNING | p2 | design.md D3–D7, D9–D12 | Pack rule D3 (each decision notes rejected alternatives): only D1/D2 carry an explicit "Alternative rejected:" line; D8 states "no new version row, no confirmed_draft_id"; the other 9 imply the rejection but do not label it. Choices are sound and decision-complete; rationale depth is uneven. | Add a one-line "Alternative rejected: …" to D3,D4,D5,D6,D7,D9,D10,D11,D12 (most already imply it). | node: 2 explicit labels / 12 decisions; checklist D3 = WARNING | AI-inference | [fact] count; [inference] depth gap |
+| W2 | WARNING | p2 | registry.md US-031-037 row; analysis/us-031-037-handoff-note.md | Workdir status drift after P3: registry says "(proposal + delta skeleton; design/tasks at P3)" and handoff-note says "Current state: P2 complete … Next: P3" — but atdd-design.md/design.md/tasks.md now exist and the alignment self-check is Pass. | Sync both to "P3 complete (atdd-design + design + tasks authored; alignment self-check Pass); next /sdd:quality-checklist stage=p3 → P4 /sdd:atdd-apply". | registry line 26; handoff-note lines 43–50; tasks 8.3 [x] | code | [fact] |
+| S1 | SUGGESTION | p2 | design.md D1 / Migration Plan; g1-decision F1 | V5 seeds `member_preference` interest/must_do rows. When REQ-019's V4 lands first, IF V4 also seeds the same (trip_id,user_id,kind), V5's plain INSERT would hit UNIQUE(trip_id,user_id,kind). D1 says "the seeds still apply" without addressing seed collision; F1 covers shape, not seeds. V4 was docs-only at C2 (not authored), so this is a future merge-time risk. | Make V5 member_preference seeds idempotent (INSERT OR IGNORE) and/or extend F1 scope to seed reconciliation. | design D1 lines 63–82; fixtures State setup; first-run C2 "verified docs-only" | AI-inference | [inference] |
+| S2 | SUGGESTION | p2 | design.md D7; delta inputs requirement text | Fixtures inputs wire set includes `tripId`; design D7 and the spec inputs enumeration omit it (spec plan text also omits `tripId`, though design D6 includes it). No behavior conflict — fixtures govern the wire set — but enumerations are incomplete. | Add `tripId` to D7's inputs output (and optionally to the spec plan/inputs enumerations) to match the contractual wire set. | fixtures lines 209–210; design D6 line 128 vs D7; spec lines 77–80, 119–123 | spec | [fact] |
+| S3 | SUGGESTION | p2 | tasks.md 1.4 | E2E checklist output file path not pinned ("Write the E2E checklist … as numbered browser steps"). | Pin a path (e.g. `docs/feedback/e2e-us-031-037.md` or inside the change folder) so P4 execution has a fixed artifact target. | tasks 1.4; 6.4 names verification-us-031-037.md but not the checklist | AI-inference | [fact] |
+| S4 | SUGGESTION | p2 | design.md D6 | D4/D7/D8 restate their identity→trip→membership(/organizer) gates; D6 (plan read) describes selection + stale but omits the explicit gate line. Spec Authorization + tasks 3.2 already require membership for read. | Add the read gate line to D6 for symmetry / decision-completeness. | design D6 lines 127–136 vs D4/D7/D8; spec Authorization; tasks 3.2 | spec | [fact] |
+| S5 | SUGGESTION | p2 | design.md D9 | `OUT_OF_DAY` defined as "outside the trip date's day window" without fixing the window bounds. Validator is apply-time UT (UT-1), but the bound should be a decision, not an invention. | State the window (e.g. 00:00–23:59 of the trip date) or explicitly defer the bound to UT-1 with a documented default. | design D9 line 168; fixtures V3 "out-of-day stop"; spec C3 | AI-inference | [fact] gap; [inference] fix |
+| S6 | SUGGESTION | p2 | tasks.md group 8 | Pack rule T2 (last task = verify/regression): the literal last task 8.5 is gate-discipline meta. A verify/regression tail DOES exist (6.3 curl matrix, 6.4 verification report, 7.1 fresh CI). Non-substantive. | Optionally note 8.x is process meta after the verify tail, or end the implementation track at 6.4/7.1. | tasks 6.3/6.4/7.1/8.5; checklist T2 | AI-inference | [fact] |
+
+### Checks run (Shared + p2, level 3 + design)
+
+| Check | Result | Evidence |
+|---|---|---|
+| P1 Why / P2 What Changes / P3 Non-goals / P4 Impact | Pass | proposal §Why, §What Changes, "Unchanged:" paragraph, §Impact (self Code/APIs, upstream Dependencies none-new, downstream Cross-REQ J4) |
+| S1 structure | Pass | validate --strict + plain valid; Purpose + ADDED Requirements + Scenario blocks |
+| S2/S2b/S2c citations | N/A | no @knowledge:/@rule: citations |
+| S3 Requirement→proposal | Pass | 7 requirements map to What Changes bullets |
+| S4 Given/When/Then | Pass | node: 24/24 complete (first-run L3 remediated) |
+| S5 orphan scenarios | Pass | all 24 under numbered requirements |
+| T1 task size | N/A | no estimates present |
+| T2 verify tail | Pass (S6 remediated) | tail at 6.3/6.4/7.1; group 8 now carries an explicit process-meta note |
+| T3 tasks inside spec | Pass | every task traces to a requirement, non-goal reverse, or stage artifact |
+| D1 decisions numbered | Pass | node: D1–D12 (bold inline labels) |
+| D2 decision context | Pass | each decision carries background/rationale |
+| D3 rejected alternatives | Pass (W1 remediated) | node re-count: 11 explicit labels / 12 decisions; D8 keeps its inline rejection ("no new version row, no confirmed_draft_id") |
+| C1 proposal→spec | Pass | every What Changes bullet has a delta home; frontend via deep-dive ⑫ + ATDD E2E |
+| C2 spec→tasks | Pass | all 7 requirements have ≥1 task (alignment self-check table) |
+| C6 citation reachability | N/A | no citations |
+| p2-1 scope no expansion/drop | Pass | delta = proposal slice; tasks add no behavior beyond deltas + non-goal reverses + stage artifacts |
+| p2-2 internal consistency | Pass | statuses (201/200/200/200), error codes + detail fields, wire field sets, cents/HH:MM/legs, travel-fit equality, confirmed-frozen, G6/V7, J4, V5 shape, read-only member_preference identical across all artifacts |
+| p2-3 key constraints have a home | Pass | OQ-6→C1/C3+D9; OQ-7→C4+D6/D8; OQ-8→V7+D8; completion→G3+D5; J4→C1+D8+ATDD; C2 schema→D1+Migration Plan |
+| p2-4 tasks vs delta direction | Pass | red-first ATDD order; gate orders D4/D8 match spec scenario premises |
+| p2-5 orphan deltas | Pass | none |
+| Cross-ref IDs / links | Pass | fixtures M1–M14 / V1–V7 all present; zero broken .md links across 5 artifacts |
+| Counts | Pass | 7 requirements / 24 scenarios (node) = dov-ac-review = registry = handoff = design Context = ATDD header |
+| Workdir status sync | Pass (W2 remediated) | registry row + handoff-note now say "P3 complete … next quality-checklist stage=p3 → P4 atdd-apply" |
+
+### N/A / skipped
+
+- T1 (no estimates); S2/S2b/S2c + C6 (no citations); phase=p5 (pre-implementation, change open).
+
+### Fix suggestions by priority
+
+1. W2 (workdir status sync) — mechanical, no behavior change; same class as the G1 Pass sync.
+2. W1 (design rejected-alternative labels) — one line per decision; rationale hygiene.
+3. S1 (idempotent V5 seeds / F1 seed scope) — cheap insurance before the REQ-019 merge.
+4. S2–S6 — completeness/clarity nudges (tripId enumeration, E2E path, D6 gate line, D9 window, T2 note).
+
+### Remediation & re-check (re-run, 2026-11-15 same session)
+
+Edits below were made under the user's explicit "修复" instruction, not by the
+lint run itself (which stayed read-only). All edits are rationale labels,
+enumerations, path pins and status notes — no wire-contract or behavior change.
+
+| id | Status | Landing evidence |
+|---|---|---|
+| W1 | Remediated | design.md: explicit "Alternative rejected:" lines added to D3–D7 and D9–D12 (9 lines); node re-count 11 labels / 12 decisions; D8 keeps its inline rejection |
+| W2 | Remediated | registry.md US-031-037 row + handoff-note "Current state" synced to "P3 complete (atdd-design + design D1–D12 + tasks 8 groups; alignment self-check Pass); next quality-checklist stage=p3 → P4 atdd-apply" |
+| S1 | Remediated | design D1: preference seeds idempotent (`INSERT OR IGNORE`); Migration Plan / F1 scope extended to shape **and seed** reconciliation; tasks 1.1 carries the idempotency note |
+| S2 | Remediated | `tripId` added to design D7 inputs output and to both spec enumerations (inputs + plan); node: spec `tripId` ×2; requirement texts still <500 chars (strict valid) |
+| S3 | Remediated | E2E checklist path pinned to `docs/feedback/e2e-us-031-037.md` in tasks 1.4/6.2 and ATDD §2.3; hash routes pinned in tasks 5.2/5.3 and ATDD §1 S9/S10 rows |
+| S4 | Remediated | design D6 now carries the explicit read gate line (identity → trip → membership), symmetric with D4/D7/D8 |
+| S5 | Remediated | design D9 fixes the `OUT_OF_DAY` window: 00:00–23:59 inclusive (parsed minutes 0–1439) |
+| S6 | Remediated | tasks group 8 header note: process bookkeeping after the verify tail (6.3/6.4/7.1), not implementation tasks (checklist T2) |
+
+Re-check evidence (post-edit, same session):
+
+- `openspec validate --strict` + plain: both "is valid".
+- node: 7 requirements / 24 scenarios, 24/24 GIVEN/WHEN/THEN, D1–D12 numbered,
+  zero broken .md cross-links across the 5 artifacts.
+- Contract-code literal coverage: all 18 codes/tables/columns present in
+  design + tasks + atdd-design. Re-check backfill during remediation: tasks 3.1
+  now lists `USER_REQUIRED` / `TRIP_NOT_FOUND` / `NOT_A_MEMBER` /
+  `NOT_ORGANIZER`; tasks 4.1 enumerates all five schedule error types.
+
+### Residual risks
+
+- S1 seed collision is a future merge-time risk (REQ-019 V4 not authored yet); mitigated by idempotent seeds + F1. Not a P4 blocker (this branch runs standalone on the stand-in).
+- Inherited: X-User-Id unverified identity (accepted scaffold stand-in); F1 cross-branch write-sync alignment (non-gating, SA Lumi + evelyn.huang). Unchanged by this run.
+- No behavior/contract contradiction found; the WARNINGs are hygiene/status, not conflicting rules.
+
+### Reviewer metadata
+
+- Agent: consistency-lint p2 re-run 2026-11-15 (read-only; no spec/design edits made by this run).
+- Human sign-off: not required for a lint run; fixes are guidance until the user asks to edit. G1 remains Pass (IO Emily + SA Lumi, 2026-11-15); this run does not touch the Gate.
+
+### Next (non-Gate)
+
+W1/W2 + S1–S6 remediated 2026-11-15 (user instruction "修复"); verdict Pass.
+Next: `/sdd:quality-checklist stage=p3` (task 8.4) → P4 `/sdd:atdd-apply`.
+This skill writes no Gate decision.
