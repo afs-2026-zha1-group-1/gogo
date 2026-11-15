@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react'
-import { api } from '../api.js'
+import { api, users } from '../api.js'
+import Icon from '../Icons.jsx'
+import InvitationPanel from './InvitationPanel.jsx'
+
+function organizerName(organizerId) {
+  return users().find((user) => user.id === organizerId)?.name ?? `user ${organizerId}`
+}
 
 export default function TripDetails({ userId, tripId }) {
   const [state, setState] = useState({ kind: 'loading' })
@@ -23,45 +29,117 @@ export default function TripDetails({ userId, tripId }) {
     }
   }, [userId, tripId])
 
-  if (state.kind === 'loading') return <p className="muted">Loading trip…</p>
-  if (state.kind === 'denied')
+  const appbar = (
+    <header className="appbar">
+      <a className="iconbtn" href="#/" aria-label="Back"><Icon name="left" /></a>
+      <div className="grow">
+        <div className="title">行程详情</div>
+        <div className="sub">US-002 · 全员可见</div>
+      </div>
+    </header>
+  )
+
+  if (state.kind === 'loading') {
     return (
-      <section className="card">
-        <h1>Access denied</h1>
-        <p role="alert" className="error">{state.message ?? 'You are not a member of this trip.'}</p>
-        <a className="button secondary" href="#/">Back home</a>
-      </section>
+      <div className="screen">
+        {appbar}
+        <div className="body"><div className="loading">正在加载行程…</div></div>
+      </div>
     )
-  if (state.kind === 'missing')
+  }
+
+  if (state.kind !== 'ready') {
+    const heading =
+      state.kind === 'denied' ? '没有访问权限'
+        : state.kind === 'missing' ? '行程不存在'
+          : '无法加载行程'
+    const explanation =
+      state.kind === 'denied' ? '你不是这个行程的成员。请先通过邀请链接加入。'
+        : state.kind === 'missing' ? '没有这个行程，或链接中的编号不正确。'
+          : state.message
     return (
-      <section className="card">
-        <h1>Trip not found</h1>
-        <p role="alert" className="error">{state.message ?? 'No trip with this id.'}</p>
-        <a className="button secondary" href="#/">Back home</a>
-      </section>
+      <div className="screen">
+        {appbar}
+        <div className="body">
+          <section className="card pad">
+            <div className="success-hero" style={{ paddingTop: 10 }}>
+              <div className="checkring err"><Icon name="alert" className="lg" /></div>
+              <h2>{heading}</h2>
+              <p className="hint">{explanation}</p>
+            </div>
+            <a className="btn btn-ghost" href="#/">返回首页</a>
+          </section>
+        </div>
+      </div>
     )
-  if (state.kind === 'failed')
-    return (
-      <section className="card">
-        <h1>Could not load the trip</h1>
-        <p role="alert" className="error">{state.message}</p>
-        <a className="button secondary" href="#/">Back home</a>
-      </section>
-    )
+  }
 
   const trip = state.trip
+  const isOrganizer = trip.organizerId === userId
+  const currentUser = users().find((user) => user.id === userId)?.name
+
   return (
-    <section className="card">
-      <h1>{trip.name}</h1>
-      <dl className="details">
-        <div><dt>Destination</dt><dd>{trip.destination}</dd></div>
-        <div><dt>Start date</dt><dd>{trip.startDate}</dd></div>
-        <div><dt>End date</dt><dd>{trip.endDate}</dd></div>
-        <div><dt>Start location</dt><dd>{trip.startLocation ?? <span className="muted">Not set</span>}</dd></div>
-        <div><dt>End location</dt><dd>{trip.endLocation ?? <span className="muted">Not set</span>}</dd></div>
-        <div><dt>Organizer</dt><dd>user {trip.organizerId}</dd></div>
-      </dl>
-      <a className="button secondary" href="#/">Back home</a>
-    </section>
+    <div className="screen">
+      {appbar}
+      <div className="body">
+        <section className="hero">
+          <div className="htop">
+            <Icon name="cal" className="sm" />
+            {trip.startDate} – {trip.endDate}
+          </div>
+          <h1>{trip.name}</h1>
+          <div className="hdest">
+            <Icon name="pin" className="sm" />
+            {trip.destination}
+          </div>
+          <div className="hmeta">
+            <div>出发地<b>{trip.startLocation ?? '未设置'}</b></div>
+            <div>返程地<b>{trip.endLocation ?? '未设置'}</b></div>
+            <div>组织者<b>{organizerName(trip.organizerId)}</b></div>
+          </div>
+        </section>
+
+        <div className="sec-title"><Icon name="info" className="sm" /> 行程信息</div>
+        <section className="card pad">
+          <div className="valid">
+            <div className="valid-item">
+              <span className="valid-ic"><Icon name="cal" /></span>
+              <div>
+                <div className="vt">日期</div>
+                <div className="vd">{trip.startDate} → {trip.endDate}</div>
+              </div>
+            </div>
+            <div className="valid-item">
+              <span className="valid-ic"><Icon name="nav" /></span>
+              <div>
+                <div className="vt">出发地</div>
+                <div className="vd">{trip.startLocation ?? '尚未设置，可由后续主线生成补全'}</div>
+              </div>
+            </div>
+            <div className="valid-item">
+              <span className="valid-ic"><Icon name="flag" /></span>
+              <div>
+                <div className="vt">返程地</div>
+                <div className="vd">{trip.endLocation ?? '尚未设置，可由后续主线生成补全'}</div>
+              </div>
+            </div>
+            <div className="valid-item">
+              <span className="valid-ic brand"><Icon name="user" /></span>
+              <div>
+                <div className="vt">组织者</div>
+                <div className="vd">{organizerName(trip.organizerId)}</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <InvitationPanel
+          tripId={trip.id}
+          userId={userId}
+          isOrganizer={isOrganizer}
+          userName={currentUser}
+        />
+      </div>
+    </div>
   )
 }

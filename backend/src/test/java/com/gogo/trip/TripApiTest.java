@@ -213,7 +213,7 @@ class TripApiTest {
     }
 
     @Test
-    void noEditDeleteListOrInvitationRoutesExist() throws Exception {
+    void noEditDeleteOrListRoutesExist() throws Exception {
         long id = seededTripId();
         mockMvc.perform(put("/api/trips/" + id).header("X-User-Id", "1")
                         .contentType(MediaType.APPLICATION_JSON).content(FULL_BODY))
@@ -222,8 +222,6 @@ class TripApiTest {
                 .andExpect(status().isMethodNotAllowed());
         mockMvc.perform(get("/api/trips").header("X-User-Id", "1"))
                 .andExpect(status().isMethodNotAllowed());
-        mockMvc.perform(post("/api/trips/" + id + "/invitation").header("X-User-Id", "1"))
-                .andExpect(status().isNotFound());
     }
 
     @Test
