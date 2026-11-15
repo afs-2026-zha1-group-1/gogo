@@ -538,3 +538,102 @@ Supporting: `requirement-workspace/deep-dive.md` §REQ-024，
 依赖顺序：REQ-019 的 `V4`/偏好页 → REQ-020 的页面修订 → budget 端点与校验 → `GET` 回读 → 页面区块 → 验证文档。
 
 合入顺序：REQ-019 → REQ-020 → REQ-024，不得颠倒（迁移与页面契约逐层叠加）。
+
+# Impact brief — REQ-026
+
+- Date: 2026-11-15
+- Workdir: `requirement-workspace/`
+- Mode: embedded at the end of `/sdd:pre-spec-req`（blocking OQs = 0，DoR BLOCKERs = 0）
+- Change id: `req-026-submit-preferences`
+- Stacking: 堆叠在 `req-019-save-interests` → `req-020-manage-must-do` → `req-024-set-trip-budget` 之后；三者均未合 main
+- Scope: US-026 + US-027 合并为一条需求（用户裁定）
+
+## 1. Requirement set
+
+| id | Path |
+|---|---|
+| REQ-026（US-026 + US-027） | `requirement-workspace/requirements/REQ-026.md` |
+
+Supporting: `requirement-workspace/deep-dive.md` §REQ-026，
+`requirement-workspace/intents/2026-11-15-req-026.md`，
+`requirement-workspace/analysis/req-026-dor.md`，
+`docs/knowledge/architecture/tech-stack-plan.md` §5/§6，
+`openspec/changes/req-019-save-interests/`（表与页面契约来源）、
+`openspec/changes/req-020-manage-must-do/`、`openspec/changes/req-024-set-trip-budget/`（同表不同 kind 与页面修订先例）。
+
+## 2. As-is asset inventory (evidence paths)
+
+| Asset | Evidence | State |
+|---|---|---|
+| 身份 | `backend/src/main/java/com/gogo/trip/TripController.java` | `X-User-Id` 请求头（整数）；缺失/非整数/非 seed 用户 → `401 USER_REQUIRED` |
+| trip / member 表 | `V2__create_trip.sql` | `app_user` 1–5、`trip` 1、`trip_member` 1–4（**只有两列主键，无就绪列**） |
+| 邀请与主线状态 | `V3__create_invitation.sql` | `trip.main_plan_confirmed`（默认 0，US-037 前无写入路径） |
+| 偏好表 | `openspec/changes/req-019-save-interests/proposal.md` | 计划中的 `V4` + `member_preference`，**尚未落库**；UNIQUE(`trip_id`,`user_id`,`kind`) |
+| 偏好端点 | REQ-019/020/024 的 proposal | `/preferences`、`/preferences/must-dos`、`/preferences/budget` 均**尚未实现** |
+| 偏好页 | 同上 | `#/trips/{tripId}/preferences`，**尚未实现** |
+| 成员页 | `requirement-workspace/deep-dive.md`（US-013 段） | 节点 7 的就绪环在需求层已有约定，**尚未实现** |
+| 成员判定 | `TripRepository.isMember(long, long)` | 可直接复用 |
+| 错误处理 | `TripErrorAdvice`、`InvitationErrorAdvice` | 按包隔离；**无 500 映射**，500 走 Spring 默认体 |
+| 既有错误码 | `TripController.java` | `USER_REQUIRED` / `NOT_A_MEMBER` / `TRIP_NOT_FOUND` / `INVALID_REQUEST`；文档写的 `UNAUTHENTIC`/`TRIP_FORBIDDEN` 与代码不符 |
+| DB 访问 | `TripRepository` / `InvitationRepository` | `JdbcTemplate`，无 ORM |
+| `kind` 取值域 | `tech-stack-plan.md` §5 | `interest`/`must_do`/`constraint`/`budget`；无就绪类 |
+| 前端 | `frontend/src/{App.jsx,api.js,app.css,Icons.jsx}` | 手写 hash 路由、`api()` 封装、顶部身份选择器（1–5），无组件库 |
+| 参考图 | `ui-design-reference/gogo-mvp-prototype.html`、`README.md` 节点 7/8 | `submitPref()` 一键保存+就绪；`noPrefSw` 仅 `hide`；节点 7 三色 pill |
+| 夹具 | `acceptance-test-fixtures.md` | 用户、样例 trip、REQ-004 状态段；无 US-026/US-027 行 |
+| Living Spec | `openspec/specs/` | 仅 `greeting` |
+
+## 3. As-is → proposed delta
+
+| Touched asset | As-is | Proposed delta |
+|---|---|---|
+| 迁移 | `V1`–`V3`；`V4` 属 REQ-019 | **无新增迁移**；新增 `kind='submission'` 行 |
+| 后端 | `com.gogo.trip` / `com.gogo.invitation`；`com.gogo.preference` 由 REQ-019 创建 | 新增 submission 端点、readiness 与 effective 两个只读端点、空提交判定、500 `INTERNAL_ERROR` 映射 |
+| 接口面 | trip / invitation / greeting；（前序后 `/preferences`、`/must-dos`、`/budget`） | 新增 `PUT /preferences/submission`、`GET /preferences/readiness`、`GET /preferences/effective` |
+| 前端 | home / create / details / join；（前序后偏好页含兴趣/必做项/预算三段） | 偏好页新增提交段（按钮 + 无偏好开关 + 就绪 pill + 错误条 + 前置提示）；成员页就绪环与三 pill 接 `readiness` |
+| 文档 | trip / invitation 接口；偏好三段 | `README.md` 增提交与就绪段、验证矩阵增行 |
+| Living Spec | 仅 `greeting` | 归档时向 `preferences` 追加 3 个 ADDED requirement，并第四次修订页面要求 |
+
+## 4. Blast radius
+
+- 前三段的端点、payload 与保存交互**不变**；本需求对它们是**读消费**（不写）。
+- 同一张表、同一唯一键新增一个 `kind` 取值，不改列、不改索引。
+- `App.jsx` 不新增路由；`TripDetails.jsx` 的成员区需接 `readiness`（数据源新增，展示结构不变）。
+- 前后端均不新增依赖；运行时拓扑不变（8080 / 5173）。
+- 对 US-031 是**新增一条唯一读路径**（`effective`）：以往生成要自己拼四类 kind，现在只读一条投影；但也意味着生成实现必须遵循就绪过滤，否则「沉默≠同意」失效。
+
+## 5. Artifact impact
+
+- Spec：`openspec/changes/req-026-submit-preferences/specs/preferences/spec.md`（P2）：3 个 ADDED requirement + 第四次 MODIFIED 页面 requirement。
+- Tests：后端接口测试覆盖 40 个场景（含失败注入与投影成员集合）；前端构建 + 浏览器观察（提交 / 无偏好 / 失败 / 失败后仍 pending / 身份切换 / 节点 7 三 pill）。
+- Docs：`README.md`、`docs/feedback/verification-*.md`、`requirement-workspace/{registry,handoff}.md`。
+- KB：若 P4 确认「就绪是独立状态而非偏好内容」为长期口径，需回写 `tech-stack-plan.md` §5（当前只有四类 kind）。
+
+## 6. Dual-track notes
+
+单条需求（US-026 + US-027 合并）、单能力（`preferences` 的修改）、40 个场景 → `/sdd:story-split` 跳过并记录理由。仅 OpenSpec 轨。
+
+## 7. Risks & blockers
+
+| id | Risk | Severity | Status |
+|---|---|---|---|
+| R1 | 四个变更链式堆叠（019 的 `V4` 与偏好页 → 020 → 024 → 026）；本需求的 `effective` 还要读前三者 payload，单独合入无法证明 AC1 | blocking for merge order | 缓解：堆叠交付，合入顺序 019 → 020 → 024 → 026，PR 描述写明前置 |
+| R2 | `kind='submission'` 超出 `tech-stack-plan.md` §5 的四类枚举，且语义从「偏好内容」扩到「提交状态」 | plan drift | 已知偏离：REQ-019 的 DoV 已裁定 kind 域由后续 story 扩展；文档修正并入 REQ-019 OQ-16 |
+| R3 | 空提交判定要读四类 kind，其中 `constraint` 尚未实现；若对缺失 kind 抛异常，正常提交全 500 | product correctness | 缓解：把「无行」当「无」并对 `constraint` 短路；EMPTY1~EMPTY5 覆盖各类空态 |
+| R4 | 没有 500 映射，AC2「保存失败」只能拿到 Spring 默认体（无 `code`/`message`），前端无法展示 | contract | 缓解：本变更补 500 `INTERNAL_ERROR`（固定文案，不泄露内部异常）；注入方式 P3 定（OQ-3） |
+| R5 | `submittedAt`（+08:00）与表内 `updated_at`（UTC）双时间源，P4 易混用 | testability | 缓解：断言与界面只用 `submittedAt`；`updated_at` 只用于负向断言 |
+| R6 | 四个兄弟子资源（`/preferences`、`/must-dos`、`/budget`）+ 三个新路径（`/submission` 写、`/readiness`、`/effective` 读）；若用 `/preferences/{kind}` 通配会吞掉写路径 | integration | 缓解：P3 精确匹配；三段回归测试同一次跑 |
+| R7 | 同页四段四种写入时机（兴趣显式、必做项即时、预算段内显式、就绪页面级），页面契约第四次修订 | contract | 缓解：P2 以 REQ-024 版本为基线再修订，逐段写明；禁止把四段并成一次全页保存 |
+| R8 | 参考图 `submitPref()` 一次点击保存+就绪、`noPrefSw` 仅 `hide`，与本需求的「保存/提交解耦」「禁用而非隐藏」直接冲突 | UI alignment | 已解：提交只负责就绪、开关禁用字段并写服务端标记；UI 改动列 WARNING |
+| R9 | 提交后保存偏好**不撤销**就绪（D10），US-031 若直接读 `effective` 会拿到「就绪但内容已变」的输入 | product correctness | 已知留白：快照新鲜度由 US-031/037 处理（OQ-7）；本需求只保证状态不被误改 |
+| R10 | 文档漂移：REQ-020 的 DoR/proposal 写 `UNAUTHENTIC`/`TRIP_FORBIDDEN`，代码是 `USER_REQUIRED`/`NOT_A_MEMBER`；计划 §5/§6 也与实现路线不符 | docs | 缓解：本需求按代码实况写；两处修正分别登记为 OQ-10 与 REQ-019 OQ-16 |
+
+无致命阻塞使 REQ-026 失效，拆分可以继续。
+
+## 8. Suggested split boundaries
+
+一个变更：`req-026-submit-preferences`，修改一个已有能力 `preferences`，覆盖 US-026 + US-027。
+工作量：中小——后端 1 个写端点 + 2 个只读端点 + 1 个空提交判定 + 1 个 500 映射 + 1 组接口测试（零迁移）；
+前端 1 个提交段 + 成员页就绪展示接数据。
+依赖顺序：REQ-019 的 `V4`/偏好页 → REQ-020/024 的 payload → submission 写端点与空提交判定 → readiness → effective → 提交段与节点 7 → 验证文档。
+
+合入顺序：REQ-019 → REQ-020 → REQ-024 → REQ-026，不得颠倒（迁移、页面契约与只读消费链逐层叠加）。

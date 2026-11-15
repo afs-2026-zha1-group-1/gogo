@@ -346,7 +346,7 @@ slice and are not required by any AC. Recorded as a non-blocking item for Dev
 | 身份 / 成员 / 未知 trip 失败 | 401 / 403 / 404 | 当前成员 | 对应错误文本 + 重试入口；不渲染他人兴趣 | `GET` 与 `PUT` 同一路径 |
 | GET 失败（不可达或非 2xx） | 网络错误 / 5xx | 当前成员 | 错误态 + 重试；**不得**把空白或旧值渲染成已保存 | 同上 |
 
-无通知（邮件、推送、队列）在范围内。
+无通知（邮件、推送、队列）不在范围内。
 
 ### NFR business-policy layer
 
@@ -439,7 +439,7 @@ slice and are not required by any AC. Recorded as a non-blocking item for Dev
 | 身份 / 成员 / 未知 trip | 401 / 403 / 404 | 当前成员 | 对应错误文案 + 返回入口；不得渲染任何成员的条目 | 同上 |
 | GET 失败 | 不可达或非 2xx | 当前成员 | 错误态 + 重试；**不得**把空列表或旧值渲染成「已保存」 | 同上 |
 
-无通知（邮件、推送、队列）在范围内。
+无通知（邮件、推送、队列）不在范围内。
 
 ### NFR business-policy layer
 
@@ -555,9 +555,129 @@ slice and are not required by any AC. Recorded as a non-blocking item for Dev
 | 身份 / 成员 / 未知 trip | 401 / 403 / 404 | 当前成员 | 对应错误文案 + 返回入口；不得渲染任何成员的预算 | 同上 |
 | GET 失败 | 不可达或非 2xx | 当前成员 | 错误态 + 重试；**不得**把空白或旧值渲染成「未设置」或「已保存」 | 同上 |
 
-无通知（邮件、推送、队列）在范围内。
+无通知（邮件、推送、队列）不在范围内。
 
 ### NFR business-policy layer
 
 单个成员的预算是**一行一个对象**，读写各一条语句；5 个币种、int32 金额上限，无容量与 SLA 要求。
 AC 未规定金额业务上限与汇率换算，记为 Dev/团队的非阻塞项（OQ-10 / OQ-13），不臆造限制。
+
+## REQ-026 — 提交偏好并标记就绪 / 显式无偏好（US-026 + US-027）
+
+### ⑨ 数据契约
+
+**存储**：复用 `member_preference(id, trip_id, user_id, kind, payload, updated_at)`，`kind = 'submission'`；UNIQUE(`trip_id`,`user_id`,`kind`)；`INSERT ... ON CONFLICT DO UPDATE`，行数恒 1。**pending 就是没有这一行**，不存在「空提交态」行。
+
+**payload 两种形状**（单对象，非数组）：
+
+```json
+{"status":"ready","noPreference":false,"submittedAt":"2026-11-15T10:12:00+08:00"}
+{"status":"ready","noPreference":true,"submittedAt":"2026-11-15T10:12:00+08:00","defaults":{"transport":"walking","pace":"standard"}}
+```
+
+- `status` 恒为 `ready`（行存在即就绪，字段冗余但保证 payload 自解释）。
+- `submittedAt` 服务端生成，`Asia/Singapore` 偏移的 ISO-8601（`OffsetDateTime`）；请求体同名字段一律忽略。
+- `defaults` 只在 `noPreference = true` 时出现，值为固定常量（D8）。
+- payload 内的 `submittedAt` 是读契约权威；表内 `updated_at` 仍是 housekeeping 列（UTC），两者不要求相等。
+
+**线上契约**：
+
+| 端点 | 方法 | 标识 | 请求 | 成功响应 | 说明 |
+|---|---|---|---|---|---|
+| `/api/trips/{tripId}/preferences/submission` | PUT | `X-User-Id` | `{"noPreference": false\|true}` | `{"status":"ready","noPreference":<bool>,"submittedAt":"…"}`（true 时含 `defaults`） | 幂等覆盖；只写调用者自己的行 |
+| `/api/trips/{tripId}/preferences/readiness` | GET | `X-User-Id` | — | `{"members":[…4 条…],"readyCount":<int>,"memberCount":<int>,"allReady":<bool>}` | 全员含 pending；按 `userId` 升序 |
+| `/api/trips/{tripId}/preferences/effective` | GET | `X-User-Id` | — | `{"members":[仅 ready]}` | 生成侧投影；pending 不出现 |
+
+`readiness.members[i]` = `{userId, displayName, status("pending"|"ready"), noPreference(bool|null), submittedAt(string|null)}`；pending 时后两项为 `null`。
+
+`effective.members[i]` = `{userId, status, noPreference, interests(label 数组), mustDos(items 数组), budget(对象|null), constraints(null), defaults(对象|null)}`。
+
+**「四类偏好全无」判定**（仅作用于 `noPreference=false`）：`interest` 无行或 `codes` 为空；`must_do` 无行或 `items` 为空；`budget` 无行或 payload 不含 `amount`；`constraint` 无行。四类同时为无 → `400 PREFERENCE_EMPTY`；`constraint` 尚未实现，判定必须显式短路。
+
+**校验顺序（固定 8 步，失败零写入）**：身份 → trip → 成员 → body 是对象 → `noPreference` 键存在 → 布尔类型 → 空提交判定 → upsert。
+
+**错误码**：新增 `PREFERENCE_EMPTY`(400)、`INTERNAL_ERROR`(500，固定文案不泄露内部异常)；复用 `USER_REQUIRED`(401)、`NOT_A_MEMBER`(403)、`TRIP_NOT_FOUND`(404)、`INVALID_REQUEST`(400)；响应体统一 `{"code","message"}`。
+
+**状态迁移**：`pending --PUT{false}--> ready(false)`、`pending --PUT{true}--> ready(true)`、`ready(false) --PUT{true}--> ready(true)`、`ready(true) --PUT{false}--> ready(false)`（需当下四类非全无，否则 `PREFERENCE_EMPTY`）；无 `ready --> pending` 的合法路径。
+
+### ⑩ 边界枚举（34 条）
+
+| # | 分支 | 归属 |
+|---|---|---|
+| B1 | 缺 `X-User-Id` | 三个端点均 401 `USER_REQUIRED`，零写入 |
+| B2 | `X-User-Id` 非整数（`abc`） | 401 `USER_REQUIRED` |
+| B3 | `X-User-Id` 指向未 seed 用户（`99`） | 401 `USER_REQUIRED` |
+| B4 | 路径 `tripId` 非整数 | 400 `INVALID_REQUEST`（Spring 路径解析失败），不影响任何行 |
+| B5 | `tripId` 不存在 | 404 `TRIP_NOT_FOUND`，先于 403 |
+| B6 | 非成员（`X-User-Id: 5`） | 403 `NOT_A_MEMBER`，响应不含成员数据 |
+| B7 | body 非法 JSON | 400 `INVALID_REQUEST`，零写入 |
+| B8 | body 非对象（数组、字符串、数字、`null`） | 400 `INVALID_REQUEST` |
+| B9 | 缺 `noPreference` 键 | 400 `INVALID_REQUEST`（键 presence 必须可判） |
+| B10 | `noPreference` 非布尔（`"true"`、`1`、`null`） | 400 `INVALID_REQUEST`；已有 ready 行的 payload 与 `updated_at` 不变 |
+| B11 | body 含未知键 | 忽略，200；落库 payload 不含未知键 |
+| B12 | body 伪造 `status` / `submittedAt` | 忽略；落库值为服务端生成 |
+| B13 | 空提交：四类偏好全无且 `noPreference=false` | 400 `PREFERENCE_EMPTY`，不建行 |
+| B14 | 只有 `interest` 行但 `codes` 为空 | 计入「无」，可与其它 kind 组合 |
+| B15 | 只有 `must_do` 行但 `items` 为空 | 计入「无」 |
+| B16 | 只有 `budget` 行但 payload 为 `{}` | 计入「无」 |
+| B17 | 只有 `budget` 行且 `amount = 0` | **不算无**，允许 `noPreference=false` 提交（0 是真实表达） |
+| B18 | 只有 `constraint` 行且非空 | 允许提交（前向兼容：该 kind 由后续故事实现） |
+| B19 | `noPreference=true` 且零偏好 | 允许，`ready(true)` + `defaults` |
+| B20 | 重复提交相同 body | 幂等：200，行数 1，`noPreference` 不变，`submittedAt` 不早于上一次 |
+| B21 | `ready(false)` → `PUT{true}` | 覆盖写，行数仍 1 |
+| B22 | `ready(true)` → `PUT{false}` 且此刻四类全无 | 400 `PREFERENCE_EMPTY`；**原行不被改动**（保留 `noPreference=true`） |
+| B23 | 同一成员并发两次提交 | UNIQUE + upsert 保证行数恒 1；最后一次写入生效 |
+| B24 | 写库失败（stub 抛异常 / DB 锁超时） | 500 `INTERNAL_ERROR`；零写入；`readiness` 仍 `pending` |
+| B25 | `readiness`：全员未提交 | 4 条全 `pending`，`readyCount=0`，`allReady=false` |
+| B26 | `readiness`：部分就绪 | `readyCount` 与就绪人数一致，`allReady=false` |
+| B27 | `readiness`：全员就绪 | `readyCount = memberCount`，`allReady=true`（不含主线确认等前置） |
+| B28 | `readiness`：`memberCount = 0`（防御分支） | `allReady=false`（真空不视为可生成） |
+| B29 | `effective`：无任何 ready 成员 | `{"members":[]}`，200 而非 404 |
+| B30 | `effective`：`noPreference=true` 成员且无任何个人行 | 出现在列表，个人字段为空，`defaults` 有值 |
+| B31 | `effective`：`budget` 行为清除态 `{}` | `budget` 为 `null`，不报错 |
+| B32 | `effective`：某 kind 的 payload 损坏（非法 JSON / 类型不符） | 行为待 P3 定（倾向：按「无」处理并记 warn，不 500 打挂整页）——OQ-11 |
+| B33 | 主线已确认（`main_plan_confirmed = 1`）后提交 | 200 正常落库（不设锁定分支，沿用 REQ-019 的 D4） |
+| B34 | 前端请求失败（网络错误 / 502 / 超时） | pill 保持「未提交」，显示错误条与重试；**不得**本地先置「就绪」 |
+
+### ⑪ 与相邻 REQ 的收敛
+
+| 相邻点 | 邻居的约定 | 本需求的取值 | 结论 |
+|---|---|---|---|
+| 同一张表 / 同一个 UNIQUE（REQ-019） | `member_preference` 三列唯一，单行单对象 | `kind='submission'` 沿用同一模式 | 一致：不需要新表、新索引 |
+| `kind` 取值域 | `tech-stack-plan.md` §5 只有 interest/must_do/constraint/budget；REQ-019 的 DoV 已裁定「后续 story 扩展」 | 追加 `submission` | 有意偏离：语义从「偏好内容」扩到「提交状态」，须在 P2 delta 与文档修正里写明 |
+| payload 只读消费 | REQ-019 `{"codes":[…]}`、REQ-020 `{"items":[…]}`、REQ-024 `{"amount","currency","limitType"}` 或 `{}` | `effective` 把它们投影为 label/items/对象 | 一致：只读，不改三类 payload；三类未落地时字段为 `null` |
+| 写入时机 | 兴趣=段内显式保存、必做项=动作即保存、预算=段内显式保存 | 就绪=页面级显式提交 | 四段四种时机并存；页面契约第 4 次修订必须逐段写明，防被「统一」成一次全页提交 |
+| 端点前缀 | `/preferences`、`/preferences/must-dos`、`/preferences/budget` | 追加 `/preferences/submission`、`/preferences/readiness`、`/preferences/effective` | 风险：若用 `/preferences/{kind}` 通配会吞掉兄弟路径；P3 必须精确匹配 |
+| 错误 advice | `com.gogo.preference` 包内的 advice（REQ-019 建立） | 追加 `PREFERENCE_EMPTY` 与 500 `INTERNAL_ERROR` | 一致：沿用同一 advice；500 为本需求新增映射 |
+| 身份与错误码实况 | `TripController`：`USER_REQUIRED` / `NOT_A_MEMBER` / `TRIP_NOT_FOUND` / `INVALID_REQUEST` | 同 | 发现不一致：REQ-020 的 DoR 与 proposal 写 `UNAUTHENTIC` / `TRIP_FORBIDDEN`，需一并更正（OQ-10） |
+| 成员 / 组织者可见性 | REQ-019 的 GET 返回全员明细，前端只渲染自己那段 | `readiness` / `effective` 同样返回全员 | 一致；节点 7（US-013）直接消费 `readiness` |
+| 主线确认 | REQ-004 的 `trip.main_plan_confirmed`；US-037 前无产品写入路径 | 提交不检查主线 | 一致：`allReady` 只报「全员已提交」，主线组合门控属 US-031 |
+| 生成消费 | US-031 节点 9/10 需要就绪成员输入、硬上限过滤 | `effective` 成为唯一读路径 | 一致：本需求只提供投影，不实现生成 |
+| 就绪失效 | US-031/US-037 的「偏好变更则草稿过期」 | 提交后保存偏好**不撤销**就绪（D10） | 有意留白：快照新鲜度由 US-031 自行判断（OQ-7） |
+| 迁移序列 | `V3` 已落 main，`V4` 归 REQ-019 | 本需求零迁移 | 无编号竞争；唯一风险是 `V4` 未合入时本变更无法运行 |
+| 计划文档 | §5 四类 kind、§6「`PUT /preferences` 一次提交四类偏好」 | 第五个 kind + 三个子资源端点 | 已知偏离：跟随 AC 与既有 delta；文档修正并入 REQ-019 OQ-16 |
+| 参考图 | 节点 8 `submitPref()` 一次点击保存全部并置就绪、`noPrefSw` 只 `hide`；节点 7 三色 pill | 提交只负责就绪；开关禁用字段并写标记；三色 pill 由 `readiness` 驱动 | 有意偏离且互相修正：同时解决 REQ-024 记录的 R8 冲突 |
+
+### ⑫ 展示契约（12 个界面态）
+
+| 界面态 | 触发 | 接收者 | 内容与通道 | 断言点 |
+|---|---|---|---|---|
+| 加载中 | 首次进入 / 身份切换后请求在途 | 当前成员 | 提交段与 pill 显示骨架/占位，按钮禁用 | 不出现「就绪」文案 |
+| 待提交（有已保存偏好） | `status=pending` 且四类之一有内容 | 当前成员 | pill「未提交」；提交按钮可点 | 按钮 enabled |
+| 待提交（无任何偏好） | `status=pending` 且四类全无 | 当前成员 | 提交按钮**禁用** + 前置提示「先保存至少一项偏好，或勾选『我没有特别偏好』」 | 按钮 disabled + 提示文案存在 |
+| 无偏好开关打开 | 用户打开开关 | 当前成员 | 表单区**禁用**（不只是隐藏）+ 常驻说明「将使用默认：步行、标准节奏；已保存的个人值不会被采用」；提交按钮可用 | 字段 disabled 属性为真 |
+| 提交中 | 点提交后请求在途 | 当前成员 | 按钮 loading 且 disabled，防重复提交 | 只发一个请求 |
+| 就绪 | `ready` 且 `noPreference=false` | 当前成员 | 绿色 pill「就绪」+ 就绪时间（`submittedAt` 本地化显示） | 文案与 7 不同 |
+| 就绪 · 无偏好 | `ready` 且 `noPreference=true` | 当前成员 | 灰色 pill「就绪 · 无偏好」+ 就绪时间 | 文案与 6 不同 |
+| 提交失败（500/网络） | 非 2xx 或网络错误 | 当前成员 | 段内错误条显示服务端 `message`；pill 仍「未提交」；已保存字段保持 | 不出现「就绪」 |
+| 空提交被拒 | 400 `PREFERENCE_EMPTY` | 当前成员 | 提示先保存偏好或选择无偏好；不改变状态 | pill 仍「未提交」 |
+| 身份切换 | 顶部选择器变更 | 新身份 | 重新拉取 `readiness` 与 `effective`，就绪态随身份切换 | 不保留上一身份的 pill |
+| 读失败 | `readiness`/`effective` GET 失败 | 当前成员 | 错误态 + 重试；**不得**把未知状态渲染成「未提交」或「就绪」 | 两种文案均不出现 |
+| 成员页就绪环（节点 7） | 进入成员页 / 有人提交 | 全组可见 | 环显示 `readyCount/memberCount`；绿色「就绪」、灰色「无偏好」、灰色「待提交」三态 | 三态文案互不相同 |
+
+无通知（邮件、推送、长连接）不在范围内。
+
+### NFR business-policy layer
+
+单个成员的提交状态是**一行一个对象**，写一条语句；读路径为名册一条查询 + 投影一条查询，无容量与 SLA 要求。
+AC 未规定提交频率限制、通知与就绪失效，记为 Dev/团队的非阻塞项（OQ-6 / OQ-7），不臆造限制。
