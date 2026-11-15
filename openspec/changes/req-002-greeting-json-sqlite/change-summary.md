@@ -38,7 +38,7 @@ negotiation or envelope versioning.
 | P4 implementation | `backend/pom.xml` — H2 removed, `org.xerial:sqlite-jdbc` added (runtime, BOM-managed 3.49.1.0, no pin). `application.yml` — `jdbc:sqlite:./data/gogo.db`, `org.sqlite.JDBC`, H2 credentials dropped. `V1__create_greeting.sql` — SQLite dialect, edited in place, still seeds one `Hello World` row. `GreetingResponse.java` — new one-component record. `GreetingController.java` — `produces = APPLICATION_JSON_VALUE`, returns the record. `HelloApplication.java` — `Files.createDirectories(Path.of("data"))` (D16). `GreetingApiTest.java` — JSON assertions, SQLite shared-cache in-memory datasource with Hikari pool size 1. `GreetingRepository.java` — **unchanged**. `frontend/src/App.jsx` — `response.json()` → `data.message`. `README.md`, `.gitignore` comment | `0d1c1a8` |
 | P4 verification records | local-verify report (Overall **Partial**) + checkpoint log C1–C12, whitelist extraction and runner log (5 attempted / 0 failed), pipeline report + `ci-report.md` (Overall **Partial**, human confirmation **NOT SIGNED**), `g2-decision.md` (NOT RECORDED), P4 quality checklist (Stage Overall **Partial**), rewritten `verification-commands.md` and `verification-matrix.md`. D16 and task 1.10 added; task count 32 → 33 | `0d1c1a8` |
 | P5 artifacts (pre-archive) | this summary, `g3-decision.md` (NOT RECORDED), P5 quality checklist `20261113-164151` (Pass **pre-archive**, roll-up Partial), KB Skipped record, registry row refreshed. **The archive itself has not run** | P5 commit |
-| Archive, gate signing, push | **PENDING** — requires explicit user authorization (tasks 3.5, 3.6, 5.5) and named IO/SA/VL signatures | not yet |
+| Push & gate signing | Push **done** 2026-11-13 17:19 (+08:00) to `origin` and `group1`, both at `5f67f6f`; G1 **signed Pass** at 17:20. G2/G3 signatures, the archive and the merge-ready confirmation remain **PENDING** on the CI confirmation | — |
 
 Predecessor commit `0787b89` recorded the IO rulings and re-signed REQ-001's G1 as
 Pass; it belongs to REQ-001's trail, not this one.
@@ -134,7 +134,7 @@ Two honesty notes recorded in the checkpoint log:
 
 | Gate | Decision | Approver(s) | Notes |
 |---|---|---|---|
-| G1 Align | **NOT RECORDED** | IO = pending, SA = pending | The IO content ruling is given verbatim, but no human has signed this change's record. No ambiguity is open (blocking not-resolved = 0). Obligation 1 (Flyway on SQLite) is closed by execution; obligation 2 (fresh CI confirmation) is open |
+| G1 Align | **Pass** | IO = Johnson, SA = Johnson | Recorded 2026-11-13 17:20. No ambiguity open (blocking not-resolved = 0). Obligation 1 (Flyway on SQLite) is closed by execution; obligation 2 (fresh CI confirmation) is carried to G2 |
 | G2 Verify | **NOT RECORDED** | VL = pending | Local-verify Overall is **Partial** and the pipeline report is **Partial without** `Pass-by-human-confirm`, so neither input is terminal. The draft cites both and lists what must close |
 | G3 Merge & Archive | **NOT RECORDED** | SA = pending | Archive has not run; task 5.5 merge-ready confirmation has not been given |
 
@@ -154,7 +154,7 @@ the push of this change, the living-merge, or any gate signature.
 | # | Risk / gap | Owner | Status |
 |---|---|---|---|
 | 1 | Remote CI may fail to resolve `sqlite-jdbc` from Maven Central on a GitHub-hosted runner; locally it resolved only through the corporate mirror | Johnson (VL) / Dev | **open** — no run exists for this change. Task 3.5 push, then task 3.6 fresh confirmation. Pipeline report must stay Partial until then |
-| 2 | G1/G2/G3 all NOT RECORDED; E3 Human Pending | Johnson (IO/SA/VL) | **open** — human-only decision; the agent must not self-approve |
+| 2 | G2/G3 NOT RECORDED; E3 Human Pending | Johnson (VL/SA) | **open** — G1 is signed (17:20); G2 and G3 wait for the fresh CI confirmation |
 | 3 | Remote CI is not machine-readable from this host (`gh` absent, `api.github.com` → 403) | Dev / Johnson | inherited from REQ-001 — even after a push, the best available label is `Partial (Pass-by-human-confirm)`, never an API-verified Pass |
 | 4 | The D16 directory fix lives in `main`, so `@SpringBootTest` never exercises it | Dev | mitigated — the E2E first-start check covers the real path and is in the whitelist; residual risk 8 in the local-verify report |
 | 5 | SQLite locking under concurrent access | Dev / SA | accepted — read-only endpoint, one seeded row, tests pin the pool to 1 (D12/R9). No concurrency is in scope |
@@ -185,11 +185,11 @@ Paths are relative to the change folder
 - Delta spec: `specs/greeting/spec.md` — 1 MODIFIED requirement, 2 scenarios
 - Design: `design.md` — D9–D16, inherited D1–D8 disposition, R7–R13
 - ATDD design: `atdd-design.md`
-- Tasks: `tasks.md` — **30/33** complete; open: 3.5 (push), 3.6 (fresh CI
-  confirmation), 5.5 (merge-ready confirmation). All three require the user
+- Tasks: `tasks.md` — **31/33** complete; open: 3.6 (fresh CI confirmation),
+  5.5 (merge-ready confirmation)
 - AC/DoV review: `dov-ac-review.md`
-- Gate records (all NOT RECORDED): `g1-decision.md`, `g2-decision.md`,
-  `g3-decision.md`
+- Gate records: `g1-decision.md` (**Pass**, IO/SA Johnson), `g2-decision.md`
+  (NOT RECORDED), `g3-decision.md` (NOT RECORDED)
 - E1 slot: `ci-report.md` — Partial, human confirmation NOT SIGNED
 - Local verify: `docs/ai4se-plugins/20261113-162526-local-verify-report.md`
   (Overall **Partial**); checkpoint

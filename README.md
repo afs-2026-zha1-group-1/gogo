@@ -44,9 +44,18 @@ REQ-002 makes `GET /api/greeting` return it as JSON and moves the embedded engin
 from H2 to SQLite. The React home page parses the response and renders the
 `message` field.
 
+REQ-003 adds shared trips: `POST /api/trips` creates a trip and atomically
+records the caller as organizer and member; `GET /api/trips/{id}` returns the
+saved trip to members only (403 without values for non-members, 404 for unknown
+ids). Trip endpoints identify the caller by the `X-User-Id` header — a scaffold
+stand-in for authentication, with seeded users 1–5. The frontend adds
+`#/create` and `#/trips/<id>` routes and a demo identity switcher; the seeded
+sample trip is readable by users 1–4.
+
 The database is SQLite at `backend/data/gogo.db`. The Flyway migration
 `V1__create_greeting.sql` creates the `greeting` table and seeds the `Hello World`
-row on first start; the application creates the `data/` directory itself, because
+row on first start; `V2__create_trip.sql` adds the trip tables, seeded users 1–5
+and a sample trip. The application creates the `data/` directory itself, because
 the SQLite driver creates the file but not its parent. Delete `backend/data/` to
 rebuild it.
 
@@ -67,9 +76,17 @@ npm run dev
 
 Open http://localhost:5173/. Check the API directly with
 `curl -i http://localhost:8080/api/greeting`, which returns
-`Content-Type: application/json` and the body `{"message":"Hello World"}`. Run the
-backend tests with `cd backend && mvn test`; they use the same SQLite engine and
-the same migration as production.
+`Content-Type: application/json` and the body `{"message":"Hello World"}`.
+Create a trip with:
+
+```sh
+curl -i -X POST http://localhost:8080/api/trips \
+  -H "Content-Type: application/json" -H "X-User-Id: 1" \
+  -d '{"name":"Day out","destination":"Singapore","startDate":"2026-12-05","endDate":"2026-12-05"}'
+```
+
+Run the backend tests with `cd backend && mvn test`; they use the same SQLite
+engine and the same migration as production.
 
 Inspect the stored row without stopping the app (Python 3 ships `sqlite3`; no
 separate CLI is needed):
