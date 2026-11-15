@@ -177,3 +177,87 @@ No notifications (email, push, queue) are in scope.
 
 A trip holds a handful of members; no AC states a size limit, retention rule or
 SLA. Recorded as a non-blocking item for Dev, not invented.
+
+## REQ-019
+
+触发：impact 方向为 **add**（新增能力 `preferences`）。REQ-019 复用 REQ-003 已合并的
+`app_user` / `trip` / `trip_member` 三张表，只新增一张 `member_preference`。
+
+### ⑨ 数据契约
+
+| 概念 | 粒度 | 字段 | 状态迁移 |
+|---|---|---|---|
+| `member_preference`（存储） | 每 (trip, user, kind) 一行；本需求 `kind` 恒为 `interest` | `id` INTEGER PRIMARY KEY AUTOINCREMENT；`trip_id` INTEGER NOT NULL REFERENCES `trip(id)`；`user_id` INTEGER NOT NULL REFERENCES `app_user(id)`；`kind` TEXT NOT NULL；`payload` TEXT NOT NULL（JSON）；`updated_at` TEXT NOT NULL（ISO-8601 UTC）；UNIQUE(`trip_id`,`user_id`,`kind`) | 行不存在 → 首次 PUT 插入；行存在 → PUT 覆盖 `payload` 与 `updated_at`（幂等）；空数组 → 行保留、`payload` 为 `{"codes":[]}`；本需求无删除路径 |
+
+`payload` 形状固定为 `{"codes":["art","nature"]}`：`codes` 是小写标识数组，顺序为去重后的首次出现顺序。**元素唯一性由 Service 层保证**——JSON 列内部无法附加唯一约束，这正是去重必须放在服务端的根因。
+
+线上契约：
+
+| 消息 | 字段 | 备注 |
+|---|---|---|
+| `PUT /api/trips/{tripId}/preferences` 请求 | `interests`：`string[]`，必填，可为空数组 | 元素必须是 7 个 label 之一，逐字匹配；不做大小写与空白归一化 |
+| PUT 响应 | `interests`：`string[]` | 与落库集合一致（去重后），按首次出现顺序 |
+| `GET /api/trips/{tripId}/preferences` 响应 | `members`：`[{userId: integer, interests: string[]}]` | 覆盖该 trip 全体成员；没有记录者返回 `interests: []` |
+| 错误响应 | `code`（稳定字符串）、`message`（可读文本） | `code` 取值：`USER_REQUIRED`、`NOT_A_MEMBER`、`TRIP_NOT_FOUND`、`INTEREST_NOT_ALLOWED`、`INVALID_REQUEST` |
+| 身份 | 请求头 `X-User-Id`，整数 | 指向 `app_user.id`；缺失或非 seed 用户一律 401 |
+
+无 `{TBD}` 字段。
+
+### ⑩ 边界枚举
+
+| 分支 | in / out | 归属 |
+|---|---|---|
+| 提交含重复的合法值（`Art, Nature, Art`） | in（去重后落 2 项） | AC1 |
+| 成功写入后重新加载页面 | in | AC1-R |
+| 仅非法值（`teleportation`） | out（`400 INTEREST_NOT_ALLOWED`，不写入） | AC2 |
+| 合法 + 非法混合 | out（整体拒绝，合法值也不落地） | AC2-M |
+| 小写 code（`art`） | out（`400`） | AC2-C |
+| 前后带空白（` Art `） | out（`400`） | AC2-C |
+| 空数组 | in（清空语义，行保留） | AC3-N |
+| 同一成员重复提交相同集合 | in（幂等，`payload` 不变） | AC8-N |
+| 缺少 `X-User-Id` | out（`401`） | AC4-N |
+| `X-User-Id` 指向非 seed 用户 | out（`401`） | AC4-N |
+| 非成员调用 GET/PUT | out（`403 NOT_A_MEMBER`） | AC5-N |
+| `tripId` 不存在 | out（`404 TRIP_NOT_FOUND`） | AC6-N |
+| body 非对象、缺 `interests`、元素非字符串 | out（`400 INVALID_REQUEST`） | AC7-N |
+| GET 失败时的前端表现 | in（错误态 + 重试，不把旧值渲染成已保存） | AC9-N |
+| 成员从未保存过偏好 | in（GET 返回 `interests: []`，页面空态） | AC3-N 的读侧 |
+| 修改他人偏好 | out of scope（写路径只认 header 身份，无跨成员入口） | REQ-019 §Actors |
+| 其它三类偏好（必做项 / 约束 / 预算） | out of scope（`kind` 只实现 `interest`） | REQ-019 §Out of scope |
+| 主线确认后锁定偏好 | out of scope（D4 裁定不实现锁定分支） | REQ-019 OQ-4 |
+| 并发两次 PUT 同一成员 | out of scope（连接池 = 1，实际串行，结果 last-write-wins，无中间态可观察） | 技术约束 |
+
+每个场景都有归属行。
+
+### ⑪ 跨 REQ 一致性
+
+| 触点 | 对方口径 | 本需求口径 | 收敛结论 |
+|---|---|---|---|
+| trip / user 表 | REQ-003 的 `V2__create_trip.sql` 建 `app_user` / `trip` / `trip_member` | 只读复用，不新建、不改列 | 一致：本需求只加 `member_preference`；seed 用户 1–5 与 trip 1 直接复用 |
+| 成员判定 | `TripRepository.isMember(tripId, userId)` | 直接调用 | 一致：避免两套判定逻辑漂移 |
+| 迁移序列 | REQ-003 用 `V2`；REQ-004（邀请）预留 `V3` | 本需求用 `V4` | 耦合：`V4` 必须在 `V3` 之后落库，否则 Flyway 报 out-of-order |
+| 身份头 | 已合并代码用 `X-User-Id`（技术栈计划写的是 `X-Member-Id`） | 用 `X-User-Id` | 跟随代码；计划文档修正为团队任务（OQ-16） |
+| 响应风格 | trip 接口为裸 DTO 成功 + `{"code","message"}` 失败（计划写的是 `{data,error}` 封套） | 同 trip | 跟随代码；`greeting` 仍是 `{message}`，差异记为团队级统一项（OQ-17） |
+| 兴趣词表 | 技术栈计划 §5 的 `tag` 表为 24 码 | 本需求 7 项，代码常量 | 分离：不建 `tag` 表、不提供 `/api/tags`；合并词表是 M2.5 的团队任务 |
+| 前端栈 | 计划写 Ant Design 5 + TS + TanStack Query + React Router | 已合并 `App.jsx` 为 hash 路由 + `api.js` + `app.css` | 跟随代码，不新增依赖（D5）；计划文档修正为团队任务 |
+| UI 清单 | 参考图节点 8 展示 10 个中文 chip，映射 US-019~027 | AC 给出的 7 项英文 label | 行为以 AC 为准；示意差异记录在此，不回改参考图 |
+| 偏好存储索引 | 计划 §5 为普通索引 | 改为 UNIQUE(`trip_id`,`user_id`,`kind`) | 有意偏离：幂等覆盖写需要唯一键定位行 |
+
+### ⑫ 展示契约
+
+| 界面态 | 触发 | 接收者 | 内容与展示字段 | 通道 |
+|---|---|---|---|---|
+| 加载中 | 进入 `#/trips/{id}/preferences` | 当前成员 | 静态加载提示；7 个 chip 禁用 | `GET /api/trips/{tripId}/preferences` |
+| 已保存 | GET 成功且当前成员有记录 | 当前成员 | 7 个 chip 中已保存项为选中态，其余未选中 | 同上，取 `members[userId == X-User-Id].interests` |
+| 空态 | GET 成功但当前成员无记录或为空数组 | 当前成员 | 7 个 chip 全未选中 + 说明文字 | 同上 |
+| 保存中 | 点击保存、请求在途 | 当前成员 | 全部 chip 与保存按钮禁用 | `PUT /api/trips/{tripId}/preferences` |
+| 保存成功 | PUT 2xx | 当前成员 | 选中态以响应 `interests` 为准，无额外提示 | 同上 |
+| 非法值 | PUT `400 INTEREST_NOT_ALLOWED` | 当前成员 | 内联错误文本（服务端 `message`），选中态回滚到服务端已知值 | 同上 |
+| 身份 / 成员 / 未知 trip 失败 | 401 / 403 / 404 | 当前成员 | 对应错误文本 + 重试入口；不渲染他人兴趣 | `GET` 与 `PUT` 同一路径 |
+| GET 失败（不可达或非 2xx） | 网络错误 / 5xx | 当前成员 | 错误态 + 重试；**不得**把空白或旧值渲染成已保存 | 同上 |
+
+无通知（邮件、推送、队列）在范围内。
+
+### NFR business-policy layer
+
+一个 trip 的成员数量为个位数，AC 未规定容量、保留期或 SLA；`payload` 是单行 JSON，读写各一条语句。记为 Dev 的非阻塞项，不臆造指标。
