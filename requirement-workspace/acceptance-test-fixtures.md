@@ -1,11 +1,14 @@
 # Acceptance-test fixtures
 
-- Scope: sample values referenced by US-001 (issue #4) and US-002 (issue #5).
+- Scope: sample values referenced by US-001 (issue #4), US-002 (issue #5), and
+  US-008 (issue #6), US-010 (issue #7), US-012 (issue #8)
 - Source: story acceptance criteria, extended by explicit user rulings on
-  2026-11-14 (required destination and optional locations).
+  2026-11-14 (required destination, optional locations and invitation boundaries).
   Negative inputs below are test cases, not additional story fixture values.
 - Created: 2026-11-14. The stories refer to this file but it did not exist in the
   repository; see `intents/2026-11-14-req-003.md`.
+- Extended: 2026-11-14 for REQ-004; see `intents/2026-11-14-req-004.md`. The
+  REQ-004 section reuses the users and trip above unchanged.
 
 ## Users
 
@@ -63,3 +66,45 @@ response rather than assume a value.
 | `createdAt` | Not required by any AC |
 | Error message wording | Only the `code` is contractual; messages are implementation text |
 | Exact locations produced by later US-031 completion | At main-plan generation use submitted member preferences; random locations if preferences are absent or yield no suitable result. Preserve supplied locations. Do not fix exact randomized outputs or run completion during REQ-003/004 tests. Owners IO Emily / SA Johnson |
+
+## REQ-004 — invitations (US-008 / US-010 / US-012)
+
+Same users and same sample trip as above. Eve (id 5) is the invited outsider;
+after a successful acceptance she becomes a member and the R1 read applies to her.
+
+### State setup
+
+| Item | Value | Why |
+|---|---|---|
+| Main plan of the fixture trip | unconfirmed by default | `V3` adds `trip.main_plan_confirmed` default 0; no API sets it in this change (US-037 owns the flow) |
+| Confirmed-main-plan case (J4) | test-only direct database update of `trip.main_plan_confirmed` to 1 | The confirmation flow is out of scope; the closure AC still must be exercised. Documented test-only setup, not product behavior |
+| Invitation token | assigned by the backend at issuance; tests read it from the issue response | Opaque random value; no AC fixes a token string |
+| Invalid token input | any string that was never issued, e.g. `no-such-invitation` | Test input for U1/U2/U3, not a sample value claimed by an AC |
+
+### Requests
+
+| Case | Call | Expected |
+|---|---|---|
+| I1 issue | `POST /api/trips/{id}/invitation`, `X-User-Id: 1` | `200`, body carries `token` and `joinPath` (`/join/<token>`); one invitation row for the trip |
+| I2 re-issue | same call again | `200`, same `token`; still one invitation row |
+| I3 non-organizer | same call, `X-User-Id: 2` | `403`, `code = NOT_ORGANIZER`; invitation row count unchanged |
+| I4-N no identity | same call without `X-User-Id` | `401`, `code = USER_REQUIRED`; nothing created |
+| I5-N unknown trip | `POST /api/trips/999999/invitation`, `X-User-Id: 1` | `404`, `code = TRIP_NOT_FOUND` |
+| J1 preview | `GET /api/invitations/{token}`, no identity header | `200`, `tripName = Singapore Friends Day`, `destination = Singapore`, `startDate = 2026-12-05`, `endDate = 2026-12-05`, joining open; no member, itinerary or preference fields |
+| J2 accept | `POST /api/invitations/{token}/accept`, `X-User-Id: 5` | `200` joined; `trip_member` row (trip, 5) exists; `GET /api/trips/{id}` with `X-User-Id: 5` → `200` |
+| J3 double accept | J2 call twice | both `200` joined; exactly one `trip_member` row for (trip, 5) |
+| J4 closed | confirmed-main-plan setup, then J2 call | `403`, `code = JOINING_CLOSED`; member rows unchanged |
+| J5-N no identity | accept without `X-User-Id` | `401`, `code = USER_REQUIRED`; no membership |
+| J6 existing member | Ben accepts a valid token, once unconfirmed and once after confirmed-state setup | both `200` joined with `alreadyMember = true`; membership count unchanged |
+| J7 identity precedence | invalid-token accept with missing identity, then unknown user id `999999` | both `401`, `code = USER_REQUIRED`; no membership; known Eve with the same invalid token receives `404` |
+| U1 invalid preview | `GET /api/invitations/no-such-invitation` | `404`, `code = INVITATION_NOT_FOUND`; no trip values |
+| U2 invalid accept | `POST /api/invitations/no-such-invitation/accept`, `X-User-Id: 5` | `404`, `code = INVITATION_NOT_FOUND`; no membership |
+
+### Values deliberately not fixed (REQ-004)
+
+| Item | Why no value is set |
+|---|---|
+| Token string | Random per issuance; tests read it from I1 |
+| Absolute invitation URL | Composed by the frontend from its own origin plus `joinPath`; the QR must encode exactly that composed URL (I6) |
+| Expiry / revocation fields | Non-MVP per US-008 and US-012 design scope; no such field or endpoint exists |
+| Error message wording | Only the `code` is contractual |
