@@ -62,11 +62,12 @@
 
 - [x] 6.1 Push the branch and open the PR to `group1/main` only with separate
       typed authorization; read the fresh CI run with `gh`; pipeline report
-- [ ] 6.2 G2 decision record by a named VL — pending; user routes the signature
-      to another human via PR #30 (the in-session Johnson verdict was withdrawn
-      before recording)
-- [ ] 6.3 Update `README.md` run instructions and registry/handoff rows
-- [ ] 6.4 P5 change summary, G3 draft and archive via `/sdd:living-merge`
+- [x] 6.2 G2 decision record by a named VL — Pass recorded 2026-11-15,
+      VL Elian Jiang (explicit in-session choice; the earlier Johnson verdict
+      was withdrawn before recording)
+- [x] 6.3 Update `README.md` run instructions and registry/handoff rows
+- [ ] 6.4 P5 change summary, G3 draft and archive via `/sdd:living-merge` —
+      routed to teammates by the user on 2026-11-15; G3 needs a named SA
 - [ ] 6.5 Follow-up (post-G2, VL-directed): align frontend with
       `ui-design-reference/` screens 02/03 component language — header bar with
       back + subtitle, icon labels, two-column date/location rows, info note,

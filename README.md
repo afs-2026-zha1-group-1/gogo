@@ -44,12 +44,15 @@ REQ-002 makes `GET /api/greeting` return it as JSON and moves the embedded engin
 from H2 to SQLite. The React home page parses the response and renders the
 `message` field.
 
-REQ-003 adds the trip aggregate and three screens on a hash router:
-`#/create` (US-001), `#/trips/<id>` (US-002), and `#/` for the landing page.
-Identity is the REQ-003 scaffold: the header select writes `X-User-Id` on every
-request and is labeled as a scaffold, not a login. Trip creation requires a name,
-destination and an end date not before the start date; both locations are
-optional.
+REQ-003 adds shared trips: `POST /api/trips` creates a trip and atomically
+records the caller as organizer and member; `GET /api/trips/{id}` returns the
+saved trip to members only (403 without values for non-members, 404 for unknown
+ids). The frontend adds three screens on a hash router: `#/create` (US-001),
+`#/trips/<id>` (US-002), and `#/` for the landing page. Identity is the REQ-003
+scaffold: the header select writes `X-User-Id` on every request and is labeled
+as a scaffold, not a login; seeded users 1–5, and the seeded sample trip is
+readable by users 1–4. Trip creation requires a name, destination and an end
+date not before the start date; both locations are optional.
 
 REQ-004 adds the invitation flow. On `#/trips/<id>` the organizer sees a panel
 with the invitation link, a copy action and a QR encoding the same absolute URL
@@ -82,8 +85,16 @@ npm run dev
 
 Open http://localhost:5173/. Check the API directly with
 `curl -i http://localhost:8080/api/greeting`, which returns
-`Content-Type: application/json` and the body `{"message":"Hello World"}`. Run the
-backend tests with `cd backend && mvn test` (`GreetingApiTest`,
+`Content-Type: application/json` and the body `{"message":"Hello World"}`.
+Create a trip with:
+
+```sh
+curl -i -X POST http://localhost:8080/api/trips \
+  -H "Content-Type: application/json" -H "X-User-Id: 1" \
+  -d '{"name":"Day out","destination":"Singapore","startDate":"2026-12-05","endDate":"2026-12-05"}'
+```
+
+Run the backend tests with `cd backend && mvn test` (`GreetingApiTest`,
 `TripApiTest`, `InvitationApiTest`); they use the same SQLite engine and the same
 migrations as production.
 
