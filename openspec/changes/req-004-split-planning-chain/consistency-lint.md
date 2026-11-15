@@ -1,5 +1,33 @@
 # Consistency lint — req-004-split-planning-chain
 
+## Current amendment (2026-11-15)
+
+This amendment supersedes affected verdict reasons, scope/counts, tool availability
+and outstanding-finding claims in the historical report below. It is not a Gate
+approval or a rerun of every historical checklist rule.
+
+- Current package: five requirements / 34 scenarios; proposal lists five endpoints
+  and the shared member-only draft GET. Four business REQs remain unchanged.
+- Review defects corrected: missing/globally unknown identity 401 vs known outsider
+  403; entry-guard database reads vs repository-free snapshot calculator; explicit
+  draft read with empty state and no writes; overlong requirement bodies shortened.
+- Executable check: `openspec validate req-004-split-planning-chain --strict`
+  passes. The former CLI/schema-validation tool gap no longer applies.
+- F1 resolved in spec G1: fixture-guaranteed complete/disjoint groups, defensive
+  precondition; invalid-group negatives deferred to group movement (out of scope).
+- F2 resolved: current proposal orders P2 delta/review before G1 before P3.
+- F5 resolved in spec, REQ-006 and fixtures: generate at actual N after boundaries;
+  concurrent boundary re-selection advances N+1; stale N cannot overwrite it.
+- F3 remains optional; F4 frontend stack is a P3 handoff, not a blocking AC issue.
+- Strict validation is not behavioral execution or a human sign-off. G1 stays
+  Conditional: IO Emily approved the revised package on 2026-11-15 per explicit
+  user instruction; SA Leo's revised-contract re-review remains pending.
+
+The original report undercounted start scenarios: 9, not 8. The original spec had
+28 scenarios, not 27. Six added scenarios bring the current count to 34.
+
+## Historical report (original version; reported counts retained verbatim)
+
 ## 运行元数据
 
 - change-id: `req-004-split-planning-chain`

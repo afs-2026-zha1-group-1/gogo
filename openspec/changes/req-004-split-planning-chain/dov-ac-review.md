@@ -1,5 +1,32 @@
 # Delta Spec AC/DoV 评审 — req-004-split-planning-chain
 
+## Current review correction (2026-11-15)
+
+This section supersedes affected counts, scope and tool-gap claims in the
+historical report below. It is a document self-check, not an IO/SA signature.
+
+| Check | Current evidence |
+|---|---|
+| AC-1 / DoV-5 | Five requirements / 34 scenarios: start 9, boundaries 7, generation 6, timing 7, detail 5 |
+| AC-2 / AC-3 | Identity -> trip -> membership: missing/globally unknown id 401, known member with unknown trip 404, known outsider 403; data null and no private values |
+| AC-4 / DoV-2 | Timing entry guard may read membership; calculator has no repository access, uses supplied snapshot only and never persists results |
+| DoV-1 | Four business REQs plus shared detail read now appear in proposal and upstream requirements; no extra table or confirmation/cancellation feature |
+| DoV-3 | IO Emily approved the revised package on 2026-11-15 per explicit user instruction; SA Leo revised-contract re-review remains pending in G1; Leo's previous signature is historical only |
+| DoV-4 | Planning documents only; no runtime behavior implemented |
+| Strict tooling | `openspec validate req-004-split-planning-chain --strict` passes in this environment; former CLI gap is closed |
+
+Additional traceability: timing T6-N -> REQ-007 S6-N and fixture timing guard matrix;
+detail D1-D5-N -> REQ-004 In scope (shared REQ-005/006/007 read dependency),
+deep-dive display/read contract and fixture draft detail requests. G3-N uses
+current post-boundary version N and concurrent boundary re-selection to N+1.
+Requirement bodies were shortened by moving detailed contracts into their
+scenarios, without removing provider, atomicity or duration behavior.
+
+The historical report undercounted start scenarios (9, not 8), so the original
+spec had 28 scenarios, not the reported 27. Current counts include all 34 headings.
+
+## Historical report (original version; reported counts retained verbatim)
+
 - 日期: 2026-11-15
 - 评审对象: `specs/splits/spec.md`（4 条 ADDED requirement，27 个 scenario）
 - 依据: `dov-ac-checklist.md`（AC-1~4 / DoV-1~5）；上游 = proposal.md（G1 评审稿）、

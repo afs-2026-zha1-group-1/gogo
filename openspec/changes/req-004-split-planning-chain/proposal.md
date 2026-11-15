@@ -1,6 +1,6 @@
 # Proposal — req-004-split-planning-chain
 
-- 状态: **G1 评审稿**（P1 收尾产物；delta spec / design / tasks 属 P2，本稿不含，严禁在本阶段启动 P2）
+- 状态: **G1 评审稿**（P2 review correction; delta is present, design/tasks remain out of scope; IO Emily approved 2026-11-15; SA re-review pending）
 - 日期: 2026-11-15
 - 需求来源: REQ-004~007（US-038/039/042/043，GitHub issue #17~20 权威正文）
 - 打包裁决: 用户 2026-11-15 OQ-4 —— 一个 B 链 change 承载四个 delta，不再按 story 拆多个 change
@@ -24,14 +24,21 @@
   不加 plan_node 列）；自包含种子 = 1 行程（invite_code `SGF26A`、plan_version 1）
   + 5 成员（Alice owner，Ben/Chloe/Daniel 均 ack v1，Eve 属另一行程）+ 主线
   两 stop（City Hall MRT / Merlion Park）（OQ-1 夹具自包含，不阻塞 REQ-003/US-037）。
-- **后端 splits 模块（4 端点，`{data,error}` 包封套，`X-Member-Id` 头）**：
+- **后端 splits 模块（5 端点，`{data,error}` 包封套，`X-Member-Id` 头）**：
+  - `GET /api/trips/{tripId}/split-draft`: member-only consistent saved snapshot
+    including versions, groups, stops, nullable boundaries/window and routes;
+    no active draft -> `200 {data:null,error:null}`; no mutation or version increment.
   - `POST /api/trips/{tripId}/split-draft`（201，草稿启动；主线未确认拒绝）
   - `PUT /api/trips/{tripId}/split-draft/boundaries`（成对保存出发/会合边界，
     仅发起人；正窗口校验；边界必须在主线 stop 内）
   - `POST /api/trips/{tripId}/split-draft/routes:generate`（成对生成；
     单事务先删旧对再写新对；stale draft_version 拒绝）
   - `POST /api/trips/{tripId}/split-draft/routes:check-timing`（纯校验，
-    显式快照 body，零读零写；整对 feasible 结论）
+    显式快照 body；entry guard may read identity/trip/membership; calculator has
+    no repository access or persistence; 整对 feasible 结论）
+- Shared guards: missing/globally unknown member id -> `401 MEMBER_REQUIRED`,
+  then unknown trip with known member -> `404 TRIP_NOT_FOUND`, then known outsider
+  -> `403 NOT_A_MEMBER`. Rejections return `data=null` without private values.
 - **草稿存储与并发**：草稿 = `trip.split_draft` JSON 文档（initiatorMemberId /
   mainPlanVersion / draftVersion / status / departureStopId / reunionStopId /
   groups / createdAt / updatedAt）；活跃唯一 = 每 trip 至多一份文档 + 条件更新
@@ -54,7 +61,9 @@ No breaking changes：greeting 能力与既有 V1 迁移不受影响；无既有
 
 ### New Capabilities
 
-- `splits`：拆分规划链，含 4 条 requirement（P2 delta spec 承载，本稿仅列名）：
+- `splits`：拆分规划链，含 5 条 requirement（four business REQs plus shared read）：
+  - **Split draft detail read**（REQ-004 shared with REQ-005/006/007）: refresh,
+    polling and timing snapshot assembly, with member-only and empty-state AC.
   - **Split draft start**（REQ-004）——从已确认主线发起唯一拆分草稿
   - **Split boundary selection**（REQ-005）——成对选择拆分边界并强制正时间窗口
   - **Group route generation**（REQ-006）——按分组偏好成对生成分组路线
@@ -76,7 +85,7 @@ None。Living Spec 现有 `greeting`（`openspec/specs/greeting/spec.md`）不�
   夹具 `acceptance-test-fixtures.md` B 链段。
 - **Code**: 后端新增 splits 模块（controller/service/repository + 提供者接口
   与夹具实现）；前端新增四页面与新栈依赖；greeting 代码不动。
-- **APIs**: 4 个新端点（见上）；错误码全集 = SPLIT_DRAFT_CONFLICT /
+- **APIs**: 5 个新端点（见上）；错误码全集 = SPLIT_DRAFT_CONFLICT /
   MAIN_PLAN_NOT_CONFIRMED / NOT_A_MEMBER / MEMBER_REQUIRED / TRIP_NOT_FOUND /
   NONPOSITIVE_SPLIT_WINDOW / BOUNDARY_NOT_IN_MAIN_PLAN / NOT_SPLIT_INITIATOR /
   SPLIT_DRAFT_NOT_ACTIVE / STALE_DRAFT_VERSION / ROUTE_GENERATION_FAILED /
@@ -93,7 +102,7 @@ None。Living Spec 现有 `greeting`（`openspec/specs/greeting/spec.md`）不�
 
 ## Effort and ordering
 
-**Medium-large**。一个 change、一个能力、四条 requirement；链内依赖 DAG：
+**Medium-large**。一个 change、一个能力、五条 requirement（四个业务 REQ + shared read）；链内依赖 DAG：
 
 ```text
 REQ-004（草稿 + V2 迁移 + 种子）
@@ -103,8 +112,8 @@ REQ-004（草稿 + V2 迁移 + 种子）
 前端四页面随后端契约逐环接入（Screen 11→12→13→14）
 ```
 
-规模估算：1 迁移、4 端点、1 提供者接口 + 夹具实现、4 前端页面 + 新栈引入、
-四组验收测试（S1~S7 / B1~B6-N / G1~G5-N / T1~T5-N）。无跨 change 依赖。
+规模估算：1 迁移、5 端点、1 提供者接口 + 夹具实现、4 前端页面 + 新栈引入、
+五组验收测试（S1~S7 / B1~B6-N / G1~G5-N / T1~T6-N / D1~D5-N）。无跨 change 依赖。
 `/sdd:story-split` **Skipped**：四 story 已是需求条目粒度且用户裁决合并
 （OQ-4），不重复拆敏捷 backlog（impact brief §6）。
 
@@ -131,13 +140,14 @@ REQ-004~007 均为 new 且 deep-dive 在范围内。`deep-dive.md` B 链段：
 | OQ-N3 | 前端增量引入新栈，greeting 页保持 JSX |
 | OQ-N4 | 边界确认成对保存，不开放半边界 |
 | OQ-N5 | 分组存草稿内 JSON（groups:{A:[ids],B:[ids]}），不建独立表 |
-| OQ-N6 | 校验用显式快照 body，纯计算零读库 |
+| OQ-N6 | Explicit snapshot; calculator has zero database I/O. Review correction permits identity/trip/membership entry-guard reads only |
 | OQ-N7 + NFR | 确认记录备查、不发明（US-049 消费方式 / 保留期 / SLA deferred） |
 
 ## Known deviations carried into later stages
 
-- **openspec CLI 不在 PATH**：change 包按本仓既有实践（req-001/002 同例）
-  手工建于唯一权威树 `openspec/changes/`，documented gap；不引入第二 changes 根。
+- Original authoring lacked the OpenSpec CLI; the current environment has it.
+  `openspec validate req-004-split-planning-chain --strict` now passes; the former
+  schema-validation tool gap is closed. Human sign-offs remain separate.
 - impact brief R1：REQ-003 草稿口径分叉（用户裁决维持现状，未来 US-037 对齐）。
 - impact brief R2：req-002 G3 已签但未归档、Living greeting 旧口径（独立处置）。
 - impact brief R4：SQLite 单写者并发/成对原子性 → P3 设计、P4 用例验证。
@@ -147,7 +157,9 @@ REQ-004~007 均为 new 且 deep-dive 在范围内。`deep-dive.md` B 链段：
 
 ## 下一步（仅 /sdd:*）
 
-1. G1 评审：人工评审本稿后显式调用 `/sdd:g1-decision-record` 记录裁决（不自动批准）。
-2. G1 通过后进入 P2：`/sdd:delta-craft`（splits 四条 ADDED requirement 的 AC/DoV）。
-3. 阶段质检：`/sdd:quality-checklist`（P1 DoV）。
-4. 本阶段**不**写 delta spec / design / tasks，**不**启动 P2/P3/P4。
+1. P2 delta spec and review corrections are present: five requirements, 34 scenarios.
+2. Review proposal + delta + AC/DoV + consistency lint together, then record G1
+  explicitly. IO Emily approved the revised package on 2026-11-15; Leo's re-review
+  of revised contracts remains pending.
+3. Only after both approvals may G1 become Pass and P3 design/tasks begin.
+4. No implementation or Living Spec merge is authorized by this document update.
