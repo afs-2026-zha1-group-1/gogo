@@ -67,7 +67,7 @@ Runner log: `docs/ai4se-plugins/20261115-164941-local-verify-run.log`.
 
 | Slot | Status | Source |
 |------|--------|--------|
-| E1 Machine | Partial | local command table green (mvn 31/31, build, whitelist 5/5); remote CI pending PR (`ci-report.md` not yet authored) |
+| E1 Machine | Pass | local command table green (mvn 31/31, build, whitelist 5/5) **and** fresh remote CI run 43697575941 success on PR head 976620d (ci-report.md, 2026-11-15T17:07+0800) |
 | E2 AI | Pass | this report + verification-req-005.md per-scenario evidence |
 | E3 Human | Pending | VL review at G2 — never agent-signed |
 
@@ -104,7 +104,7 @@ None.
 
 | # | Risk | Why open | Mitigation |
 |---|------|----------|------------|
-| 1 | Remote CI not yet run for this change | PR pending authorization | tracking — pipeline-report phase=ci after PR |
+| 1 | Remote CI not yet run for this change | PR pending authorization | fixed — run 43697575941 success on 976620d (ci-report.md) |
 | 2 | Human review (E3/G2) pending | gate requires named VL | tracking — G2 decision record |
 | 3 | Pre-existing invitation issuance race | out of scope, backend untouched | tracking — separate change proposed |
 | 4 | Real-device safe-area behavior | desktop env() = 0 | accepted — calc padding verified structurally + emulated |

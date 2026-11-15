@@ -76,8 +76,10 @@
 
 ## 6. CI and gates (owner: Dev drafts; IO/SA/VL decide)
 
-- [ ] 6.1 Push the branch and open the PR only with separate typed
+- [x] 6.1 Push the branch and open the PR only with separate typed
   authorization; read a fresh CI run with `gh` for G2 (never inherited green)
+  — PR #34 opened 2026-11-15 with typed authorization; run 43697575941
+  success on 976620d (ci-report.md)
 - [ ] 6.2 G2 decision record by named humans (VL); G3/archive lane per user
   routing
 - [ ] 6.3 Update `README.md` run instructions and registry/handoff rows
