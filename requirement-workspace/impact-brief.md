@@ -350,3 +350,95 @@ Supporting: `requirement-workspace/deep-dive.md` §REQ-019,
 一个变更：`req-019-save-interests`，一个新能力 `preferences`。
 工作量：小到中——后端约 5 个类 + 1 个迁移 + 1 组接口测试；前端 1 个页面 + 1 条路由 + 样式。
 依赖顺序：`V4`（确认 `V3` 已落库）→ 身份/成员复用 → 校验与写 → `GET` 回读 → 页面 → 验证文档。
+
+# Impact brief — REQ-020
+
+- Date: 2026-11-15
+- Workdir: `requirement-workspace/`
+- Mode: embedded at the end of `/sdd:pre-spec-req`（blocking OQs = 0，DoR BLOCKERs = 0）
+- Change id: `req-020-manage-must-do`
+- Stacking: 堆叠在 `req-019-save-interests` 之后；后者未合 main
+
+## 1. Requirement set
+
+| id | Path |
+|---|---|
+| REQ-020 | `requirement-workspace/requirements/REQ-020.md` |
+
+Supporting: `requirement-workspace/deep-dive.md` §REQ-020，
+`requirement-workspace/intents/2026-11-15-req-020.md`，
+`requirement-workspace/analysis/req-020-dor.md`，
+`requirement-workspace/acceptance-test-fixtures.md`（用户与 trip 夹具），
+`openspec/changes/req-019-save-interests/`（表与页面契约的来源）。
+
+## 2. As-is asset inventory (evidence paths)
+
+| Asset | Evidence | State |
+|---|---|---|
+| 身份 | `backend/src/main/java/com/gogo/trip/TripController.java` | `X-User-Id` 请求头（整数）；缺失或非 seed 用户 → `401 USER_REQUIRED` |
+| trip / member 表 | `V2__create_trip.sql` | `app_user` 1–5、`trip` 1、`trip_member` 1–4；`trip.start_date` / `end_date` 为 2026-12-05 |
+| 邀请与主线状态 | `V3__create_invitation.sql` | `trip_invitation` + `trip.main_plan_confirmed`（默认 0，US-037 之前无写入路径） |
+| 偏好表 | `openspec/changes/req-019-save-interests/proposal.md` 与 `specs/preferences/spec.md` | **计划中的 `V4` + `member_preference`，尚未落库**；UNIQUE(`trip_id`,`user_id`,`kind`) |
+| 偏好端点 | 同上 | `GET`/`PUT /api/trips/{tripId}/preferences`，**尚未实现** |
+| 偏好页 | 同上 | `#/trips/{tripId}/preferences`，**尚未实现** |
+| 成员判定 | `TripRepository.isMember(long, long)` | 可直接复用 |
+| 错误处理 | `TripErrorAdvice`（`com.gogo.trip`）、`InvitationErrorAdvice`（`com.gogo.invitation`） | 按包隔离；`com.gogo.preference` 需自带 advice（REQ-019 负责） |
+| DB 访问 | `TripRepository` / `InvitationRepository` | `JdbcTemplate`，无 ORM |
+| 前端 | `frontend/src/{App.jsx,api.js,app.css,Icons.jsx}` | 手写 hash 路由、`api()` 封装、顶部 demo 身份选择器（1–5） |
+| 夹具 | `acceptance-test-fixtures.md` | 用户、样例 trip、REQ-004 状态段；无偏好相关行 |
+| Living Spec | `openspec/specs/` | 仅 `greeting`；`trips`/`invitations`/`preferences` 的 delta 尚未归档 |
+| 计划契约 | `docs/knowledge/architecture/tech-stack-plan.md` §5/§6 | `tag` 表、`{data,error}` 封套、`X-Member-Id`，与代码不一致 |
+
+## 3. As-is → proposed delta
+
+| Touched asset | As-is | Proposed delta |
+|---|---|---|
+| 迁移 | `V1`、`V2`、`V3`；`V4` 属 REQ-019 | **无新增迁移**；只写入 `kind='must_do'` 的行 |
+| 后端 | `com.gogo.trip`、`com.gogo.invitation`；`com.gogo.preference` 由 REQ-019 创建 | 在 `com.gogo.preference` 内新增 must-do 端点、item DTO、校验与 id 签发 |
+| 接口面 | trip / invitation / greeting；（REQ-019 后新增 `/preferences`） | 新增 `GET`/`PUT /api/trips/{tripId}/preferences/must-dos` |
+| 前端 | home / create / details / join；（REQ-019 后新增偏好页） | 偏好页新增必做项段：列表 + 内联表单 + 删除，逐动作 PUT |
+| 文档 | trip 与 invitation 接口已记录 | `README.md` 增必做项段、验证矩阵增行 |
+| Living Spec | 仅 `greeting` | 归档时向 `preferences` 追加必做项 requirement，并修订页面要求 |
+
+## 4. Blast radius
+
+- 兴趣端点、兴趣 payload 与兴趣保存按钮**不变**；两条写入路径互不连带。
+- 同一张表、同一个 `kind` 维度新增取值，不改列、不改唯一键。
+- `App.jsx` 不新增路由（偏好页路由由 REQ-019 提供）。
+- 前后端均不新增依赖；运行时拓扑不变（8080 / 5173）。
+- 对 US-031 是**只增不改**的数据供给：多一个 `kind` 可读，不影响既有读取。
+
+## 5. Artifact impact
+
+- Spec：`openspec/changes/req-020-manage-must-do/specs/preferences/spec.md`（P2）：一个 ADDED 必做项 requirement + 一个 MODIFIED 页面 requirement。
+- Tests：后端接口测试覆盖 20 个场景；前端构建 + 浏览器观察（添加 / 改时间 / 删除 / 刷新）。
+- Docs：`README.md`、`docs/feedback/verification-*.md`、`requirement-workspace/{registry,handoff}.md`。
+- KB：无新增长期事实（同表不同 kind 属于能力行为，写 delta spec 即可）。
+
+## 6. Dual-track notes
+
+单条故事（US-020）、单能力（`preferences` 的修改）、20 个场景 → `/sdd:story-split` 跳过并记录理由。仅 OpenSpec 轨。
+
+## 7. Risks & blockers
+
+| id | Risk | Severity | Status |
+|---|---|---|---|
+| R1 | REQ-019 的 `V4` 与偏好页尚未落库，本变更单独合入无法运行 | blocking for merge order | 缓解：堆叠交付，PR 描述写明前置；REQ-019 先合再合本条 |
+| R2 | 条目 id 存在 JSON 数组内，无数据库约束；id 分配缺陷会静默产生重复或串号 | product correctness | 缓解：测试断言更新后条数与 id 集合不变；评审聚焦 id 分支 |
+| R3 | 同一路径前缀下新增子资源，若映射写成 `/{tripId}/preferences/**` 或使用通配，可能影响兴趣端点 | integration | 缓解：P3 确认 Spring 精确匹配；兴趣端点的回归测试必须在同一次跑 |
+| R4 | 页面契约冲突：兴趣段「显式保存」与本段「动作即保存」同页共存 | contract | 已解：P2 把页面 requirement 标 MODIFIED，按段写明写入时机（D12） |
+| R5 | 参考图表单写「二选一」，照抄会阻碍 AC1 同时保存地点与时间 | UI alignment | 已解：D6 允许同时保存；文案修正列为 WARNING |
+| R6 | `com.gogo.preference` 的 advice 依赖 REQ-019 先建，缺失时 `INVALID_REQUEST` 不产生 | integration | 缓解：若 REQ-019 未建，本变更自带 advice |
+| R7 | `time` 不带日期，多日行程无法定位 | product scope | 已知偏离：夹具为单日，扩展留给 US-031（OQ-12） |
+| R8 | Web 前端一次 PUT 提交整表，条目多时响应体放大 | operational | 不阻断；上限评估记入 OQ-11 |
+
+无致命阻塞使 REQ-020 失效，拆分可以继续。
+
+## 8. Suggested split boundaries
+
+一个变更：`req-020-manage-must-do`，修改一个已有能力 `preferences`。
+工作量：小——后端 1 个 controller 分支 + 1 个 service 方法 + 1 组 DTO + 1 组接口测试（零迁移）；
+前端 1 个页面区块 + 样式。
+依赖顺序：REQ-019 的 `V4`/偏好页（前置）→ must-do 端点与校验 → `GET` 回读 → 页面区块 → 验证文档。
+
+合入顺序：REQ-019 → REQ-020，不得颠倒（迁移与页面均由前者提供）。

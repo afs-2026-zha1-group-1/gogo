@@ -351,3 +351,97 @@ slice and are not required by any AC. Recorded as a non-blocking item for Dev
 ### NFR business-policy layer
 
 一个 trip 的成员数量为个位数，AC 未规定容量、保留期或 SLA；`payload` 是单行 JSON，读写各一条语句。记为 Dev 的非阻塞项，不臆造指标。
+
+## REQ-020
+
+触发：impact 方向为 **modify**（扩展 REQ-019 已引入的 `preferences` 能力）。本需求**零迁移**，
+复用 `member_preference` 中 `kind = 'must_do'` 的行，与 `kind = 'interest'` 的行互不覆盖。
+
+### ⑨ 数据契约
+
+| 概念 | 粒度 | 字段 | 状态迁移 |
+|---|---|---|---|
+| `member_preference`（`kind='must_do'`） | 每 (trip, user, kind) 一行；行内 payload 是一个有序条目列表 | 表结构沿用 REQ-019 的 `V4`：`id`、`trip_id`、`user_id`、`kind`、`payload`（JSON）、`updated_at`；payload 形状固定为 `{"items":[{"id":1,"activity":"…","location":"…"\|"null","time":"HH:mm"\|"null"}]}` | 行不存在 → 首次 PUT 插入；行存在 → PUT 覆盖 `payload` 与 `updated_at`；`{"items":[]}` 合法且保留行；本需求无「删除整行」路径 |
+| 条目 `item` | 属于该成员 payload 内的一个元素；`id` 仅在该成员列表内唯一 | `id`：INTEGER ≥ 1，服务端签发（当前最大 id + 1），删除后**不复用**；`activity`：去首尾空白后非空的字符串；`location`：字符串或 `null`；`time`：`HH:mm`（严格 `^([01][0-9]\|2[0-3]):[0-5][0-9]$`）或 `null` | 无 `id` 的入参条目 → 新增并签发 id；带 `id` 的入参条目 → 原地覆盖该条目；请求中缺失的既有条目 → 从 payload 移除；列表顺序 = 请求顺序 |
+
+线上契约：
+
+| 消息 | 字段 | 备注 |
+|---|---|---|
+| `PUT /api/trips/{tripId}/preferences/must-dos` 请求 | `items`：对象数组，必填，可为空数组 | 元素字段 `activity`（必填）、`location`、`time`、`id`（可选）；三字段先裁剪首尾空白，裁剪后空串等价于未提供 |
+| PUT 响应 | `items`：对象数组，每条含 `id`、`activity`、`location`、`time` | 与落库 payload 一致；未填的 `location` / `time` 为 `null` |
+| `GET /api/trips/{tripId}/preferences/must-dos` 响应 | `members`：`[{userId: integer, mustDos: [item]}]` | 覆盖该 trip 全体成员，按 `userId` 升序；无记录者返回 `mustDos: []` |
+| 错误响应 | `code`（稳定字符串）、`message`（可读文本） | `code` 取值：`USER_REQUIRED`、`NOT_A_MEMBER`、`TRIP_NOT_FOUND`、`INVALID_REQUEST`、`MUST_DO_ACTIVITY_REQUIRED`、`MUST_DO_PLACE_OR_TIME_REQUIRED`、`MUST_DO_TIME_INVALID`、`MUST_DO_ITEM_UNKNOWN`、`MUST_DO_ITEM_DUPLICATE_ID` |
+| 身份 | 请求头 `X-User-Id`，整数 | 指向 `app_user.id`；缺失或非 seed 用户一律 401 |
+
+「改时间不产生第二条」的不变量落在两处：条目身份由 `id` 保真（AC2），条目数量由「整表覆盖」保真（AC2/AC3）。
+两者都在 Service 层，数据库无法约束 JSON 数组内部。
+
+无 `{TBD}` 字段。
+
+### ⑩ 边界枚举
+
+| 分支 | in / out | 归属 |
+|---|---|---|
+| 添加一条含 activity + location + time 的条目 | in（AC1 形态，两个可选字段同时保存） | AC1 / AC15-N |
+| 保存后重新加载页面或重新 GET | in | AC1-R |
+| 用同一条目 id 改时间 | in（原地覆盖，条数不变） | AC2 |
+| 删除条目（整表覆盖为空） | in | AC3 |
+| 其他成员条目在他人删除后是否变化 | in（必须不变） | AC3-M |
+| 只填地点 / 只填时间 | in（另一字段为 `null`） | AC14-N |
+| activity 为空或全空白 | out（`400 MUST_DO_ACTIVITY_REQUIRED`） | AC8-N |
+| 地点与时间都缺失或裁剪后为空 | out（`400 MUST_DO_PLACE_OR_TIME_REQUIRED`） | AC9-N |
+| `time` 非 `HH:mm`（`10:0`、`25:00`、`10am`） | out（`400 MUST_DO_TIME_INVALID`） | AC10-N |
+| 提交他人或不存在的条目 id | out（`400 MUST_DO_ITEM_UNKNOWN`，双方不变） | AC11-N |
+| 同一请求重复提交同一 id | out（`400 MUST_DO_ITEM_DUPLICATE_ID`） | AC12-N |
+| 空数组 | in（清空语义，行保留） | AC3 |
+| 重复提交完全相同的列表 | in（幂等，id 与 payload 不变） | AC13-N |
+| `GET` 连续读两次 | in（只读：payload 与 `updated_at` 不变） | AC16-N |
+| 缺少 `X-User-Id` / 非 seed 用户 | out（`401`） | AC4-N |
+| 非成员调用 GET/PUT | out（`403 NOT_A_MEMBER`） | AC5-N |
+| `tripId` 不存在 | out（`404 TRIP_NOT_FOUND`） | AC6-N |
+| body 非对象、缺 `items`、元素非对象 | out（`400 INVALID_REQUEST`） | AC7-N |
+| GET 失败 / PUT 失败时的前端表现 | in（错误态 + 重试；PUT 失败回滚） | AC17-N / AC18-N |
+| 修改他人必做项 | out（写路径只认 header 身份，无跨成员入口） | REQ-020 §Actors |
+| 兴趣段（US-019）与本段同页共存 | out of scope（本需求不改兴趣端点与保存按钮） | REQ-020 §Out of scope |
+| 主线确认后锁定必做项 | out of scope（沿用 REQ-019 D4：仅测试上下文） | REQ-020 §Out of scope |
+| 排序拖拽、跨成员共享、数量/长度上限 | out of scope（AC 未规定） | REQ-020 OQ-11 |
+| 并发两次 PUT 同一成员 | out of scope（连接池 = 1，实际串行，last-write-wins） | 技术约束 |
+
+每个场景都有归属行。
+
+### ⑪ 跨 REQ 一致性
+
+| 触点 | 对方口径 | 本需求口径 | 收敛结论 |
+|---|---|---|---|
+| 偏好表 | REQ-019 的 `V4` 建 `member_preference` + UNIQUE(`trip_id`,`user_id`,`kind`) | 只写 `kind='must_do'`，不建表、不改列 | 一致：同表不同 kind 互不覆盖，唯一键直接支撑幂等覆盖写 |
+| 端点前缀 | REQ-019 的 `GET`/`PUT /api/trips/{tripId}/preferences` | 新增 `GET`/`PUT /api/trips/{tripId}/preferences/must-dos` | 同为路径前缀但资源不同；需在 P3 确认 Spring 的精确匹配不会把子路径落到旧映射 |
+| 页面契约 | REQ-019 的页面要求「兴趣选择由一次显式保存提交」 | 同一页新增必做项段，且**动作即保存** | 需在 P2 把 `Preferences page` 标为 MODIFIED，写明「按段区分写入时机」，否则两条契约互相矛盾 |
+| 错误 advice | REQ-019 计划在 `com.gogo.preference` 建专属 advice | 复用同一包与同一 advice | 一致；若 REQ-019 的 advice 缺失，本需求的错误码不会产生（WARNING） |
+| 行程日期 | `V2` 的 `trip.start_date` / `end_date`（夹具为单日 2026-12-05） | `time` 只存 `HH:mm`，日期隐含行程日期 | 单日一致；多日行程无法定位具体哪天，记为已知偏离（OQ-12） |
+| 主线确认 | REQ-004 的 `trip.main_plan_confirmed`；US-037 之前无产品写入路径 | 仅作测试上下文，不设锁定分支 | 一致：AC 的「main plan is unconfirmed」是前提，不是状态机分支 |
+| 生成消费 | US-031 的节点 9 需要「必做项汇总」 | `GET` 返回全员明细即汇总输入 | 一致：本需求只提供数据，不实现生成 |
+| 计划文档 | `tech-stack-plan.md` §5 的 24 码 `tag` 表、§6 的封套与 `X-Member-Id` | 跟随已合并代码（`X-User-Id`、裸 DTO、无 `tag` 表） | 与 REQ-019 OQ-16 同一文档修正任务，不重复登记 |
+| 迁移序列 | `V3` 已随 REQ-004 落 main；`V4` 归 REQ-019 | 本需求零迁移 | 无编号竞争；唯一风险是 `V4` 尚未合入时本变更无法运行（R1） |
+| UI 参考图 | 节点 8 表单写「地点 二选一 / 固定时间」 | 两字段可同时保存，至少一项 | 有意偏离：Design scope 明确要求不得阻止同时保存；文案需改（WARNING） |
+
+### ⑫ 展示契约
+
+| 界面态 | 触发 | 接收者 | 内容与展示字段 | 通道 |
+|---|---|---|---|---|
+| 加载中 | 进入 `#/trips/{id}/preferences` | 当前成员 | 必做项段的加载提示；添加与删除控件禁用 | `GET .../preferences/must-dos` |
+| 空态 | GET 成功且当前成员 `mustDos` 为空 | 当前成员 | 「还没有必做项」说明 + 添加入口 | 同上 |
+| 已有条目 | GET 成功且有条目 | 当前成员 | 按服务端顺序渲染 `activity`，有 `location` 时显示地点，有 `time` 时显示时间；每项带编辑与删除 | 同上 |
+| 添加 / 编辑中 | 点击「添加必做项」或某项的编辑 | 当前成员 | 内联表单：活动名称（必填）、地点、固定时间；编辑态预填现值；保存 / 取消 | 本地态，无请求 |
+| 保存中 | 添加、编辑或删除触发 PUT 且未返回 | 当前成员 | 表单与删除按钮禁用，防重复提交 | `PUT .../preferences/must-dos` |
+| 保存成功 | PUT 2xx | 当前成员 | 列表以响应为准（新增条目获得 `id`），无残留错误 | 同上 |
+| 保存失败 | PUT 4xx / 5xx | 当前成员 | 内联显示服务端 `message`；列表回滚到服务端已知状态 | 同上 |
+| 身份 / 成员 / 未知 trip | 401 / 403 / 404 | 当前成员 | 对应错误文案 + 返回入口；不得渲染任何成员的条目 | 同上 |
+| GET 失败 | 不可达或非 2xx | 当前成员 | 错误态 + 重试；**不得**把空列表或旧值渲染成「已保存」 | 同上 |
+
+无通知（邮件、推送、队列）在范围内。
+
+### NFR business-policy layer
+
+单成员条目数量在实际使用中是两位数以内，AC 未规定容量、长度或 SLA；`payload` 是单行 JSON，读写各一条语句。
+记为 Dev 的非阻塞项（OQ-11），不臆造上限。
