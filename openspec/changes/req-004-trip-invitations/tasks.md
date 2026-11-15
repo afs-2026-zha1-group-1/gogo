@@ -87,8 +87,9 @@
       authorization; read the fresh CI run with `gh` and write the pipeline
       report (G2 evidence) — PR #31, run 43608236232 on head `91dca19`, both jobs
       success
-- [ ] 6.2 G2 decision record by named humans; then P5 change summary, G3, and
-      archive via `/sdd:living-merge` — archive order after REQ-003 for `trips`
+- [ ] 6.2 G2 decision record by named humans — **G2 Pass recorded 2026-11-15,
+      VL Elian Jiang**; then P5 change summary, G3, and archive via
+      `/sdd:living-merge` — archive order after REQ-003 for `trips` (pending)
 - [x] 6.3 Update `README.md` run instructions and the registry/handoff rows
 
 ## 7. Stage artifacts (owner: Dev)
@@ -102,7 +103,7 @@
       below; P3 report persisted
 - [ ] 7.5 Record G1/G2/G3 only from named human statements; the agent never
       self-signs a gate (G1 recorded 2026-11-14: IO Emily + SA Johnson Pass;
-      G2/G3 pending)
+      G2 recorded 2026-11-15: VL Elian Jiang Pass; G3 pending)
 
 ## P4 evidence (2026-11-14)
 
