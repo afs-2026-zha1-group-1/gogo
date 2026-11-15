@@ -7,10 +7,15 @@
 任意成员校验会合时间窗口。硬约束 =「两组都能按时会合」：草稿唯一且版本可控、
 路线成对原子、校验覆盖每条路线全部交通段与 buffer，超窗或缺输入拦住整对确认。
 
-链级约定（四条 requirement 共用，源自用户 2026-11-15 裁决与 tech-stack-plan）：
+链级约定（五条 requirement 共用，源自用户 2026-11-15 裁决与 tech-stack-plan）：
 
 - 身份 = 邀请码 + 昵称加入后的成员，请求头 `X-Member-Id` 携带 `trip_member.id`；
   MVP 按给定值信任，不校验签名（DR-05，不得描述为安全控制）。
+- All five endpoints SHALL validate identity, then trip existence, then membership:
+  missing or globally unknown member id returns `401 MEMBER_REQUIRED`; a known
+  member id with an unknown trip returns `404 TRIP_NOT_FOUND`; a known member of
+  another trip returns `403 NOT_A_MEMBER`. Rejections return `data = null` and
+  no private trip, draft or route values. Only authorized calls reach calculation.
 - 响应统一 `{data,error}` 包封套；`error.code` 为稳定机器可读契约，
   `error.message` 为实现文本非契约；成功时 `error = null`。
 - 严格 4 表（trip / trip_member / member_preference / plan_node），不建第 5 表、
@@ -75,7 +80,7 @@ JSON 文档（`initiatorMemberId`、`mainPlanVersion`、`draftVersion = 1`、
 
 #### Scenario: 缺失或未知身份拒绝（S5-N）
 
-- **WHEN** 请求缺失 `X-Member-Id` 头或其 id 不属于该行程成员
+- **WHEN** 请求缺失 `X-Member-Id` 头或其 id 在全局成员记录中不存在
 - **THEN** 响应 `401` 且 `error.code = MEMBER_REQUIRED`
 - **AND** 不创建草稿
 
@@ -156,17 +161,12 @@ draftVersion+1；任何拒绝 SHALL 不改动已保存边界与版本。草稿�
 
 ### Requirement: Group route generation
 
-系统 SHALL 提供 `POST /api/trips/{tripId}/split-draft/routes:generate`
-（`X-Member-Id` 头，body 含 `draftVersion`），仅允许草稿发起人在边界已保存、
-分组齐全（A/B 两组、成员不跨组）时触发成对生成。候选活动 SHALL 由进程内
-可替换提供者接口（`BranchCandidateProvider`）供给，MVP 为固定夹具实现，
-不引入外部网络调用。系统 SHALL 组装恰两条路线（同出发/会合边界、按组差异化
-活动），在单事务内先删旧对再写新对并条件校验 draftVersion：任一失败整对
-回滚（`ROUTE_GENERATION_FAILED`），版本过期拒绝（`STALE_DRAFT_VERSION`）
-且不覆盖新草稿，成功后 draftVersion+1。路线 SHALL 存于 `plan_node`
-（`branch_id = 'split-a'/'split-b'`，按 trip_id 归属活跃草稿，不加列），
-时长存结构化 JSON（activityMinutes、travelLegsMinutes[]、bufferMinutes）；
-不删除主线行。草稿详情 SHALL 返回成对路线（分组、活动、起终点、时长分解）。
+The system SHALL expose `POST /api/trips/{tripId}/split-draft/routes:generate`
+with `draftVersion` for the initiator after boundaries are saved. It SHALL
+atomically replace both group routes using fixed in-process candidates, preserve
+main-plan rows, increment the version on success, roll back on failure, and
+reject stale results without overwriting newer state. Complete, disjoint A/B
+groups are a fixture-guaranteed defensive precondition in this slice.
 
 #### Scenario: 成对生成（G1）
 
@@ -176,18 +176,28 @@ draftVersion+1；任何拒绝 SHALL 不改动已保存边界与版本。草稿�
   B 访问 Gardens by the Bay，两条均起于 City Hall MRT、终于 Merlion Park
 - **AND** 时长分解 = 活动 60 分钟、交通 A: 15/20 与 B: 20/20 分钟、buffer 各 10 分钟
 - **AND** draftVersion 递增
+- **AND** candidates come from replaceable `BranchCandidateProvider`, with a
+  fixed in-process fixture implementation and no external network call
+- **AND** routes use existing `plan_node` rows with `branch_id = split-a/split-b`,
+  associated by trip id without new columns; structured duration JSON contains
+  `activityMinutes`, `travelLegsMinutes[]` and `bufferMinutes`
+- **AND** replacement deletes the old pair and inserts the new pair in one
+  transaction, preserving main-plan rows; fixture groups are complete and disjoint,
+  with invalid-group paths deferred to the out-of-scope group-movement feature
 
 #### Scenario: 半对失败整对回滚（G2-N）
 
 - **WHEN** 夹具构造提供者对 B 组抛错（A 组成功）
 - **THEN** 错误响应 `error.code = ROUTE_GENERATION_FAILED`
 - **AND** 库中无该草稿的任何新路线（无可确认半成品对），draftVersion 不变
+- **AND** any previously saved pair and all main-plan rows remain unchanged
 
 #### Scenario: 过期结果拒绝（G3-N）
 
-- **WHEN** 为草稿 v1 启动生成，期间分组成员移动使草稿变 v2，v1 结果返回
+- **WHEN** generation starts at current draftVersion N after boundary selection,
+  and a concurrent boundary re-selection advances the draft to N+1 before results return
 - **THEN** 响应 `409` 且 `error.code = STALE_DRAFT_VERSION`
-- **AND** v1 结果被丢弃，v2 状态不被覆盖
+- **AND** the result for N is discarded and state at N+1 is not overwritten
 
 #### Scenario: 无边界拒绝（G4-N）
 
@@ -210,23 +220,23 @@ draftVersion+1；任何拒绝 SHALL 不改动已保存边界与版本。草稿�
 
 ### Requirement: Reunion timing check
 
-系统 SHALL 提供 `POST /api/trips/{tripId}/split-draft/routes:check-timing`
-（`X-Member-Id` 头），允许任意行程成员对显式供给的成对路线快照做纯计算校验
-（Database: No，零读库零写库，不持久化结果）。快照 body SHALL 含
-`windowMinutes` 与恰两条 `routes{groupLabel, activityMinutes,
-travelLegsMinutes[], bufferMinutes}`。系统 SHALL 逐路线计算
-`totalMinutes = activityMinutes + Σ travelLegsMinutes + bufferMinutes`
-并与窗口比较：超窗给出 `overrunMinutes`，任一输入缺失逐项列出 `missingInputs`；
-整对 `feasible = true` 仅当两条路线均无超窗且无缺失。超窗/缺输入 SHALL 返回
-`200 + feasible = false`（校验成功执行、结论不可行），不得呈现为通过；
-快照非法（空或路线数 ≠ 2）SHALL 拒绝 `400 INVALID_ROUTE_PAIR`。
+The system SHALL expose `POST /api/trips/{tripId}/split-draft/routes:check-timing`
+for trip members. The entry guard MAY read identity, trip and membership data.
+The calculator SHALL use only the supplied window and two-route snapshot, with
+no repository access or persistence. It SHALL report totals, overruns and missing
+inputs; return 200 with pair `feasible=false` for overruns or missing inputs;
+and reject an empty snapshot or route count other than two with 400 `INVALID_ROUTE_PAIR`.
 
 #### Scenario: 双双通过（T1）
 
 - **WHEN** 成员携带快照：窗口 120 分钟，A = 15+60+20+10、B = 20+60+20+10（buffer 各 10）
 - **THEN** 响应 `200`，A totalMinutes = 105、B totalMinutes = 110，均 ≤ 120
 - **AND** 整对 feasible = true
-- **AND** 校验过程不读库不写库（纯计算）
+- **AND** after the entry guard checks identity, trip existence and membership,
+  the calculator performs no database reads or writes and no result is persisted
+- **AND** input contains `windowMinutes` and two `routes` with `groupLabel`,
+  `activityMinutes`, `travelLegsMinutes[]` and `bufferMinutes`; each total is
+  activity duration plus every travel leg plus buffer
 
 #### Scenario: 超窗拦住整对（T2-N）
 
@@ -252,9 +262,66 @@ travelLegsMinutes[], bufferMinutes}`。系统 SHALL 逐路线计算
 - **THEN** 响应 `400` 且 `error.code = INVALID_ROUTE_PAIR`
 - **AND** 不产生结论
 
+#### Scenario: Timing identity and trip guards precede calculation (T6-N)
+
+- **WHEN** the timing endpoint receives a missing or globally unknown member id,
+  a known member with an unknown trip, or known outsider Eve for the fixture trip
+- **THEN** the respective response is `401 MEMBER_REQUIRED`, `404 TRIP_NOT_FOUND`
+  or `403 NOT_A_MEMBER`, with `data = null`
+- **AND** the calculator is not invoked and no snapshot or route values are returned
+
 #### Scenario: 窗口校验屏幕展示契约（Screen 14）
 
 - **WHEN** 成员打开窗口校验屏幕并触发校验
 - **THEN** 页面呈现两条路线的活动/交通/buffer 分解与 totalMinutes
 - **AND** 通过态、超窗态（显示超出分钟数）、缺输入态（列出缺失项）三态可观察
 - **AND** loading / empty / permission 态可观察；前端不自行宣布可行
+
+### Requirement: Split draft detail read
+
+The system SHALL expose member-only `GET /api/trips/{tripId}/split-draft` using
+the shared identity guards and `{data,error}` envelope. It SHALL return a
+consistent saved draft snapshot with versions, groups, selectable main-plan
+stops, boundaries, window and route pair. An existing trip without an active
+draft SHALL return 200 with `data=null` and `error=null`. Reads SHALL NOT mutate
+the draft, routes or versions, and SHALL NOT require initiator status.
+
+#### Scenario: Member reloads the saved draft and routes (D1)
+
+- **WHEN** member Chloe refreshes the draft page after Ben saves boundaries
+  and generates both routes, then requests the draft detail endpoint
+- **THEN** response is 200 with `error=null`; `data` contains `initiatorMemberId`,
+  `mainPlanVersion`, `draftVersion`, `status`, `groups`, `createdAt`, `updatedAt`,
+  `mainPlanStops`, `departureStopId`, `reunionStopId`, `departureAt`, `reunionAt`,
+  `windowMinutes` and `routes`
+- **AND** stops belong to the draft's main-plan version with id, name, start/end
+  timestamps; boundaries yield window 120 and routes contain A/B groups, activity
+  names, departure/reunion stops and `activityMinutes`, `travelLegsMinutes[]`,
+  `bufferMinutes`, sufficient to build the timing snapshot without client guesses
+- **AND** before boundary selection boundary ids/times/window are null; before
+  generation `routes=[]`; otherwise saved boundary and pair values are returned
+- **AND** all fields describe one consistent saved state; no version is incremented
+
+#### Scenario: Existing trip has no active draft (D2)
+
+- **WHEN** a member requests detail for an existing trip with no active draft
+- **THEN** response is 200 with `data=null` and `error=null` for the empty state
+- **AND** no draft is created and no data or version changes
+
+#### Scenario: Known outsider cannot read draft detail (D3-N)
+
+- **WHEN** Eve uses her known member id to read the fixture trip's draft detail
+- **THEN** response is 403 with `error.code=NOT_A_MEMBER` and `data=null`
+- **AND** no trip, draft or route values are returned
+
+#### Scenario: Missing or globally unknown identity cannot read detail (D4-N)
+
+- **WHEN** a detail request has a missing or globally unknown `X-Member-Id`
+- **THEN** response is 401 with `error.code=MEMBER_REQUIRED` and `data=null`
+- **AND** no trip, draft or route values are returned
+
+#### Scenario: Known member requests an unknown trip (D5-N)
+
+- **WHEN** a known member requests detail with a trip id that does not exist
+- **THEN** response is 404 with `error.code=TRIP_NOT_FOUND` and `data=null`
+- **AND** no draft is created and no data or version changes

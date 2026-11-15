@@ -184,7 +184,8 @@ Trigger: impact solution direction is **add**（新能力 `splits`，四个 REQ 
 技术基准 = 4 表精简版 tech-stack-plan（用户 2026-11-15 裁决）；身份 = `X-Member-Id`；
 上游夹具自包含；draft_version 任何变更递增；**严格 4 表：不建第 5 表、不加
 plan_node 列，草稿 = trip.split_draft JSON 文档**；分组存草稿 JSON；边界成对保存；
-校验 = 显式快照 body 零读库；前端增量引入新栈（均为用户 2026-11-15 裁决）。
+校验 = 显式快照 body；calculator has no database access, while entry guards may
+read identity/trip/membership. Frontend incrementally adopts the approved stack.
 注：上方 REQ-003 段为遗留草稿（保留不提交，未生效），与本段口径冲突处按本段为准。
 
 ### ⑨ Data contract
@@ -236,7 +237,7 @@ plan_node 列，草稿 = trip.split_draft JSON 文档**；分组存草稿 JSON�
 |---|---|---|
 | 身份契约 X-Member-Id | 004~007 | 统一；用户裁决 OQ-2 |
 | draft_version 语义 | 005/006（004 创建从 1 起） | 任何变更递增；条件更新防 stale；用户裁决 OQ-5 |
-| 边界→生成→校验数据流 | 005→006→007 | 边界存 trip.split_draft JSON；路线存 plan_node(branch_id=split-a/b)；校验消费显式快照 body（零读库），字段同源 |
+| 边界→生成→校验数据流 | 005→006→007 | Saved boundaries in trip.split_draft; routes in plan_node split-a/b; member-only GET returns a consistent snapshot; timing entry guard may read membership, calculator consumes only explicit body without database I/O |
 | 错误码与包封套 | 004~007 | 统一 {data,error}；code 表见夹具 B 链段；无重名冲突 |
 | 与 REQ-003 草稿的 trips 口径 | 004 vs REQ-003（未立项） | ✗→已收敛：用户 2026-11-15 裁决 B 链按 tech-stack-plan（UUID id、invite_code、X-Member-Id）；REQ-003 草稿口径作废待对齐（OQ-N1，owner IO/SA）；REQ-003 非活跃 change，不构成 Living Spec 冲突 |
 | 与 greeting 能力 | 无 | 无共享表/端点；V1 迁移不动，B 链从 V2 起；前端 greeting 页保持 JSX（增量新栈裁决） |
@@ -249,11 +250,18 @@ plan_node 列，草稿 = trip.split_draft JSON 文档**；分组存草稿 JSON�
 | 表面 | 触发 | 接收者 | 内容 + 展示字段 | 通道 |
 |---|---|---|---|---|
 | Screen 11 发起拆分 | 成员点击发起 | 行程成员 | 草稿状态（initiator、mainPlanVersion、draftVersion）；冲突/未确认/无权限错误态；loading/empty | POST /api/trips/{tripId}/split-draft |
-| Screen 12 边界选择 | 发起人选择 stop | 拆分发起人 | 出发/会合 stop 名 + 时刻 + 窗口分钟数；非正窗口/主线外错误态；loading/empty/permission | PUT …/split-draft/boundaries + 草稿详情读 |
+| Screen 12 边界选择 | 发起人选择 stop | 拆分发起人 | 出发/会合 stop 名 + 时刻 + 窗口分钟数；非正窗口/主线外错误态；loading/empty/permission | PUT …/split-draft/boundaries + GET /api/trips/{tripId}/split-draft |
 | Screen 13 分组路线 | 发起人点击生成 | 拆分发起人 | 成对路线（组标签、活动名、起终点、时长分解）；失败/过期错误态；loading/empty/permission | POST …/split-draft/routes:generate |
 | Screen 14 窗口校验 | 成员点击校验 | 行程成员 | 逐路线 activity/travel/buffer 分解 + totalMinutes；通过/超窗（overrunMinutes）/缺输入（missingInputs）三态；loading/empty/permission | POST …/split-draft/routes:check-timing |
 
 无通知（email/push/queue）；多人可见性靠轮询刷新（DR-06，P3 细化）。
+All four screens use member-only `GET /api/trips/{tripId}/split-draft` for refresh
+and polling. It returns versions, groups, timestamps, selectable main-plan stops,
+nullable boundary ids/times/window and routes (empty before generation), or
+`200 {data:null,error:null}` without an active draft. Reads never mutate state.
+Shared guard order is identity -> trip -> membership: missing/globally unknown
+id -> 401, known member with unknown trip -> 404, known outsider Eve -> 403;
+rejections return `data=null` without private values (detail D1-D5-N; timing T6-N).
 
 ### NFR business-policy layer
 

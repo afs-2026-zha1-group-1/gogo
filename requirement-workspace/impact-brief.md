@@ -136,8 +136,8 @@ Baseline classification: brownfield-on-greenfield —— `greeting` 能力已落
 
 | Touched asset | As-is（证据） | Proposed delta |
 |---|---|---|
-| `openspec/specs/` | 仅 `greeting` | 归档时新建能力 `splits`，含 4 条 requirement：Split draft start / Split boundary selection / Group route generation / Reunion timing check |
-| 后端服务 | `com.gogo.hello` 4 类，仅 greeting | 新增 splits 模块：4 端点（`POST /api/trips/{tripId}/split-draft`、`PUT …/boundaries`、`POST …/routes:generate`、`POST …/routes:check-timing`）；`{data,error}` 包封套 + `X-Member-Id` 身份契约；候选供给 = 进程内可替换提供者接口 + MVP 固定夹具实现（OQ-3） |
+| `openspec/specs/` | Greeting only | New splits capability on archive: five requirements, four business operations plus shared Split draft detail read |
+| Backend | Greeting only | Five endpoints: draft POST and member-only GET, boundaries PUT, generate POST, check-timing POST; `{data,error}` envelope, `X-Member-Id` guards; in-process replaceable candidate provider |
 | 数据库 schema | 仅 V1 greeting 表 | V2 迁移：建 4 表（trip/trip_member/member_preference/plan_node）+ `trip.split_draft` 可空 TEXT 列（唯一 schema 扩展，用户裁决 OQ-N2 严格 4 表）+ 自包含种子（行程/5 成员/主线 v1 两 stop，OQ-1）；SQLite 三铁律（池=1、WAL、busy_timeout=5000、foreign_keys=on） |
 | 前端应用 | React 19 纯 JSX，仅 greeting 页 | 增量引入 TS + AntD 5 + TanStack Query v5 + React Router 7（OQ-N3）；新增 Screen 11~14 对应页面；greeting 页保持 JSX（vite 混编） |
 | `openspec/changes/req-004-split-draft-start/` | 仅 `.openspec.yaml` 残留 stub | proposal 阶段移除 stub，改建 `req-004-split-planning-chain`（OQ-4） |
@@ -160,9 +160,10 @@ Baseline classification: brownfield-on-greenfield —— `greeting` 能力已落
 ## 5. Artifact impact
 
 - Specs: `openspec/changes/req-004-split-planning-chain/specs/splits/spec.md`
-  （4 条 ADDED requirement，P2 产物，本期不写）。
-- Tests: 后端验收测试四组（S1~S7 / B1~B6-N / G1~G5-N / T1~T5-N，夹具见
-  `acceptance-test-fixtures.md` B 链段）；前端 build 检查；US-043 纯计算零读库断言。
+  (five ADDED requirements / 34 scenarios, current P2 review package).
+- Tests planned: start/boundaries/generation/timing/detail requests in fixtures;
+  frontend build; timing calculator zero database I/O assertion after entry guard.
+  Entry guards may read identity/trip/membership, never saved routes for calculation.
 - Docs: 本 workdir（四 REQ/deep-dive/DoR/意图/夹具/registry 已就位）、
   `docs/ai4se-plugins/` 检查点与质量报告。
 - KB entries: P1 无新增；P5 归档时更新。
@@ -188,9 +189,10 @@ OpenSpec track only。四个 story（US-038/039/042/043）已是需求条目粒�
 
 ## 8. Suggested split boundaries
 
-一个 change：`req-004-split-planning-chain`，一个新能力 `splits`，四条 ADDED
-requirement 一一对应 REQ-004~007（用户裁决 OQ-4，不再按 story 拆多个 change）。
+One change: `req-004-split-planning-chain`, one capability `splits`, five ADDED
+requirements: REQ-004~007 operations plus their shared draft detail read.
 链内实现顺序建议：REQ-004（草稿+V2 迁移+种子）→ REQ-005（边界）→
 REQ-006（成对生成）→ REQ-007（纯校验，可与 006 并行）。前端四页面随后端
-契约逐环接入。Effort: medium-large —— 1 迁移、4 端点、1 提供者接口+夹具实现、
-4 前端页面 + 新栈引入、四组验收测试。无跨 change 依赖（greeting 不受影响）。
+契约逐环接入。Effort: medium-large: one migration, five endpoints, provider and
+fixture implementation, four frontend pages/new stack, five acceptance groups.
+No cross-change dependency; greeting unaffected. G1 remains Conditional.
