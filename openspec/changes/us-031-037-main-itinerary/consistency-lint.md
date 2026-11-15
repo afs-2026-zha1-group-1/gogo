@@ -1,7 +1,7 @@
 # Consistency lint — us-031-037-main-itinerary
 
 - Change id: `us-031-037-main-itinerary`
-- Phase: p2 (pre-G1; IO Emily sign-off pending, SA Lumi Pass recorded 2026-11-15)
+- Phase: p2 (Emily IO approval and SA Lumi Pass recorded 2026-11-15; G1 Conditional)
 - Focus: full change package + requirement-workspace §US-031-037 artifacts
 - Timestamp: 2026-11-15
 - Artifact level: 2 (proposal + specs; `tasks.md` / `design.md` absent → T/D
@@ -89,7 +89,19 @@ in scenarios). Forward-looking counts synced to M1–M14 in DoR ④⑤⑥,
 impact-brief §5/§8, proposal, g1-decision, dov-ac-review. Historical process
 records (docs/ai4se-plugins QC report) left untouched.
 
-## Residual risks
+## Current product review update (2026-11-15)
+
+The user explicitly accepted G1 agenda items 1/2/4/5, including L1 default A:
+post-confirm generation returns 409 ALREADY_CONFIRMED, creates no draft and leaves
+the confirmed plan unchanged; replanning stays in R2. This supersedes the pending
+product-ratification wording in the historical report. Emily subsequently
+approved the current 7-requirement / 24-scenario package on 2026-11-15 per the
+user's separate explicit signing instruction. No behavior changed. Overall G1
+is Conditional for C1/C2, not missing IO approval.
+The travel-duration-versus-stop-gap question remains unanswered; cross-branch
+preference schema/V4 ownership needs SA/Dev convergence before implementation.
+
+## Residual risks (historical report; current status amended above)
 
 - L1 default A is landed but not yet IO-ratified; Emily may amend it at G1
   (agenda item 5). If she changes the ruling, the G6/M14 bundle is the edit
@@ -108,11 +120,12 @@ records (docs/ai4se-plugins QC report) left untouched.
 - Agent: consistency-lint run 2026-11-15 (read-only first pass; remediation
   edits executed in the same session after the L1 user selection and the L2
   ruling, with re-validation).
-- Human sign-off: SA Lumi Pass (2026-11-15) covers the V4+ shape. IO Emily
-  pending — G1 agenda items 1/2/4/5 (item 5 = L1 ratification of default A).
+- Human sign-off: SA Lumi Pass (2026-11-15) covers the V4+ shape. Emily IO Pass
+  recorded 2026-11-15 for the current 7/24 package, including agenda items 1/2/4/5.
+  G1 C1/C2 remain open; no integration or travel-validation ruling is inferred.
 
 ## Next (non-Gate)
 
-Record IO Emily's verdict via `/sdd:g1-decision-record` (agenda items 1/2/4/5;
-item 5 ratifies or amends L1 default A). On G1 Pass → P3 (`/sdd:atdd-design`,
-`/sdd:task-plan`).
+Resolve G1 C1/C2 with the named owners, update affected contracts and obtain any
+required review before recording overall G1 Pass. Emily IO approval is recorded;
+it is not evidence that these follow-ups are complete.

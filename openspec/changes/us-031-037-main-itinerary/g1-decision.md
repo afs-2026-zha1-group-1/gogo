@@ -2,10 +2,11 @@
 
 - Change id: `us-031-037-main-itinerary`
 - Gate: G1 (Align)
-- Status: **NOT RECORDED — SA decided, IO pending** (draft prepared
-  2026-11-15). No verdict is chosen
-  here; the gate closes only when named IO and SA sign-offs are recorded from
-  human statements. User-designated approvers: **IO = Emily**, **SA = Lumi**
+- Status: **Conditional — IO Emily approved; follow-ups remain open**
+  (2026-11-15). Emily's approval is recorded per the user's explicit signing
+  instruction for the current 7-requirement / 24-scenario package. Existing
+  SA Lumi Pass is unchanged; neither approval answers the unresolved follow-ups
+  listed below. User-designated approvers: **IO = Emily**, **SA = Lumi**
   (SA updated 2026-11-15 by user statement "当前的SA是Lumi", superseding the
   Johnson designation carried from REQ-003/004; IO unchanged).
 
@@ -20,8 +21,9 @@
   the G1 review agenda below).
 - Consistency lint: `consistency-lint.md` (phase=p2, 2026-11-15) — initial
   Partial (0 BLOCKER / 3 WARNING / 2 SUGGESTION); L2/L3/L4 remediated and
-  re-validated; L1 landed as recommended default A (user-selected) with IO
-  ratification pending — agenda item 5.
+  re-validated; L1 behavior explicitly accepted by the user in the current
+  product review (agenda item 5). Emily IO Pass is now recorded; overall G1
+  remains Conditional for the follow-ups below.
 - Validation: `openspec validate us-031-037-main-itinerary --strict` → "is
   valid"; plain mode → "is valid", zero warnings (CLI 1.16.1 on PATH; re-run
   after shortening two >500-character requirement texts).
@@ -69,22 +71,36 @@
   version is frozen (`stale` always false; delta scenario + fixtures M13).
   L1 — generation after confirmation rejected 409 `ALREADY_CONFIRMED`, no new
   draft, replanning deferred to R2 — landed as recommended default A selected
-  by the user; because it expands the `ALREADY_CONFIRMED` contract coverage,
-  IO Emily's ratification is required (agenda item 5). L3/L4 mechanical fixes
+  by the user and explicitly accepted again in the current product review
+  (agenda item 5); Emily subsequently approved the current package by separate
+  explicit user instruction. L3/L4 mechanical fixes
   applied. No contradiction between stated rules was found by the lint.
-- **Working-tree state:** all P2 artifacts are uncommitted on branch
-  `US-031-037-main-itinerary-planning`; a commit before sign-off gives the
-  signed deltas a stable reference (recommended, not a gate condition).
+- **Review baseline:** P2 artifacts are committed at `7d8d801` on branch
+  `US-031-037-main-itinerary-planning`. This revision records the accepted product
+  decisions and Emily IO approval; it does not certify unresolved integration work.
 
 ## G1 review agenda (from dov-ac-review.md §Residual concerns)
 
 | # | Item | Role | Content to confirm |
 |---|---|---|---|
-| 1 | `commonInterests` / `mustDo` aggregation semantics | IO | intersection of ready members' interests; deduplicated union of must-do items; display-only, no AC depends on content |
-| 2 | Fixed `rules` identifier set + per-stop `interests` tags | IO | six identifiers fixed in fixtures (display wording free); provider tags may be empty; display-only |
+| 1 | `commonInterests` / `mustDo` aggregation semantics | IO | Accepted by user 2026-11-15: intersection of ready members' interests; deduplicated union of must-do items; display-only |
+| 2 | Fixed `rules` identifier set + per-stop `interests` tags | IO | Accepted by user 2026-11-15: six fixture identifiers, free display wording; provider tags may be empty |
 | 3 | V4+ convergence shape | SA | 3 new tables + 2 `trip_member` columns, no `trip` ALTER, confirmed version = draft marked confirmed — **confirmed: SA Lumi Pass 2026-11-15** |
-| 4 | OQ-8 re-confirm behavior | IO | 409 `ALREADY_CONFIRMED`, no state change (user-ruled; IO review per intent) |
-| 5 | Generation after confirmation (lint L1) | IO | Recommended default A selected by the user 2026-11-15: reject 409 `ALREADY_CONFIRMED`, no new draft, replanning deferred to R2 (delta G6 + fixtures M14). Expands `ALREADY_CONFIRMED` coverage → **IO ratification required**; the user's selection is not the IO sign-off |
+| 4 | OQ-8 re-confirm behavior | IO | Accepted by user 2026-11-15: 409 `ALREADY_CONFIRMED`, no state change |
+| 5 | Generation after confirmation (lint L1) | IO | Accepted by user 2026-11-15: reject 409 `ALREADY_CONFIRMED`, no new draft, replanning deferred to R2 (G6/M14). Emily IO Pass subsequently recorded by explicit signing instruction |
+
+## Product review follow-up (2026-11-15)
+
+The user explicitly accepted agenda items 1, 2, 4 and 5, then separately
+instructed recording Emily's signature. IO Emily approves the current
+7-requirement / 24-scenario package on 2026-11-15. Existing SA Lumi approval is
+unchanged; no behavioral contract is changed by recording this approval.
+
+The separate question whether travel duration must fit between adjacent stops
+was not answered. Do not add a new confirmation-blocking rule by inference;
+IO/SA must resolve this boundary before treating it as decided. Also retain the
+cross-branch `member_preference` schema/V4 ownership convergence with
+`feat/travel_preference` as SA/Dev follow-up; this update does not reconcile it.
 
 Non-gating acknowledgements (inherited, already disclosed): `X-User-Id`
 unverified scaffold identity (never a security control); test-only setup
@@ -93,20 +109,30 @@ inventory for pending/stale/overrun/null-location/schedule cases (fixtures
 
 ## Decision
 
-- Decision: **NOT RECORDED** — SA decided; pending IO Emily's verdict. The
-  overall decision is recorded only once both required roles have decided.
-- Conditions + owners: none supplied by SA; to be filled from the IO sign-off
-  statement if any; a Conditional verdict must list remediation items with
-  owners.
-- IO sign-off: Emily — pending (user statement 2026-11-15: 还没裁决).
+- Decision: **Conditional**. IO Emily Pass and the existing SA Lumi Pass are
+  recorded. The follow-ups identified in the current review are not answered or
+  waived by the signing instruction, so overall G1 Pass is not claimed.
+- IO sign-off: **Emily — Pass**, recorded 2026-11-15 per the user's explicit
+  instruction; covers the current 7-requirement / 24-scenario package including
+  accepted agenda items 1, 2, 4 and 5. Supersedes the earlier IO-pending status.
 - SA sign-off: **Lumi — Pass**, recorded 2026-11-15 from the user's explicit
   session answer `Lumi — Pass` to the G1 SA question (agenda item 3, V4+
   convergence shape), after the P2 deltas, DoV review and strict validation
   evidence were presented. No SA conditions were supplied. The agent records
   this statement, not an independently verified identity or an approval on
   behalf of the IO.
-- Timestamp: pending overall (draft prepared 2026-11-15; SA statement recorded
-  2026-11-15).
+- Timestamp: 2026-11-15 (Emily IO approval recorded; SA approval retained).
+
+## Open conditions
+
+| ID | Follow-up | Owner | State |
+|---|---|---|---|
+| C1 | Decide whether each travel duration must fit the gap to the next stop; update validation scenarios if the existing minimal rule set changes | IO Emily / SA Lumi | pending; question not answered, no new rule inferred |
+| C2 | Reconcile `member_preference` ownership, schema and V4 migration numbering with `feat/travel_preference`; document merge order and consumer adaptation | SA Lumi / Dev | pending; this branch's main convergence does not resolve the feature-branch collision |
+
+Both conditions must be explicitly resolved before claiming overall G1 Pass.
+No revised SA approval, runtime verification or implementation completion is
+implied by Emily's signature.
 
 ## Next
 

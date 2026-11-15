@@ -1,5 +1,18 @@
 # Requirement registry
 
+## US-031-037 product review update (2026-11-15)
+
+This update supersedes pending product-choice wording in the snapshot row below.
+The user accepts ready-member interest intersection / deduplicated must-do union
+for display, the six fixed rule identifiers with free wording and optional stop
+tags, re-confirmation 409 without changes, and post-confirm generation 409 without
+a new draft (replanning deferred to R2). Emily IO Pass for the current
+7-requirement / 24-scenario package is recorded 2026-11-15 per the user's separate
+explicit signing instruction; SA Lumi's recorded approval is unchanged. Overall
+G1 is Conditional for C1/C2, not missing IO approval. No behavior changes.
+Travel-duration-versus-stop-gap validation was not answered; preference
+schema/V4 convergence with `feat/travel_preference` remains SA/Dev follow-up.
+
 | id | title | status | openspec change | notes |
 |---|---|---|---|---|
 | REQ-001 | Hello World home page | Archived; G1/G2/G3 signed (Johnson) | `openspec/changes/archive/2026-11-13-req-001-hello-world/` | H2 substituted for SQLite per the 2026-11-13 instruction (OQ-1). OQ-2/OQ-3/OQ-4 were carried as G1 conditions and closed the same day by IO rulings; the JSON and SQLite rulings are delivered by REQ-002, not by editing this archive. DoR BLOCKER = 0, A0 Pass. |

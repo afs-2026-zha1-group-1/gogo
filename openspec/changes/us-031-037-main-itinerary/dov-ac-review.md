@@ -44,7 +44,20 @@ Seven ADDED requirements, twenty-four scenarios, one new capability
 | DoV-4 no business implementation claimed done here | Pass | P2 authored/refined the delta, fixtures, deep-dive, impact brief, proposal and this review only | No production code was edited in P2; the merged REQ-003/004 code is baseline, not this change's output |
 | DoV-5 requirements trace to proposal / approved requirements | Pass | US-031 AC1 → G1; US-031 AC2 → G2; US-037 AC1 → C1 (+ confirmed read, V7); US-037 AC2 → C2; signed 2026-11-14 completion ruling → G3 pair; OQ-4 → G5; OQ-6 → C1/C3; OQ-7 → C4 + stale read; OQ-8 → V7; F6 closure → I1–I3; J4 anchor → C1 accept assertion; lint L1 default A → G6/M14 (IO ratification pending); lint L2 ruling → confirmed-frozen scenario/M13; story-level mandatory states → deep-dive ⑫ | Every story AC and signed ruling maps to at least one scenario; reverse cases (identity, non-member, unknown trip, no-draft, re-confirm, post-confirm generation) are declared boundary behavior, not new scope |
 
-## Residual concerns for IO / SA / VL
+## Current product review update (2026-11-15)
+
+The user explicitly accepts residual items 1, 2, 4 and 5 below: ready-member
+interest intersection and deduplicated must-do union for display; six fixed rule
+identifiers with free display wording and optional provider tags; re-confirmation
+409 without state change; post-confirm generation 409 without a new draft and
+replanning deferred to R2. This supersedes those items' pending product-ratification
+wording in the historical review below. Emily subsequently approved the current
+7-requirement / 24-scenario package on 2026-11-15 per the user's separate explicit
+signing instruction. Existing SA Lumi Pass is retained. G1 is Conditional, not
+Pass: travel-duration-versus-stop-gap validation and cross-branch preference
+schema/V4 convergence remain open under G1 C1/C2. This update does not answer them.
+
+## Residual concerns for IO / SA / VL (historical review)
 
 1. **`commonInterests` / `mustDo` aggregation semantics (IO, G1)** — fixed as
    intersection of ready members' interests and deduplicated union of must-do
