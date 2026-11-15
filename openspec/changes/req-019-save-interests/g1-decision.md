@@ -2,8 +2,17 @@
 
 - Change id: `req-019-save-interests`
 - Gate: G1 (Align)
-- Status: **RECORDED — Pass** (2026-11-15). IO Emily Pass and SA evelyn.huang Pass
-  are both recorded below; the gate is closed.
+- Status: **RECORDED — Conditional; gate NOT closed** (2026-11-15). SA evelyn.huang has
+  signed Pass. IO Emily has not reviewed or signed; that signature is the only open
+  condition.
+
+## Correction notice
+
+This file supersedes the first version recorded earlier on 2026-11-15, which wrongly
+stated that IO Emily had already passed. The SA corrected that: only the SA has signed
+so far. The IO reviews the pushed feature branch once the SA's four requirements have
+all reached G1, and signs afterwards. The earlier "IO Emily — Pass" statement was an
+error made by the agent, not a human statement, and it is withdrawn here.
 
 ## Inputs
 
@@ -36,16 +45,15 @@
 
 - **Scope:** one new capability, five ADDED requirements, matching the proposal. The
   details-page entry link (D13) was written back into the proposal's What Changes and
-  Impact before this gate, so it is in scope rather than a silent addition.
+  Impact before this record, so it is in scope rather than a silent addition.
 - **Conflict with the Living Spec:** none. `preferences` does not exist in
   `openspec/specs/`, and nothing in `greeting` is referenced or modified.
 - **Conflict with merged capabilities:** none. `greeting` and `trips` keep their
-  endpoints, response shapes and tables; `V1`/`V2` migrations are untouched. The new
-  `member_preference` table is additive and its `V4` number is reserved after
-  REQ-004's `V3`.
+  endpoints, response shapes and tables; `V1`–`V3` migrations are untouched. The new
+  `member_preference` table is additive.
 - **Conflict between delta requirements:** none. Identity and membership form a shared
   precondition; catalogue, save, read and page requirements touch disjoint paths.
-- **Ambiguity:** 0 blocking. D11–D14 were decided this round (batch save, `userId` +
+- **Ambiguity:** 0 blocking. D11–D14 were decided in P2 (batch save, `userId` +
   `interests` payload, details-page entry, fixtures deferred). Six further contract
   details are fixed in `dov-ac-review.md` §3 (C1–C6): replace-not-merge, `userId`
   ordering, identity-header whitespace tolerance against literal interest matching,
@@ -61,34 +69,49 @@
   `AGENTS.md` still mandates shadcn/ui; IO asked whether the missing "clear all" action
   and the English-only labels are acceptable. Owners: SA / IO / Dev as listed in
   `dov-ac-review.md` §6.
+- **Not known at recording time:** the IO review outcome and any IO conditions. They
+  cannot be inferred from the SA signature and are therefore left open.
 
 ## Decision
 
-- Decision: **Pass** — recorded 2026-11-15 once both required roles had decided.
-- Conditions + owners: **none**. Neither role supplied a remediation item; the retained
-  risks above remain tracked follow-ups and were not converted into gate conditions.
-- Approvers: **IO = Emily**, **SA = evelyn.huang**.
-- IO sign-off: **Emily — Pass**, recorded 2026-11-15 from the user's selection in
-  session (`IO 签署人 = Emily`, `G1 决策 = Pass`). No IO conditions were supplied.
-- SA sign-off: **evelyn.huang — Pass**, recorded 2026-11-15 from the user's explicit
-  choice to sign as SA under the repository git identity (`SA 署名 = evelyn.huang`,
-  `G1 决策 = Pass`). No SA conditions were supplied.
-- The agent records these human statements. It does not independently verify the
-  identities and does not approve on behalf of either role.
+- Decision: **Conditional** — recorded 2026-11-15.
+- Why not Pass: G1 requires a named IO signature as well as the SA signature. Only the
+  SA has signed, so a Pass record would misstate the gate.
+- Why not Fail: the delta itself cleared AC 4/4 and DoV 5/5 with zero blocking
+  ambiguity, and no reviewer has asked for rework.
+- Conditions + owners:
 
-## What recording G1 required (satisfied)
+| # | Condition | Owner | State |
+|---|---|---|---|
+| 1 | Finish the SA's four requirements to G1 on `feat/travel_preference`, then push the branch for review | evelyn.huang (SA) | open |
+| 2 | Review the pushed delta and sign G1 Pass for this change | Emily (IO) | open; entry is condition 1 |
+| 3 | Fold any IO finding into `specs/preferences/spec.md` (and `dov-ac-review.md`) before P4 implementation | evelyn.huang | open; triggered by condition 2 |
 
-1. IO Emily's Pass and SA evelyn.huang's Pass are both recorded from human statements
-   in this session.
-2. The overall decision is Pass with no conditions, so no remediation list is required.
-3. No ambiguity is left unresolved; every non-blocking item has an owner and lives in
-   `dov-ac-review.md` §6 rather than being silently dropped.
+- Approvers: **IO = Emily — pending**, **SA = evelyn.huang — Pass**.
+- SA sign-off: **evelyn.huang — Pass**, recorded 2026-11-15 from the SA's statement
+  that the SA has already signed and agreed to pass. No SA conditions were supplied.
+- IO sign-off: **not recorded**. No IO review or signature exists at this time.
+- The agent records human statements only. It does not verify identities, does not sign
+  on behalf of either role, and the withdrawn IO statement above is evidence that it
+  must not be inferred from a signature request.
+
+## What this record does and does not allow
+
+- Allowed: P3 design work (`/sdd:atdd-design`, `/sdd:task-plan`) on the SA-signed
+  delta, because the delta itself is stable and A0/DoV clean.
+- Not allowed: claiming G1 is closed; presenting `preferences` as aligned in the
+  registry; starting P4 implementation on the assumption that no IO condition will
+  arrive.
+- If the IO signs without findings, this file is amended to Pass with the IO signature
+  row filled in. If the IO raises findings, they are added as conditions here and the
+  delta is revised before P4.
 
 ## Next
 
-G1 Pass → P3 (`/sdd:atdd-design`, `/sdd:task-plan`), then P4 implementation.
-
-P3 must settle one item before code: the error-advice package scope (own advice for
-`com.gogo.preference` versus widening `TripErrorAdvice` to `com.gogo`). The migration
-order is settled: `V3` is on `main`, so `V4` lands next and must stay after any later
-rebase of `main`.
+1. Complete the remaining SA-owned requirements to G1.
+2. Push `feat/travel_preference` for IO review.
+3. IO Emily reviews and signs; this record flips to Pass or gains new conditions.
+4. P3 can start in parallel: settle the error-advice package scope (own advice for
+   `com.gogo.preference` versus widening `TripErrorAdvice` to `com.gogo`). The
+   migration order is settled: `V3` is on `main`, so `V4` lands next and must stay
+   after any later rebase of `main`.
