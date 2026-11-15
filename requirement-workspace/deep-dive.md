@@ -199,7 +199,7 @@ plan_node 列，草稿 = trip.split_draft JSON 文档**；分组存草稿 JSON�
 | `plan_node`（分组路线） | 一行一路线节点；每草稿恰两条活动节点（+起终点引用） | 同主线字段，**不加列**；`branch_id='split-a'/'split-b'`，按 trip_id 归属当前活跃草稿；`plan_version`=草稿 mainPlanVersion；活动时长/交通段/buffer 存结构化 JSON 字段（activityMinutes、travelLegsMinutes[]、bufferMinutes，复用 §5 「结构化字段 TEXT 存 JSON」约定） | 成对单事务写入（REQ-006）；失败整对回滚；重生成同事务先删旧对再写新对 |
 | 时间校验快照（wire） | 一次校验一份；恰两条路线 | 入参：`windowMinutes` + `routes[2]{groupLabel, activityMinutes, travelLegsMinutes[], bufferMinutes}`；出参：逐路线 `totalMinutes`、`overrunMinutes`、`missingInputs[]` + 整对 `feasible` | 无持久化（Database: No）；纯计算 |
 
-所有权：后端独占全部表与迁移（V2 起：三表 + trip.split_draft 列 + 种子）；前端不直读数据库。
+所有权：后端独占全部表与迁移（V2 起：四表 + trip.split_draft 列 + 种子；member_preference 本链无需种子）；前端不直读数据库。
 无 `{TBD}` 字段；存储载体类裁决已全部落地（OQ-N2/N5 resolved）。
 
 ### ⑩ Boundary enumeration
