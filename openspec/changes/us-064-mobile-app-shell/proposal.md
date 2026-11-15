@@ -13,8 +13,10 @@ not change the existing contracts.
 
 One frontend-only change keeps a single gate cycle and verifies the
 "contracts unchanged" boundary once. The 2026-11-14 pick session fixed the
-slug `req-005-mobile-app-shell` and branch `sdd-req-005-trip-setup`; the user
-re-confirmed the single-change split on 2026-11-15.
+change slug and branch; both were renamed on 2026-11-15 per user instruction
+to `us-064-mobile-app-shell` (change) and `US-064-mobile-app-shell` (branch),
+dropping the `req-005` / `sdd-` prefixes. The user re-confirmed the
+single-change split on 2026-11-15.
 
 ## What Changes
 
@@ -59,6 +61,17 @@ No breaking change: existing routes keep their paths and behavior; the three
 new route entries are additive; the create back-target change is placement,
 not contract.
 
+## Non-Goals / Out of scope
+
+- Real split planning, route generation or route switching (US-038–US-062).
+- Member list and readiness (US-013).
+- Dashboard status aggregation (US-061) and any list-all-trips endpoint or call.
+- Backend or database changes of any kind; authentication; new demo data
+  (no fabricated members, routes or statuses on any surface).
+- Changes to create validation, trip-details permission, invitation panel or
+  join flow contracts (REQ-001/003/004 behavior is reused verbatim).
+- New frontend dependencies, i18n, CI job structure changes.
+
 ## Capabilities
 
 ### New Capabilities
@@ -92,6 +105,11 @@ own requirement, not a `trips` contract modification.
   (2026-11-15) — the stacking order is satisfied (R18 resolved).
 - **CI**: unchanged; the frontend build job covers the change. Verification is
   browser-based (text-only tab walk + re-run of existing acceptance behavior).
+- **Upstream**: REQ-001/003/004 surfaces and the `X-User-Id` scaffold are
+  composed unchanged; both PRs merged, stacking satisfied.
+- **Downstream**: later stories (US-013, US-038–US-062, US-061) land inside
+  this shell; they replace placeholder content while the frame and dock
+  contracts stay stable.
 - **Docs / harness**: `README.md`, verification documents, stage reports under
   `docs/ai4se-plugins/`. The knowledge base remains unconfigured.
 

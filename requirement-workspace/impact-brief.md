@@ -340,7 +340,7 @@ Baseline classification: brownfield, frontend-only. Authority tree
 
 ## 27. Artifact impact
 
-- Specs: `openspec/changes/req-005-mobile-app-shell/specs/app-shell/spec.md`
+- Specs: `openspec/changes/us-064-mobile-app-shell/specs/app-shell/spec.md`
   (P2).
 - Tests: no backend test change; frontend verified by build plus the story's
   text-only forward/reverse tab walk and re-run of existing acceptance
@@ -362,7 +362,8 @@ No critical blocker invalidates REQ-005, so split may proceed.
 
 ## 29. Suggested split boundaries
 
-One change: `req-005-mobile-app-shell`, new capability `app-shell` with six
+One change: `us-064-mobile-app-shell` (renamed from `req-005-mobile-app-shell`
+on 2026-11-15), new capability `app-shell` with six
 ADDED requirements (shell frame; bottom dock navigation; dashboard placement;
 trips placement + no-trip empty state; placeholder tabs; guest join exclusion).
 The scenario count (11) would normally suggest considering 2–3 changes, but
