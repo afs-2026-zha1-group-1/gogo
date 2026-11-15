@@ -22,11 +22,12 @@
   - delta spec: `specs/greeting/spec.md` (1 MODIFIED requirement, 2 scenarios);
     Living Spec: `openspec/specs/greeting/spec.md` (3 requirements, 6 scenarios).
   - AC/DoV review: `dov-ac-review.md` (AC-1…AC-4 Pass; DoV-1…DoV-5 all Pass).
-  - G1 record: `g1-decision.md` — **NOT RECORDED**, IO = pending, SA = pending.
-    Two carried P4 obligations: prove Flyway really migrates SQLite, and obtain a
-    fresh named CI confirmation for this change's commit.
+  - G1 record: `g1-decision.md` — **Pass**, recorded 2026-11-13 17:20, IO = Johnson,
+    SA = Johnson. Its carried obligation 1 (Flyway really migrates SQLite) is
+    closed by execution; obligation 2 (a fresh CI confirmation) is carried here as
+    a G2 input.
   - Design: `design.md` (D9–D16, inherited D1–D8 disposition, risks R7–R13);
-    ATDD: `atdd-design.md`; tasks: `tasks.md` (27 `[x]`, 6 `[ ]`).
+    ATDD: `atdd-design.md`; tasks: `tasks.md` (31 `[x]`, 2 `[ ]`).
   - P4 quality checklist: `docs/ai4se-plugins/20261113-163448-quality-checklist-report.md`
     — Stage Overall **Partial** (P4-2 and P4-3 Partial), roll-up **Partial**.
 - Dimension results:
@@ -58,8 +59,8 @@
      only when a named human filled all four confirmation fields and the report
      is cited here. Neither condition holds: the Human confirmation section says
      NOT SIGNED.
-  3. G1 is NOT RECORDED, so there is no signed alignment decision to verify
-     against.
+  3. G1 is recorded as **Pass**, but that does not satisfy G2 by itself: the gate
+     verifies evidence, and the evidence inputs above are still non-terminal.
 - Waivers / conditions + owners: **no waiver.** The local-verify Waiver section is
   `N/A — no waiver`; nothing is bypassed. No condition is imposed by this draft,
   because a draft imposes nothing. The three items that must close before a real
@@ -128,9 +129,9 @@ re-confirmed: 0 corporate hosts in `frontend/package-lock.json`.
 
 | # | Item | Owner | Where it closes |
 |---|---|---|---|
-| 1 | Authorize and perform the push of the P4 commit to `origin/main` | Johnson (user) | task 3.5; REQ-001's push authorization is not inherited |
+| 1 | Push the P4 commit to `origin` and `group1` — **done** 2026-11-13 17:19, both remotes at `5f67f6f` | Johnson (user) | task 3.5 closed |
 | 2 | Obtain a **fresh** four-field human confirmation of the CI run for this commit (confirmer, phase, explicit statement, timestamp), or machine evidence if remote read access is restored | Johnson (VL) | task 3.6; re-record `20261113-162653-pipeline-report.md` and `ci-report.md`. Without it the report stays Partial and must **not** be labelled `Pass-by-human-confirm` |
-| 3 | Named G1 (IO + SA), G2 (VL) and G3 (SA) signatures | Johnson | `g1-decision.md`, this file, `g3-decision.md`; then re-record the local-verify report so E3 is Signed and Overall can become Pass |
+| 3 | Named G2 (VL) and G3 (SA) signatures — G1 is already signed | Johnson | this file and `g3-decision.md`; then re-record the local-verify report so E3 is Signed and Overall can become Pass |
 | 4 | Close the remaining process tasks 5.3–5.6 so V1 reaches 33/33 | Dev drafts / human decides | `tasks.md`; P5 quality-checklist report |
 
 Until items 1–3 land, this file stays **NOT RECORDED**, the local-verify report

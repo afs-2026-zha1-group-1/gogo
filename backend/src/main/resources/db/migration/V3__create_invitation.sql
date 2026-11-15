@@ -1,0 +1,7 @@
+CREATE TABLE trip_invitation (
+    id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    trip_id INTEGER NOT NULL UNIQUE REFERENCES trip (id),
+    token   TEXT NOT NULL UNIQUE
+);
+
+ALTER TABLE trip ADD COLUMN main_plan_confirmed INTEGER NOT NULL DEFAULT 0;
