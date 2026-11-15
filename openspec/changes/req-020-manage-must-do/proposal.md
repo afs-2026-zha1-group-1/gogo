@@ -1,5 +1,15 @@
 # Proposal
 
+## Product review amendment (2026-11-15)
+
+The user accepts saving location and time together. Delete now requires a
+confirmation dialog identifying the item; Cancel/dismiss sends no request and
+preserves the list, while Confirm sends one existing must-do PUT. This supersedes
+any earlier immediate-delete/no-dialog ruling; add/edit timings and API payloads
+are unchanged. Emily IO approval of the revised 42-scenario package is recorded
+2026-11-15 per the user's separate explicit signing instruction. The prior SA Pass
+covers the previous contract; revised-contract review is pending. G1 is Conditional.
+
 ## Why
 
 `preferences` 能力由 REQ-019 引入，但只覆盖「兴趣」一种偏好。US-020 要求成员能

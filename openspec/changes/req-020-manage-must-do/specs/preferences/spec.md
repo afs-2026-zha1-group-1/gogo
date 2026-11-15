@@ -262,9 +262,11 @@ request by an explicit "Save" action; the section SHALL NOT submit on every togg
 
 The **must-do items section** SHALL render the current member's items only, each showing its
 `activity` and, when present, its `location` and `time`. It SHALL offer an inline add form, an
-inline edit action and a delete action per item. The delete action SHALL delete immediately and
-SHALL NOT require a confirmation dialog. Every one of those actions SHALL be persisted
-immediately by its own `PUT /api/trips/{tripId}/preferences/must-dos`; the section SHALL NOT wait
+inline edit action and a delete action per item. Delete SHALL open a confirmation dialog
+identifying the item, with Confirm and Cancel actions. Opening, cancelling or dismissing it
+SHALL send no request and SHALL preserve the item. Only confirmation SHALL send the delete
+request. Every completed add/edit or confirmed delete SHALL be persisted
+by its own `PUT /api/trips/{tripId}/preferences/must-dos`; the section SHALL NOT wait
 for a page-level save and SHALL NOT offer a "save all" action.
 
 A successful action SHALL update its section from the response body. A failed action SHALL show the
@@ -325,12 +327,21 @@ The page SHALL NOT use browser local storage as evidence of a saved state.
 - **THEN** one `PUT` is sent
 - **AND** the section still lists one item with the same id and the new time
 
-#### Scenario: Deleting an item persists immediately
+#### Scenario: Deleting an item requires confirmation
 
 - **GIVEN** the must-do section lists two items
-- **WHEN** the user deletes one of them
-- **THEN** one `PUT` is sent
-- **AND** the section lists exactly the remaining item
+- **WHEN** the user activates Delete for one item
+- **THEN** a confirmation dialog identifies that item and offers Confirm and Cancel
+- **AND** no `PUT` is sent and both items remain visible
+- **WHEN** the user confirms and the request succeeds
+- **THEN** exactly one `PUT` is sent and the section lists only the remaining item
+
+#### Scenario: Cancelling item deletion preserves the list
+
+- **GIVEN** the delete confirmation dialog is open for one of two items
+- **WHEN** the user cancels or dismisses the dialog
+- **THEN** no `PUT` is sent, both items remain and saved data is unchanged
+- **AND** unrelated unsaved interest selections remain unchanged
 
 #### Scenario: Switching identity reloads both sections
 
@@ -404,4 +415,4 @@ The page SHALL NOT use browser local storage as evidence of a saved state.
 | C3 | No item-count limit, field-length limit or name-based deduplication | The ACs define none, and a fabricated limit would be a new product rule |
 | C4 | An absent `location`/`time` is stored as `null`, not omitted | Keeps the stored and returned item shape fixed, so assertions do not depend on key presence |
 | C5 | Both `location` and `time` may be saved together | Overrides the reference screen's "choose one of location or time" wording, as decided in REQ-020's P1 |
-| C6 | MVP boundary: the closed loop is save, read back, edit, delete | Item-count limits, field-length limits, name-based deduplication, a delete confirmation dialog and a per-item date are intentionally absent (REQ-020 OQ-11/OQ-12/OQ-13); their absence is a scope decision, not an omission, so P4/P5 must not add them without a new change |
+| C6 | Delete requires a confirmation dialog; cancelling or dismissing sends no request | User ruling 2026-11-15 supersedes the earlier immediate-delete decision. Item-count/field-length limits, name-based deduplication and per-item date remain out of scope |

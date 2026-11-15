@@ -3,8 +3,8 @@
 - Date: 2026-11-15
 - Stage: P2 `/sdd:delta-craft` (step = all)
 - Target: `openspec/changes/req-020-manage-must-do/specs/preferences/spec.md`
-- Size: 3 requirements, 41 scenarios (existing capability `preferences`: 2 ADDED, 1 MODIFIED
-  page requirement at revision 2), 407 lines
+- Size: 3 requirements, 42 scenarios (existing capability `preferences`: 2 ADDED, 1 MODIFIED
+  page requirement at revision 2, updated with confirmation/cancellation)
 - Baseline: the unarchived delta of `req-019-save-interests`; identity, trip existence and
   membership are inherited and deliberately not restated
 - Nature: AC/DoV review record, **not** a G1 decision; G1 is signed by a human
@@ -13,7 +13,7 @@
 
 | Item | Result | Evidence | Notes |
 |---|---|---|---|
-| AC-1 every requirement has at least one testable AC | Pass | 3 `### Requirement:` blocks with 18, 5 and 18 scenarios respectively, 41 in total | No placeholder requirement; the MODIFIED page block is self-contained at revision 2 |
+| AC-1 every requirement has at least one testable AC | Pass | 3 requirement blocks with 18, 5 and 19 scenarios, 42 total | Page revision 2 includes confirmation and cancellation; human re-review pending |
 | AC-2 ACs are observable | Pass | Assertions anchor on HTTP status, `code`, the returned item fields, the `must_do` row count, the parsed `payload` (item count, id set, stored order, `null` fields), byte comparison of `updated_at` across members, and the rendered section state | No dependency on logs or internal state |
 | AC-3 negative and edge cases are called out where risk is high | Pass | 7 rejection scenarios on save, 8 edge scenarios on save, 5 on read, 6 failure/rollback scenarios on the page | See §4 |
 | AC-4 no disguised implementation detail, no vague words | Pass | No "correctly", "properly", "quickly", "gracefully", "as expected" or "etc." (searched); every assertion names a status, a `code`, a field or a rendered state | "inline add form" and "delete action" are observation points of the UI, not internal structure |
@@ -37,7 +37,7 @@
 | C3 | No item-count limit, field-length limit or name-based deduplication | The ACs define none, and a fabricated limit would become a product rule | Removes a useless branch; the capability states the absence explicitly |
 | C4 | An absent `location`/`time` is stored as `null`, not omitted | Keeps the stored and returned item shape fixed, so assertions do not depend on key presence | Scenario "Whitespace is trimmed and blank optional fields become null" |
 | C5 | Both `location` and `time` may be saved together | Overrides the reference screen's "choose one of location or time" wording, per P1 D6 | Scenario "Both location and time may be saved together" |
-| C6 | The delete action has no confirmation dialog, and the MVP closed loop is save, read back, edit, delete | AC3 only requires the item to disappear; the reference screen has no dialog | The page requirement states it as a SHALL; `Clarifications` C6 records the scope boundary |
+| C6 | Delete requires confirmation; Cancel/dismiss sends no PUT and preserves items | User ruling 2026-11-15 supersedes the former immediate-delete choice | Page scenarios cover opening, confirmation and cancellation; API replace-list semantics are unchanged |
 | C7 | The inherited 401/403/404 paths are not restated as local scenarios | They are defined once in REQ-019's identity requirement and apply unchanged | A reviewer who wants local copies must ask before P4; adding them would duplicate a contract |
 
 ## 4. Edge and failure scenarios added by this review
@@ -76,19 +76,20 @@
 | P1 AC7-N (malformed body) | Save | A malformed body is rejected |
 | P1 AC16-N (`GET` twice) | Read | Reading changes nothing |
 | P1 AC17-N (load failure) | Page | Loading fails |
-| Proposal: page section with per-action save | Page | Adding, editing and deleting each persist immediately; no page-level save exists |
+| Proposal: page section with per-action save | Page | Add/edit and confirmed delete each persist through their own request; no page-level save exists |
+| User ruling 2026-11-15; REQ-020 OQ-13 | Page | Delete opens a dialog without a request; Confirm sends one PUT; Cancel/dismiss preserves items and unrelated input |
 
 ## 6. Residual risks and role concerns
 
 | Role | Concern | Blocks G1? |
 |---|---|---|
-| IO | The reference screen says "choose one of location or time", while this delta allows both. Is the wording change acceptable on screen 8? | No; deliberate, recorded as C5 |
-| IO | Delete has no confirmation dialog. Is an immediate delete acceptable for the MVP? | No; deliberate, recorded as C6 and stated as a SHALL |
+| IO | User accepted 2026-11-15: location and time may both be supplied, overriding reference wording | C5 confirmed; Emily subsequently approved revised package by separate explicit instruction |
+| IO | User rejected immediate delete 2026-11-15: confirmation dialog required | C6 and page scenarios updated; Emily IO Pass recorded 2026-11-15 for 42 scenarios; revised SA review pending |
 | SA | The change is zero-migration but hard-depends on REQ-019's `V4__create_member_preference.sql` and on the preferences page, neither of which is on disk yet | No for the delta, yes for P4/merge; recorded as condition 1 of the G1 draft |
 | SA | `TripErrorAdvice` covers `com.gogo.trip` only, so `INVALID_REQUEST` and the `MUST_DO_*` codes need a preference-owned advice or a widened scope | No, decided in P3 |
 | SA | C1 (ids may be reused after the list is emptied) narrows the proposal's earlier wording. Confirm it, or switch to a durable counter before P4, because the payload shape changes | No, but it should be confirmed at G1 |
 | Dev/QA | Item ids live inside the JSON payload, so the database cannot enforce uniqueness; assertions must compare the id set and the item count, not just the HTTP status | No; already stated in the scenarios |
-| Dev/QA | `openspec validate` cannot run here (the CLI is not on `PATH`), so no validation result is claimed | No; recorded as a condition in the G1 draft |
+| Dev/QA | Strict validation executed 2026-11-15, exit 1: ADDED body length and archive/preamble/Clarifications warnings; Living Spec awaits REQ-019 | Not passed; remediation tracked in G1 condition 6 |
 | Team | `docs/knowledge/architecture/tech-stack-plan.md` §5/§6 still describes envelopes, `X-Member-Id`, `JdbcClient` and Ant Design 5 while the code uses bare DTOs, `X-User-Id`, `JdbcTemplate` and hand-written CSS | No; REQ-020 OQ-14, team-owned |
 
 ## 7. Conclusion

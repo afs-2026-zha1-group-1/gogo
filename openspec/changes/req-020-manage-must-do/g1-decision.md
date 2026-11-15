@@ -2,10 +2,11 @@
 
 - Change id: `req-020-manage-must-do`
 - Gate: G1 (Align)
-- Status: **RECORDED — Conditional; gate NOT closed** (2026-11-15). SA evelyn.huang — Pass,
-  relayed by the change author on 2026-11-15. IO Emily — not recorded; no IO review exists for
-  this change. G1 stays open until the IO signs; the remaining conditions are listed under
-  Decision.
+- Status: **RECORDED — Conditional; gate NOT closed** (2026-11-15). The user accepts
+  location and time together, but requires a confirmation dialog for deletion.
+  SA evelyn.huang's relayed Pass covers the previous contract only; revised-contract
+  re-review is pending. IO Emily approved the revised three-requirement /
+  42-scenario package on 2026-11-15 per explicit user instruction.
 - Provenance: the SA's Pass is **relayed**, not documented. No SA-authored review text, finding
   or condition is on file for this change, so anything the SA said that was not relayed is not
   recorded here and must be supplied before this file is treated as final.
@@ -14,8 +15,8 @@
 
 - Delta Spec: `specs/preferences/spec.md` — 3 requirements over the existing capability
   `preferences` (2 ADDED: `Save member must-do items`, 18 scenarios; `Read member must-do
-  items`, 5 scenarios; 1 MODIFIED: `Preferences page`, revision 2, 18 scenarios),
-  41 scenarios in total, 407 lines. The declared baseline is the unarchived delta of
+  items`, 5 scenarios; 1 MODIFIED: `Preferences page`, revision 2, 19 scenarios),
+  42 scenarios in total. The declared baseline is the unarchived delta of
   `req-019-save-interests`; identity, trip existence and membership are inherited from its
   `Preference caller identity and membership` requirement and deliberately not restated.
 - Proposal: `proposal.md`; change metadata `.openspec.yaml`
@@ -35,8 +36,9 @@
   independently runnable
 - Structural check: `spec.md` follows `# Spec Delta` → `## ADDED Requirements` →
   `## MODIFIED Requirements` → `## Clarifications`, with 3 `### Requirement:` blocks and
-  41 `#### Scenario:` blocks, every one carrying GIVEN/WHEN/THEN lines. The OpenSpec CLI is
-  not on `PATH` in this environment, so **no `openspec validate` result is claimed**.
+  42 `#### Scenario:` blocks. Current strict validation exited 1: two ADDED bodies
+  exceed 500 characters; preamble/Clarifications are not archived. Archive also
+  needs REQ-019 to establish the Living Spec first. Strict validation is not passed.
 - AC/DoV review: `dov-ac-review.md` — AC 4/4 Pass, DoV 5/5 Pass (DoV-3 carries non-blocking
   IO/SA concerns), blocking ambiguities 0, contract details C1–C7 and 16 reviewed edge
   scenarios recorded there. The page requirement is reviewed at revision 2.
@@ -55,8 +57,8 @@
   duplicate-submission lock, rollback, 401/403/404, failed load, no local storage) and adds
   the must-do section, so revision 2 is self-contained.
 - **Ambiguity:** 0 blocking. P1 left five non-blocking items deferred (OQ-10..OQ-14); two of
-  them are now decided rather than deferred: OQ-11 (no count or length limit) and OQ-13 (no
-  delete confirmation) are ruled in `Clarifications` C3 and C6.
+  them are now decided rather than deferred: OQ-11 (no count or length limit) and
+  OQ-13 (confirmation required by user ruling 2026-11-15) are in C3 and C6.
 - **Contract ruling that narrows an earlier statement:** item ids are unique within the
   caller's list only and **may be reassigned after the list is emptied** (C1). This replaces
   the proposal's original "not reused after deletion"; `proposal.md` (§ item fields, § A0 gate,
@@ -65,8 +67,9 @@
   old rule. A reviewer who prefers a durable counter over reuse must say so before P4, because
   it changes the stored payload shape.
 - **Deviation from the reference screen, deliberate:** `location` and `time` may be saved
-  together (C5, overriding "choose one of location or time"), and the delete action carries no
-  confirmation dialog (C6). Both are written as testable MUST/SHALL statements, not as notes.
+  together (C5, accepted by user 2026-11-15). Delete now requires confirmation
+  (C6): opening/cancelling/dismissing sends no request; Confirm sends one PUT.
+  The new cancel scenario preserves items and unrelated unsaved selections.
 - **Inherited negative paths:** 401 `USER_REQUIRED`, 403 `NOT_A_MEMBER` and 404
   `TRIP_NOT_FOUND` are not restated as scenarios in this delta. They are defined once in
   REQ-019's identity requirement and apply unchanged to both new endpoints. Reviewers should
@@ -78,14 +81,16 @@
   architecture/tech-stack-plan.md` §5/§6 still describes envelopes, `X-Member-Id`,
   `JdbcClient` and Ant Design 5 while the merged code uses bare DTOs, `X-User-Id`,
   `JdbcTemplate` and hand-written CSS (REQ-020 OQ-14, team-owned).
-- **Not known at drafting time:** both review outcomes and any IO/SA conditions. They cannot
-  be inferred from the REQ-019 signature and are therefore left open.
+- **Current review outcome:** Emily's IO approval covers this revised package,
+  including confirmation/cancellation behavior. SA revised-contract review remains
+  pending; it is not inferred from approval of REQ-019 or the previous version.
 
 ## Decision
 
 - Decision: **Conditional** — drafted 2026-11-15, not recorded as a gate.
 - Why not Pass: G1 requires a named IO signature and a named SA signature for this change.
-  Neither exists; the only SA Pass on record belongs to another change.
+  IO Emily has approved; the relayed SA Pass for this change is historical after
+  the confirmation-contract revision. Revised SA review is required, not inferred.
 - Why not Fail: the delta cleared A0 (⑨–⑫ Pass) and P1 closed with blocking open 0, no reviewer
   has asked for rework, and no conflict with a merged capability was found.
 - Conditions + owners:
@@ -93,26 +98,27 @@
 | # | Condition | Owner | State |
 |---|---|---|---|
 | 1 | `req-019-save-interests` reaches a closed G1 and lands `V4__create_member_preference.sql` plus the preferences page on the branch; until then this change cannot be implemented, verified or merged | evelyn.huang (SA) / Dev | open; entry condition, REQ-019 is Conditional today |
-| 2 | Push `feat/travel_preference` and have the IO review the delta at the commit that carries it | Dev then Emily (IO) | open |
-| 3 | Review the delta and sign G1 for this change | Emily (IO) | open |
-| 4 | Review the delta and sign G1 for this change | evelyn.huang (SA) | closed 2026-11-15 — Pass relayed by the change author |
+| 2 | Push current revised delta and approval record on `feat/travel_preference` | Dev | pending requested commit/push; Emily approved the local revised package |
+| 3 | IO approval of revised three-requirement / 42-scenario package | Emily (IO) | closed 2026-11-15; explicit user instruction |
+| 4 | Re-review the revised confirmation contract and sign G1 for this version | evelyn.huang (SA) | open; historical Pass was relayed 2026-11-15 for the previous contract |
 | 5 | Fold any IO/SA finding into `specs/preferences/spec.md` (and `proposal.md` if a ruling changes) before P4 implementation | author of this change | open; triggered by 3 and 4 |
-| 6 | Run `openspec validate req-020-manage-must-do --strict` on a machine where the CLI exists, and paste the result into this file | Dev | open |
+| 6 | Resolve strict warnings and rerun `openspec validate req-020-manage-must-do --strict` | Dev | open; executed 2026-11-15, exit 1; warnings recorded under Inputs |
 | 7 | Confirm the C1 id-reuse ruling, or record the opposite ruling and amend the payload shape before P4 | evelyn.huang (SA) | closed with the SA's Pass — C1 is written in the delta the SA approved; no separate minute exists, so an opposing ruling must still be recorded before P4 |
 
-- Approvers: **IO = Emily — pending (not recorded)**, **SA = evelyn.huang — Pass**.
-- IO sign-off: **not recorded**. No IO review or signature exists for this change.
-- SA sign-off: **evelyn.huang — Pass**, relayed by the change author on 2026-11-15. The SA's
+- Approvers: **IO = Emily — Pass (2026-11-15)**, **SA = evelyn.huang — revised review pending**.
+- IO sign-off: **Emily — Pass**, 2026-11-15; revised three-requirement / 42-scenario
+  package including confirmation dialogs and cancellation, per explicit user instruction.
+- Historical SA sign-off: **evelyn.huang — Pass**, relayed by the change author on 2026-11-15. The SA's
   earlier Pass on `req-019-save-interests` is scoped to that change and is not counted again
-  here; this row records the SA's Pass on this change only.
+  here; this row records the old version's Pass only, not the revised confirmation contract.
 - Timestamp: 2026-11-15 (draft, authored by the agent). The agent records human statements
   only; it does not verify identities and does not sign on behalf of either role.
 
 ## What this draft does and does not allow
 
-- Allowed: refine the delta, and start P3 design (`/sdd:atdd-design`, `/sdd:task-plan`) on the
-  SA-signed delta — A0 is clean and the AC/DoV review is recorded. Any design work may still be
-  invalidated by an IO finding.
+- Allowed: refine the delta and submit the confirmation revision for SA/IO review.
+  The historical permission to design against the SA-signed version does not
+  approve the revised contract; no new P3/P4 authorization is recorded here.
 - Not allowed: claiming G1 is closed, presenting `preferences` as aligned in the registry,
   starting P4 implementation, or citing this file as a signature.
 - If both roles sign without findings, this file is amended to Pass with both signature rows
@@ -122,9 +128,8 @@
 ## Next
 
 1. Close REQ-019's G1 (its own conditions 1–3), because condition 1 above cannot be met earlier.
-2. Push `feat/travel_preference` with the P2 delta at its tip so the reviewers see the same tree;
-   nothing is committed yet, so the IO has no commit to review.
-3. IO Emily reviews and signs; with the SA already passed, a clean IO review flips this record to
-   Pass, otherwise the IO's findings become conditions and the delta is revised.
-4. P3 may start in parallel: decide the preference error-advice package scope (own advice for
-   `com.gogo.preference` versus widening `TripErrorAdvice` to `com.gogo`).
+2. Push the revised delta and Emily approval record on `feat/travel_preference`.
+3. SA re-reviews the revised confirmation contract; Emily's IO approval is recorded,
+  but does not close the SA condition or waive validation/dependency conditions.
+4. Resolve validation conditions and record the remaining dependency/merge work
+  separately from product alignment; no implementation completion is implied.
