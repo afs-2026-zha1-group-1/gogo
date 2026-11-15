@@ -267,3 +267,109 @@ surfaces plus states, one QR dependency decision. Ordering: migration →
 repository → issue endpoint → preview/accept endpoints → frontend panel → join
 page → verification. `/sdd:story-split` is Skipped: the three stories already
 exist as GitHub issues.
+
+---
+
+# Impact brief — REQ-005 (2026-11-15)
+
+Sections 1–22 above describe REQ-001, REQ-003 and REQ-004 and are not
+authoritative for this change. This section is self-contained.
+
+## 23. Requirement set
+
+| id | Path |
+|---|---|
+| REQ-005 | `requirement-workspace/requirements/REQ-005.md` |
+
+Supporting: `requirement-workspace/deep-dive.md` §REQ-005,
+`requirement-workspace/intents/2026-11-14-req-005.md` (incl. P1 continuation
+2026-11-15), `requirement-workspace/analysis/req-005-dor.md`.
+
+Mode: embedded at the end of `/sdd:pre-spec-req` (blocking OQs = 0, DoR
+BLOCKERs = 0). Solution direction: **add** (new frontend-only `app-shell`
+capability) → deep-dive Phase 2.5 in scope.
+
+## 24. As-is asset inventory (evidence paths)
+
+| Asset | Evidence | State |
+|---|---|---|
+| Frontend shell frame | `frontend/src/App.jsx:29-48`, `frontend/src/app.css:51-60` | `.app` already centers a ≤430 px, 100 dvh column; identity scaffold bar renders on every route; no dock exists |
+| Hash router | `frontend/src/App.jsx:8-27` | `parseRoute` handles `/`, `/create`, `/trips/<id>`, `/join/<token>`; unknown paths fall back to home; identity is App-level `useState`, survives hash changes |
+| Pages | `frontend/src/pages/{Home,CreateTrip,TripDetails,Join,InvitationPanel}.jsx` | All five surfaces implemented and verified by REQ-001/003/004; Home owns a bottom `.actionbar`; CreateTrip back targets `#/` (`CreateTrip.jsx:52`) |
+| Design tokens | `frontend/src/app.css:1-29`, `ui-design-reference/README.md` §一 | Token values already mirror the reference (brand `#0d9488`/`#06b6d4`, warm neutrals, radii 10/14/20/26, system font); reference present locally incl. `screen-01-dashboard.png` |
+| Icons | `frontend/src/Icons.jsx` | Inline SVG set (109 lines); dock needs home/list/fork/users glyphs — existing set covers most, additions are local SVG, no dependency |
+| Backend / migrations | `backend/src/main/java/com/gogo/{hello,trip,invitation}/`, `V1`–`V3` | Untouched by this story (issue #32: Backend no, Database no) |
+| Living Spec | `openspec/specs/greeting/spec.md` | `greeting` only; `trips`/`invitations` are pending deltas of in-flight changes |
+| Active changes | `openspec list --json` | `req-002-greeting-json-sqlite`, `req-003-trip-create-and-view`, `req-004-trip-invitations` (29/31 tasks); this change becomes the fourth |
+| CI | `.github/workflows/ci.yml` | Two jobs (backend `mvn -B test`, frontend `npm ci && npm run build`); unchanged |
+| Fixtures | `requirement-workspace/acceptance-test-fixtures.md` | Scoped to REQ-003/REQ-004; US-064 carries its own text-only verification table, so no fixture dependency at P1 |
+| Tooling | `openspec` 1.9.0 on PATH (this machine); gh at `%LOCALAPPDATA%\Programs\gh\bin` | Change creation and board reads verified in this session |
+| Working tree | `git status` on `sdd-req-005-trip-setup` (created from e904fff) | REQ-004 G2 Pass committed at e904fff; PR #30 and #31 merged during this session; REQ-005 P1 artifacts are added alongside without touching REQ-004 records |
+
+Baseline classification: brownfield, frontend-only. Authority tree
+`openspec/specs/` exists (`greeting`); no competing spec root is introduced.
+
+## 25. As-is → proposed delta
+
+| Touched asset | As-is (evidence) | Proposed delta |
+|---|---|---|
+| `openspec/specs/` | `greeting` only | New capability `app-shell` (six ADDED requirements) created at archive time from this change's delta spec |
+| `frontend/src/App.jsx` | Flat route switch + scaffold bar, no dock | Shell composition: frame + scaffold bar + routed page + fixed dock for in-app routes; join route bypasses the dock; route table gains the no-trip, `#/split`, `#/members` entries |
+| New frontend components | — | Shell/dock component(s), no-trip empty-state page, 分队 and 成员 placeholder pages (text + link back to 行程) |
+| `frontend/src/pages/CreateTrip.jsx:52` | Back link targets `#/` | Back targets the 行程 tab (story page-function table); form, validation and submit navigation unchanged |
+| `frontend/src/app.css` | `.app` column exists; no dock styles | Dock styles (fixed bottom, safe-area inset, active highlight from brand tokens), content bottom padding so the dock never obscures `.actionbar`/content; placeholder/empty-state styles from existing tokens |
+| `frontend/src/Icons.jsx` | Existing glyph set | Dock glyphs added locally if missing (inline SVG, no dependency) |
+| Backend / migrations / API | `V1`–`V3`, three capability packages | **No change** (reverse case R-3) |
+| CI | Two jobs | Unchanged; frontend build job covers the change |
+| Docs | `README.md`, verification docs | Run/verification notes for the shell and the text-only tab walk |
+
+## 26. Blast radius
+
+- Runtime: frontend only; same Vite dev server and `/api` proxy; no new
+  process, port, dependency or environment variable.
+- Data: none. No migration, no schema or row change; existing reads reused.
+- API: no new or changed path; `X-User-Id` contract unchanged.
+- Navigation: hash route table gains three entries (no-trip 行程, `#/split`,
+  `#/members`); existing four routes keep their paths and behavior; join
+  exclusion is presentational (dock hidden), not a join-flow change.
+- CI: unchanged; verification is browser-based (text-only tab walk) plus the
+  existing frontend build job.
+- Ordering: REQ-005 P4 needs the REQ-003/REQ-004 frontend code present — it is
+  on the current branch; REQ-003 PR #30 and REQ-004 PR #31 are both merged
+  (2026-11-15), so the stacking order is satisfied (R18 resolved).
+
+## 27. Artifact impact
+
+- Specs: `openspec/changes/req-005-mobile-app-shell/specs/app-shell/spec.md`
+  (P2).
+- Tests: no backend test change; frontend verified by build plus the story's
+  text-only forward/reverse tab walk and re-run of existing acceptance
+  behavior (S11).
+- Docs: this workdir, `docs/ai4se-plugins/` stage reports, `README.md`.
+- KB: not configured; `scripts/kb-lint.sh` remains a documented `SKIP`.
+
+## 28. Risks & blockers
+
+| id | Risk | Severity | Status |
+|---|---|---|---|
+| R18 | REQ-004 PR #31 was open when P1 started; REQ-005 branches stack on that code | process, resolved | PR #31 merged 2026-11-15T06:23:20Z (gh verified); stacking order satisfied. Owner Dev/IO |
+| R19 | Fixed dock can obscure Home's `.actionbar` or scroll content on short viewports; `100dvh`/safe-area need browser verification | advisory | Layout care at P3 (content bottom padding); verified in browser at P4, not by build alone. Owner Dev |
+| R20 | Placeholder tabs could drift into fabricated demo data (the screenshot shows real-looking members/routes) | accepted risk, guarded | AC5 + reverse case R-2 assert honest text only; design scope in the story excludes the demo content. Owner IO |
+| R21 | `X-User-Id` remains unverified (inherited scaffold) | accepted for a scaffold | Inherited from REQ-003 R6; switcher stays labeled 非登录. Owner Dev/SA |
+| R22 | Four active changes coexist; `app-shell` is disjoint from all three delta sets | process | No spec conflict; archive order independent. Owner Dev |
+
+No critical blocker invalidates REQ-005, so split may proceed.
+
+## 29. Suggested split boundaries
+
+One change: `req-005-mobile-app-shell`, new capability `app-shell` with six
+ADDED requirements (shell frame; bottom dock navigation; dashboard placement;
+trips placement + no-trip empty state; placeholder tabs; guest join exclusion).
+The scenario count (11) would normally suggest considering 2–3 changes, but
+every scenario shares the one shell frame: splitting frame from dock or
+placements would produce halves that cannot render independently, violating
+the independently-shippable check. One vertical slice, one gate cycle.
+Effort: small–medium — App.jsx restructure, 1 shell/dock component, 3 new
+pages (empty state + 2 placeholders), CSS additions, 1 back-target edit; no
+backend, no migration, no new dependency. `/sdd:story-split` is Skipped: the
+story already exists as GitHub issue #32.
