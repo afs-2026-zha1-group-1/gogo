@@ -1,5 +1,17 @@
 # Proposal
 
+## Product review amendment (2026-11-15)
+
+The user requires confirmation dialogs before must-do deletion and budget clearing.
+Opening, cancelling or dismissing sends no request and preserves data/input;
+Confirm sends the existing PUT, with saved state updated from a successful response.
+Unset and zero remain distinct, exact copy belongs to UI implementation, and entry
+must clearly label currency/major units with currency-specific minor-unit storage.
+No conversion or cross-currency comparison is added; US-031 owns that follow-up.
+Emily IO approval of the revised 53-scenario package is recorded 2026-11-15 per
+the user's separate explicit signing instruction. Previous SA approval covers the
+old contract; revised-contract review is pending. G1 remains Conditional.
+
 ## Why
 
 `preferences` was introduced by REQ-019 (interests) and extended by REQ-020 (must-dos). US-024 adds the

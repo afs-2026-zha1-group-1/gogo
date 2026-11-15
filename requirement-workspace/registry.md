@@ -1,5 +1,21 @@
 # Requirement registry
 
+## Current product review update (2026-11-15)
+
+This update supersedes affected preference status/interaction wording in the
+snapshot rows below. REQ-019: no Clear All action and English-only labels accepted;
+existing SA approval unchanged, IO Emily approved 2026-11-15. REQ-020: location
+and time together accepted, but item deletion now requires confirmation. REQ-024:
+budget clear also requires confirmation; distinct unset/zero, labelled major-unit
+input with currency-specific minor-unit storage, and no cross-currency comparison
+here are accepted. Cancel/dismiss sends no request and preserves data/input.
+REQ-020/024 historical SA Pass covers the old contract; revised review is pending.
+Per the user's separate signing instruction, Emily IO Pass is recorded for the
+current REQ-019/020/024 packages (31/42/53 scenarios) on 2026-11-15. All three
+remain Conditional for recorded outstanding conditions, not missing IO approval.
+REQ-026 stays at P1, unchanged. Strict validation was executed for
+019/020/024 and exited 1 with existing length/archive warnings; none is marked passed.
+
 | id | title | status | openspec change | notes |
 |---|---|---|---|---|
 | REQ-001 | Hello World home page | Archived; G1/G2/G3 signed (Johnson) | `openspec/changes/archive/2026-11-13-req-001-hello-world/` | H2 substituted for SQLite per the 2026-11-13 instruction (OQ-1). OQ-2/OQ-3/OQ-4 were carried as G1 conditions and closed the same day by IO rulings; the JSON and SQLite rulings are delivered by REQ-002, not by editing this archive. DoR BLOCKER = 0, A0 Pass. |

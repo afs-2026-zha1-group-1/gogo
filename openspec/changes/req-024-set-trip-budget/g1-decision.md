@@ -2,10 +2,12 @@
 
 - Change id: `req-024-set-trip-budget`
 - Gate: G1 (Align)
-- Status: **RECORDED — Conditional; gate NOT closed** (2026-11-15). SA evelyn.huang — Pass,
-  relayed by the change author on 2026-11-15. IO Emily — not recorded; no IO review exists for
-  this change. G1 stays open until the IO signs; the remaining conditions are listed under
-  Decision.
+- Status: **RECORDED — Conditional; gate NOT closed** (2026-11-15). User rulings
+  require confirmation before must-do deletion and budget clearing; unset/zero copy,
+  labelled major-unit input/minor-unit storage and currency-comparison scope are
+  accepted. IO Emily approved the revised three-requirement / 53-scenario package
+  on 2026-11-15 per explicit user instruction. SA evelyn.huang's relayed Pass
+  covers the old contract; revised-contract re-review is pending.
 - Provenance: the SA's Pass is **relayed**, not documented. No SA-authored review text, finding
   or condition is on file for this change, so anything the SA said that was not relayed is not
   recorded here and must be supplied before this file is treated as final.
@@ -14,8 +16,8 @@
 
 - Delta Spec: `specs/preferences/spec.md` — 3 requirements over the existing capability
   `preferences` (2 ADDED: `Save member budget`, 18 scenarios; `Read member budgets`,
-  6 scenarios; 1 MODIFIED: `Preferences page`, revision 3, 26 scenarios), 50 scenarios in
-  total, 483 lines. The declared baseline is the unarchived deltas of `req-019-save-interests`
+  6 scenarios; 1 MODIFIED: `Preferences page`, revision 3, 29 scenarios), 53 scenarios in
+  total. The declared baseline is the unarchived deltas of `req-019-save-interests`
   and `req-020-manage-must-do`: identity, trip existence and membership are inherited from
   REQ-019's `Preference caller identity and membership`, and revision 3 of the page requirement
   contains revision 2 verbatim plus the budget section.
@@ -37,8 +39,9 @@
   stays inside the planned enum, with zero migration.
 - Structural check: `spec.md` follows `# Spec Delta` → `## ADDED Requirements` →
   `## MODIFIED Requirements` → `## Clarifications`, with 3 `### Requirement:` blocks and
-  50 `#### Scenario:` blocks, every one carrying GIVEN/WHEN/THEN lines. The OpenSpec CLI is not
-  on `PATH` in this environment, so **no `openspec validate` result is claimed**.
+  53 `#### Scenario:` blocks. Current strict validation exited 1: two ADDED bodies
+  exceed 500 characters; preamble/Clarifications are not archived. Archive also
+  needs REQ-019 to establish the Living Spec first. Strict validation is not passed.
 - AC/DoV review: `dov-ac-review.md` — AC 4/4 Pass, DoV 5/5 Pass (DoV-3 carries non-blocking
   IO/SA concerns), blocking ambiguities 0, contract details C1–C7 and 15 reviewed edge
   scenarios recorded there. The page requirement is reviewed at revision 3.
@@ -82,13 +85,15 @@
   comparison is out of scope, so US-031 will need a separate change when budgets of different
   currencies must be filtered together (OQ-13); (d) `tech-stack-plan.md` still claims a single
   PUT submits all preference kinds, which this change contradicts by design (OQ-14, team-owned).
-- **Not known at drafting time:** both review outcomes and any IO/SA conditions.
+- **Current review outcome:** Emily's IO approval covers the revised confirmation,
+  cancellation and clear-failure behavior; SA revised-contract review is still pending.
 
 ## Decision
 
 - Decision: **Conditional** — drafted 2026-11-15, not recorded as a gate.
 - Why not Pass: G1 requires a named IO signature and a named SA signature for this change.
-  Neither exists; the only SA Pass on record belongs to another change.
+  IO Emily has approved; the relayed SA Pass for this change is historical after
+  the confirmation-contract revision. Revised SA review is required, not inferred.
 - Why not Fail: the delta cleared A0 (⑨–⑫ Pass), P1 closed with blocking open 0, and no conflict
   with a merged capability was found.
 - Conditions + owners:
@@ -97,26 +102,27 @@
 |---|---|---|---|
 | 1 | `req-019-save-interests` reaches a closed G1 and lands `V4__create_member_preference.sql` plus the preferences page; until then this change cannot be implemented, verified or merged | evelyn.huang (SA) / Dev | open; entry condition, REQ-019 is Conditional today |
 | 2 | `req-020-manage-must-do` reaches a closed G1 and lands page revision 2, which revision 3 reproduces | evelyn.huang (SA) / Dev | open; second entry condition, REQ-020 has no G1 record yet |
-| 3 | Push `feat/travel_preference` and have the IO review the delta at the commit that carries it | Dev then Emily (IO) | open |
-| 4 | Review the delta and sign G1 for this change | Emily (IO) | open |
-| 5 | Review the delta and sign G1 for this change | evelyn.huang (SA) | closed 2026-11-15 — Pass relayed by the change author |
+| 3 | Push current revised delta and approval record on `feat/travel_preference` | Dev | pending requested commit/push; Emily approved the local revised package |
+| 4 | IO approval of revised three-requirement / 53-scenario package | Emily (IO) | closed 2026-11-15; explicit user instruction |
+| 5 | Re-review confirmation dialogs, cancellation and clear failure; sign G1 for revised version | evelyn.huang (SA) | open; historical Pass was relayed 2026-11-15 for the previous contract |
 | 6 | Fold any IO/SA finding into `specs/preferences/spec.md` (and `proposal.md` if a ruling changes) before P4 implementation | author of this change | open; triggered by 4 and 5 |
-| 7 | Run `openspec validate req-024-set-trip-budget --strict` on a machine where the CLI exists, and paste the result into this file | Dev | open |
+| 7 | Resolve strict warnings and rerun `openspec validate req-024-set-trip-budget --strict` | Dev | open; executed 2026-11-15, exit 1; warnings recorded under Inputs |
 | 8 | Confirm the eight-step validation order and the minor-unit wire format (C1, C5), or record the opposite ruling before P4 | evelyn.huang (SA) | closed with the SA's Pass — C1 and C5 are written in the delta the SA approved; no separate minute exists, so an opposing ruling must still be recorded before P4 |
 
-- Approvers: **IO = Emily — pending (not recorded)**, **SA = evelyn.huang — Pass**.
-- IO sign-off: **not recorded**. No IO review or signature exists for this change.
-- SA sign-off: **evelyn.huang — Pass**, relayed by the change author on 2026-11-15. The SA's
+- Approvers: **IO = Emily — Pass (2026-11-15)**, **SA = evelyn.huang — revised review pending**.
+- IO sign-off: **Emily — Pass**, 2026-11-15; revised three-requirement / 53-scenario
+  package including confirmation/cancellation and clear-failure behavior, per explicit user instruction.
+- Historical SA sign-off: **evelyn.huang — Pass**, relayed by the change author on 2026-11-15. The SA's
   earlier Pass on `req-019-save-interests` is scoped to that change and is not counted again
-  here; this row records the SA's Pass on this change only.
+  here; this row records the old version's Pass only, not the revised confirmation contract.
 - Timestamp: 2026-11-15 (draft, authored by the agent). The agent records human statements
   only; it does not verify identities and does not sign on behalf of either role.
 
 ## What this draft does and does not allow
 
-- Allowed: refine the delta, and start P3 design (`/sdd:atdd-design`, `/sdd:task-plan`) on the
-  SA-signed delta — A0 is clean and the AC/DoV review is recorded. Any design work may still be
-  invalidated by an IO finding.
+- Allowed: refine the delta and submit the confirmation revision for SA/IO review.
+  Historical design permission does not approve the revised contract; no new
+  P3/P4 authorization is recorded here.
 - Not allowed: claiming G1 is closed, presenting `preferences` as aligned in the registry,
   starting P4 implementation, or citing this file as a signature.
 - If both roles sign without findings, this file is amended to Pass with both signature rows
@@ -127,9 +133,8 @@
 
 1. Close REQ-019's G1, then REQ-020's G1 — conditions 1 and 2 above are ordered and cannot be
    met earlier.
-2. Push `feat/travel_preference` with the P2 delta at its tip so the reviewers see the same tree;
-   nothing is committed yet, so the IO has no commit to review.
-3. IO Emily reviews and signs; with the SA already passed, a clean IO review flips this record to
-   Pass, otherwise the IO's findings become conditions and the delta is revised.
-4. P3 may start in parallel: decide the preference error-advice package scope and confirm the
-   per-currency decimal table is a code constant rather than a database column.
+2. Push the revised delta and Emily approval record on `feat/travel_preference`.
+3. SA re-reviews confirmation/cancellation and clear-failure behavior; Emily's IO
+  approval is recorded, but does not close SA, validation or dependency conditions.
+4. Resolve validation conditions and record remaining dependency/merge work
+  separately from product alignment; no implementation completion is implied.

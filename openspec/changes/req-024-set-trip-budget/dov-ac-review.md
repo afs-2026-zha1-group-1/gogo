@@ -3,8 +3,8 @@
 - Date: 2026-11-15
 - Stage: P2 `/sdd:delta-craft` (step = all)
 - Target: `openspec/changes/req-024-set-trip-budget/specs/preferences/spec.md`
-- Size: 3 requirements, 50 scenarios (existing capability `preferences`: 2 ADDED, 1 MODIFIED
-  page requirement at revision 3), 483 lines
+- Size: 3 requirements, 53 scenarios (existing capability `preferences`: 2 ADDED, 1 MODIFIED
+  page requirement at revision 3, updated with confirmation/cancellation/failure paths)
 - Baseline: the unarchived deltas of `req-019-save-interests` and `req-020-manage-must-do`;
   identity, trip existence and membership are inherited, and page revision 3 reproduces
   revision 2 verbatim
@@ -14,7 +14,7 @@
 
 | Item | Result | Evidence | Notes |
 |---|---|---|---|
-| AC-1 every requirement has at least one testable AC | Pass | 3 `### Requirement:` blocks with 18, 6 and 26 scenarios respectively, 50 in total | No placeholder requirement; the MODIFIED page block is self-contained at revision 3 |
+| AC-1 every requirement has at least one testable AC | Pass | 3 requirement blocks with 18, 6 and 29 scenarios, 53 total | Page revision 3 includes delete/clear confirmation, cancellation and clear failure; human re-review pending |
 | AC-2 ACs are observable | Pass | Assertions anchor on HTTP status, `code`, the returned `budget` object, whether `budget` is `null`, the presence of the `amount` key in `payload`, the `budget` row count, byte comparison of `updated_at` across members, and the rendered amount and label | "not set" versus `0` is asserted twice: on the wire and on screen |
 | AC-3 negative and edge cases are called out where risk is high | Pass | 9 rejection scenarios on save, 9 edge scenarios on save, 6 on read, 5 failure/rollback scenarios on the page | See §4 |
 | AC-4 no disguised implementation detail, no vague words | Pass | No "correctly", "properly", "quickly", "gracefully", "as expected" or "etc." (searched); every assertion names a status, a `code`, a field or a rendered value | "rendered as `40.00` with `SGD`" is an observation point, not a formatting implementation |
@@ -77,20 +77,21 @@
 | P1 AC7-N (malformed body) | Save | A malformed body is rejected |
 | P1 AC17-N (`GET` twice) | Read | Reading changes nothing |
 | Proposal: page section with its own save action | Page | Saving the budget sends one request and touches nothing else; saving the budget blocks duplicate submissions |
+| User ruling 2026-11-15; delta C8 | Page | Both destructive actions require confirmation; Cancel/dismiss sends no PUT; failed confirmed clear preserves saved budget and shows an error |
 
 ## 6. Residual risks and role concerns
 
 | Role | Concern | Blocks G1? |
 |---|---|---|
-| IO | "Not set" and `0` must be visually different, including copy. The delta states the requirement but not the exact wording. Is that acceptable, or should the copy be fixed here? | No; wording belongs to the page, the difference is contractual |
-| IO | The budget amount is stored in minor units while the screen shows major units. Users typing `40` get `4000` stored — is the input labelled clearly enough at P4? | No; recorded as a P4 UI obligation |
-| IO | Clearing has no confirmation dialog, matching the must-do delete ruling. Confirm acceptable for the MVP | No |
+| IO | User accepted 2026-11-15: unset and zero are distinct; exact copy belongs to UI implementation | No; distinction remains contractual |
+| IO | User accepted 2026-11-15: clearly labelled currency and major-unit entry, currency-specific minor-unit storage (40 SGD -> 4000) | No; explicit page obligation |
+| IO | User rejected immediate clearing 2026-11-15: both budget clear and must-do delete require confirmation | C8 and confirm/cancel/failure scenarios updated; Emily IO Pass recorded 2026-11-15 for 53 scenarios by separate explicit instruction; revised SA review pending |
 | SA | Two ordered prerequisites: REQ-019's `V4` plus page revision 1, then REQ-020's page revision 2, which revision 3 reproduces | No for the delta, yes for P4/merge; conditions 1 and 2 of the G1 draft |
 | SA | The eight-step validation order (C1) decides which `code` a multi-violation request returns. Confirm it before P4, since tests encode it | No, but it should be confirmed at G1 |
 | SA | `TripErrorAdvice` covers `com.gogo.trip` only, so the `BUDGET_*` codes need a preference-owned advice or a widened scope | No, decided in P3 |
-| SA | Cross-currency comparison is out of scope, so US-031's budget filter will need a separate change when budgets of different currencies must be compared together | No; REQ-024 OQ-13 |
+| SA | User accepted 2026-11-15: cross-currency comparison/conversion excluded here and deferred to US-031 | No; REQ-024 OQ-13 |
 | Dev/QA | The per-currency decimal table must be a code constant, not a database column, otherwise `JPY` breaks the wire contract | No; P3 obligation |
-| Dev/QA | `openspec validate` cannot run here (the CLI is not on `PATH`), so no validation result is claimed. `tech-stack-plan.md` §6 still claims a single PUT submits all preference kinds, which this change contradicts by design | No; recorded as conditions and as REQ-024 OQ-14 |
+| Dev/QA | Strict validation executed 2026-11-15, exit 1: ADDED body length and archive/preamble/Clarifications warnings; Living Spec awaits REQ-019. Architecture single-PUT drift remains separate OQ-14 | Not passed; remediation tracked in G1 condition 7 |
 
 ## 7. Conclusion
 

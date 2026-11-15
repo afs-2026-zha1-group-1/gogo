@@ -270,21 +270,28 @@ request by an explicit "Save" action; the section SHALL NOT submit on every togg
 
 The **must-do items section** SHALL render the current member's items only, each showing its
 `activity` and, when present, its `location` and `time`. It SHALL offer an inline add form, an
-inline edit action and a delete action per item. The delete action SHALL delete immediately and
-SHALL NOT require a confirmation dialog. Every one of those actions SHALL be persisted
-immediately by its own `PUT /api/trips/{tripId}/preferences/must-dos`; the section SHALL NOT wait
+inline edit action and a delete action per item. Delete SHALL open a confirmation dialog
+identifying the item, with Confirm and Cancel actions. Opening, cancelling or dismissing it
+SHALL send no request and SHALL preserve the item. Only confirmation SHALL send the delete
+request. Every completed add/edit or confirmed delete SHALL be persisted
+by its own `PUT /api/trips/{tripId}/preferences/must-dos`; the section SHALL NOT wait
 for a page-level save and SHALL NOT offer a "save all" action.
 
 The **budget section** SHALL render the current member's budget with an amount input, a currency
 selector and a hard/soft selector. The currency selector SHALL include `SGD`, `CNY`, `USD`, `EUR`
 and `JPY` and SHALL NOT pre-select an amount. The section SHALL be saved by its own explicit
 "Save budget" action, which SHALL send `PUT /api/trips/{tripId}/preferences/budget` and SHALL NOT
-save the interests or the must-do items. The section SHALL offer a "Clear" action that sends
-`{"amount":null}`.
+save the interests or the must-do items. The section SHALL offer a "Clear" action that opens
+a confirmation dialog identifying the budget with Confirm and Cancel actions. Opening,
+cancelling or dismissing SHALL send no request and preserve saved values and unsaved input.
+Only confirmation SHALL send `{"amount":null}`; the response SHALL determine the saved state.
 
 The budget section SHALL render the amount using the currency's decimal places (`SGD`, `CNY`,
 `USD`, `EUR` two; `JPY` none) and SHALL NOT hard-code a factor of 100. It SHALL render "not set"
 differently from an explicit `0`, so a zero budget is never shown as an empty budget.
+The amount input SHALL identify the selected currency and major-unit entry; conversion to
+minor units SHALL follow that currency's decimal places. Exact unset/zero copy belongs to UI
+implementation, but the states SHALL remain distinguishable.
 
 A successful action SHALL update its section from the response body. A failed action SHALL show the
 server `message` and return its section to the state the server acknowledges, so a rejected change
@@ -344,12 +351,21 @@ The page SHALL NOT use browser local storage as evidence of a saved state.
 - **THEN** one `PUT` is sent
 - **AND** the section still lists one item with the same id and the new time
 
-#### Scenario: Deleting an item persists immediately
+#### Scenario: Deleting an item requires confirmation
 
 - **GIVEN** the must-do section lists two items
-- **WHEN** the user deletes one of them
-- **THEN** one `PUT` is sent
-- **AND** the section lists exactly the remaining item
+- **WHEN** the user activates Delete for one item
+- **THEN** a confirmation dialog identifies that item and offers Confirm and Cancel
+- **AND** no `PUT` is sent and both items remain visible
+- **WHEN** the user confirms and the request succeeds
+- **THEN** exactly one `PUT` is sent and the section lists only the remaining item
+
+#### Scenario: Cancelling item deletion preserves the list
+
+- **GIVEN** the delete confirmation dialog is open for one of two items
+- **WHEN** the user cancels or dismisses the dialog
+- **THEN** no `PUT` is sent, both items remain and saved data is unchanged
+- **AND** unrelated interest selections and budget input remain unchanged
 
 #### Scenario: An unset budget is not rendered as an empty or zero amount
 
@@ -395,9 +411,25 @@ The page SHALL NOT use browser local storage as evidence of a saved state.
 #### Scenario: Clearing the budget returns the section to "not set"
 
 - **GIVEN** Alice's budget is 4000 SGD with `limitType = "hard"`
-- **WHEN** Alice activates "Clear" and the request returns 200 with `{"budget":null}`
+- **WHEN** Alice activates "Clear"
+- **THEN** a confirmation dialog identifies the budget and offers Confirm and Cancel
+- **AND** no request is sent and the saved budget remains visible
+- **WHEN** Alice confirms and the request returns 200 with `{"budget":null}`
 - **THEN** the section renders its "not set" state again
+- **AND** exactly one budget `PUT` sends `{"amount":null}`; no other section is saved
 - **AND** no amount, currency or limit type is shown as saved
+
+#### Scenario: Cancelling budget clearing preserves values and input
+
+- **GIVEN** a saved budget and unsaved budget input exist, and the Clear dialog is open
+- **WHEN** the user cancels or dismisses the dialog
+- **THEN** no `PUT` is sent; saved budget and all unsaved section input are unchanged
+
+#### Scenario: A rejected confirmed clear preserves the saved budget
+
+- **GIVEN** Alice has a saved budget and confirms clearing it
+- **WHEN** the clear request fails or returns a non-2xx response
+- **THEN** the page shows an error, preserves the saved budget and does not show it as cleared
 
 #### Scenario: A rejected budget save keeps the previous values
 
@@ -481,3 +513,4 @@ The page SHALL NOT use browser local storage as evidence of a saved state.
 | C5 | The wire format stays in the currency's minor unit, and the page converts using a per-currency decimal table | Keeps storage integral (plan §5) while the screen shows `40.00`; a hard-coded factor of 100 would break `JPY` |
 | C6 | The budget section saves on its own action, never through a page-level submit | Interests save explicitly, must-do items save per action, budgets save per section; one shared submit would write several `kind`s at once |
 | C7 | MVP boundary: the closed loop is save, read back, change the limit type, clear | Currency conversion, exchange rates, budget history and any business amount ceiling are intentionally absent (REQ-024 OQ-10/OQ-13), and no other member's budget is rendered by this change; their absence is a scope decision, not an omission |
+| C8 | Must-do deletion and budget clearing require confirmation; cancel/dismiss sends no request | User ruling 2026-11-15 supersedes immediate destructive actions; API clear payload and storage semantics are unchanged |
