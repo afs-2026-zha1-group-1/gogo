@@ -430,7 +430,7 @@ Supporting: `requirement-workspace/deep-dive.md` §REQ-020，
 | R5 | 参考图表单写「二选一」，照抄会阻碍 AC1 同时保存地点与时间 | UI alignment | 已解：D6 允许同时保存；文案修正列为 WARNING |
 | R6 | `com.gogo.preference` 的 advice 依赖 REQ-019 先建，缺失时 `INVALID_REQUEST` 不产生 | integration | 缓解：若 REQ-019 未建，本变更自带 advice |
 | R7 | `time` 不带日期，多日行程无法定位 | product scope | 已知偏离：夹具为单日，扩展留给 US-031（OQ-12） |
-| R8 | Web 前端一次 PUT 提交整表，条目多时响应体放大 | operational | 不阻断；上限评估记入 OQ-11 |
+| R8 | Web 前端一次 PUT 提交整表，条目多时响应体放大 | operational | 不阻断；P2 已裁定不设上限（delta C6），OQ-11 关闭，风险留作观察项 |
 
 无致命阻塞使 REQ-020 失效，拆分可以继续。
 
@@ -574,7 +574,7 @@ Supporting: `requirement-workspace/deep-dive.md` §REQ-026，
 | 成员页 | `requirement-workspace/deep-dive.md`（US-013 段） | 节点 7 的就绪环在需求层已有约定，**尚未实现** |
 | 成员判定 | `TripRepository.isMember(long, long)` | 可直接复用 |
 | 错误处理 | `TripErrorAdvice`、`InvitationErrorAdvice` | 按包隔离；**无 500 映射**，500 走 Spring 默认体 |
-| 既有错误码 | `TripController.java` | `USER_REQUIRED` / `NOT_A_MEMBER` / `TRIP_NOT_FOUND` / `INVALID_REQUEST`；文档写的 `UNAUTHENTIC`/`TRIP_FORBIDDEN` 与代码不符 |
+| 既有错误码 | `TripController.java` | `USER_REQUIRED` / `NOT_A_MEMBER` / `TRIP_NOT_FOUND` / `INVALID_REQUEST`；REQ-019/020/024 的文档也用这四个码，无漂移 |
 | DB 访问 | `TripRepository` / `InvitationRepository` | `JdbcTemplate`，无 ORM |
 | `kind` 取值域 | `tech-stack-plan.md` §5 | `interest`/`must_do`/`constraint`/`budget`；无就绪类 |
 | 前端 | `frontend/src/{App.jsx,api.js,app.css,Icons.jsx}` | 手写 hash 路由、`api()` 封装、顶部身份选择器（1–5），无组件库 |
@@ -625,7 +625,7 @@ Supporting: `requirement-workspace/deep-dive.md` §REQ-026，
 | R7 | 同页四段四种写入时机（兴趣显式、必做项即时、预算段内显式、就绪页面级），页面契约第四次修订 | contract | 缓解：P2 以 REQ-024 版本为基线再修订，逐段写明；禁止把四段并成一次全页保存 |
 | R8 | 参考图 `submitPref()` 一次点击保存+就绪、`noPrefSw` 仅 `hide`，与本需求的「保存/提交解耦」「禁用而非隐藏」直接冲突 | UI alignment | 已解：提交只负责就绪、开关禁用字段并写服务端标记；UI 改动列 WARNING |
 | R9 | 提交后保存偏好**不撤销**就绪（D10），US-031 若直接读 `effective` 会拿到「就绪但内容已变」的输入 | product correctness | 已知留白：快照新鲜度由 US-031/037 处理（OQ-7）；本需求只保证状态不被误改 |
-| R10 | 文档漂移：REQ-020 的 DoR/proposal 写 `UNAUTHENTIC`/`TRIP_FORBIDDEN`，代码是 `USER_REQUIRED`/`NOT_A_MEMBER`；计划 §5/§6 也与实现路线不符 | docs | 缓解：本需求按代码实况写；两处修正分别登记为 OQ-10 与 REQ-019 OQ-16 |
+| R10 | 文档漂移：计划 §5/§6 与实现路线不符（`kind` 枚举、单 PUT 提交四类偏好） | docs | 缓解：本需求按代码实况写；修正并入 REQ-019 OQ-16。原记「REQ-020 写 `UNAUTHENTIC`/`TRIP_FORBIDDEN`」经 P2 复核不成立，OQ-10 已关闭 |
 
 无致命阻塞使 REQ-026 失效，拆分可以继续。
 

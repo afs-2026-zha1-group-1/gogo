@@ -144,7 +144,8 @@ one capability, no story backlog needed.
   `updated_at` remains a housekeeping column and is not required to match.
 - **Reference screenshot amounts and currencies** are illustrative; the page shows real values
   from the API and distinguishes "pending", "ready" and "ready without preference" by text.
-- **Documentation drift already present**: REQ-020's DoR and proposal name
-  `UNAUTHENTIC`/`TRIP_FORBIDDEN`, while the merged `TripController` returns
-  `USER_REQUIRED`/`NOT_A_MEMBER`. This change follows the code and logs the drift as a
-  cross-requirement finding.
+- **Error-code drift retracted (2026-11-15)**: an earlier draft of this proposal claimed
+  REQ-020's DoR and proposal name `UNAUTHENTIC`/`TRIP_FORBIDDEN`. A P2 re-check found those
+  strings only in this change's own P1 documents (`git log -S` traces them to `16e201f`);
+  REQ-020 uses the merged `TripController` codes (`USER_REQUIRED`/`NOT_A_MEMBER`). This
+  change follows the code, and REQ-026 OQ-10 is closed as resting on a false premise.

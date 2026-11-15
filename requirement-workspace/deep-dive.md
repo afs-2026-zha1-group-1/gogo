@@ -405,7 +405,7 @@ slice and are not required by any AC. Recorded as a non-blocking item for Dev
 | 修改他人必做项 | out（写路径只认 header 身份，无跨成员入口） | REQ-020 §Actors |
 | 兴趣段（US-019）与本段同页共存 | out of scope（本需求不改兴趣端点与保存按钮） | REQ-020 §Out of scope |
 | 主线确认后锁定必做项 | out of scope（沿用 REQ-019 D4：仅测试上下文） | REQ-020 §Out of scope |
-| 排序拖拽、跨成员共享、数量/长度上限 | out of scope（AC 未规定） | REQ-020 OQ-11 |
+| 排序拖拽、跨成员共享、数量/长度上限 | out of scope（P2 裁定，见 delta C6） | REQ-020 OQ-11（已关闭） |
 | 并发两次 PUT 同一成员 | out of scope（连接池 = 1，实际串行，last-write-wins） | 技术约束 |
 
 每个场景都有归属行。
@@ -444,7 +444,7 @@ slice and are not required by any AC. Recorded as a non-blocking item for Dev
 ### NFR business-policy layer
 
 单成员条目数量在实际使用中是两位数以内，AC 未规定容量、长度或 SLA；`payload` 是单行 JSON，读写各一条语句。
-记为 Dev 的非阻塞项（OQ-11），不臆造上限。
+P2 已关闭 OQ-11：不设上限，P4 也不加防御性分支（delta C3/C6）；写放大只作观察项。
 
 ## REQ-024
 
@@ -516,7 +516,7 @@ slice and are not required by any AC. Recorded as a non-blocking item for Dev
 | 「无偏好」与就绪提交 | out of scope（US-027 / US-026） | REQ-024 §Out of scope |
 | 成员摘要（节点 7）展示他人预算 | out of scope（US-013 的展示决策） | OQ-12 |
 | 多币种换算 / 汇率比较 | out of scope（US-031 另开变更） | OQ-13 |
-| 金额业务上限 | out of scope（AC 未规定；实现层只拒超 int32） | OQ-10 |
+| 金额业务上限 | out of scope（P2 裁定：只拒超 int32，见 delta C4） | OQ-10（已关闭） |
 | 编辑他人预算 | out（写路径只认 header 身份，无跨成员入口） | REQ-024 §Actors |
 | 并发两次 PUT 同一成员 | out of scope（连接池 = 1，实际串行，last-write-wins） | 技术约束 |
 
@@ -560,7 +560,7 @@ slice and are not required by any AC. Recorded as a non-blocking item for Dev
 ### NFR business-policy layer
 
 单个成员的预算是**一行一个对象**，读写各一条语句；5 个币种、int32 金额上限，无容量与 SLA 要求。
-AC 未规定金额业务上限与汇率换算，记为 Dev/团队的非阻塞项（OQ-10 / OQ-13），不臆造限制。
+AC 未规定金额业务上限与汇率换算：金额上限已在 P2 关闭（OQ-10 → delta C4，只拒超 int32），汇率仍为非阻塞项（OQ-13）。
 
 ## REQ-026 — 提交偏好并标记就绪 / 显式无偏好（US-026 + US-027）
 
@@ -649,7 +649,7 @@ AC 未规定金额业务上限与汇率换算，记为 Dev/团队的非阻塞项
 | 写入时机 | 兴趣=段内显式保存、必做项=动作即保存、预算=段内显式保存 | 就绪=页面级显式提交 | 四段四种时机并存；页面契约第 4 次修订必须逐段写明，防被「统一」成一次全页提交 |
 | 端点前缀 | `/preferences`、`/preferences/must-dos`、`/preferences/budget` | 追加 `/preferences/submission`、`/preferences/readiness`、`/preferences/effective` | 风险：若用 `/preferences/{kind}` 通配会吞掉兄弟路径；P3 必须精确匹配 |
 | 错误 advice | `com.gogo.preference` 包内的 advice（REQ-019 建立） | 追加 `PREFERENCE_EMPTY` 与 500 `INTERNAL_ERROR` | 一致：沿用同一 advice；500 为本需求新增映射 |
-| 身份与错误码实况 | `TripController`：`USER_REQUIRED` / `NOT_A_MEMBER` / `TRIP_NOT_FOUND` / `INVALID_REQUEST` | 同 | 发现不一致：REQ-020 的 DoR 与 proposal 写 `UNAUTHENTIC` / `TRIP_FORBIDDEN`，需一并更正（OQ-10） |
+| 身份与错误码实况 | `TripController`：`USER_REQUIRED` / `NOT_A_MEMBER` / `TRIP_NOT_FOUND` / `INVALID_REQUEST` | 同 | 一致：REQ-020 的 DoR 与 proposal 也用这四个码。原「文档写 `UNAUTHENTIC` / `TRIP_FORBIDDEN`」的判断有误，OQ-10 已于 P2 关闭（`git log -S` 只命中本需求的提交 `16e201f`） |
 | 成员 / 组织者可见性 | REQ-019 的 GET 返回全员明细，前端只渲染自己那段 | `readiness` / `effective` 同样返回全员 | 一致；节点 7（US-013）直接消费 `readiness` |
 | 主线确认 | REQ-004 的 `trip.main_plan_confirmed`；US-037 前无产品写入路径 | 提交不检查主线 | 一致：`allReady` 只报「全员已提交」，主线组合门控属 US-031 |
 | 生成消费 | US-031 节点 9/10 需要就绪成员输入、硬上限过滤 | `effective` 成为唯一读路径 | 一致：本需求只提供投影，不实现生成 |

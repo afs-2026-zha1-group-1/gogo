@@ -16,7 +16,7 @@
 | ⑤ | 异常与边界 | — | Pass | deep-dive §REQ-024 ⑩ | 缺身份、未 seed、非成员、未知 trip、坏 body、缺 `amount` 键、负数、小数、超 int32、字段联动缺失、非法币种、非法上限类型、半预算、幂等、只读、已确认后写入均有归属 |
 | ⑥ | 结果可验证 | — | Pass | REQ-024 §Scenarios | 断言锚在 HTTP 状态 + `code` + `budget` 对象/null 的可区分性 + `member_preference` 行数与 payload 解析结果 + 跨成员逐字比较 + 界面格式化结果 |
 | ⑦ | 依赖与应用架构触点 | — | Pass | impact brief §REQ-024 | 依赖 REQ-019 的 `V4` 与 preference 包、`TripRepository.isMember`、`App.jsx` 身份选择器、`tech-stack-plan.md` §5 的金额与 kind 约定，均已具名 |
-| ⑧ | 开放问题闸门 | — | Pass | REQ-024 §Open questions | blocking 未 resolved = 0；OQ-10~14 为 non-blocking 且 `deferred` 带 owner |
+| ⑧ | 开放问题闸门 | — | Pass | REQ-024 §Open questions | blocking 未 resolved = 0；OQ-10 已在 P2 裁定为 resolved（delta C4），OQ-11~OQ-14 仍 `deferred` 带 owner |
 | ⑨ | 数据契约已定 | — | Pass | deep-dive §REQ-024 ⑨ | payload 形状 `{"amount","currency","limitType"}` 与清除态 `{}`、最小单位与币种小数位表、联动必填、校验顺序、状态迁移齐全，无 `{TBD}` |
 | ⑩ | 边界已枚举 | — | Pass | deep-dive §REQ-024 ⑩ | 35 条分支各有 in/out 归属，含 out-of-scope 的理由 |
 | ⑪ | 跨 REQ 一致 | — | Pass | deep-dive §REQ-024 ⑪ | 与 REQ-019（同表、同包、同页）、REQ-020（同表不同 kind、写入时机差异）、REQ-003（行程日期）、REQ-004（主线确认）、US-031（消费方）、计划文档（§5/§6 漂移）均有收敛结论 |
@@ -39,7 +39,7 @@
 | WARNING | open | `com.gogo.preference` 错误 advice | 若 REQ-019 未落地其 `PreferenceErrorAdvice`，本需求的 `INVALID_REQUEST` 与 `BUDGET_*` 不会产生（`TripErrorAdvice` 只覆盖 `com.gogo.trip`） | 复用 REQ-019 的 preference advice；缺失时本变更补齐。owner Dev |
 | WARNING | open | `ui-design-reference` 节点 8 预算卡 | 原型 `f-cur` 只有 CNY/USD/EUR/JPY，不含 AC 要求的 SGD；且金额默认值 `1200`、提交按钮走全页 `submitPref()` | 币种下拉必须含 SGD；预算段需独立「保存预算」按钮（D4），不能挂在全页提交上。owner Dev |
 | WARNING | open | `application.yml` | 现有配置无 `hikari.maximum-pool-size=1` / WAL / `busy_timeout` / 外键开关；`tech-stack-plan.md` §7 要求池=1 | 与 REQ-019/020 的同一 WARNING 合并处理，P4 前评估。owner Dev |
-| SUGGESTION | deferred | REQ-024 OQ-10 | 金额业务上限未定，实现层只拒绝超 int32 | 若 US-031 需要边界提示再定；owner Dev / SA |
+| SUGGESTION | resolved | REQ-024 OQ-10 | 金额业务上限未定，实现层只拒绝超 int32 | P2 裁定：不设业务上限（delta C4），int32 只作可表示范围边界；US-031 若需业务边界另开变更。owner Dev / SA |
 | SUGGESTION | deferred | REQ-024 OQ-11 | `acceptance-test-fixtures.md` 尚未收录 US-024 样例 | P3/ATDD 决定是否扩写；owner 本人 / 团队 |
 | SUGGESTION | deferred | REQ-024 OQ-12/OQ-13 | 成员摘要展示他人预算、跨币种换算 | 属 US-013 / US-031；owner 团队 |
 | SUGGESTION | deferred | REQ-024 OQ-14 | 计划文档 §6「单 PUT 提交四类偏好」与本需求独立端点漂移 | 并入 REQ-019 OQ-16 的团队文档任务；owner 团队 |
