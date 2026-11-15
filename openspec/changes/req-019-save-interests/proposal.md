@@ -38,7 +38,8 @@ blocking 开放问题为 0、DoR BLOCKER 为 0、A0 深潜四项 Pass，因此�
 - 后端新增 `preference` 包（Controller/Service/Repository/dto）与错误 advice；
   身份与成员判定复用 `TripRepository.findUserId` / `isMember`。
 - 前端在现有 app 内新增偏好页：`parseRoute` 增一条 `#/trips/{id}/preferences`，
-  新页面用 `api.js` 与 `app.css`，chip 选择 + 四态；**不新增任何依赖**。
+  新页面用 `api.js` 与 `app.css`，7 个 chip + 显式「保存」批量提交 + 四态；
+  行程详情页增一个进入该页的链接；**不新增任何依赖**。
 - 测试与证据：后端接口测试覆盖去重、非法值、混合值、空数组、缺身份、非成员、
   未知 trip、幂等；`docs/feedback/verification-*.md` 与 `README.md` 增行。
 
@@ -65,7 +66,8 @@ None。`greeting` 与 `trips` 的契约都不变；`trips` 只被复用表与成
   `deep-dive.md` §REQ-019，夹具 `acceptance-test-fixtures.md`。
 - **Code**：新增 `backend/src/main/java/com/gogo/preference/**`；只读复用
   `com.gogo.trip.TripRepository` 的 `findUserId` / `isMember`（不修改其行为）；
-  前端新增 `frontend/src/pages/Preferences.jsx`，修改 `App.jsx` 的路由与页面挂载。
+  前端新增 `frontend/src/pages/Preferences.jsx`，修改 `App.jsx` 的路由与页面挂载，
+  并在 `TripDetails.jsx` 增一个入口链接。
 - **Database**：新增 `V4__create_member_preference.sql`；不改 `V1` / `V2`；
   库文件仍是 `backend/data/gogo.db`。
 - **APIs**：新增 2 个端点，`X-User-Id` 身份，裸 DTO 成功 + `{"code","message"}` 失败；
