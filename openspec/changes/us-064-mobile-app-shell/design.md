@@ -68,10 +68,15 @@ message and actions).
 
 Context: AC1 fixes the dock below scrolling content; Home owns a bottom
 `.actionbar` that must stay reachable (R19).
-Decision: dock is fixed to the column bottom; the scrolling content area gets
-bottom padding equal to dock height plus `env(safe-area-inset-bottom)`; the
-home `.actionbar` scrolls with content and clears the dock. Tokens come from
-the existing `app.css` set; active highlight uses `--brand` / `--brand-soft`.
+Decision: the dock is a non-scrolling `flex: none` row pinned to the column
+bottom, below the `flex: 1; min-height: 0` content area whose `.body` scrolls
+internally; safe-area padding via `calc(6px + env(safe-area-inset-bottom))`.
+The home `.actionbar` stays inside the page above the dock and remains
+reachable. Tokens come from the existing `app.css` set; active highlight uses
+`--brand-ink` / `--brand-soft`. (Amended at P4: original wording said
+`position: fixed` + content padding; the flex composition achieves the same
+observable contract — dock never scrolls, content never obscured — without
+overlap risk; verified in browser, see verification-req-005.md FR1/R19.)
 Rejected: sticky dock inside each page (inconsistent); overlay without padding
 (obscures content, violates FR1).
 

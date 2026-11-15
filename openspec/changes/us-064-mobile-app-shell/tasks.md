@@ -13,59 +13,65 @@
   IO Johnson + SA Elian Jiang)
 - [x] 0.2 Feature branch `US-064-mobile-app-shell` exists with main merged
   (b681c61); PR-based CI evidence path available
-- [ ] 0.3 Baseline captured: `cd backend && mvn test` green;
+- [x] 0.3 Baseline captured: `cd backend && mvn test` green (31/31);
   `cd frontend && npm run build` passes; route inventory + migration list
-  (`V1`–`V3`) + `package.json` deps recorded (atdd-design §2)
+  (`V1`–`V3`) + `package.json` deps recorded (atdd-design §2,
+  verification-req-005.md baselines)
 
 ## 1. Red acceptance checks (owner: Dev; before any production code)
 
-- [ ] 1.1 Author the E2E check list FR1–GJ2 as numbered browser steps with
+- [x] 1.1 Author the E2E check list FR1–GJ2 as numbered browser steps with
   expected observations, including the forward/reverse tab walk with recorded
-  headings (atdd-design §1–2)
-- [ ] 1.2 Author reverse/static checks R-1/R-2/R-3 (route inventory, migration
+  headings (atdd-design §1–2; verification-req-005.md)
+- [x] 1.2 Author reverse/static checks R-1/R-2/R-3 (route inventory, migration
   list, dependency list, no-demo-data observations)
-- [ ] 1.3 Confirm the E2E list is red against the current tree (no dock,
-  `#/split`/`#/members` fall back to home, no empty state)
+- [x] 1.3 Confirm the E2E list is red against the current tree (no dock,
+  `#/split`/`#/members` fall back to home, no empty state) — structural red
+  evidence recorded before implementation
 
 ## 2. Shell frame and dock (owner: Dev; D2, D5, D7, D8)
 
-- [ ] 2.1 `Shell` composition in `App.jsx`: frame + scaffold bar + dock around
+- [x] 2.1 `Shell` composition in `App.jsx`: frame + scaffold bar + dock around
   in-app routes; `join` renders full-screen with scaffold bar, no dock
-- [ ] 2.2 `TabBar` component: four tabs 仪表盘/行程/分队/成员, icon + label,
+- [x] 2.2 `TabBar` component: four tabs 仪表盘/行程/分队/成员, icon + label,
   active rule (home→仪表盘; trips-empty/details/create→行程; split; members)
-- [ ] 2.3 Dock glyphs in `Icons.jsx` (home/list/fork/users, local inline SVG)
-- [ ] 2.4 `app.css`: fixed dock, content bottom clearance + safe-area padding,
-  active highlight from brand tokens; home actionbar stays reachable
+- [x] 2.3 Dock glyphs in `Icons.jsx` (home/list/fork/users, local inline SVG)
+- [x] 2.4 `app.css`: dock pinned below scrolling content + safe-area padding,
+  active highlight from brand tokens; home actionbar stays reachable (D5
+  amended to flex composition, verified FR1/R19)
 
 ## 3. Route table and placements (owner: Dev; D1, D3, D6)
 
-- [ ] 3.1 `parseRoute`: add `#/trips` (trips-empty), `#/split`, `#/members`;
+- [x] 3.1 `parseRoute`: add `#/trips` (trips-empty), `#/split`, `#/members`;
   keep home and non-numeric-id fallbacks; UT-1 unit TDD at apply time
-- [ ] 3.2 App-level `lastTripId` session memory; 行程 tab targets remembered id
-  else `#/trips`; hash history unaffected (NV5)
-- [ ] 3.3 Home / TripDetails / CreateTrip render under the shell unchanged;
-  CreateTrip back link targets the 行程 tab route (D6)
+- [x] 3.2 App-level `lastTripId` session memory; 行程 tab targets remembered id
+  else `#/trips`; hash history unaffected (NV5 verified)
+- [x] 3.3 Home / TripDetails / CreateTrip render under the shell unchanged;
+  CreateTrip back link targets the 行程 tab route (D6, verified TR4)
 
 ## 4. Empty state and placeholders (owner: Dev; D3, D4)
 
-- [ ] 4.1 No-trip empty-state page: unique heading, text, exactly two actions
+- [x] 4.1 No-trip empty-state page: unique heading, text, exactly two actions
   创建行程 / 按编号打开行程; open-by-id navigates to `#/trips/<id>`; no data
-- [ ] 4.2 Shared `Placeholder` component; `#/split` and `#/members` render
+  (TR2/TR3 verified incl. numeric hint and unknown-id missing state)
+- [x] 4.2 Shared `Placeholder` component; `#/split` and `#/members` render
   honest "not implemented yet" text + link back to 行程, distinct headings
+  (PL1/PL2/PL3 verified)
 
 ## 5. Runtime acceptance and E2E (owner: Dev; evidence in local-verify report)
 
-- [ ] 5.1 `npm run build` passes; `mvn test` unchanged green (FR3/R-3)
-- [ ] 5.2 Start backend (8080) + frontend (5173); verify by port owner plus
-  endpoint response
-- [ ] 5.3 Execute the E2E list FR1–GJ2 including the text-only forward/reverse
+- [x] 5.1 `npm run build` passes; `mvn test` unchanged green (FR3/R-3; 31/31
+  twice, whitelist 5/5)
+- [x] 5.2 Backend (8080) + frontend (5173) running; verified by endpoint
+  response (`/api/greeting` 200, fixture trip 1 readable)
+- [x] 5.3 Execute the E2E list FR1–GJ2 including the text-only forward/reverse
   walk, back/forward, identity header observation, join/unusable exclusion;
-  record headings and observations
-- [ ] 5.4 Re-run existing acceptance behavior (create validation, details
+  headings and observations recorded in verification-req-005.md
+- [x] 5.4 Re-run existing acceptance behavior (create validation, details
   permission, invitation panel, join flow) — exactly as today (FR3)
-- [ ] 5.5 Execute reverse checks R-1/R-2/R-3; short-viewport dock clearance
-  check (R19)
-- [ ] 5.6 Write `docs/feedback/verification-req-005.md` and the P4
+- [x] 5.5 Execute reverse checks R-1/R-2/R-3; short-viewport dock clearance
+  check (R19, emulated 500 px column — tooling has no viewport resize)
+- [x] 5.6 Write `docs/feedback/verification-req-005.md` and the P4
   local-verify report with per-scenario evidence
 
 ## 6. CI and gates (owner: Dev drafts; IO/SA/VL decide)
