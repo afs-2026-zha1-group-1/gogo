@@ -75,7 +75,7 @@
 |---|---|---|
 | IO | The page has no "clear all" action; clearing means deselecting everything and saving. Is that acceptable? | No |
 | IO | The seven interests are shown as English labels only, with no localized display. Is that in scope for this story? | No (currently out of scope) |
-| SA | `V4` must land after REQ-004's `V3`, otherwise Flyway fails with an out-of-order migration | No, but it must be confirmed before merge |
+| SA | `V4` must land after REQ-004's `V3`, otherwise Flyway fails with an out-of-order migration | No; `V3__create_invitation.sql` reached `main` on 2026-11-15, so `V4` is the next free number and applies in order |
 | SA | `TripErrorAdvice` covers `com.gogo.trip` only, so `INVALID_REQUEST` from a new package needs its own advice or a widened scope | No, decided in P3 |
 | SA | Should the delta predefine the value domain of `member_preference.kind`? Only `interest` is used here; the other three preference types have their own stories | No; leaning towards letting later stories extend it |
 | SA | This delta is now written in English, matching the `greeting` and `trips` deltas. The pre-spec workspace entries (`requirements/REQ-019.md`, `intents/`, `analysis/req-019-dor.md`) are still in Chinese | No (semantics unaffected); converting them is a separate decision |
