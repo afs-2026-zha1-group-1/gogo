@@ -275,7 +275,7 @@ exist as GitHub issues.
 - Mode: embedded at the end of `/sdd:pre-spec-req` (blocking OQs = 0, DoR BLOCKERs = 0)
 - Change id: `us-031-037-main-itinerary` (created; renamed 2026-11-15 from `req-005-main-itinerary`, US-based naming by user ruling)
 - Branch: `US-031-037-main-itinerary-planning` (renamed 2026-11-15 from `sdd-us-031-037-main-itinerary-planning`; sdd prefix dropped by user ruling)
-- Merge note 2026-11-15: origin/main now includes REQ-003/004 (PR #30/#31); the as-is inventory below reflects the pre-merge local baseline, and the OQ-9 merge-time convergence task (R1) is now triggered.
+- Merge note 2026-11-15: origin/main now includes REQ-003/004 (PR #30/#31; local merge 4e6b261). The OQ-9 trigger fired and convergence was ruled at P2: append **V4+** (3 new tables + 2 `trip_member` columns), **no `trip` ALTER**, confirmed version derived from draft status. §2 below is restated against the post-merge baseline; R1/R2 are closed accordingly.
 
 ## 1. Requirement set
 
@@ -291,12 +291,12 @@ Supporting: `intents/2026-11-15-us-031-037.md`, `analysis/us-031-037-dor.md`,
 | Asset | Evidence | State |
 |---|---|---|
 | Knowledge base | `docs/knowledge/_INDEX.md` + slot READMEs | slots only; rules/ README only — P0 rules apply skipped by user ruling 2026-11-15 (disclosed, not re-applied) |
-| Living Spec tree | `openspec/specs/greeting/spec.md` | one capability; main-itinerary absent |
+| Living Spec tree | `openspec/specs/greeting/spec.md` | greeting only; REQ-003/004 code is merged but their `trips`/`invitations` deltas are not archived/synced yet; main-itinerary absent |
 | Archived SDD assets | `openspec/changes/archive/2026-11-13-req-001-hello-world/` | present |
-| Active change | `openspec/changes/req-002-greeting-json-sqlite/` | P4/P5 authored, gates unrecorded, archive pending — unrelated to US-031-037 |
-| Application code | `backend/` (hello only, V1), `frontend/` (greeting page) | no trip/member/main-plan schema or code locally |
-| Remote REQ-003/004 | `origin/sdd-req-003-planning`, `origin/sdd-req-004-planning`, `origin/sdd-req-004-split-planning` | unmerged PRs; V2/V3 schema + invitations code live there |
-| Fixtures | `acceptance-test-fixtures.md` | borrowed from origin/sdd-req-004-planning (provenance in intent) and extended with §US-031-037 |
+| Active changes | `openspec/changes/req-002-greeting-json-sqlite/`, `req-003-trip-create-and-view/`, `req-004-trip-invitations/` | REQ-002 P4/P5 authored, gates unrecorded, archive pending; REQ-003/004 G2 Pass and merged (PR #30/#31), P5/G3/archive pending — all unrelated to US-031-037 |
+| Application code | `backend/` `hello` + `trip` + `invitation` packages, Flyway V1–V3; `frontend/` Home / CreateTrip / TripDetails / InvitationPanel / Join | trip, member and invitation schema + code are local; no readiness, preference or main-plan schema/code |
+| REQ-003/004 baseline | merged into `origin/main` (PR #30/#31) | V2 seeds users 1–5 + the fixture trip and its four members; V3 adds `trip_invitation` and `trip.main_plan_confirmed`; accept endpoint available locally |
+| Fixtures | `acceptance-test-fixtures.md` | REQ-001..004 sections plus §US-031-037 (P2: paths, statuses and wire field names contractual) |
 | CI | `.github/workflows/ci.yml` | present; no structure change proposed |
 
 ## 3. As-is → proposed delta
@@ -304,22 +304,22 @@ Supporting: `intents/2026-11-15-us-031-037.md`, `analysis/us-031-037-dor.md`,
 | Touched asset | As-is (evidence) | Proposed delta |
 |---|---|---|
 | `openspec/specs/` | greeting only | new capability `main-itinerary` at archive time |
-| Backend | hello package, V1 | new main-itinerary package (controller/service/repository + MainPlanProvider port with fake implementation); Flyway V2+ self-contained schema (6 tables) + seeds |
-| Frontend | greeting page | Screen 9 generate + Screen 10 review/confirm routes with four mandatory states |
+| Backend | hello + trip + invitation packages, V1–V3 (merged baseline) | new main-itinerary package (controller/service/repository + MainPlanProvider port with fake implementation); Flyway V4+ convergence: 3 new tables (member_preference, main_plan_draft, main_plan_stop) + `trip_member.ready` / `preference_revision`; no `trip` ALTER; V4 seeds readiness + preference snapshots for the fixture trip |
+| Frontend | greeting + trip create/detail + invitation/join pages | Screen 9 generate + Screen 10 review/confirm routes with four mandatory states |
 | Fixtures | REQ-001..004 sections | §US-031-037 state setup + M/V request matrix |
 | Registry/handoff | REQ-001/002 rows | US-031-037 row + session handoff note |
 | CI / KB / scripts | present | checked, no impact |
 
 ## 4. Blast radius
 
-- Same runtimes/ports (8080 backend, 5173 Vite proxy) and same SQLite file; new tables only.
+- Same runtimes/ports (8080 backend, 5173 Vite proxy) and same SQLite file; three new tables plus two `trip_member` columns; `trip` and `trip_invitation` untouched.
 - No external service dependency; fake provider deterministic (fixture stops).
-- Cross-capability touchpoint: sets `trip.main_plan_confirmed` consumed by REQ-004 accept (unchanged code, remote-only today).
+- Cross-capability touchpoint: sets `trip.main_plan_confirmed` consumed by the now-local REQ-004 accept (code unchanged); the confirm flow supersedes REQ-004's test-only confirmed-state setup for trips confirmed here.
 
 ## 5. Artifact impact
 
 - Specs: `openspec/changes/us-031-037-main-itinerary/specs/main-itinerary/spec.md` (P2), ADDED requirements per US with independently numbered ACs.
-- Tests: backend acceptance matrix M1–M5/V1–V7 + reverses; frontend E2E Screens 9/10 incl. four states; test-only DB setup for pending/overrun/stale.
+- Tests: backend acceptance matrix M1–M14/V1–V7 + reverses; frontend E2E Screens 9/10 incl. four states; J4 `JOINING_CLOSED` E2E now runnable locally; test-only DB setup for pending/overrun/stale/null-locations.
 - Docs: workdir artifacts, `docs/ai4se-plugins/` reports at P4/P5.
 
 ## 6. Dual-track notes
@@ -331,8 +331,8 @@ vertical slice within the REQ-004 size baseline.
 
 | id | Risk | Severity | Status |
 |---|---|---|---|
-| R1 | Flyway/schema collision when remote REQ-003/004 PRs merge | non-blocking (OQ-9) | OQ-9 resolved 2026-11-15: SA merge-time convergence task (renumber/reconcile); self-contained ruling stands |
-| R2 | JOINING_CLOSED E2E unverifiable locally (accept endpoint remote-only) | non-blocking (DoR W1) | W1 resolved 2026-11-15: flag-level verification now; J4 E2E re-run post-merge (SA/Johnson) |
+| R1 | Flyway/schema collision when remote REQ-003/004 PRs merge | closed at P2 (OQ-9) | Trigger fired 2026-11-15 (PR #30/#31 merged). Convergence ruled: append V4+ (3 tables + 2 `trip_member` columns), no `trip` ALTER, confirmed version from draft status; SA Lumi confirmed at G1 (Pass, 2026-11-15; SA designation updated from Johnson by user statement 2026-11-15) |
+| R2 | JOINING_CLOSED E2E unverifiable locally (accept endpoint remote-only) | closed at P2 (DoR W1) | REQ-004 accept is merged locally, so the full J4 E2E runs in this change's ATDD (P3); no staged-verification residue |
 | R3 | Rules carrier not applied (user skipped P0) | process deviation, disclosed | P2/P4 rely on AGENTS.md + REQ-002/004 conventions; user ruling 2026-11-15 |
 | R4 | REQ-002 archive/push pending on main | unrelated | no action in this change |
 
@@ -341,7 +341,8 @@ No critical blocker invalidates US-031-037; split may proceed.
 ## 8. Suggested split boundaries
 
 One change `us-031-037-main-itinerary`, one ADDED capability `main-itinerary`.
-Effort: medium ≈ REQ-004 baseline — 6 tables, 2 write endpoints + 2 read
-projections, 2 screens, ~20+ acceptance tests. Ordering: backend contract and
+Effort: medium ≈ REQ-004 baseline — 3 new tables + 2 `trip_member` columns (no
+`trip` ALTER), 2 write + 2 read endpoints (3 wire projections), 2 screens, ~25+
+acceptance tests (M1–M14 / V1–V7 + reverses). Ordering: backend contract and
 seeds first, frontend screens second; G1 to rule data model/API contract as a
 named decision item (capability-pack convention).

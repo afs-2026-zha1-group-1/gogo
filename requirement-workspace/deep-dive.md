@@ -270,30 +270,38 @@ slice and are not required by any AC. Recorded as a non-blocking item for Dev
 
 ## US-031-037
 
-Trigger: impact solution direction is **add** (new `main-itinerary` capability on
-a baseline that locally holds only `greeting`). Rulings of 2026-11-15 (intent
-§Inherited, OQ-6/OQ-7) and the signed 2026-11-14 fixtures ruling govern.
+Trigger: impact solution direction is **add** (new `main-itinerary` capability).
+Rulings of 2026-11-15 (intent §Inherited, OQ-6/OQ-7) and the signed 2026-11-14
+fixtures ruling govern.
 Merge note 2026-11-15: origin/main now includes REQ-003/004 (PR #30/#31, V2/V3
-schema + invitations code); the as-is statements in this section reflect the
-pre-merge local baseline, and the OQ-9 merge-time convergence task is now
-triggered.
+schema + invitations code), so the OQ-9 convergence trigger fired. P2 convergence
+ruled: this change appends **V4+** — three new tables plus two `trip_member`
+columns — and does **not** alter `trip` (`main_plan_confirmed` already exists from
+V3). The pre-merge "self-built V2+, six tables" wording is superseded by the
+ownership notes in ⑨. Because the accept endpoint is now local, the J4
+`JOINING_CLOSED` E2E is verifiable in this change (DoR W1 / impact R2 upgraded).
 
 ### ⑨ Data contract
 
 Money is integer cents (SGD); times are local `HH:MM` strings on the trip date
-(Asia/Singapore); no `{TBD}` fields remain. All tables created by Flyway from V2
-on this branch; backend owns every table and projection.
+(Asia/Singapore); no `{TBD}` fields remain. Flyway ownership after the OQ-9
+convergence: `app_user`, `trip`, `trip_member` and `trip_invitation` come from the
+merged V2/V3 (REQ-003/004); this change appends V4+ with `member_preference`,
+`main_plan_draft`, `main_plan_stop` and the two `trip_member` columns. Backend
+owns every table and projection. Wire field names are contractual at P2
+(fixtures §US-031-037 "Wire projections").
 
 | Concept | Grain | Fields | State transitions |
 |---|---|---|---|
-| `app_user` | one row per seeded user | `id` INTEGER PK; `display_name` TEXT NOT NULL | static seed (ids 1–5 per fixtures) |
-| `trip` | one row per trip | `id` PK; `name`; `destination`; `start_date`; `end_date`; `start_location` NULL; `end_location` NULL; `organizer_id` FK; `main_plan_confirmed` INTEGER NOT NULL DEFAULT 0; `confirmed_draft_id` NULL FK | created(0) → confirmed(1) via US-037; no reopen in scope; null locations completed at generation (signed ruling) |
-| `trip_member` | one row per (trip, user) | `trip_id`; `user_id`; `ready` INTEGER 0/1; `preference_revision` INTEGER NOT NULL | ready 0→1 and revision bumps are test-only in this REQ (product writes belong to later REQs) |
-| `member_preference` | one current snapshot per (trip, user) | `revision` INTEGER; `interests_json` TEXT; `must_do_json` TEXT; `hard_budget_cents` INTEGER NULL | seeded rev 1; revision increments on preference write (later REQ) |
-| `main_plan_draft` | one row per (trip, version) | `id` PK; `trip_id`; `version` INTEGER; `status` TEXT current/superseded/confirmed; `cost_per_person_cents` INTEGER; `input_revisions_json` TEXT (userId→revision); `created_at` | current→superseded on regeneration; current→confirmed on confirm; stale is computed (input revisions vs current member revisions), not stored |
-| `main_plan_stop` | one row per (draft, seq) | `seq` INTEGER; `name` TEXT; `start_local` TEXT; `end_local` TEXT; `travel_minutes_to_next` INTEGER NULL (last stop NULL) | immutable per draft; supplied by MainPlanProvider |
-| Draft read projection (wire) | one object per trip draft read | ordered stops (name, times, leg), cost per person, input revisions, version, `stale` boolean, confirmed flag | read-only |
-| Confirm validation projection (wire) | one object per confirm attempt | `scheduleErrors` list (overlap / missing leg / out-of-day); `overruns` list (userId, hardBudgetCents, overrunCents); `stale` boolean | read-only; blocks on any non-empty list or stale |
+| `app_user` | one row per seeded user | **V2, merged, unchanged**: `id` INTEGER PK; `display_name` TEXT NOT NULL | static seed (ids 1–5 per fixtures) |
+| `trip` | one row per trip | **V2 + V3, merged; no V4 change**: `id` PK; `name`; `destination`; `start_date`; `end_date`; `start_location` NULL; `end_location` NULL; `organizer_id` FK; `main_plan_confirmed` INTEGER NOT NULL DEFAULT 0 (V3). No `confirmed_draft_id` column (P2 ruling 2026-11-15) | created(0) → confirmed(1) via US-037; no reopen in scope; null locations completed at generation (signed ruling); the confirmed version is the draft row with `status = 'confirmed'` |
+| `trip_member` | one row per (trip, user) | **V2, merged**: `trip_id`; `user_id`. **V4 adds**: `ready` INTEGER NOT NULL DEFAULT 0; `preference_revision` INTEGER NOT NULL DEFAULT 1 | V4 seeds `ready = 1`, `preference_revision = 1` for the fixture trip's four members; later joiners default to not ready; ready 0→1 and revision bumps are test-only in this REQ (product writes belong to later REQs) |
+| `member_preference` | one current snapshot per (trip, user) | **V4 new**: `revision` INTEGER; `interests_json` TEXT; `must_do_json` TEXT; `hard_budget_cents` INTEGER NULL | seeded rev 1 for the four fixture members; revision increments on preference write (later REQ) |
+| `main_plan_draft` | one row per (trip, version) | **V4 new**: `id` PK; `trip_id`; `version` INTEGER; `status` TEXT current/superseded/confirmed; `cost_per_person_cents` INTEGER; `input_revisions_json` TEXT (userId→revision); `created_at` | current→superseded on regeneration; current→confirmed on confirm (the confirmed row is the single source of truth for the shared version); stale is computed (input revisions vs current member revisions), not stored; the confirmed version is frozen — `stale` always false for it regardless of later revision changes (P2 lint ruling 2026-11-15) |
+| `main_plan_stop` | one row per (draft, seq) | **V4 new**: `seq` INTEGER; `name` TEXT; `start_local` TEXT; `end_local` TEXT; `travel_minutes_to_next` INTEGER NULL (last stop NULL); `interests_json` TEXT NULL (provider-supplied tags, may be empty) | immutable per draft; supplied by MainPlanProvider |
+| Plan projection (wire) | one object per plan read, generate 201 and confirm 200 — **same shape** | `tripId`, `version`, `confirmed`, `stale`, `costPerPersonCents`, `inputRevisions` [{userId, revision}], `stops` [{seq, name, startTime, endTime, travelMinutesToNext, interests}] | read-only; `stale` computed on read (unconfirmed drafts only); `confirmed` true for the confirmed version, whose `stale` is always false (frozen, P2 lint ruling 2026-11-15) |
+| Confirm validation projection (wire) | detail fields inside the 422 `VALIDATION_FAILED` body | `scheduleErrors` [{type: OUT_OF_ORDER/OVERLAP/MISSING_LEG/OUT_OF_DAY, seq, message}]; `overruns` [{userId, displayName, hardBudgetCents, overrunCents}] | read-only; confirmation blocks on any non-empty list; staleness blocks separately with 409 `STALE_DRAFT` |
+| Generation inputs projection (wire) | one object per trip inputs read | `tripId`, `readyCount`, `memberCount`, `members` [{userId, displayName, ready, preferenceRevision}], `commonInterests`, `mustDo`, `budgets` [{userId, displayName, hardBudgetCents (null = no limit)}], `rules` [identifier] | read-only; readable before any draft exists; member-readable (P2 ruling 2026-11-15; resolves F6) |
 
 ### ⑩ Boundary enumeration
 
@@ -305,16 +313,21 @@ on this branch; backend owns every table and projection.
 | Provider returns empty | out of scope | fake provider contract always supplies the fixture stops; real-provider behavior belongs to the replacement seam |
 | Null start/end location | in (G3) | completion per signed ruling: preferences first, random fallback |
 | Supplied nonblank locations | in (G3) | preserved unchanged |
+| Inputs read by a member | in (I1/M6) | member-readable summary (P2 ruling 2026-11-15); write actions stay organizer-only |
+| Inputs read before any draft | in (I2/M7) | 200 summary; `NO_DRAFT` does not apply to the inputs read |
+| Inputs read by a non-member | in (I3/M8) | 403 NOT_A_MEMBER |
 | Schedule ordered, legs present, within trip day | in (C1) | OQ-6 minimal feasible set passes |
 | Overlap / missing leg / out-of-day | in (C3) | specific schedule errors; confirmation blocked |
 | Every hard budget ≥ cost | in (C1) | NULL hard budget = no limit |
 | Any hard budget < cost | in (C2) | per-member overrun shown (cents → SGD display); blocked |
 | Draft input revisions == current | in (C1) | current draft confirmable |
 | Any revision advanced | in (C4) | stale; blocked until regeneration (OQ-7) |
+| Revision advanced after confirmation | in (M13) | confirmed version frozen: `stale` stays false; staleness applies to unconfirmed drafts only (P2 lint ruling 2026-11-15) |
 | Organizer writes | in | generate/confirm allowed |
 | Non-organizer / non-member / no identity / unknown trip | in (G4, C5, M-N/V-N) | 403 NOT_ORGANIZER / 403 NOT_A_MEMBER / 401 USER_REQUIRED / 404 TRIP_NOT_FOUND |
 | No draft at confirm | in (C5/V6) | 404 NO_DRAFT (ruled 2026-11-15) |
 | Already confirmed | in (C6/V7) | 409 ALREADY_CONFIRMED (OQ-8 ruled 2026-11-15); no state change |
+| Generate after confirmation | in (G6/M14) | 409 ALREADY_CONFIRMED; no new draft; replanning deferred to R2 (lint L1 recommended default A, user-selected 2026-11-15; IO Emily ratification pending at G1) |
 | Joining after confirm | in (C1) | flag set here; JOINING_CLOSED enforced by REQ-004 accept (unchanged) |
 | Concurrent confirms | out of scope | single organizer per trip; SQLite write serialization is a design concern, not a product branch |
 
@@ -323,18 +336,18 @@ on this branch; backend owns every table and projection.
 | Item | Other REQ | US-031-037 | Convergence |
 |---|---|---|---|
 | Location completion | REQ-003 C7: completion only during US-031 generation | G3 implements it | ✓ signed 2026-11-14 ruling (IO Emily/SA Johnson) |
-| Closed joining | REQ-004 J4: accept 403 JOINING_CLOSED when flag=1; "US-037 owns the flow" | C1 sets the flag | ✓ fixtures anchor; invitations code unchanged |
+| Closed joining | REQ-004 J4: accept 403 JOINING_CLOSED when flag=1; "US-037 owns the flow" | C1 sets the flag | ✓ fixtures anchor; invitations code unchanged and now merged locally, so the J4 E2E runs in this change (DoR W1 upgraded at P2) |
 | Confirmed-state test setup | REQ-004 used test-only DB update | product confirm flow now produces it | ✓ precedent retained for later REQs; fixtures US-031-037 section records supersession |
-| Schema divergence | remote REQ-003/004 V2/V3 vs local V2+ self-built | ✗ at merge time | OQ-9 resolved 2026-11-15 (SA): merge-time convergence task (renumber/reconcile); fixture-self-contained ruling stands; trigger + steps in intent baseline note; no unconverged ✗ left unassigned |
+| Schema divergence | REQ-003/004 V2/V3 merged into main (PR #30/#31) | V4+ extends: 3 new tables + `trip_member.ready` / `preference_revision`; no `trip` ALTER; confirmed version derived from draft status | ✓ converged at P2 2026-11-15 (OQ-9 trigger fired; SA Lumi confirmed at G1, Pass 2026-11-15). Fixture-self-contained ruling stands: the merged V2 seed already supplies the fixture users/trip, V4 seeds readiness + preference snapshots |
 
 ### ⑫ Notification / display contract
 
 | Surface | Trigger | Recipient | Content + display fields | Channel |
 |---|---|---|---|---|
-| Screen 9 generate summary | page load | organizer | ready count (4/4) + member names; common interests chips; must-do summary; constraints/budget lines; generation rules list | draft-inputs read projection (P2 path) |
-| Screen 10 draft timeline | draft read | members | per stop: name, time range, interest tags, cost per person; version badge; stale banner when stale | draft read projection |
+| Screen 9 generate summary | page load | members (P2 ruling 2026-11-15; write actions stay organizer-only) | ready count (4/4) + member names; common interests chips; must-do summary; constraints/budget lines; generation rules list | generation inputs projection (`GET /api/trips/{id}/main-plan/inputs`, P2 ruled; members may read) |
+| Screen 10 draft timeline | draft read | members | per stop: name, time range, interest tags (provider-supplied, may be empty), cost per person; version badge; stale banner when stale | plan projection |
 | Screen 10 validation status / blocked errors | confirm attempt | organizer | scheduleErrors list; per-member overrun amount (10 SGD case); stale message | confirm validation projection |
-| Screen 10 confirmed state | confirm success | members | confirmed version badge; shared plan timeline; joining-closed notice | draft read projection (confirmed flag) |
+| Screen 10 confirmed state | confirm success | members | confirmed version badge; shared plan timeline; joining-closed notice | plan projection (confirmed flag) — the confirm 200 body is the same projection |
 | Loading / empty / error / permission states | request lifecycle / no draft / failure / non-organizer | viewer | skeleton; no-draft CTA to generate; load-failure text; read-only or denied write UI | same projections; mandatory even if unpictured |
 
 No notifications (email/push/queue) in scope.

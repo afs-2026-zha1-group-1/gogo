@@ -22,7 +22,7 @@ a separate session note (no silent overwrite).
 | Workdir artifact | OpenSpec destination | Notes |
 |---|---|---|
 | `intents/2026-11-15-us-031-037.md` | cited by `proposal.md` §Why / §What Changes | raw ACs, scope ruling (US-031+US-037), inherited rulings, P0 skip, fixtures provenance |
-| `requirements/US-031-037.md` | `proposal.md` + delta spec inputs | G1–G5 / C1–C6 feed ADDED `main-itinerary` requirements; ACs numbered per US |
+| `requirements/US-031-037.md` | `proposal.md` + delta spec inputs | G1–G6 / C1–C6 / M13 feed ADDED `main-itinerary` requirements; ACs numbered per US |
 | `acceptance-test-fixtures.md` §US-031-037 | fixtures for ATDD (P3) | M/V matrix; error codes + status mapping ruled 2026-11-15; endpoint paths contractual at P2/G1 |
 | `deep-dive.md` §US-031-037 | A0 gate evidence in `proposal.md` | ⑨–⑫ all Pass |
 | `analysis/us-031-037-dor.md` | DoR evidence for P1 checklist | BLOCKER = 0; 2 WARNING + 2 SUGGESTION all resolved 2026-11-15 (user clarify-now) |

@@ -8,10 +8,11 @@ adds the main-itinerary capability: the organizer generates a timed main-plan
 draft from ready members' interests and constraints, and confirms the current
 draft only after schedule and hard-budget validation. Confirmation freezes one
 shared version and closes joining so late joiners cannot diverge from the
-agreed plan. The local baseline (616a62b) has only the greeting capability, so
-this change builds the self-contained minimal read model ruled on 2026-11-15
-(fixture seeds, test-only readiness flip) rather than waiting for the unmerged
-REQ-003/004 branches.
+agreed plan. The baseline now includes REQ-003/004 (merged 2026-11-15, local
+merge 4e6b261: trip/member/invitation schema V2/V3 + code), so this change
+extends it with the fixture-self-contained minimal read model ruled on
+2026-11-15 (V4+ convergence, seeded readiness/preferences, test-only readiness
+flip) instead of rebuilding the shared tables.
 
 ## What Changes
 
@@ -23,31 +24,51 @@ REQ-003/004 branches.
   - Draft persistence: ordered stops with supplied activity times, travel
     legs, input preference revisions, per-person cost; draft is NOT
     auto-confirmed; regeneration creates a new draft version (ruled).
+    Generation after confirmation is rejected 409 `ALREADY_CONFIRMED`
+    (lint L1 recommended default A, user-selected 2026-11-15; IO Emily
+    ratification pending at G1); replanning is deferred to R2.
   - Start/end location completion at generation only, per the signed
     2026-11-14 fixtures ruling (preferences first, random fallback, supplied
     nonblank values preserved).
   - Draft read projection with computed `stale` flag (input revisions vs
-    current member revisions; stale is not stored).
+    current member revisions; stale is not stored). The confirmed version is
+    frozen: `stale` always false for it regardless of later revision changes
+    (P2 lint ruling 2026-11-15).
+  - Generation-inputs read summary for Screen 9 (`GET
+    /api/trips/{id}/main-plan/inputs`, member-readable, available before any
+    draft; P2 ruling 2026-11-15 closes QC gap F6).
   - Confirmation gated by validation (US-037): OQ-6 minimal feasible schedule
     set (stops time-ordered and non-overlapping, travel leg between
     consecutive stops, all stops within the trip day) plus every member's
     hard budget ≥ cost per person (NULL = no limit, OQ-10); stale drafts block
     until regenerated (OQ-7). Overrun blocks with the per-member overrun
     amount shown (10 SGD fixture case).
-  - On success the draft's version becomes the shared confirmed plan and
-    `main_plan_confirmed` is set — the flag REQ-004 J4 consumes to return
-    403 `JOINING_CLOSED` on accept (invitations behavior itself unchanged).
+  - On success the draft's version becomes the shared confirmed plan — the
+    confirmed version is that draft row marked `status = 'confirmed'` (no new
+    version row, no `confirmed_draft_id` column, P2 ruling 2026-11-15) — and
+    confirm responds 200 with the same plan projection as the draft read.
+    `trip.main_plan_confirmed` (V3 column, updated not altered) is set — the
+    flag REQ-004 J4 consumes to return 403 `JOINING_CLOSED` on accept
+    (invitations behavior itself unchanged; accept is merged locally, so the
+    J4 E2E runs in this change).
 - New backend `main-itinerary` package (controller / service / repository)
   with a `MainPlanProvider` port; the fake provider is the MVP production
   implementation (ruled), supplying the four fixture stops.
-- Flyway migrations from V2 on this branch: six self-contained tables
-  (`app_user`, `trip`, `trip_member`, `member_preference`, `main_plan_draft`,
-  `main_plan_stop`) plus seed users/trip per fixtures §US-031-037.
+- Flyway migrations from V4 on this branch (OQ-9 convergence executed
+  2026-11-15): three new tables (`member_preference`, `main_plan_draft`,
+  `main_plan_stop`) plus `trip_member.ready` / `preference_revision` columns;
+  no `trip` ALTER. The merged V2/V3 (REQ-003/004) already seed users 1–5 and
+  the fixture trip; V4 seeds readiness + rev-1 preference snapshots for its
+  four members (later joiners default to not ready).
 - Error contract (user-ruled 2026-11-15, fixtures §US-031-037):
   `MEMBERS_NOT_READY` 409, `VALIDATION_FAILED` 422, `STALE_DRAFT` 409,
-  `NO_DRAFT` 404, `ALREADY_CONFIRMED` 409; precedent codes unchanged
+  `NO_DRAFT` 404, `ALREADY_CONFIRMED` 409 (re-confirm per OQ-8; also
+  generation after confirmation per lint L1 default A, IO ratification
+  pending); precedent codes unchanged
   (`USER_REQUIRED` 401, `NOT_A_MEMBER`/`NOT_ORGANIZER` 403,
-  `TRIP_NOT_FOUND` 404). Only `code` is contractual.
+  `TRIP_NOT_FOUND` 404). Bodies keep `{code, message}`; `MEMBERS_NOT_READY`
+  adds `pendingMembers`, `VALIDATION_FAILED` adds `scheduleErrors` +
+  `overruns`. Only `code` is contractual.
 - Frontend Screen 9 (generate inputs/rules summary) and Screen 10 (draft
   timeline, validation status, blocked confirmation with errors, confirmed
   state), each with the mandatory error/empty/loading/permission states.
@@ -78,23 +99,27 @@ it consumes.
 - **Requirement**: US-031-037 (`requirement-workspace/requirements/US-031-037.md`),
   intent `requirement-workspace/intents/2026-11-15-us-031-037.md`, DoR
   `analysis/us-031-037-dor.md` (BLOCKER = 0, advisory all resolved), deep-dive
-  §US-031-037, impact brief §US-031-037, fixtures §US-031-037 (M1–M5 / V1–V7 matrix).
-- **Code**: new backend package + Flyway V2+ migrations and seeds; frontend
-  Screen 9/10 routes and components (`App.jsx` routing extended). Greeting
-  code untouched.
-- **APIs**: `POST /api/trips/{id}/main-plan` (generate),
-  `POST /api/trips/{id}/main-plan/confirm` (confirm), draft read projection
-  (paths recommended in fixtures; finalized at P2 delta-craft/G1, recorded in
-  design.md at P3).
+  §US-031-037, impact brief §US-031-037, fixtures §US-031-037 (M1–M14 / V1–V7 matrix).
+- **Code**: new backend package + Flyway V4+ migrations and seeds; frontend
+  Screen 9/10 routes and components (`App.jsx` routing extended). Greeting,
+  trip and invitation code untouched.
+- **APIs** (contractual at P2 2026-11-15, fixtures §US-031-037): `POST
+  /api/trips/{id}/main-plan` (generate, 201), `POST
+  /api/trips/{id}/main-plan/confirm` (confirm, 200 + same plan projection),
+  `GET /api/trips/{id}/main-plan` (plan read, 200), `GET
+  /api/trips/{id}/main-plan/inputs` (inputs read, 200). Wire field names fixed
+  in fixtures "Wire projections"; recorded in design.md at P3.
 - **Dependencies**: none new — Spring Boot, SQLite, Flyway already in the
   REQ-002 baseline.
-- **Cross-REQ**: REQ-004 J4 consumes `main_plan_confirmed` (E2E re-run after
-  that PR merges, DoR W1); local V2+ migrations converge with remote
-  REQ-003/004 V2/V3 at merge time (OQ-9, owner SA).
-- **Risks** (impact brief §US-031-037): R1 schema collision (merge-time task),
-  R2 staged JOINING_CLOSED verification, R3 Rules carrier not applied (P0
-  skipped by user ruling; AGENTS.md + REQ-002/004 conventions govern),
-  R4 REQ-002 archive pending on main (unrelated).
+- **Cross-REQ**: REQ-004 J4 consumes `main_plan_confirmed`; accept is merged
+  locally, so the full J4 `JOINING_CLOSED` E2E runs in this change (DoR W1 /
+  impact R2 closed). OQ-9 convergence executed at P2 (V4+ extend, no `trip`
+  ALTER); SA Lumi confirmed the shape at G1 (Pass, 2026-11-15; IO pending).
+- **Risks** (impact brief §US-031-037): R1 schema collision closed at P2
+  (OQ-9 convergence), R2 staged JOINING_CLOSED verification closed (accept
+  local), R3 Rules carrier not applied (P0 skipped by user ruling; AGENTS.md +
+  REQ-002/004 conventions govern), R4 REQ-002 archive pending on main
+  (unrelated).
 
 ## Effort and ordering
 
@@ -107,21 +132,24 @@ recommendation).
 ## A0 deep-dive gate
 
 US-031-037 is new with deep-dive in scope. `deep-dive.md` §US-031-037 evaluates
-⑨ data contract (6 tables + 2 wire projections, cents/HH:MM conventions, no
-TBD), ⑩ boundary (every scenario branch in/out), ⑪ cross-REQ (completion
-ruling ✓, J4 anchor ✓, test-setup supersession ✓, schema convergence assigned
-to OQ-9 and resolved), ⑫ display contract (Screens 9/10 + four mandatory
-states). All four Pass → **A0 Pass**, split permitted. Single change confirmed
-by the user 2026-11-15.
+⑨ data contract (merged V2/V3 ownership + 3 new tables + 2 `trip_member`
+columns; 3 wire projections with contractual field names; cents/HH:MM
+conventions, no TBD), ⑩ boundary (every scenario branch in/out), ⑪ cross-REQ
+(completion ruling ✓, J4 anchor ✓ with E2E now local, test-setup supersession
+✓, schema convergence executed at P2 — OQ-9), ⑫ display contract (Screens 9/10
++ four mandatory states; Screen 9 member-readable). All four Pass → **A0
+Pass**, split permitted. Single change confirmed by the user 2026-11-15.
 
 ## Known deviations carried into later stages
 
 - P0 harness steps skipped by user ruling ("直接走P1，不走P0"); Rules not
   applied. P2–P4 rely on AGENTS.md and REQ-002/004 conventions (impact R3).
-- Local baseline lacks REQ-003/004 schema; the self-contained V2+ ruling
-  stands, with an explicit SA merge-time convergence task (OQ-9).
-- JOINING_CLOSED verification is staged: flag + test-only assertion in this
-  change; full J4 E2E re-run after REQ-004 merges (DoR W1, owner SA/Johnson).
+- The pre-merge "self-built V2+, six tables" plan was superseded at P2
+  2026-11-15: REQ-003/004 merged first, so this change appends V4+ (OQ-9
+  convergence executed); SA Lumi confirmed the shape at G1 (Pass, 2026-11-15; IO pending).
+- JOINING_CLOSED verification is no longer staged: REQ-004 accept is merged
+  locally, so the full J4 E2E runs in this change's ATDD (DoR W1 upgraded at
+  P2; impact R2 closed).
 - Remote CI access updated 2026-11-15: `gh` v2.104.0 is now installed and
   logged in (DENGLU-OOCL, repo scope; full path needed in old shells), so the
   P4 pipeline report should attempt a gh-based CI read first. The REQ-002

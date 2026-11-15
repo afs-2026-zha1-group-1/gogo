@@ -111,11 +111,16 @@ after a successful acceptance she becomes a member and the R1 read applies to he
 
 ## US-031-037 — main itinerary (US-031 / US-037)
 
-Same users and same sample trip as above. Added 2026-11-15 from the user-supplied
-ACs; see `intents/2026-11-15-us-031-037.md`. Endpoint paths are recommended here and
-become contractual at P2/G1; error codes and HTTP status mapping were fixed by
-user ruling 2026-11-15 (contract baseline below, IO Emily reviews at G1); sample
-values are fixed by the ACs or by the rulings recorded in the intent.
+Same users and same sample trip as above, now seeded by the merged `V2`/`V3`
+migrations (REQ-003/004). Added 2026-11-15 from the user-supplied ACs; see
+`intents/2026-11-15-us-031-037.md`. Endpoint paths, success statuses and wire
+field names became contractual at P2 (rulings 2026-11-15: generate 201; confirm
+200 with the same projection as the draft read; inputs read member-readable).
+Error codes and HTTP status mapping were fixed by user ruling 2026-11-15
+(contract baseline below, IO Emily reviews at G1); sample values are fixed by the
+ACs or by the rulings recorded in the intent. Schema convergence (OQ-9, trigger
+fired 2026-11-15): this change appends `V4+`, adds three tables and two
+`trip_member` columns, and does not alter `trip`.
 
 ### Error contract (ruled 2026-11-15)
 
@@ -125,34 +130,58 @@ values are fixed by the ACs or by the rulings recorded in the intent.
 | `VALIDATION_FAILED` | 422 | confirm blocked by overrun (V2) or schedule errors (V3) |
 | `STALE_DRAFT` | 409 | confirm blocked by stale draft (V4) |
 | `NO_DRAFT` | 404 | confirm before any generation (V6) |
-| `ALREADY_CONFIRMED` | 409 | re-confirm an already-confirmed plan (V7, OQ-8) |
+| `ALREADY_CONFIRMED` | 409 | re-confirm an already-confirmed plan (V7, OQ-8); also generation after confirmation (M14, lint L1 recommended default A — IO Emily ratification pending at G1) |
 
 Only `code` is contractual; message wording free. Precedent codes unchanged:
 USER_REQUIRED 401 / NOT_A_MEMBER 403 / NOT_ORGANIZER 403 / TRIP_NOT_FOUND 404 /
 JOINING_CLOSED 403.
 
+Every error body keeps the precedent `{code, message}` shape. Two codes carry
+structured detail fields (P2 contract; needed by US-031 AC2 and Screen 10):
+
+| Code | Extra fields | Content |
+|---|---|---|
+| `MEMBERS_NOT_READY` | `pendingMembers` | one entry per not-ready member: `userId`, `displayName` (M2: Daniel, id 4) |
+| `VALIDATION_FAILED` | `scheduleErrors`, `overruns` | `scheduleErrors`: `type` (`OUT_OF_ORDER` / `OVERLAP` / `MISSING_LEG` / `OUT_OF_DAY`), `seq`, free `message`; `overruns`: `userId`, `displayName`, `hardBudgetCents`, `overrunCents` (V2: Alice 4000 / 1000) |
+
+`STALE_DRAFT`, `NO_DRAFT`, `ALREADY_CONFIRMED` and the precedent codes carry no
+extra fields; staleness is read from the plan projection.
+
 ### State setup
 
 | Item | Value | Why |
 |---|---|---|
-| Readiness, default | Alice/Ben/Chloe/Daniel `ready = 1`, `preference_revision = 1` | US-031 AC1 "all four members ready at preference revision 1"; seeded, flip test-only (ruled) |
+| Readiness, default | Alice/Ben/Chloe/Daniel `ready = 1`, `preference_revision = 1` | US-031 AC1 "all four members ready at preference revision 1"; `V4` adds both columns to the merged `trip_member` and seeds these values for the fixture trip's four members; flip test-only (ruled) |
+| Readiness, later joiners | `ready` defaults to 0, `preference_revision` defaults to 1 | a member who joins through REQ-004 accept has not responded yet, so the readiness gate keeps blocking until a test-only flip; no product write path in this REQ |
+| Null-location case (M3) | test-only update of the fixture trip's `start_location` / `end_location` to NULL, restored afterwards | the merged `V2` seed supplies both locations, so the completion branch needs documented test-only setup (REQ-004 precedent); the result is observed through `GET /api/trips/{id}` |
+| Confirmed version pointer | the draft row whose `status = 'confirmed'`; `trip.main_plan_confirmed` (already added by `V3`) stays the joining flag | P2 ruling 2026-11-15: no `confirmed_draft_id` column and no `V4` ALTER of `trip`; one source of truth for the confirmed version |
 | Daniel-pending case | test-only `ready = 0` for Daniel (id 4) | US-031 AC2; no product write path in this REQ |
 | Preference snapshots | rev 1 per member; interests/must-do seeded; `hard_budget` NULL by default (no hard limit) | AC2 names only Alice's hard budget; NULL keeps the C1 pass case feasible |
 | Alice overrun case | test-only Alice `hard_budget = 4000` cents (40 SGD) | US-037 AC2 |
 | Stale case | after a draft exists, test-only bump Ben `preference_revision` to 2 | OQ-7 ruling 2026-11-15: stale blocks confirmation |
+| Confirmed-frozen case (M13) | after V1 confirm, the same test-only Ben revision bump | P2 lint ruling 2026-11-15: the confirmed version stays `stale = false` regardless of later revision changes |
 | Fake provider stops | City Hall MRT 09:00–09:30; National Gallery Singapore 10:00–10:30; Gardens by the Bay 11:00–11:15; Merlion Park 11:30–12:00; travel legs 30/30/15 minutes; cost 50 SGD per person | US-031 AC1 supplied times and legs; US-037 AC2 known cost |
 | Confirmed-state premise for later REQs | produced by the US-037 confirm flow (version 1) | supersedes the REQ-004 test-only setup for trips confirmed through this REQ |
 
-### Requests (paths recommended, fixed at P2)
+### Requests (paths contractual, P2 2026-11-15)
 
 | Case | Call | Expected |
 |---|---|---|
-| M1 generate | `POST /api/trips/{id}/main-plan`, `X-User-Id: 1`, default setup | `200/201`; draft v1 with the four stops in order, supplied times, legs 30/30/15, input revisions {1:1,2:1,3:1,4:1}, cost 5000 cents; `main_plan_confirmed` stays 0 |
+| M1 generate | `POST /api/trips/{id}/main-plan`, `X-User-Id: 1`, default setup | `201`; body is the plan projection: `version` 1, `confirmed` false, `stale` false, the four `stops` in order with supplied times and `travelMinutesToNext` 30/30/15 (last null), `inputRevisions` {1:1,2:1,3:1,4:1}, `costPerPersonCents` 5000; `main_plan_confirmed` stays 0 |
 | M2 pending | same call with Daniel `ready = 0` | blocked; `409 MEMBERS_NOT_READY`; response names Daniel (id 4); no draft row |
-| M3 completion | trip with null start/end location, generate | locations completed per signed 2026-11-14 ruling; supplied nonblank values preserved |
+| M3 completion | null-location setup (test-only), then generate; separately the default seeded trip | `201`; `GET /api/trips/{id}` shows both locations completed per the signed 2026-11-14 ruling; with the seeded nonblank locations the same read shows them preserved unchanged |
 | M4 non-organizer | generate with `X-User-Id: 2` | `403 NOT_ORGANIZER`; no draft |
-| M5 regen | M1 twice | second draft version 2 current; version 1 superseded |
-| V1 confirm pass | `POST /api/trips/{id}/main-plan/confirm`, `X-User-Id: 1`, current valid draft v1 | v1 confirmed shared; `main_plan_confirmed = 1`; invitation accept afterwards → `403 JOINING_CLOSED` (J4) |
+| M5 regen | M1 twice | `201` with `version` 2; second draft version 2 current; version 1 superseded |
+| M14 generate after confirm | generate after V1 | `409 ALREADY_CONFIRMED`; no new draft row; confirmed version unchanged (lint L1 recommended default A, user-selected 2026-11-15; IO Emily ratification pending at G1; replanning deferred to R2) |
+| M6 inputs read | `GET /api/trips/{id}/main-plan/inputs`, `X-User-Id: 2`, default setup | `200`; ready count 4/4 + member names, interests/must-do summary, budget lines (no limit), generation rules list |
+| M7 inputs no draft | same call before any generation | `200` summary; no `NO_DRAFT` error |
+| M8 inputs non-member | same call with `X-User-Id: 5` | `403 NOT_A_MEMBER` |
+| M9 draft read | `GET /api/trips/{id}/main-plan`, `X-User-Id: 2`, after M1 | `200`; ordered stops with times and legs, cost 5000 cents, version 1, `stale = false`, confirmed flag false |
+| M10 draft read stale | same call after Ben revision bump | `200` with `stale = true` |
+| M11 draft read no draft | same call before any generation | `404 NO_DRAFT` |
+| M12 confirmed read | same call after V1 | `200`; version 1, confirmed flag true, `stale = false` |
+| M13 confirmed frozen | same call after V1 **and** a test-only Ben revision bump to 2 | `200`; version 1, confirmed flag true, `stale = false` — the confirmed version is frozen; staleness applies to unconfirmed drafts only (P2 lint ruling 2026-11-15) |
+| V1 confirm pass | `POST /api/trips/{id}/main-plan/confirm`, `X-User-Id: 1`, current valid draft v1 | `200`; body is the same projection as the draft read with `version` 1, `confirmed` true, `stale` false; v1 confirmed shared (that draft's `status = 'confirmed'`); `main_plan_confirmed = 1`; invitation accept afterwards → `403 JOINING_CLOSED` (J4) |
 | V2 overrun | confirm with Alice hard 4000 vs cost 5000 | blocked; `422 VALIDATION_FAILED`; overrun 1000 cents (10 SGD) shown for Alice; stays unconfirmed |
 | V3 schedule | confirm a draft with overlapping stops / missing leg / out-of-day stop (test-only draft mutation) | blocked; `422 VALIDATION_FAILED` with the specific schedule errors; stays unconfirmed |
 | V4 stale | confirm after Ben revision bump | blocked; `409 STALE_DRAFT`; regenerate then confirm passes |
@@ -160,6 +189,27 @@ JOINING_CLOSED 403.
 | V6 no draft | confirm before any generation | `404 NO_DRAFT`; unchanged |
 | V7 re-confirm | confirm after V1 | `409 ALREADY_CONFIRMED` (OQ-8 ruled 2026-11-15); no state change |
 | M-N / V-N identity & trip | generate/confirm without `X-User-Id`; unknown trip; Eve | `401 USER_REQUIRED`; `404 TRIP_NOT_FOUND`; `403 NOT_A_MEMBER` |
+
+### Wire projections (field names contractual at P2, DoR S1 closure)
+
+camelCase JSON, integer cents (SGD), local `HH:MM` strings on the trip date
+(Asia/Singapore), integer-minute legs. The draft read, the generate 201 body and
+the confirm 200 body are the **same projection** (one shape, one serializer).
+
+| Projection | Fields |
+|---|---|
+| Plan (`GET /main-plan`, generate 201, confirm 200) | `tripId`, `version`, `confirmed`, `stale`, `costPerPersonCents`, `inputRevisions` [{`userId`, `revision`}], `stops` [{`seq`, `name`, `startTime`, `endTime`, `travelMinutesToNext` (null on the last stop), `interests` (provider-supplied tags, may be empty)}] |
+| Generation inputs (`GET /main-plan/inputs`) | `tripId`, `readyCount`, `memberCount`, `members` [{`userId`, `displayName`, `ready`, `preferenceRevision`}], `commonInterests` [string], `mustDo` [string], `budgets` [{`userId`, `displayName`, `hardBudgetCents` (null = no limit)}], `rules` [identifier] |
+| Confirm validation detail (inside the 422 body) | `scheduleErrors` [{`type`, `seq`, `message`}], `overruns` [{`userId`, `displayName`, `hardBudgetCents`, `overrunCents`}] |
+
+`rules` identifiers (fixed set; display wording free): `ALL_MEMBERS_READY`,
+`SUPPLIED_ACTIVITY_TIMES`, `TRAVEL_LEGS_BETWEEN_STOPS`, `HARD_BUDGET_RESPECTED`,
+`STALE_DRAFT_BLOCKS_CONFIRM`, `LOCATION_COMPLETION_AT_GENERATION`.
+
+`commonInterests` = interests shared by all ready members (intersection);
+`mustDo` = deduplicated union of ready members' must-do items. Both are
+display-only aggregations (no AC depends on their content) and are an IO review
+item at G1.
 
 ### Values deliberately not fixed (US-031-037)
 
@@ -169,4 +219,5 @@ JOINING_CLOSED 403.
 | Per-stop cost breakdown | AC fixes only the 50 SGD per-person total |
 | Exact randomized completion outputs | Inherited 2026-11-14 ruling: do not fix random outputs |
 | Interests / must-do seed content | AC1 does not depend on specific interests; fake provider supplies the stops |
+| Per-stop `interests` tags | provider-supplied; the fake provider may return none, so the array may be empty. No AC fixes tag content |
 | Error message wording | Only the `code` is contractual |
