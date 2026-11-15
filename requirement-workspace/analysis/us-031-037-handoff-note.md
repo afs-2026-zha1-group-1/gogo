@@ -39,3 +39,12 @@ Workdir is not the Living Spec authority; `openspec/specs/` gains
 `/sdd:delta-craft` (P2) → `/sdd:g1-decision-record` with named IO + SA →
 `/sdd:atdd-design` + `/sdd:task-plan` (P3, design/tasks). G1 is not claimed by
 the agent. P1 step 6 `/sdd:quality-checklist` (P1 DoV) remains available.
+
+Current state (2026-11-15): P2 complete; G1 recorded **Pass** — IO Emily
+Pass + SA Lumi Pass on the 7-requirement / 24-scenario package; C1/C2 answered
+with user-selected recommended defaults (C1 `TRAVEL_EXCEEDS_GAP` travel-fit
+rule; C2 REQ-019 kind/payload `member_preference` takes V4, this change V5)
+and ratified the same day (Emily C1, Lumi C2, explicit signing instruction).
+Remaining non-gating follow-up F1: write-sync alignment with
+`feat/travel_preference` (SA evelyn.huang) before/at REQ-019 merge.
+Next: P3 (`/sdd:atdd-design` + `/sdd:task-plan`).

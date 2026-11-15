@@ -1,7 +1,7 @@
 # Consistency lint — us-031-037-main-itinerary
 
 - Change id: `us-031-037-main-itinerary`
-- Phase: p2 (Emily IO approval and SA Lumi Pass recorded 2026-11-15; G1 Conditional)
+- Phase: p2 (Emily IO approval and SA Lumi Pass recorded 2026-11-15; G1 Pass — C1/C2 ratifications recorded 2026-11-15)
 - Focus: full change package + requirement-workspace §US-031-037 artifacts
 - Timestamp: 2026-11-15
 - Artifact level: 2 (proposal + specs; `tasks.md` / `design.md` absent → T/D
@@ -14,9 +14,11 @@
 **Pass (post-remediation, 2026-11-15)** — initial run: Partial (BLOCKER 0 /
 WARNING 3 / SUGGESTION 2 / N/A 3). All five findings remediated in the same
 session (see §Remediation & re-check); no contradiction between stated rules
-was found at any point. L1's IO ratification is a G1 agenda item
-(g1-decision.md item 5), not an open lint gap. This report is not a Gate
-decision.
+was found at any point. L1's IO ratification was subsequently recorded: Emily
+IO Pass 2026-11-15 covers agenda item 5 (see §Current product review update);
+overall G1 is Pass — the C1/C2 ratifications were recorded 2026-11-15 (gate
+conditions, not lint gaps).
+This report is not a Gate decision.
 
 ## Findings
 
@@ -75,7 +77,7 @@ decision.
 
 | id | Status | Landing evidence |
 |---|---|---|
-| L1 | Remediated — recommended default A landed; **IO Emily ratification pending at G1** | User selected A (2026-11-15; explicitly not Emily's sign-off): generation after confirmation rejected 409 `ALREADY_CONFIRMED`, no new draft, replanning deferred to R2. Delta scenario G6 + generation/boundaries requirement text; fixtures M14 + error-contract row; deep-dive ⑩ row; requirements G6 + §P2 rulings row; proposal What Changes + error contract; intent §P2 update item 7; g1-decision agenda item 5. Coverage expansion of `ALREADY_CONFIRMED` is IO-attributed, hence the ratification item |
+| L1 | Remediated — recommended default A landed; **IO Emily ratification recorded 2026-11-15** | User selected A (2026-11-15), then Emily IO Pass recorded by separate explicit signing instruction (the user's selection alone was not the IO sign-off): generation after confirmation rejected 409 `ALREADY_CONFIRMED`, no new draft, replanning deferred to R2. Delta scenario G6 + generation/boundaries requirement text; fixtures M14 + error-contract row; deep-dive ⑩ row; requirements G6 + §P2 rulings row; proposal What Changes + error contract; intent §P2 update item 7; g1-decision agenda item 5. Coverage expansion of `ALREADY_CONFIRMED` is IO-attributed, hence the ratification item |
 | L2 | Resolved | Confirmed version frozen (`stale` always false): delta requirement text + "Confirmed plan stays frozen after a revision bump" scenario; fixtures M13 + state-setup row; deep-dive ⑨ draft/projection rows + ⑩ row; requirements M13 + §P2 rulings row; proposal draft-read bullet; intent item 7 |
 | L3 | Resolved | GIVEN premises added to I3, Non-member access, Missing or unknown identity, Unknown trip — all 24 scenarios now GIVEN/WHEN/THEN complete |
 | L4 | Resolved | `userId` added to the inputs `members` enumeration in the delta requirement text (matches fixtures wire set + deep-dive ⑨) |
@@ -97,9 +99,27 @@ the confirmed plan unchanged; replanning stays in R2. This supersedes the pendin
 product-ratification wording in the historical report. Emily subsequently
 approved the current 7-requirement / 24-scenario package on 2026-11-15 per the
 user's separate explicit signing instruction. No behavior changed. Overall G1
-is Conditional for C1/C2, not missing IO approval.
-The travel-duration-versus-stop-gap question remains unanswered; cross-branch
-preference schema/V4 ownership needs SA/Dev convergence before implementation.
+was Conditional for C1/C2 at that point, not missing IO approval.
+
+### C1/C2 amendment (2026-11-15, MVP framing)
+
+Both open conditions are now answered with user-selected recommended defaults
+(ratified by the owners later the same day): C1 = travel legs must fit the gaps
+between stops (`TRAVEL_EXCEEDS_GAP` blocks confirmation, equality passes; delta
+C3 + fixtures V3 + deep-dive ⑨/⑩); IO Emily ratification recorded 2026-11-15
+(the type extends the contractual error enumeration). C2 = REQ-019's
+kind/payload `member_preference` wins V4 (`feat/travel_preference`, verified
+docs-only); this change renumbers to V5 (2 new tables + 2 `trip_member`
+columns), reads kind rows, wire contract unchanged; SA Lumi re-confirmation
+recorded 2026-11-15 (his earlier G1 Pass covered the wide-table shape);
+write-sync alignment with the feature branch is non-gating follow-up F1 in
+g1-decision.md. Side effect: the
+location-completion residual below loses its schema obstacle — `must_do`
+payload items carry an optional `location` field, a concrete P3 design source
+for preferences-first completion. Delta stays 7 requirements / 24 scenarios;
+validation re-run clean in both modes after the amendment. Both ratifications
+were recorded 2026-11-15 per the user's explicit signing instruction
+("两个人都pass"); overall G1 is **Pass** (g1-decision.md).
 
 ## Residual risks (historical report; current status amended above)
 
@@ -122,10 +142,13 @@ preference schema/V4 ownership needs SA/Dev convergence before implementation.
   ruling, with re-validation).
 - Human sign-off: SA Lumi Pass (2026-11-15) covers the V4+ shape. Emily IO Pass
   recorded 2026-11-15 for the current 7/24 package, including agenda items 1/2/4/5.
-  G1 C1/C2 remain open; no integration or travel-validation ruling is inferred.
+  G1 C1 ratification (Emily) and C2 re-confirmation (Lumi) recorded 2026-11-15;
+  overall G1 Pass. No integration completion is inferred.
 
 ## Next (non-Gate)
 
-Resolve G1 C1/C2 with the named owners, update affected contracts and obtain any
-required review before recording overall G1 Pass. Emily IO approval is recorded;
-it is not evidence that these follow-ups are complete.
+Record Emily's C1 ratification and Lumi's C2 re-confirmation (plus the
+cross-branch write-sync alignment with `feat/travel_preference`) before
+claiming overall G1 Pass. C1/C2 are answered with user-selected defaults and
+landed; the selections are not the owners' sign-offs, and Emily's recorded
+approval covers the pre-C1/C2 package.

@@ -275,7 +275,7 @@ exist as GitHub issues.
 - Mode: embedded at the end of `/sdd:pre-spec-req` (blocking OQs = 0, DoR BLOCKERs = 0)
 - Change id: `us-031-037-main-itinerary` (created; renamed 2026-11-15 from `req-005-main-itinerary`, US-based naming by user ruling)
 - Branch: `US-031-037-main-itinerary-planning` (renamed 2026-11-15 from `sdd-us-031-037-main-itinerary-planning`; sdd prefix dropped by user ruling)
-- Merge note 2026-11-15: origin/main now includes REQ-003/004 (PR #30/#31; local merge 4e6b261). The OQ-9 trigger fired and convergence was ruled at P2: append **V4+** (3 new tables + 2 `trip_member` columns), **no `trip` ALTER**, confirmed version derived from draft status. §2 below is restated against the post-merge baseline; R1/R2 are closed accordingly.
+- Merge note 2026-11-15: origin/main now includes REQ-003/004 (PR #30/#31; local merge 4e6b261). The OQ-9 trigger fired and convergence was ruled at P2: append **V4+** (3 new tables + 2 `trip_member` columns), **no `trip` ALTER**, confirmed version derived from draft status. §2 below is restated against the post-merge baseline; R1/R2 are closed accordingly. G1 C2 amendment (user-selected default A, 2026-11-15): `member_preference` belongs to REQ-019's V4 (kind/payload shape, `feat/travel_preference`); this change renumbers to **V5** with only 2 new tables + the 2 `trip_member` columns and reads kind rows read-only; SA Lumi re-confirmed 2026-11-15.
 
 ## 1. Requirement set
 
@@ -304,7 +304,7 @@ Supporting: `intents/2026-11-15-us-031-037.md`, `analysis/us-031-037-dor.md`,
 | Touched asset | As-is (evidence) | Proposed delta |
 |---|---|---|
 | `openspec/specs/` | greeting only | new capability `main-itinerary` at archive time |
-| Backend | hello + trip + invitation packages, V1–V3 (merged baseline) | new main-itinerary package (controller/service/repository + MainPlanProvider port with fake implementation); Flyway V4+ convergence: 3 new tables (member_preference, main_plan_draft, main_plan_stop) + `trip_member.ready` / `preference_revision`; no `trip` ALTER; V4 seeds readiness + preference snapshots for the fixture trip |
+| Backend | hello + trip + invitation packages, V1–V3 (merged baseline) | new main-itinerary package (controller/service/repository + MainPlanProvider port with fake implementation); Flyway V5 (G1 C2 default A, user-selected 2026-11-15: REQ-019's kind/payload `member_preference` takes V4): 2 new tables (main_plan_draft, main_plan_stop) + `trip_member.ready` / `preference_revision`; no `trip` ALTER; `member_preference` kind rows read-only; V5 seeds readiness + interest/must_do kind rows for the fixture trip; SA Lumi re-confirmed 2026-11-15 |
 | Frontend | greeting + trip create/detail + invitation/join pages | Screen 9 generate + Screen 10 review/confirm routes with four mandatory states |
 | Fixtures | REQ-001..004 sections | §US-031-037 state setup + M/V request matrix |
 | Registry/handoff | REQ-001/002 rows | US-031-037 row + session handoff note |
@@ -312,7 +312,7 @@ Supporting: `intents/2026-11-15-us-031-037.md`, `analysis/us-031-037-dor.md`,
 
 ## 4. Blast radius
 
-- Same runtimes/ports (8080 backend, 5173 Vite proxy) and same SQLite file; three new tables plus two `trip_member` columns; `trip` and `trip_invitation` untouched.
+- Same runtimes/ports (8080 backend, 5173 Vite proxy) and same SQLite file; two new tables plus two `trip_member` columns (V5; REQ-019's V4 `member_preference` read-only, G1 C2 amendment); `trip` and `trip_invitation` untouched.
 - No external service dependency; fake provider deterministic (fixture stops).
 - Cross-capability touchpoint: sets `trip.main_plan_confirmed` consumed by the now-local REQ-004 accept (code unchanged); the confirm flow supersedes REQ-004's test-only confirmed-state setup for trips confirmed here.
 
@@ -331,7 +331,7 @@ vertical slice within the REQ-004 size baseline.
 
 | id | Risk | Severity | Status |
 |---|---|---|---|
-| R1 | Flyway/schema collision when remote REQ-003/004 PRs merge | closed at P2 (OQ-9) | Trigger fired 2026-11-15 (PR #30/#31 merged). Convergence ruled: append V4+ (3 tables + 2 `trip_member` columns), no `trip` ALTER, confirmed version from draft status; SA Lumi confirmed at G1 (Pass, 2026-11-15; SA designation updated from Johnson by user statement 2026-11-15) |
+| R1 | Flyway/schema collision when remote REQ-003/004 PRs merge | closed at P2 (OQ-9); amended at G1 C2 | Trigger fired 2026-11-15 (PR #30/#31 merged). Convergence ruled: append V4+ (3 tables + 2 `trip_member` columns), no `trip` ALTER, confirmed version from draft status; SA Lumi confirmed at G1 (Pass, 2026-11-15; SA designation updated from Johnson by user statement 2026-11-15). G1 C2 default A (user-selected 2026-11-15) amends the shape: REQ-019 kind/payload `member_preference` takes V4, this change at V5 with 2 new tables; SA Lumi re-confirmed 2026-11-15; write-sync alignment with `feat/travel_preference` (SA evelyn.huang) = non-gating follow-up F1 |
 | R2 | JOINING_CLOSED E2E unverifiable locally (accept endpoint remote-only) | closed at P2 (DoR W1) | REQ-004 accept is merged locally, so the full J4 E2E runs in this change's ATDD (P3); no staged-verification residue |
 | R3 | Rules carrier not applied (user skipped P0) | process deviation, disclosed | P2/P4 rely on AGENTS.md + REQ-002/004 conventions; user ruling 2026-11-15 |
 | R4 | REQ-002 archive/push pending on main | unrelated | no action in this change |
@@ -341,8 +341,8 @@ No critical blocker invalidates US-031-037; split may proceed.
 ## 8. Suggested split boundaries
 
 One change `us-031-037-main-itinerary`, one ADDED capability `main-itinerary`.
-Effort: medium ≈ REQ-004 baseline — 3 new tables + 2 `trip_member` columns (no
-`trip` ALTER), 2 write + 2 read endpoints (3 wire projections), 2 screens, ~25+
+Effort: medium ≈ REQ-004 baseline — 2 new tables + 2 `trip_member` columns (V5,
+after the G1 C2 amendment; no `trip` ALTER), 2 write + 2 read endpoints (3 wire projections), 2 screens, ~25+
 acceptance tests (M1–M14 / V1–V7 + reverses). Ordering: backend contract and
 seeds first, frontend screens second; G1 to rule data model/API contract as a
 named decision item (capability-pack convention).

@@ -154,7 +154,7 @@ confirmation SHALL leave the plan unconfirmed.
 
 #### Scenario: C1 — valid draft confirmed, joining closed (US-037 AC1)
 
-- **GIVEN** the current draft version 1 is not stale, its stops are time-ordered and non-overlapping with a travel leg between consecutive stops and all stops within the trip day, and every member's hard budget is at least the cost per person (a null hard budget imposes no limit)
+- **GIVEN** the current draft version 1 is not stale, its stops are time-ordered and non-overlapping with a travel leg between consecutive stops that fits the gap to the next stop (arriving exactly at the next start is allowed) and all stops within the trip day, and every member's hard budget is at least the cost per person (a null hard budget imposes no limit)
 - **WHEN** the organizer confirms the main plan
 - **THEN** the response status is 200 with `version` 1, `confirmed` true, `stale` false and the same `stops` and `costPerPersonCents` as the draft read
 - **AND** version 1 becomes the shared confirmed plan based on that draft's inputs and preferences
@@ -170,11 +170,12 @@ confirmation SHALL leave the plan unconfirmed.
 
 #### Scenario: C3 — schedule errors block
 
-- **GIVEN** the current draft has overlapping stops, a missing travel leg, or a stop outside the trip day
+- **GIVEN** the current draft has overlapping stops, a missing travel leg, a travel leg longer than the gap to the next stop, or a stop outside the trip day
 - **WHEN** the organizer confirms the main plan
 - **THEN** the request is rejected with 422 and code `VALIDATION_FAILED`
-- **AND** `scheduleErrors` lists each specific error with its `type` (`OUT_OF_ORDER`, `OVERLAP`, `MISSING_LEG` or `OUT_OF_DAY`) and the offending stop `seq`
+- **AND** `scheduleErrors` lists each specific error with its `type` (`OUT_OF_ORDER`, `OVERLAP`, `MISSING_LEG`, `TRAVEL_EXCEEDS_GAP` or `OUT_OF_DAY`) and the offending stop `seq`
 - **AND** the plan stays unconfirmed
+- **AND** for `TRAVEL_EXCEEDS_GAP` the offending stop is the one carrying the too-long leg: its end time plus `travelMinutesToNext` is later than the next stop's start time; equality passes (G1 C1 recommended default A, user-selected 2026-11-15; IO Emily ratified 2026-11-15 — the type extends the contractual error enumeration)
 
 #### Scenario: C4 — stale draft blocks until regeneration
 
@@ -188,7 +189,7 @@ confirmation SHALL leave the plan unconfirmed.
 The system SHALL reject confirmation when no draft exists and SHALL reject
 re-confirmation of an already-confirmed plan without changing any state.
 `ALREADY_CONFIRMED` also covers generation after confirmation (G6; behavior
-accepted by user 2026-11-15; Emily IO approval recorded, overall G1 Conditional).
+accepted by user 2026-11-15; Emily IO approval recorded, overall G1 Pass).
 
 #### Scenario: V6 — confirm before any generation
 

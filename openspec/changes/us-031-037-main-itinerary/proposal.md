@@ -11,8 +11,8 @@ shared version and closes joining so late joiners cannot diverge from the
 agreed plan. The baseline now includes REQ-003/004 (merged 2026-11-15, local
 merge 4e6b261: trip/member/invitation schema V2/V3 + code), so this change
 extends it with the fixture-self-contained minimal read model ruled on
-2026-11-15 (V4+ convergence, seeded readiness/preferences, test-only readiness
-flip) instead of rebuilding the shared tables.
+2026-11-15 (V5 convergence per G1 C2, seeded readiness/preferences, test-only
+readiness flip) instead of rebuilding the shared tables.
 
 ## What Changes
 
@@ -25,7 +25,7 @@ flip) instead of rebuilding the shared tables.
     legs, input preference revisions, per-person cost; draft is NOT
     auto-confirmed; regeneration creates a new draft version (ruled).
     Generation after confirmation is rejected 409 `ALREADY_CONFIRMED`
-    (user accepted and Emily IO approved 2026-11-15; overall G1 Conditional);
+    (user accepted and Emily IO approved 2026-11-15; overall G1 Pass);
     replanning is deferred to R2.
   - Start/end location completion at generation only, per the signed
     2026-11-14 fixtures ruling (preferences first, random fallback, supplied
@@ -39,7 +39,10 @@ flip) instead of rebuilding the shared tables.
     draft; P2 ruling 2026-11-15 closes QC gap F6).
   - Confirmation gated by validation (US-037): OQ-6 minimal feasible schedule
     set (stops time-ordered and non-overlapping, travel leg between
-    consecutive stops, all stops within the trip day) plus every member's
+    consecutive stops, all stops within the trip day) plus the G1 C1
+    travel-fit rule (each leg fits the gap to the next stop; equality passes;
+    `TRAVEL_EXCEEDS_GAP` blocks — recommended default A user-selected
+    2026-11-15, IO Emily ratified 2026-11-15) plus every member's
     hard budget ≥ cost per person (NULL = no limit, OQ-10); stale drafts block
     until regenerated (OQ-7). Overrun blocks with the per-member overrun
     amount shown (10 SGD fixture case).
@@ -54,17 +57,20 @@ flip) instead of rebuilding the shared tables.
 - New backend `main-itinerary` package (controller / service / repository)
   with a `MainPlanProvider` port; the fake provider is the MVP production
   implementation (ruled), supplying the four fixture stops.
-- Flyway migrations from V4 on this branch (OQ-9 convergence executed
-  2026-11-15): three new tables (`member_preference`, `main_plan_draft`,
-  `main_plan_stop`) plus `trip_member.ready` / `preference_revision` columns;
-  no `trip` ALTER. The merged V2/V3 (REQ-003/004) already seed users 1–5 and
-  the fixture trip; V4 seeds readiness + rev-1 preference snapshots for its
-  four members (later joiners default to not ready).
+- Flyway migrations from V5 on this branch (OQ-9 convergence executed
+  2026-11-15; G1 C2 shape ruling 2026-11-15, recommended default A
+  user-selected, SA Lumi re-confirmed 2026-11-15): two new tables
+  (`main_plan_draft`, `main_plan_stop`) plus `trip_member.ready` /
+  `preference_revision` columns; no `trip` ALTER. `member_preference` is
+  REQ-019's V4 kind/payload table on `feat/travel_preference` (read-only
+  here; merge order REQ-019 first). The merged V2/V3 (REQ-003/004) already
+  seed users 1–5 and the fixture trip; V5 seeds readiness + rev-1 preference
+  kind rows for its four members (later joiners default to not ready).
 - Error contract (user-ruled 2026-11-15, fixtures §US-031-037):
   `MEMBERS_NOT_READY` 409, `VALIDATION_FAILED` 422, `STALE_DRAFT` 409,
   `NO_DRAFT` 404, `ALREADY_CONFIRMED` 409 (re-confirm per OQ-8; also
   generation after confirmation, explicitly accepted by user 2026-11-15;
-  Emily IO approval recorded, overall G1 Conditional); precedent codes unchanged
+  Emily IO approval recorded, overall G1 Pass); precedent codes unchanged
   (`USER_REQUIRED` 401, `NOT_A_MEMBER`/`NOT_ORGANIZER` 403,
   `TRIP_NOT_FOUND` 404). Bodies keep `{code, message}`; `MEMBERS_NOT_READY`
   adds `pendingMembers`, `VALIDATION_FAILED` adds `scheduleErrors` +
@@ -100,7 +106,7 @@ it consumes.
   intent `requirement-workspace/intents/2026-11-15-us-031-037.md`, DoR
   `analysis/us-031-037-dor.md` (BLOCKER = 0, advisory all resolved), deep-dive
   §US-031-037, impact brief §US-031-037, fixtures §US-031-037 (M1–M14 / V1–V7 matrix).
-- **Code**: new backend package + Flyway V4+ migrations and seeds; frontend
+- **Code**: new backend package + Flyway V5 migrations and seeds; frontend
   Screen 9/10 routes and components (`App.jsx` routing extended). Greeting,
   trip and invitation code untouched.
 - **APIs** (contractual at P2 2026-11-15, fixtures §US-031-037): `POST
@@ -113,9 +119,12 @@ it consumes.
   REQ-002 baseline.
 - **Cross-REQ**: REQ-004 J4 consumes `main_plan_confirmed`; accept is merged
   locally, so the full J4 `JOINING_CLOSED` E2E runs in this change (DoR W1 /
-  impact R2 closed). OQ-9 convergence executed at P2 (V4+ extend, no `trip`
-  ALTER); SA Lumi confirmed the shape at G1 (Pass, 2026-11-15; Emily IO approval
-  now recorded; overall G1 Conditional for travel-validation and feature-schema follow-ups).
+  impact R2 closed). OQ-9 convergence executed at P2 (extend, no `trip`
+  ALTER); G1 C2 fixes the shape at V5 with REQ-019's kind/payload
+  `member_preference` read-only here (user-selected default A; SA Lumi's G1
+  Pass covered the earlier wide shape — re-confirmation recorded 2026-11-15).
+  Emily IO approval recorded for the package plus the C1 ratification;
+  overall G1 Pass.
 - **Risks** (impact brief §US-031-037): R1 schema collision closed at P2
   (OQ-9 convergence), R2 staged JOINING_CLOSED verification closed (accept
   local), R3 Rules carrier not applied (P0 skipped by user ruling; AGENTS.md +
@@ -133,9 +142,10 @@ recommendation).
 ## A0 deep-dive gate
 
 US-031-037 is new with deep-dive in scope. `deep-dive.md` §US-031-037 evaluates
-⑨ data contract (merged V2/V3 ownership + 3 new tables + 2 `trip_member`
-columns; 3 wire projections with contractual field names; cents/HH:MM
-conventions, no TBD), ⑩ boundary (every scenario branch in/out), ⑪ cross-REQ
+⑨ data contract (merged V2/V3 ownership + REQ-019 V4 `member_preference`
+read-only + 2 new tables + 2 `trip_member` columns; 3 wire projections with
+contractual field names; cents/HH:MM conventions, no TBD), ⑩ boundary (every
+scenario branch in/out), ⑪ cross-REQ
 (completion ruling ✓, J4 anchor ✓ with E2E now local, test-setup supersession
 ✓, schema convergence executed at P2 — OQ-9), ⑫ display contract (Screens 9/10
 + four mandatory states; Screen 9 member-readable). All four Pass → **A0
@@ -146,9 +156,12 @@ Pass**, split permitted. Single change confirmed by the user 2026-11-15.
 - P0 harness steps skipped by user ruling ("直接走P1，不走P0"); Rules not
   applied. P2–P4 rely on AGENTS.md and REQ-002/004 conventions (impact R3).
 - The pre-merge "self-built V2+, six tables" plan was superseded at P2
-  2026-11-15: REQ-003/004 merged first, so this change appends V4+ (OQ-9
-  convergence executed); SA Lumi confirmed the shape at G1 (Pass, 2026-11-15;
-  Emily IO approval now recorded; overall G1 Conditional, see G1 C1/C2).
+  2026-11-15: REQ-003/004 merged first, so this change appends after them
+  (OQ-9 convergence executed); G1 C2 (2026-11-15, user-selected default A)
+  fixed the final shape at V5 — REQ-019 owns `member_preference` V4. SA Lumi
+  confirmed the earlier shape at G1 (Pass, 2026-11-15) and re-confirmed the
+  C2 shape 2026-11-15. Emily IO approval + C1 ratification recorded; overall
+  G1 Pass, see G1 C1/C2.
 - JOINING_CLOSED verification is no longer staged: REQ-004 accept is merged
   locally, so the full J4 E2E runs in this change's ATDD (DoR W1 upgraded at
   P2; impact R2 closed).

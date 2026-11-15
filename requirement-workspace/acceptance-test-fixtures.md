@@ -119,8 +119,15 @@ field names became contractual at P2 (rulings 2026-11-15: generate 201; confirm
 Error codes and HTTP status mapping were fixed by user ruling 2026-11-15
 (contract baseline below, IO Emily reviews at G1); sample values are fixed by the
 ACs or by the rulings recorded in the intent. Schema convergence (OQ-9, trigger
-fired 2026-11-15): this change appends `V4+`, adds three tables and two
-`trip_member` columns, and does not alter `trip`.
+fired 2026-11-15; G1 C2 ruling 2026-11-15): `member_preference` is the
+kind/payload table owned by REQ-019's `V4` on `feat/travel_preference`
+(`id`, `trip_id`, `user_id`, `kind`, `payload` JSON, `updated_at`,
+UNIQUE(`trip_id`,`user_id`,`kind`); kinds `interest` / `must_do` / `budget` /
+`submission`); this change appends `V5` with two tables (`main_plan_draft`,
+`main_plan_stop`) and two `trip_member` columns, reads `member_preference`,
+and does not alter `trip`. Merge order: REQ-019 `V4` first. C2 recommended
+default A user-selected 2026-11-15; SA Lumi re-confirmed 2026-11-15 (his earlier
+G1 Pass covered the wide-table shape).
 
 ### Error contract (ruled 2026-11-15)
 
@@ -130,7 +137,7 @@ fired 2026-11-15): this change appends `V4+`, adds three tables and two
 | `VALIDATION_FAILED` | 422 | confirm blocked by overrun (V2) or schedule errors (V3) |
 | `STALE_DRAFT` | 409 | confirm blocked by stale draft (V4) |
 | `NO_DRAFT` | 404 | confirm before any generation (V6) |
-| `ALREADY_CONFIRMED` | 409 | Re-confirm (V7) and generate after confirmation (M14); user accepted and Emily IO approved 2026-11-15; overall G1 Conditional |
+| `ALREADY_CONFIRMED` | 409 | Re-confirm (V7) and generate after confirmation (M14); user accepted and Emily IO approved 2026-11-15; overall G1 Pass |
 
 Only `code` is contractual; message wording free. Precedent codes unchanged:
 USER_REQUIRED 401 / NOT_A_MEMBER 403 / NOT_ORGANIZER 403 / TRIP_NOT_FOUND 404 /
@@ -142,7 +149,7 @@ structured detail fields (P2 contract; needed by US-031 AC2 and Screen 10):
 | Code | Extra fields | Content |
 |---|---|---|
 | `MEMBERS_NOT_READY` | `pendingMembers` | one entry per not-ready member: `userId`, `displayName` (M2: Daniel, id 4) |
-| `VALIDATION_FAILED` | `scheduleErrors`, `overruns` | `scheduleErrors`: `type` (`OUT_OF_ORDER` / `OVERLAP` / `MISSING_LEG` / `OUT_OF_DAY`), `seq`, free `message`; `overruns`: `userId`, `displayName`, `hardBudgetCents`, `overrunCents` (V2: Alice 4000 / 1000) |
+| `VALIDATION_FAILED` | `scheduleErrors`, `overruns` | `scheduleErrors`: `type` (`OUT_OF_ORDER` / `OVERLAP` / `MISSING_LEG` / `TRAVEL_EXCEEDS_GAP` / `OUT_OF_DAY`), `seq`, free `message`; `overruns`: `userId`, `displayName`, `hardBudgetCents`, `overrunCents` (V2: Alice 4000 / 1000). `TRAVEL_EXCEEDS_GAP`: the stop carrying the leg whose end time + `travelMinutesToNext` is later than the next stop's start; equality passes (G1 C1 default A, user-selected 2026-11-15; IO Emily ratified 2026-11-15) |
 
 `STALE_DRAFT`, `NO_DRAFT`, `ALREADY_CONFIRMED` and the precedent codes carry no
 extra fields; staleness is read from the plan projection.
@@ -151,16 +158,17 @@ extra fields; staleness is read from the plan projection.
 
 | Item | Value | Why |
 |---|---|---|
-| Readiness, default | Alice/Ben/Chloe/Daniel `ready = 1`, `preference_revision = 1` | US-031 AC1 "all four members ready at preference revision 1"; `V4` adds both columns to the merged `trip_member` and seeds these values for the fixture trip's four members; flip test-only (ruled) |
+| Readiness, default | Alice/Ben/Chloe/Daniel `ready = 1`, `preference_revision = 1` | US-031 AC1 "all four members ready at preference revision 1"; `V5` adds both columns to the merged `trip_member` and seeds these values for the fixture trip's four members; flip test-only (ruled) |
 | Readiness, later joiners | `ready` defaults to 0, `preference_revision` defaults to 1 | a member who joins through REQ-004 accept has not responded yet, so the readiness gate keeps blocking until a test-only flip; no product write path in this REQ |
 | Null-location case (M3) | test-only update of the fixture trip's `start_location` / `end_location` to NULL, restored afterwards | the merged `V2` seed supplies both locations, so the completion branch needs documented test-only setup (REQ-004 precedent); the result is observed through `GET /api/trips/{id}` |
-| Confirmed version pointer | the draft row whose `status = 'confirmed'`; `trip.main_plan_confirmed` (already added by `V3`) stays the joining flag | P2 ruling 2026-11-15: no `confirmed_draft_id` column and no `V4` ALTER of `trip`; one source of truth for the confirmed version |
+| Confirmed version pointer | the draft row whose `status = 'confirmed'`; `trip.main_plan_confirmed` (already added by `V3`) stays the joining flag | P2 ruling 2026-11-15: no `confirmed_draft_id` column and no `V5` ALTER of `trip`; one source of truth for the confirmed version |
 | Daniel-pending case | test-only `ready = 0` for Daniel (id 4) | US-031 AC2; no product write path in this REQ |
-| Preference snapshots | rev 1 per member; interests/must-do seeded; `hard_budget` NULL by default (no hard limit) | AC2 names only Alice's hard budget; NULL keeps the C1 pass case feasible |
-| Alice overrun case | test-only Alice `hard_budget = 4000` cents (40 SGD) | US-037 AC2 |
+| Preference snapshots | rev 1 per member (`trip_member.preference_revision`); `V5` seeds `member_preference` kind rows per member: `interest` (payload `{"codes":[…]}`) and `must_do` (payload `{"items":[…]}`); no `budget` row by default (no hard limit) | AC2 names only Alice's hard budget; budget-row absence keeps the C1 pass case feasible; kind/payload shape per G1 C2 default A (REQ-019 `V4` table, read-only here) |
+| Alice overrun case | test-only Alice `member_preference` row `kind='budget'`, payload `{"amount":4000,"currency":"SGD","limitType":"hard"}` (40 SGD) | US-037 AC2; reads map `amount` → `hardBudgetCents` when `limitType='hard'` |
+| Travel-gap case (V3) | test-only draft mutation: a stop's `travel_minutes_to_next` longer than the gap to the next stop (e.g. 45 minutes into a 30-minute gap) | G1 C1 default A: `TRAVEL_EXCEEDS_GAP` blocks confirmation; equality passes (user-selected 2026-11-15; IO Emily ratified 2026-11-15) |
 | Stale case | after a draft exists, test-only bump Ben `preference_revision` to 2 | OQ-7 ruling 2026-11-15: stale blocks confirmation |
 | Confirmed-frozen case (M13) | after V1 confirm, the same test-only Ben revision bump | P2 lint ruling 2026-11-15: the confirmed version stays `stale = false` regardless of later revision changes |
-| Fake provider stops | City Hall MRT 09:00–09:30; National Gallery Singapore 10:00–10:30; Gardens by the Bay 11:00–11:15; Merlion Park 11:30–12:00; travel legs 30/30/15 minutes; cost 50 SGD per person | US-031 AC1 supplied times and legs; US-037 AC2 known cost |
+| Fake provider stops | City Hall MRT 09:00–09:30; National Gallery Singapore 10:00–10:30; Gardens by the Bay 11:00–11:15; Merlion Park 11:30–12:00; travel legs 30/30/15 minutes; cost 50 SGD per person | US-031 AC1 supplied times and legs; US-037 AC2 known cost; legs fit the 30/30/15 gaps exactly — equality passes the C1 travel-fit rule |
 | Confirmed-state premise for later REQs | produced by the US-037 confirm flow (version 1) | supersedes the REQ-004 test-only setup for trips confirmed through this REQ |
 
 ### Requests (paths contractual, P2 2026-11-15)
@@ -172,7 +180,7 @@ extra fields; staleness is read from the plan projection.
 | M3 completion | null-location setup (test-only), then generate; separately the default seeded trip | `201`; `GET /api/trips/{id}` shows both locations completed per the signed 2026-11-14 ruling; with the seeded nonblank locations the same read shows them preserved unchanged |
 | M4 non-organizer | generate with `X-User-Id: 2` | `403 NOT_ORGANIZER`; no draft |
 | M5 regen | M1 twice | `201` with `version` 2; second draft version 2 current; version 1 superseded |
-| M14 generate after confirm | generate after V1 | `409 ALREADY_CONFIRMED`; no new draft row; confirmed version unchanged; replanning deferred to R2 (user accepted and Emily IO approved 2026-11-15; overall G1 Conditional) |
+| M14 generate after confirm | generate after V1 | `409 ALREADY_CONFIRMED`; no new draft row; confirmed version unchanged; replanning deferred to R2 (user accepted and Emily IO approved 2026-11-15; overall G1 Pass) |
 | M6 inputs read | `GET /api/trips/{id}/main-plan/inputs`, `X-User-Id: 2`, default setup | `200`; ready count 4/4 + member names, interests/must-do summary, budget lines (no limit), generation rules list |
 | M7 inputs no draft | same call before any generation | `200` summary; no `NO_DRAFT` error |
 | M8 inputs non-member | same call with `X-User-Id: 5` | `403 NOT_A_MEMBER` |
@@ -183,7 +191,7 @@ extra fields; staleness is read from the plan projection.
 | M13 confirmed frozen | same call after V1 **and** a test-only Ben revision bump to 2 | `200`; version 1, confirmed flag true, `stale = false` — the confirmed version is frozen; staleness applies to unconfirmed drafts only (P2 lint ruling 2026-11-15) |
 | V1 confirm pass | `POST /api/trips/{id}/main-plan/confirm`, `X-User-Id: 1`, current valid draft v1 | `200`; body is the same projection as the draft read with `version` 1, `confirmed` true, `stale` false; v1 confirmed shared (that draft's `status = 'confirmed'`); `main_plan_confirmed = 1`; invitation accept afterwards → `403 JOINING_CLOSED` (J4) |
 | V2 overrun | confirm with Alice hard 4000 vs cost 5000 | blocked; `422 VALIDATION_FAILED`; overrun 1000 cents (10 SGD) shown for Alice; stays unconfirmed |
-| V3 schedule | confirm a draft with overlapping stops / missing leg / out-of-day stop (test-only draft mutation) | blocked; `422 VALIDATION_FAILED` with the specific schedule errors; stays unconfirmed |
+| V3 schedule | confirm a draft with overlapping stops / missing leg / leg longer than the gap to the next stop / out-of-day stop (test-only draft mutation) | blocked; `422 VALIDATION_FAILED` with the specific schedule errors (incl. `TRAVEL_EXCEEDS_GAP`, C1 default A); stays unconfirmed |
 | V4 stale | confirm after Ben revision bump | blocked; `409 STALE_DRAFT`; regenerate then confirm passes |
 | V5 non-organizer | confirm with `X-User-Id: 2` | `403 NOT_ORGANIZER`; unchanged |
 | V6 no draft | confirm before any generation | `404 NO_DRAFT`; unchanged |
@@ -212,7 +220,9 @@ display-only aggregations (no AC depends on their content). User product review
 2026-11-15 explicitly accepts these semantics and the six fixed rule identifiers,
 free display wording and possibly empty provider-supplied per-stop tags. Emily
 subsequently approved the current package on 2026-11-15 per separate explicit
-signing instruction; G1 remains Conditional for its listed follow-ups.
+signing instruction; G1 is Pass — the C1/C2 ratifications were recorded
+2026-11-15 (write-sync alignment with `feat/travel_preference` is non-gating
+follow-up F1 in g1-decision.md).
 
 ### Values deliberately not fixed (US-031-037)
 
