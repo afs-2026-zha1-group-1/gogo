@@ -327,7 +327,7 @@ owns every table and projection. Wire field names are contractual at P2
 | Non-organizer / non-member / no identity / unknown trip | in (G4, C5, M-N/V-N) | 403 NOT_ORGANIZER / 403 NOT_A_MEMBER / 401 USER_REQUIRED / 404 TRIP_NOT_FOUND |
 | No draft at confirm | in (C5/V6) | 404 NO_DRAFT (ruled 2026-11-15) |
 | Already confirmed | in (C6/V7) | 409 ALREADY_CONFIRMED (OQ-8 ruled 2026-11-15); no state change |
-| Generate after confirmation | in (G6/M14) | 409 ALREADY_CONFIRMED; no new draft; replanning deferred to R2 (lint L1 recommended default A, user-selected 2026-11-15; IO Emily ratification pending at G1) |
+| Generate after confirmation | in (G6/M14) | 409 ALREADY_CONFIRMED; no new draft; replanning deferred to R2 (user accepted and Emily IO approved 2026-11-15; overall G1 Conditional) |
 | Joining after confirm | in (C1) | flag set here; JOINING_CLOSED enforced by REQ-004 accept (unchanged) |
 | Concurrent confirms | out of scope | single organizer per trip; SQLite write serialization is a design concern, not a product branch |
 

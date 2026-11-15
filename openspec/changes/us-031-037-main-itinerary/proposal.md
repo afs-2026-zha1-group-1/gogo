@@ -25,8 +25,8 @@ flip) instead of rebuilding the shared tables.
     legs, input preference revisions, per-person cost; draft is NOT
     auto-confirmed; regeneration creates a new draft version (ruled).
     Generation after confirmation is rejected 409 `ALREADY_CONFIRMED`
-    (lint L1 recommended default A, user-selected 2026-11-15; IO Emily
-    ratification pending at G1); replanning is deferred to R2.
+    (user accepted and Emily IO approved 2026-11-15; overall G1 Conditional);
+    replanning is deferred to R2.
   - Start/end location completion at generation only, per the signed
     2026-11-14 fixtures ruling (preferences first, random fallback, supplied
     nonblank values preserved).
@@ -63,8 +63,8 @@ flip) instead of rebuilding the shared tables.
 - Error contract (user-ruled 2026-11-15, fixtures §US-031-037):
   `MEMBERS_NOT_READY` 409, `VALIDATION_FAILED` 422, `STALE_DRAFT` 409,
   `NO_DRAFT` 404, `ALREADY_CONFIRMED` 409 (re-confirm per OQ-8; also
-  generation after confirmation per lint L1 default A, IO ratification
-  pending); precedent codes unchanged
+  generation after confirmation, explicitly accepted by user 2026-11-15;
+  Emily IO approval recorded, overall G1 Conditional); precedent codes unchanged
   (`USER_REQUIRED` 401, `NOT_A_MEMBER`/`NOT_ORGANIZER` 403,
   `TRIP_NOT_FOUND` 404). Bodies keep `{code, message}`; `MEMBERS_NOT_READY`
   adds `pendingMembers`, `VALIDATION_FAILED` adds `scheduleErrors` +
@@ -114,7 +114,8 @@ it consumes.
 - **Cross-REQ**: REQ-004 J4 consumes `main_plan_confirmed`; accept is merged
   locally, so the full J4 `JOINING_CLOSED` E2E runs in this change (DoR W1 /
   impact R2 closed). OQ-9 convergence executed at P2 (V4+ extend, no `trip`
-  ALTER); SA Lumi confirmed the shape at G1 (Pass, 2026-11-15; IO pending).
+  ALTER); SA Lumi confirmed the shape at G1 (Pass, 2026-11-15; Emily IO approval
+  now recorded; overall G1 Conditional for travel-validation and feature-schema follow-ups).
 - **Risks** (impact brief §US-031-037): R1 schema collision closed at P2
   (OQ-9 convergence), R2 staged JOINING_CLOSED verification closed (accept
   local), R3 Rules carrier not applied (P0 skipped by user ruling; AGENTS.md +
@@ -146,7 +147,8 @@ Pass**, split permitted. Single change confirmed by the user 2026-11-15.
   applied. P2–P4 rely on AGENTS.md and REQ-002/004 conventions (impact R3).
 - The pre-merge "self-built V2+, six tables" plan was superseded at P2
   2026-11-15: REQ-003/004 merged first, so this change appends V4+ (OQ-9
-  convergence executed); SA Lumi confirmed the shape at G1 (Pass, 2026-11-15; IO pending).
+  convergence executed); SA Lumi confirmed the shape at G1 (Pass, 2026-11-15;
+  Emily IO approval now recorded; overall G1 Conditional, see G1 C1/C2).
 - JOINING_CLOSED verification is no longer staged: REQ-004 accept is merged
   locally, so the full J4 E2E runs in this change's ATDD (DoR W1 upgraded at
   P2; impact R2 closed).

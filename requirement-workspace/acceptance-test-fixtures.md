@@ -130,7 +130,7 @@ fired 2026-11-15): this change appends `V4+`, adds three tables and two
 | `VALIDATION_FAILED` | 422 | confirm blocked by overrun (V2) or schedule errors (V3) |
 | `STALE_DRAFT` | 409 | confirm blocked by stale draft (V4) |
 | `NO_DRAFT` | 404 | confirm before any generation (V6) |
-| `ALREADY_CONFIRMED` | 409 | re-confirm an already-confirmed plan (V7, OQ-8); also generation after confirmation (M14, lint L1 recommended default A — IO Emily ratification pending at G1) |
+| `ALREADY_CONFIRMED` | 409 | Re-confirm (V7) and generate after confirmation (M14); user accepted and Emily IO approved 2026-11-15; overall G1 Conditional |
 
 Only `code` is contractual; message wording free. Precedent codes unchanged:
 USER_REQUIRED 401 / NOT_A_MEMBER 403 / NOT_ORGANIZER 403 / TRIP_NOT_FOUND 404 /
@@ -172,7 +172,7 @@ extra fields; staleness is read from the plan projection.
 | M3 completion | null-location setup (test-only), then generate; separately the default seeded trip | `201`; `GET /api/trips/{id}` shows both locations completed per the signed 2026-11-14 ruling; with the seeded nonblank locations the same read shows them preserved unchanged |
 | M4 non-organizer | generate with `X-User-Id: 2` | `403 NOT_ORGANIZER`; no draft |
 | M5 regen | M1 twice | `201` with `version` 2; second draft version 2 current; version 1 superseded |
-| M14 generate after confirm | generate after V1 | `409 ALREADY_CONFIRMED`; no new draft row; confirmed version unchanged (lint L1 recommended default A, user-selected 2026-11-15; IO Emily ratification pending at G1; replanning deferred to R2) |
+| M14 generate after confirm | generate after V1 | `409 ALREADY_CONFIRMED`; no new draft row; confirmed version unchanged; replanning deferred to R2 (user accepted and Emily IO approved 2026-11-15; overall G1 Conditional) |
 | M6 inputs read | `GET /api/trips/{id}/main-plan/inputs`, `X-User-Id: 2`, default setup | `200`; ready count 4/4 + member names, interests/must-do summary, budget lines (no limit), generation rules list |
 | M7 inputs no draft | same call before any generation | `200` summary; no `NO_DRAFT` error |
 | M8 inputs non-member | same call with `X-User-Id: 5` | `403 NOT_A_MEMBER` |
@@ -208,8 +208,11 @@ the confirm 200 body are the **same projection** (one shape, one serializer).
 
 `commonInterests` = interests shared by all ready members (intersection);
 `mustDo` = deduplicated union of ready members' must-do items. Both are
-display-only aggregations (no AC depends on their content) and are an IO review
-item at G1.
+display-only aggregations (no AC depends on their content). User product review
+2026-11-15 explicitly accepts these semantics and the six fixed rule identifiers,
+free display wording and possibly empty provider-supplied per-stop tags. Emily
+subsequently approved the current package on 2026-11-15 per separate explicit
+signing instruction; G1 remains Conditional for its listed follow-ups.
 
 ### Values deliberately not fixed (US-031-037)
 

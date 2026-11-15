@@ -48,8 +48,8 @@ a confirmed version exists (G6).
 - **WHEN** the organizer generates the main plan again
 - **THEN** the request is rejected with 409 and code `ALREADY_CONFIRMED`
 - **AND** no new draft is persisted and the confirmed version is unchanged
-  (recommended default A, user-selected 2026-11-15; IO Emily ratification
-  pending at G1; replanning deferred to R2 — the versioned draft schema
+  (explicitly accepted in user product review 2026-11-15; Emily IO approval
+  recorded separately; replanning deferred to R2 — the versioned draft schema
   reserves the seam)
 
 ### Requirement: Location completion at generation
@@ -187,8 +187,8 @@ confirmation SHALL leave the plan unconfirmed.
 
 The system SHALL reject confirmation when no draft exists and SHALL reject
 re-confirmation of an already-confirmed plan without changing any state.
-`ALREADY_CONFIRMED` also covers generation after confirmation (G6; recommended
-default A, IO ratification pending at G1).
+`ALREADY_CONFIRMED` also covers generation after confirmation (G6; behavior
+accepted by user 2026-11-15; Emily IO approval recorded, overall G1 Conditional).
 
 #### Scenario: V6 — confirm before any generation
 
