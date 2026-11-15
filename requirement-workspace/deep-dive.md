@@ -445,3 +445,119 @@ slice and are not required by any AC. Recorded as a non-blocking item for Dev
 
 单成员条目数量在实际使用中是两位数以内，AC 未规定容量、长度或 SLA；`payload` 是单行 JSON，读写各一条语句。
 记为 Dev 的非阻塞项（OQ-11），不臆造上限。
+
+## REQ-024
+
+触发：impact 方向为 **modify**（第三次扩展 REQ-019 引入的 `preferences` 能力）。本需求**零迁移**，
+复用 `member_preference` 中 `kind = 'budget'` 的行；与 `kind = 'interest'`（REQ-019）、`kind = 'must_do'`（REQ-020）互不覆盖。
+
+### ⑨ 数据契约
+
+| 概念 | 粒度 | 字段 | 状态迁移 |
+|---|---|---|---|
+| `member_preference`（`kind='budget'`） | 每 (trip, user, kind) **一行**；行内 payload 是**单个对象**（不是数组） | 表结构沿用 REQ-019 的 `V4`：`id`、`trip_id`、`user_id`、`kind`、`payload`（JSON）、`updated_at`；payload 已设置态 `{"amount":4000,"currency":"SGD","limitType":"hard"}`，未设置态 `{}` | 行不存在 → 首次 PUT 插入；行存在 → 覆盖 `payload` 与 `updated_at`；`{"amount":null}` → payload 写 `{}` 且**保留行**；GET 不建行 |
+| 预算值对象 | 属于该成员 payload 的唯一对象；无子条目 id | `amount`：INTEGER，`0 ≤ amount ≤ 2147483647`，含义为**最小货币单位**；`currency`：`SGD`/`CNY`/`USD`/`EUR`/`JPY`；`limitType`：`hard`/`soft` | 三字段只有两种合法组合：**全 null（未设置）** 或 **全有值（已设置）**；半个预算（只有 amount、或 amount 为 null 但另两字段有值）→ `400 BUDGET_FIELDS_INCOMPLETE` |
+| 币种小数位 | 币种 → 最小单位的换算常量，前后端共用同一张表 | `SGD = 2`、`CNY = 2`、`USD = 2`、`EUR = 2`、`JPY = 0` | 不参与存储与校验，只决定界面格式化与用户输入的换算；**禁止**硬编码 ×100 |
+
+线上契约：
+
+| 消息 | 字段 | 备注 |
+|---|---|---|
+| `PUT /api/trips/{tripId}/preferences/budget` 请求 | `amount`：整数或 `null`，**键必须存在**；`currency`：字符串或 `null`；`limitType`：`"hard"`/`"soft"` 或 `null` | 三个字段都出现在 body 中时按联动规则校验；`amount` 键缺失 → `400 INVALID_REQUEST`，与 `amount:null`（清除）**语义不同** |
+| PUT 响应 | `{"budget":{...}}` 或 `{"budget":null}` | 与落库 payload 一致；清除时为 `null` |
+| `GET /api/trips/{tripId}/preferences/budget` 响应 | `members`：`[{userId: integer, budget: {...}\|null}]` | 覆盖该 trip 全体成员，按 `userId` 升序；未设置者 `budget: null`（与 `amount: 0` 必须可区分） |
+| 错误响应 | `code`（稳定字符串）、`message`（可读文本） | `code` 取值：`USER_REQUIRED`、`NOT_A_MEMBER`、`TRIP_NOT_FOUND`、`INVALID_REQUEST`、`BUDGET_AMOUNT_INVALID`、`BUDGET_FIELDS_INCOMPLETE`、`BUDGET_CURRENCY_NOT_ALLOWED`、`BUDGET_LIMIT_TYPE_INVALID` |
+| 身份 | 请求头 `X-User-Id`，整数 | 指向 `app_user.id`；缺失或非 seed 用户一律 401 |
+
+校验顺序（D12，多字段同时非法时结果必须确定，任一失败**零写入**）：
+
+1. `X-User-Id` 可解析且指向已 seed 用户；2. `tripId` 存在；3. 调用者是该 trip 成员；
+4. body 可解析为 JSON 对象；5. `amount` 键存在；6. `amount` 为非负整数且不超 int32；
+7. 三字段联动合法；8. `currency` 在白名单内；9. `limitType` ∈ `{hard, soft}`；10. 写库。
+
+「改上限类型不产生第二条」的不变量落在两处：写入是 `ON CONFLICT(trip_id,user_id,kind) DO UPDATE`（行数恒 1，AC2），
+清除写 `{}` 而不删行（AC3c）。两者都在 Service/SQL 层，数据库无法表达「payload 必须是单对象」。
+
+无 `{TBD}` 字段。
+
+### ⑩ 边界枚举
+
+| 分支 | in / out | 归属 |
+|---|---|---|
+| 首次保存合法预算（amount + currency + hard） | in | AC1 |
+| 保存后重新加载页面或重新 GET | in | AC1-R |
+| 只改 `limitType`（hard → soft），金额与币种不变 | in | AC2 |
+| 改上限类型后行数仍为 1、payload 仍是单对象 | in（核心不变量） | AC2 |
+| 其他成员预算在他人修改后是否变化 | in（必须不变） | AC2-M |
+| 从未设置 → GET | in（`budget: null` 且无行） | AC3a |
+| 0 预算 + 硬上限 | in（`amount: 0` ≠ null） | AC3b |
+| 清除预算（`amount: null`） | in（payload `{}`，行保留） | AC3c |
+| 0 → 未设置 → 0 往返 | in | AC3d |
+| `JPY` 零位小数 | in（`1200` 显示为 `JPY 1200`） | AC3e |
+| `amount` 为负数 | out（`400 BUDGET_AMOUNT_INVALID`，前值不变） | AC8-N |
+| `amount` 为小数（`4000.5`） | out（`400 BUDGET_AMOUNT_INVALID`） | AC9-N |
+| `amount` 超出 int32（`2147483648`、`1e12`） | out（`400 BUDGET_AMOUNT_INVALID`） | AC10-N |
+| `amount` 有值但 `currency` 缺失/为 null | out（`400 BUDGET_FIELDS_INCOMPLETE`） | AC11-N |
+| `currency` 非白名单 / 小写 / 长度错 | out（`400 BUDGET_CURRENCY_NOT_ALLOWED`） | AC12-N |
+| `limitType` 非法值（`HARD`、`medium`、`""`） | out（`400 BUDGET_LIMIT_TYPE_INVALID`） | AC13-N |
+| `amount` 有值但 `limitType` 缺失/为 null | out（`400 BUDGET_FIELDS_INCOMPLETE`） | AC14-N |
+| `amount` 为 null 但另两字段有值 | out（`400 BUDGET_FIELDS_INCOMPLETE`） | AC15-N |
+| 重复提交完全相同的合法 body | in（幂等，行数与 payload 不变） | AC16-N |
+| `GET` 连续读两次 | in（只读：payload 与 `updated_at` 不变） | AC17-N |
+| 主线已确认后保存 | in（沿用 REQ-019 D4，不设锁） | AC18-N |
+| 缺少 `X-User-Id` / 非 seed 用户 / 非整数 | out（`401`） | AC4-N |
+| 非成员调用 GET/PUT | out（`403 NOT_A_MEMBER`） | AC5-N |
+| `tripId` 不存在 | out（`404 TRIP_NOT_FOUND`） | AC6-N |
+| body 非对象 / 缺 `amount` 键 / 非法 JSON | out（`400 INVALID_REQUEST`） | AC7-N |
+| 前端保存失败（-1 或非法币种） | in（错误态 + 保留输入 + 回滚） | AC19-N |
+| 前端 GET 失败 | in（错误态 + 重试，不把旧值当已保存） | ⑫ 第 10 行 |
+| 约束类偏好（`kind='constraint'`） | out of scope（另一条故事） | REQ-024 §Out of scope |
+| 兴趣段与必做项段的交互 | out of scope（两段的端点与保存时机均不改） | REQ-024 §Out of scope |
+| 「无偏好」与就绪提交 | out of scope（US-027 / US-026） | REQ-024 §Out of scope |
+| 成员摘要（节点 7）展示他人预算 | out of scope（US-013 的展示决策） | OQ-12 |
+| 多币种换算 / 汇率比较 | out of scope（US-031 另开变更） | OQ-13 |
+| 金额业务上限 | out of scope（AC 未规定；实现层只拒超 int32） | OQ-10 |
+| 编辑他人预算 | out（写路径只认 header 身份，无跨成员入口） | REQ-024 §Actors |
+| 并发两次 PUT 同一成员 | out of scope（连接池 = 1，实际串行，last-write-wins） | 技术约束 |
+
+每个场景都有归属行。
+
+### ⑪ 跨 REQ 一致性
+
+| 触点 | 对方口径 | 本需求口径 | 收敛结论 |
+|---|---|---|---|
+| 偏好表 | REQ-019 的 `V4` 建 `member_preference` + UNIQUE(`trip_id`,`user_id`,`kind`) | 只写 `kind='budget'`，不建表、不改列 | 一致：同表不同 kind 互不覆盖；UNIQUE 直接支撑 `ON CONFLICT` 的单行覆盖写 |
+| `kind` 取值域 | `tech-stack-plan.md` §5 的枚举含 `interest`/`must_do`/`constraint`/`budget` | 本需求只落地 `budget` | 一致：复用表、零迁移是计划原意，不是偏离 |
+| 金额单位 | `tech-stack-plan.md` §5「金额用 `INTEGER` 分」；`attraction.price_cny` 同口径 | `amount` 为最小货币单位整数 | 一致：US-031 做预算过滤时可直接与 `price_cny` 比较；JPY 零位小数需在换算时按币种表处理 |
+| 端点前缀 | REQ-019 的 `GET`/`PUT /api/trips/{tripId}/preferences`；REQ-020 的 `.../preferences/must-dos` | 新增 `GET`/`PUT /api/trips/{tripId}/preferences/budget` | 同为子资源兄弟路径；需在 P3 确认 Spring 精确匹配，三个映射互不落到对方 |
+| 页面契约 | REQ-019「兴趣一次显式保存」→ REQ-020 MODIFIED「必做项动作即保存」 | 第三次 MODIFIED：预算段为段内显式保存 | 需在 P2 基于 REQ-020 的版本再修订，写明三段三种时机；基线顺序 019 → 020 → 024 |
+| 错误 advice | REQ-019 计划在 `com.gogo.preference` 建专属 advice | 复用同一包与同一 advice，新增 4 个 `BUDGET_*` 码 | 一致；若 REQ-019 的 advice 缺失，本需求的错误码不会产生（WARNING） |
+| 行程日期 | `V2` 的 `trip.start_date` / `end_date`（夹具 2026-12-05） | 预算是「全程」口径，不需要日期字段 | 一致：人均全程 = 整个 trip，不按天拆分 |
+| 主线确认 | REQ-004 的 `trip.main_plan_confirmed`；US-037 之前无产品写入路径 | 仅作测试上下文，不设锁定分支 | 一致：AC 的「main plan is unconfirmed」是前提，不是状态机分支（D13） |
+| 生成消费 | US-031 节点 9 需要「约束 / 预算」输入，节点 10 的 `pv2` 校验硬上限 | `GET` 返回全员 `budget`（含 `null`） | 一致：本需求只提供数据；「硬上限严格过滤、软上限尽量」的语义属 US-031 |
+| 就绪状态 | US-026 的提交与就绪环、US-027 的显式无偏好 | 保存预算**不改变**就绪状态 | 需在 P2 的页面 requirement 里写明，避免实现时顺手把「保存预算」做成「提交就绪」 |
+| 参考图 | 节点 8 预算卡：币种下拉 `CNY/USD/EUR/JPY`、金额默认 `1200`、提交走全页 `submitPref()` | 白名单含 `SGD`、无默认金额、预算段独立保存 | 有意偏离：Design scope 明确要求支持 SGD 且区分未设置与 0；UI 需改（WARNING） |
+| 计划文档 §6 | 计划写「`PUT /preferences` 一次提交四类偏好」 | 独立子资源端点 + 段内显式保存 | 偏离：为不改 REQ-019 已冻结的 payload；文档修正并入 REQ-019 OQ-16 |
+| 迁移序列 | `V3` 已随 REQ-004 落 main；`V4` 归 REQ-019 | 本需求零迁移 | 无编号竞争；唯一风险是 `V4` 未合入时本变更无法运行（R1） |
+
+### ⑫ 展示契约
+
+| 界面态 | 触发 | 接收者 | 内容与展示字段 | 通道 |
+|---|---|---|---|---|
+| 加载中 | 进入 `#/trips/{id}/preferences` | 当前成员 | 预算段的加载提示；金额框、币种、软硬选择器、保存按钮禁用 | `GET .../preferences/budget` |
+| 未设置（空态） | GET 成功且当前成员 `budget` 为 `null` | 当前成员 | 金额框留空、币种与上限不预选、占位文案「留空 = 不设预算」、「保存预算」可用 | 同上 |
+| 已设置 | GET 成功且 `budget` 非 null | 当前成员 | `SGD 40.00 · 硬上限` / `JPY 1200 · 软上限`；金额与币种按币种小数位表格式化；提供「清除预算」 | 同上 |
+| 零预算 | GET 成功且 `budget.amount = 0` | 当前成员 | 显示 `SGD 0.00 · 硬上限`，**必须**与「未设置」在文案上不同（不得显示成空白） | 同上 |
+| 编辑中 | 修改金额、切换币种或点击软/硬 | 当前成员 | 本地态变化 + 未保存提示；不发起请求 | 本地态，无请求 |
+| 保存中 | 点击「保存预算」且未返回 | 当前成员 | 保存按钮禁用并显示进行中，防重复提交 | `PUT .../preferences/budget` |
+| 保存成功 | PUT 2xx | 当前成员 | 以响应为准渲染金额/币种/上限；清除时回到未设置态；无残留错误 | 同上 |
+| 保存失败 | PUT 4xx / 5xx | 当前成员 | 内联显示服务端 `message`（如负数、非法币种），保留用户输入，值回滚到服务端已知状态 | 同上 |
+| 身份 / 成员 / 未知 trip | 401 / 403 / 404 | 当前成员 | 对应错误文案 + 返回入口；不得渲染任何成员的预算 | 同上 |
+| GET 失败 | 不可达或非 2xx | 当前成员 | 错误态 + 重试；**不得**把空白或旧值渲染成「未设置」或「已保存」 | 同上 |
+
+无通知（邮件、推送、队列）在范围内。
+
+### NFR business-policy layer
+
+单个成员的预算是**一行一个对象**，读写各一条语句；5 个币种、int32 金额上限，无容量与 SLA 要求。
+AC 未规定金额业务上限与汇率换算，记为 Dev/团队的非阻塞项（OQ-10 / OQ-13），不臆造限制。

@@ -442,3 +442,99 @@ Supporting: `requirement-workspace/deep-dive.md` §REQ-020，
 依赖顺序：REQ-019 的 `V4`/偏好页（前置）→ must-do 端点与校验 → `GET` 回读 → 页面区块 → 验证文档。
 
 合入顺序：REQ-019 → REQ-020，不得颠倒（迁移与页面均由前者提供）。
+
+# Impact brief — REQ-024
+
+- Date: 2026-11-15
+- Workdir: `requirement-workspace/`
+- Mode: embedded at the end of `/sdd:pre-spec-req`（blocking OQs = 0，DoR BLOCKERs = 0）
+- Change id: `req-024-set-trip-budget`
+- Stacking: 堆叠在 `req-019-save-interests` → `req-020-manage-must-do` 之后；两者均未合 main
+
+## 1. Requirement set
+
+| id | Path |
+|---|---|
+| REQ-024 | `requirement-workspace/requirements/REQ-024.md` |
+
+Supporting: `requirement-workspace/deep-dive.md` §REQ-024，
+`requirement-workspace/intents/2026-11-15-req-024.md`，
+`requirement-workspace/analysis/req-024-dor.md`，
+`docs/knowledge/architecture/tech-stack-plan.md` §5/§6（表与金额口径的权威），
+`openspec/changes/req-019-save-interests/`（表与页面契约的来源）、
+`openspec/changes/req-020-manage-must-do/`（同表不同 kind 与页面修订的先例）。
+
+## 2. As-is asset inventory (evidence paths)
+
+| Asset | Evidence | State |
+|---|---|---|
+| 身份 | `backend/src/main/java/com/gogo/trip/TripController.java` | `X-User-Id` 请求头（整数）；缺失或非 seed 用户 → `401 USER_REQUIRED` |
+| trip / member 表 | `V2__create_trip.sql` | `app_user` 1–5、`trip` 1、`trip_member` 1–4 |
+| 邀请与主线状态 | `V3__create_invitation.sql` | `trip_invitation` + `trip.main_plan_confirmed`（默认 0，US-037 之前无写入路径） |
+| 偏好表 | `openspec/changes/req-019-save-interests/proposal.md` 与 `specs/preferences/spec.md` | **计划中的 `V4` + `member_preference`，尚未落库**；UNIQUE(`trip_id`,`user_id`,`kind`) |
+| 偏好端点 | 同上；REQ-020 的 proposal | `/preferences` 与 `/preferences/must-dos` 均**尚未实现** |
+| 偏好页 | 同上 | `#/trips/{tripId}/preferences`，**尚未实现** |
+| 成员判定 | `TripRepository.isMember(long, long)` | 可直接复用 |
+| 错误处理 | `TripErrorAdvice`（`com.gogo.trip`）、`InvitationErrorAdvice`（`com.gogo.invitation`） | 按包隔离；`com.gogo.preference` 需自带 advice（REQ-019 负责） |
+| DB 访问 | `TripRepository` / `InvitationRepository` | `JdbcTemplate`，无 ORM |
+| 金额口径 | `docs/knowledge/architecture/tech-stack-plan.md` §5 | 「金额用 `INTEGER` 分」；本需求金额存最小货币单位整数 |
+| `kind` 取值域 | 同上 §5 | `interest`/`must_do`/`constraint`/`budget`——`budget` 已在计划枚举内，复用表不算偏离 |
+| 前端 | `frontend/src/{App.jsx,api.js,app.css,Icons.jsx}` | 手写 hash 路由、`api()` 封装、顶部 demo 身份选择器（1–5），无组件库 |
+| 夹具 | `acceptance-test-fixtures.md` | 用户、样例 trip、REQ-004 状态段；无偏好/预算行 |
+| Living Spec | `openspec/specs/` | 仅 `greeting` |
+| 计划契约 | `tech-stack-plan.md` §6 | 「`PUT /preferences` 一次提交四类偏好」与 `{data,error}` 封套、`X-Member-Id`，与代码不一致 |
+
+## 3. As-is → proposed delta
+
+| Touched asset | As-is | Proposed delta |
+|---|---|---|
+| 迁移 | `V1`、`V2`、`V3`；`V4` 属 REQ-019 | **无新增迁移**；只写入 `kind='budget'` 的行 |
+| 后端 | `com.gogo.trip`、`com.gogo.invitation`；`com.gogo.preference` 由 REQ-019 创建 | 在 `com.gogo.preference` 内新增 budget 端点、DTO、三字段联动校验与单行覆盖写 |
+| 接口面 | trip / invitation / greeting；（REQ-019 后 `/preferences`；REQ-020 后 `/preferences/must-dos`） | 新增 `GET`/`PUT /api/trips/{tripId}/preferences/budget` |
+| 前端 | home / create / details / join；（REQ-019/020 后偏好页含兴趣段与必做项段） | 偏好页新增预算段：金额 + 币种 + 软/硬 + 独立保存按钮 + 清除 |
+| 文档 | trip 与 invitation 接口已记录 | `README.md` 增预算段、验证矩阵增行 |
+| Living Spec | 仅 `greeting` | 归档时向 `preferences` 追加预算 requirement，并第三次修订页面要求 |
+
+## 4. Blast radius
+
+- 兴趣段与必做项段的端点、payload 与保存交互**不变**；三条写入路径互不连带。
+- 同一张表、同一个 `kind` 维度新增取值，不改列、不改唯一键。
+- `App.jsx` 不新增路由（偏好页路由由 REQ-019 提供）。
+- 前后端均不新增依赖；运行时拓扑不变（8080 / 5173）。
+- 对 US-031 是**只增不改**的数据供给：多一个 `kind` 可读（含 `budget:null` 的显式未设置），不影响既有读取。
+
+## 5. Artifact impact
+
+- Spec：`openspec/changes/req-024-set-trip-budget/specs/preferences/spec.md`（P2）：一个 ADDED 预算 requirement + 第三次 MODIFIED 页面 requirement。
+- Tests：后端接口测试覆盖 25 个场景；前端构建 + 浏览器观察（保存 / 改软硬 / 清除 / 0 与未设置的界面区分 / 刷新）。
+- Docs：`README.md`、`docs/feedback/verification-*.md`、`requirement-workspace/{registry,handoff}.md`。
+- KB：若 P4 确认金额单位与币种表是长期口径，需回写 `tech-stack-plan.md` §5（当前已写明「金额用 INTEGER 分」，无需新增）。
+
+## 6. Dual-track notes
+
+单条故事（US-024）、单能力（`preferences` 的修改）、25 个场景 → `/sdd:story-split` 跳过并记录理由。仅 OpenSpec 轨。
+
+## 7. Risks & blockers
+
+| id | Risk | Severity | Status |
+|---|---|---|---|
+| R1 | REQ-019 的 `V4` 与偏好页尚未落库，且 REQ-020 已先一次 MODIFIED 页面契约；本变更是第三层，单独合入无法运行 | blocking for merge order | 缓解：堆叠交付，合入顺序 019 → 020 → 024，PR 描述写明前置 |
+| R2 | API/payload 用最小单位（`4000`）而 AC 用主单位（40 SGD），断言只写一半会漏掉界面读法 | product correctness | 缓解：P4 断言双写（接口 `4000` + 界面 `SGD 40.00`） |
+| R3 | `JPY` 零位小数；前端硬编码 ×100 会把 `1200` 显示成 `12.00` 或被放大 100 倍 | product correctness | 缓解：币种小数位表（2/2/2/2/0），禁止硬编码；AC3e 直接覆盖 |
+| R4 | 「`amount` 键缺失」与「`amount:null`」若都映射成 null，AC7-N 失效且「清除」与「坏请求」混同 | contract | 缓解：P3 用 `JsonNode`/`Map` 做 presence 检查，再映射 DTO |
+| R5 | payload 是单对象，数据库无法约束「行数恒 1」；插入写法错误会产生多行 | data integrity | 缓解：`INSERT ... ON CONFLICT(trip_id,user_id,kind) DO UPDATE`；测试断言行数恒 1 |
+| R6 | 三个兄弟子资源（`/preferences`、`/must-dos`、`/budget`）同前缀；映射写宽会互相遮蔽 | integration | 缓解：P3 确认精确匹配；兴趣与必做项的回归测试同一次跑 |
+| R7 | 同页三段三种写入时机，页面契约第三次修订，极易被「统一」成一种 | contract | 已解：P2 以 REQ-020 的版本为基线再修订，逐段写明 |
+| R8 | 参考图预算卡币种不含 SGD、金额默认 1200、提交走全页 `submitPref()` | UI alignment | 已解：白名单补 SGD、无默认金额、段内独立保存；UI 改动列 WARNING |
+| R9 | `tech-stack-plan.md` §6 的「单 PUT 提交四类偏好」与本需求独立端点漂移 | docs | 已知偏离：跟随 AC 与既有 delta；文档修正并入 REQ-019 OQ-16 |
+
+无致命阻塞使 REQ-024 失效，拆分可以继续。
+
+## 8. Suggested split boundaries
+
+一个变更：`req-024-set-trip-budget`，修改一个已有能力 `preferences`。
+工作量：小——后端 1 个 controller 分支 + 1 个 service 方法 + 1 组 DTO + 1 组接口测试（零迁移）；
+前端 1 个页面区块 + 币种小数位格式化。
+依赖顺序：REQ-019 的 `V4`/偏好页 → REQ-020 的页面修订 → budget 端点与校验 → `GET` 回读 → 页面区块 → 验证文档。
+
+合入顺序：REQ-019 → REQ-020 → REQ-024，不得颠倒（迁移与页面契约逐层叠加）。
