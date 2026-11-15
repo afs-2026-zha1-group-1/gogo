@@ -1,89 +1,89 @@
 # AC / DoV review — req-019-save-interests
 
-- 日期：2026-11-15
-- 阶段：P2 `/sdd:delta-craft`（step = all）
-- 审查对象：`openspec/changes/req-019-save-interests/specs/preferences/spec.md`
-- 规模：5 个 Requirement、31 个 Scenario（新增能力 `preferences`，纯 ADDED）
-- 性质：AC/DoV 复核记录，**不是** G1 判定；G1 由人工签署
+- Date: 2026-11-15
+- Stage: P2 `/sdd:delta-craft` (step = all)
+- Target: `openspec/changes/req-019-save-interests/specs/preferences/spec.md`
+- Size: 5 requirements, 31 scenarios (new capability `preferences`, ADDED only)
+- Nature: AC/DoV review record, **not** a G1 decision; G1 is signed by a human
 
 ## 1. Acceptance criteria
 
-| 项 | 结果 | 证据 | 备注 |
+| Item | Result | Evidence | Notes |
 |---|---|---|---|
-| AC-1 每个 requirement 至少一条可测 AC | Pass | `spec.md` 5 个 `### Requirement:`，每个含 4–9 个 `#### Scenario:`，共 31 条 | 无空壳 requirement |
-| AC-2 AC 可观察 | Pass | 断言锚点为 HTTP 状态码、`code`、响应体字段、`member_preference` 行数与 `payload` 解析结果、`updated_at` 逐字比较、chip 选中态 | 不依赖日志或实现内部状态 |
-| AC-3 高风险负向与边界已列出 | Pass | 「调用者身份与成员资格」5 条、「预定义兴趣清单」4 条、「保存成员兴趣」8 条、「读取成员兴趣」5 条、「偏好页面」9 条 | 见 §4 补充清单 |
-| AC-4 不是伪装的实现细节、无模糊词 | Pass | 全文未出现「正确地」「适当地」「快速」等不可判定表述；`updated_at` 允许刷新的例外已显式写出 | 唯一含实现意味的「chip / 保存按钮」是界面观察点，非内部结构 |
+| AC-1 every requirement has at least one testable AC | Pass | `spec.md` holds 5 `### Requirement:` blocks with 4–9 scenarios each, 31 in total | No placeholder requirement |
+| AC-2 ACs are observable | Pass | Assertions anchor on HTTP status, `code`, response fields, the row count and parsed `payload` of `member_preference`, byte comparison of `updated_at`, and the selected state of the controls | No dependency on logs or internal state |
+| AC-3 negative and edge cases are called out where risk is high | Pass | 5 scenarios on identity/membership, 4 on the catalogue, 8 on save, 5 on read, 9 on the page | See §4 |
+| AC-4 no disguised implementation detail, no vague words | Pass | No "correctly", "properly" or "quickly"; the one exception (`updated_at` may be refreshed) is stated explicitly | "chip" and "Save" are observation points of the UI, not internal structure |
 
 ## 2. Definition of verified
 
-| 项 | 结果 | 证据 | 备注 |
+| Item | Result | Evidence | Notes |
 |---|---|---|---|
-| DoV-1 范围与提案一致，无静默扩张 | Pass | `proposal.md` 的 2 个端点、7 项常量、`V4` 单表、前端 1 页 + 1 路由全部有对应 requirement | 唯一新增为详情页入口链接（D13），已回写 `proposal.md` 的 What Changes 与 Impact |
-| DoV-2 模糊点已列出或已解决 | Pass | 本轮 4 问全部裁定并记入 `intents/2026-11-15-req-019.md` D11–D14；另固化 6 条细节口径（§3） | 无 blocking 遗留 |
-| DoV-3 角色关注已记录 | Pass（附非阻塞项） | §6 列出 IO 2 条、SA 4 条、Dev/QA 1 条 | 均不阻塞 G1，但需在 P3/P4 前有归属 |
-| DoV-4 未把业务实现当成已完成 | Pass | 本轮仅新增/修改文档；`git status` 无 `backend/`、`frontend/` 变更 | 代码在 P4 |
-| DoV-5 requirement 可追溯到提案/需求 | Pass | §5 追溯矩阵；每条 requirement 均指向 `REQ-019` 的场景或 D 决策 | 无孤儿 requirement |
+| DoV-1 scope matches the proposal, no silent expansion | Pass | Every proposal item (2 endpoints, 7 constants, one `V4` table, one page plus one route) maps to a requirement | The only addition is the details-page link (D13), written back into the proposal's What Changes and Impact |
+| DoV-2 ambiguities are listed or resolved | Pass | The four questions of this round are decided as D11–D14 in `intents/2026-11-15-req-019.md`; six further contract details are fixed in §3 | No blocking item left |
+| DoV-3 role concerns are noted | Pass with non-blocking items | §6 lists 2 IO, 4 SA and 1 Dev/QA item | None blocks G1, but each needs an owner before P3/P4 |
+| DoV-4 no business implementation claimed as done | Pass | This round touches documentation only; `git status` shows no change under `backend/` or `frontend/` | Code lands in P4 |
+| DoV-5 requirements trace to the proposal or the approved requirements | Pass | §5 traceability matrix; every requirement points at a REQ-019 scenario or a D decision | No orphan requirement |
 
-## 3. 本轮固化的细节口径（此前只在口头/隐含）
+## 3. Contract details fixed in this round
 
-| id | 口径 | 依据 | 影响 |
+| id | Detail | Basis | Effect |
 |---|---|---|---|
-| C1 | `PUT` 是**整体替换**，不是合并追加 | 提案「幂等覆盖 `interests`」+ PUT 语义 | 场景「保存是整体替换而不是合并」 |
-| C2 | `GET` 的 `members` 按 `userId` 升序 | 让断言可重复，避免 SQLite 返回顺序不定 | 场景「响应只含约定字段并按 userId 升序」 |
-| C3 | 身份头容忍前后空白，但 `interests` 取值不归一化 | 已合并 `TripRepository.findUserId` 会 `trim()`；而 AC 要求严格匹配 label | 场景「身份头前后空白被容忍」与「前后空白被拒绝」并存，属于有意的不对称 |
-| C4 | 被拒绝的请求**零写入**，`payload` 与 `updated_at` 都不变 | AC2「已保存兴趣保持不变」的强化版 | 场景「非预定义值整体拒绝且已保存兴趣不变」 |
-| C5 | `PUT` 响应只回显调用者的集合，不回显全员 | 减少载荷，且与 AC1「提交什么回什么」对齐 | 更换为全员回显会扩大契约，需重新过 G1 |
-| C6 | 去重后集合天然 ≤ 7，不需要额外的数量上限或长度校验 | 合法值域只有 7 项 | 少一条无用分支；`interests` 超长数组也只会因含非法值被 400，全合法时最多 7 项 |
+| C1 | `PUT` replaces the set; it does not merge | Proposal wording "idempotently replaces `interests`" plus PUT semantics | Scenario "A save replaces instead of merging" |
+| C2 | `GET` orders `members` by ascending `userId` | Makes assertions repeatable instead of relying on SQLite row order | Scenario "The response carries only the agreed fields, ordered by user id" |
+| C3 | The identity header tolerates surrounding whitespace, while `interests` values are never normalized | The merged `TripRepository.findUserId` calls `trim()`, and the AC requires literal label matching | Both scenarios exist; the asymmetry is deliberate |
+| C4 | A rejected request writes nothing: neither `payload` nor `updated_at` changes | Strengthened reading of AC2 "saved interests stay the same" | Scenario "A value outside the catalogue rejects the whole request" |
+| C5 | The `PUT` response echoes only the caller's set, not every member's | Smaller payload, and it matches "submit and read back" in AC1 | Switching to a full echo would widen the contract and need a new G1 |
+| C6 | The deduplicated set is inherently at most 7, so no extra size or length validation is specified | The allowed value domain has seven entries | Removes a useless branch: an oversized array only fails as an illegal value |
 
-## 4. 自动补充的边缘与异常场景
+## 4. Edge and failure scenarios added by this review
 
-| id | 场景 | 位置 | 来源 |
+| id | Scenario | Location | Source |
 |---|---|---|---|
-| E1 | 整体替换 vs 合并追加 | 保存成员兴趣 | 自动补充（AC 未覆盖） |
-| E2 | 幂等重复提交：`payload` 不变、`updated_at` 可刷新 | 保存成员兴趣 | 自动补充 |
-| E3 | 空数组清空但保留记录行 | 保存成员兴趣 | D6 的落地断言 |
-| E4 | 首次保存只产生一行（UNIQUE 生效） | 保存成员兴趣 | 自动补充 |
-| E5 | 合法 + 非法混合时整体拒绝，合法值也不落地 | 保存成员兴趣 | AC2 的强化 |
-| E6 | 大小写、前后空白、空字符串、近义值四类严格匹配 | 预定义兴趣清单 | AC2 的枚举化 |
-| E7 | 结构非法：body 非对象 / 缺字段 / 非数组 / `null` 元素 / 数字元素 | 保存成员兴趣 | 自动补充（`INVALID_REQUEST`） |
-| E8 | 未知 trip 先于成员资格被报告（404 优先于 403） | 调用者身份与成员资格 | 对齐已合并 `TripController.read` 的判定顺序 |
-| E9 | 身份头前后空白容忍，与 `interests` 的严格匹配形成对照 | 调用者身份与成员资格 | 自动补充 |
-| E10 | 未保存兴趣的成员以 `interests: []` 出现，不省略成员行 | 读取成员兴趣 | 自动补充 |
-| E11 | 成员之间互不覆盖 | 读取成员兴趣 | 自动补充 |
-| E12 | `GET` 只读，不刷新 `updated_at` | 读取成员兴趣 | 自动补充 |
-| E13 | 切换顶部身份后按新身份重载，不残留上一身份的选择 | 偏好页面 | 自动补充 |
-| E14 | 保存中禁用控件；400 时展示 `message` 并回滚选中态 | 偏好页面 | AC2 的界面侧 |
+| E1 | Replace versus merge | Save member interests | Added (AC does not cover it) |
+| E2 | Idempotent repeat: `payload` unchanged, `updated_at` may be refreshed | Save member interests | Added |
+| E3 | Empty array clears the set but keeps the row | Save member interests | Consequence of D6 |
+| E4 | The first save creates exactly one row (UNIQUE holds) | Save member interests | Added |
+| E5 | A mixed request is rejected as a whole, so even allowed values are not stored | Save member interests | Strengthened AC2 |
+| E6 | Wrong case, surrounding whitespace, empty string and near-matches are all rejected | Predefined interest catalogue | AC2 made enumerable |
+| E7 | Malformed bodies: not an object, missing field, not an array, `null` element, numeric element | Save member interests | Added (`INVALID_REQUEST`) |
+| E8 | An unknown trip is reported before membership (404 before 403) | Preference caller identity and membership | Mirrors the merged `TripController.read` |
+| E9 | Whitespace in the identity header is tolerated while `interests` stays literal | Preference caller identity and membership | Added |
+| E10 | A member without saved interests appears with `interests: []`; members are never omitted | Read member interests | Added |
+| E11 | Members do not overwrite each other | Read member interests | Added |
+| E12 | `GET` is read-only and does not refresh `updated_at` | Read member interests | Added |
+| E13 | Switching identity reloads for the new identity without keeping the previous selection | Preferences page | Added |
+| E14 | Controls are disabled while saving; a 400 shows `message` and rolls the selection back | Preferences page | UI side of AC2 |
 
-## 5. 追溯矩阵
+## 5. Traceability
 
-| 提案 / 需求条目 | Requirement | 关键场景 |
+| Proposal / requirement item | Requirement | Key scenarios |
 |---|---|---|
-| AC1（去重 + reload 可见） | 预定义兴趣清单；保存成员兴趣；读取成员兴趣 | 重复值被折叠为一次；成员读回自己保存的集合；已保存兴趣回显 |
-| AC2（非法值拒绝且不改数据） | 预定义兴趣清单；保存成员兴趣 | 非预定义值整体拒绝且已保存兴趣不变；合法与非法值混合时整体拒绝；大小写/空白/近义值被拒绝 |
-| 提案：`X-User-Id` 身份 + 401 | 调用者身份与成员资格 | 缺少身份头；身份头指向不可用的用户 |
-| 提案：成员判定 + 403 | 调用者身份与成员资格 | 非成员被拒绝 |
-| 提案：未知 trip 404 | 调用者身份与成员资格 | 未知 trip 先于成员资格被报告 |
-| D6 空数组清空 | 保存成员兴趣 | 空数组清空兴趣但保留记录 |
-| D8 全员明细 + D12 字段最小化 | 读取成员兴趣 | 响应只含约定字段并按 userId 升序 |
-| D11 批量保存 + D13 详情页入口 | 偏好页面 | 加载中；保存成功以响应为准；已保存兴趣回显 |
-| REQ-019 AC9-N（GET 失败） | 偏好页面 | 加载失败 |
+| AC1 (dedupe and visible after reload) | Catalogue; save; read | Duplicate values collapse to one; a member reads back the saved set; saved interests are shown again after a reload |
+| AC2 (illegal value rejected, saved data untouched) | Catalogue; save | A value outside the catalogue rejects the whole request; a mixed request is rejected as a whole; wrong case, whitespace and near-matches are rejected |
+| Proposal: `X-User-Id` identity, 401 | Identity and membership | Caller identity is missing; caller identity is unusable |
+| Proposal: membership check, 403 | Identity and membership | A non-member is denied |
+| Proposal: unknown trip, 404 | Identity and membership | An unknown trip is reported before membership |
+| D6 empty array clears | Save | An empty array clears interests but keeps the record |
+| D8 all members plus D12 minimal fields | Read | The response carries only the agreed fields, ordered by user id |
+| D11 batch save plus D13 details-page link | Page | Loading; a successful save follows the response; saved interests are shown again after a reload |
+| REQ-019 AC9-N (`GET` failure) | Page | Loading fails |
 
-## 6. 残留风险与角色关注
+## 6. Residual risks and role concerns
 
-| 角色 | 关注点 | 阻塞 G1？ |
+| Role | Concern | Blocks G1? |
 |---|---|---|
-| IO | 页面没有「一键清空」入口，清空只能「全部取消勾选 + 保存」达成；是否接受 | 否 |
-| IO | 7 项兴趣只以英文 label 呈现，未提供中文显示；是否属于本 Story 范围 | 否（当前 Out of scope） |
-| SA | `V4` 必须晚于 REQ-004 的 `V3` 落库，否则 Flyway out-of-order | 否，但合入前必须确认 |
-| SA | `TripErrorAdvice` 只覆盖 `com.gogo.trip`，新包的 `INVALID_REQUEST` 需要自己的 advice 或放宽作用域 | 否，P3 定 |
-| SA | `member_preference.kind` 的取值枚举是否要在 Delta 里预定义（当前只 `interest`，其它三类偏好各有 Story） | 否，倾向留给后续 Story 追加 |
-| SA | 本 Delta 用中文撰写，与 `greeting` / `trips` 的英文 Delta 语言不一致；若团队要求统一需在 G1 前决定 | 否（语义不受影响） |
-| Dev/QA | 去重断言必须解析 `payload` 后比对集合，不能只看 HTTP 200 | 否，已写入场景 |
+| IO | The page has no "clear all" action; clearing means deselecting everything and saving. Is that acceptable? | No |
+| IO | The seven interests are shown as English labels only, with no localized display. Is that in scope for this story? | No (currently out of scope) |
+| SA | `V4` must land after REQ-004's `V3`, otherwise Flyway fails with an out-of-order migration | No, but it must be confirmed before merge |
+| SA | `TripErrorAdvice` covers `com.gogo.trip` only, so `INVALID_REQUEST` from a new package needs its own advice or a widened scope | No, decided in P3 |
+| SA | Should the delta predefine the value domain of `member_preference.kind`? Only `interest` is used here; the other three preference types have their own stories | No; leaning towards letting later stories extend it |
+| SA | This delta is now written in English, matching the `greeting` and `trips` deltas. The pre-spec workspace entries (`requirements/REQ-019.md`, `intents/`, `analysis/req-019-dor.md`) are still in Chinese | No (semantics unaffected); converting them is a separate decision |
+| Dev/QA | The dedupe assertion must parse `payload` and compare the set, not just check for HTTP 200 | No; already stated in the scenarios |
 
-## 7. 结论
+## 7. Conclusion
 
-- AC：4/4 Pass
-- DoV：5/5 Pass（DoV-3 附带 SA/IO 非阻塞关注）
-- blocking 模糊点：0
-- 可以进入 `/sdd:g1-decision-record`；本文件不构成 G1 通过结论，也不代表任何代码已完成。
+- AC: 4/4 Pass
+- DoV: 5/5 Pass (DoV-3 carries non-blocking SA/IO concerns)
+- Blocking ambiguities: 0
+- Ready for `/sdd:g1-decision-record`. This file is not a G1 decision and does not claim that any code is implemented.

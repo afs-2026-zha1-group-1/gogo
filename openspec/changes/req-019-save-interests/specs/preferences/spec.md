@@ -2,63 +2,67 @@
 
 ## ADDED Requirements
 
-### Requirement: 偏好接口的调用者身份与成员资格
+### Requirement: Preference caller identity and membership
 
-系统 SHALL 通过 `X-User-Id` 请求头识别偏好接口的调用者，其值 SHALL 为已 seed 的
-`app_user` 整数 id。该请求头是脚手架级身份替身，系统 SHALL NOT 将其视为可信凭证，
-签发或校验凭证不在本能力范围内。
+The system SHALL identify the caller of every preference endpoint by the `X-User-Id`
+request header, whose value SHALL be the integer id of a seeded `app_user`. The header
+is a scaffold-level stand-in for authentication: the system SHALL NOT treat it as a
+verified credential, and issuing or verifying credentials is out of scope.
 
-识别失败（缺失、非整数、不是已 seed 的用户）SHALL 返回 401 与 `code = USER_REQUIRED`，
-且 SHALL NOT 读写任何偏好数据。
+A caller that cannot be identified (header missing, not an integer, or not a seeded
+user) SHALL receive status 401 with `code = USER_REQUIRED`, and no preference data
+SHALL be read or written.
 
-两个偏好端点 SHALL 只对该 `tripId` 的成员开放。调用者不是成员 SHALL 返回 403 与
-`code = NOT_A_MEMBER`，且 SHALL NOT 在响应中返回任何成员的兴趣。
+Both preference endpoints SHALL be open only to members of the `tripId` in the path.
+A caller who is not a member SHALL receive status 403 with `code = NOT_A_MEMBER`, and
+the response SHALL NOT contain any member's interests.
 
-`tripId` 不存在 SHALL 返回 404 与 `code = TRIP_NOT_FOUND`。
+An unknown `tripId` SHALL return status 404 with `code = TRIP_NOT_FOUND`.
 
-判定顺序 SHALL 为「身份 → trip 存在性 → 成员资格」，与既有 `GET /api/trips/{id}`
-保持一致。
+The checks SHALL run in the order identity -> trip existence -> membership, matching
+the existing `GET /api/trips/{id}`.
 
-#### Scenario: 缺少身份头
+#### Scenario: Caller identity is missing
 
-- **WHEN** 请求不带 `X-User-Id` 头
-- **THEN** 响应状态为 401
-- **AND** 响应体 `code` 为 `USER_REQUIRED`
-- **AND** 该 trip 的偏好数据不发生任何变化
+- **WHEN** a request carries no `X-User-Id` header
+- **THEN** the response status is 401
+- **AND** the response body carries `code` equal to `USER_REQUIRED`
+- **AND** the preference data of that trip is unchanged
 
-#### Scenario: 身份头指向不可用的用户
+#### Scenario: Caller identity is unusable
 
-- **WHEN** `X-User-Id` 为 `99`（未 seed 的用户）或 `abc`（非整数）
-- **THEN** 响应状态为 401
-- **AND** 响应体 `code` 为 `USER_REQUIRED`
-- **AND** 响应体不含任何成员的兴趣值
+- **WHEN** `X-User-Id` is `99` (a user that is not seeded) or `abc` (not an integer)
+- **THEN** the response status is 401
+- **AND** the response body carries `code` equal to `USER_REQUIRED`
+- **AND** the response body contains no member's interests
 
-#### Scenario: 身份头前后空白被容忍
+#### Scenario: Surrounding whitespace in the identity header is tolerated
 
-- **WHEN** `X-User-Id` 为 `" 2 "`（前后带空格）
-- **THEN** 结果与 `X-User-Id: 2` 完全一致
-- **AND** 该容忍 SHALL NOT 扩展到 `interests` 的取值（见「预定义兴趣清单」）
+- **WHEN** `X-User-Id` is `" 2 "`
+- **THEN** the result is identical to `X-User-Id: 2`
+- **AND** this tolerance SHALL NOT extend to the values of `interests`
+  (see the interest catalogue requirement)
 
-#### Scenario: 非成员被拒绝
+#### Scenario: A non-member is denied
 
-- **GIVEN** Eve（`X-User-Id: 5`）不是 trip 1 的成员
-- **WHEN** Eve 调用 `GET` 或 `PUT /api/trips/1/preferences`
-- **THEN** 响应状态为 403
-- **AND** 响应体 `code` 为 `NOT_A_MEMBER`
-- **AND** 响应体不含任何成员的兴趣值
-- **AND** trip 1 的 `member_preference` 不发生任何变化
+- **GIVEN** Eve (`X-User-Id: 5`) is not a member of trip 1
+- **WHEN** Eve calls `GET` or `PUT /api/trips/1/preferences`
+- **THEN** the response status is 403
+- **AND** the response body carries `code` equal to `NOT_A_MEMBER`
+- **AND** the response body contains no member's interests
+- **AND** no row of `member_preference` for trip 1 changes
 
-#### Scenario: 未知 trip 先于成员资格被报告
+#### Scenario: An unknown trip is reported before membership
 
-- **WHEN** 调用者请求一个不存在的 tripId
-- **THEN** 响应状态为 404
-- **AND** 响应体 `code` 为 `TRIP_NOT_FOUND`
-- **AND** 该结果与调用者是否属于其它 trip 无关
+- **WHEN** a caller requests a `tripId` that does not exist
+- **THEN** the response status is 404
+- **AND** the response body carries `code` equal to `TRIP_NOT_FOUND`
+- **AND** the outcome does not depend on which other trips the caller belongs to
 
-### Requirement: 预定义兴趣清单
+### Requirement: Predefined interest catalogue
 
-系统 SHALL 定义且仅定义下列 7 项兴趣。线上传输值 SHALL 为 `label` 的精确字符串，
-持久化值 SHALL 为对应的 `code`：
+The system SHALL define exactly the following seven interests. The wire value SHALL be
+the exact `label` string and the stored value SHALL be the corresponding `code`:
 
 | label | code |
 |---|---|
@@ -70,243 +74,258 @@
 | `Shopping` | `shopping` |
 | `Adventure` | `adventure` |
 
-匹配 SHALL 逐字进行：系统 SHALL NOT 做大小写折叠、SHALL NOT 去除首尾空白、
-SHALL NOT 接受别名、翻译或子串匹配。
+Matching SHALL be literal: the system SHALL NOT fold case, SHALL NOT trim surrounding
+whitespace and SHALL NOT accept aliases, translations or substring matches.
 
-清单 SHALL 由代码常量维护；本能力 SHALL NOT 依赖 `tag` 表、SHALL NOT 依赖
-`/api/tags`，也 SHALL NOT 提供维护兴趣目录的写接口。
+The catalogue SHALL be held as code constants. This capability SHALL NOT depend on the
+`tag` table, SHALL NOT depend on `/api/tags`, and SHALL NOT expose a write endpoint that
+maintains the catalogue.
 
-#### Scenario: 七项兴趣全部被接受
+#### Scenario: All seven interests are accepted
 
-- **GIVEN** Ben（`X-User-Id: 2`）是 trip 1 的成员且尚无保存的兴趣
-- **WHEN** Ben 提交 `{"interests":["Art","Nature","Culture","History","Food","Shopping","Adventure"]}`
-- **THEN** 响应状态为 200
-- **AND** 响应 `interests` 为同一组 7 个 label，顺序与请求一致
-- **AND** 持久化的 `codes` 为 `["art","nature","culture","history","food","shopping","adventure"]`
+- **GIVEN** Ben (`X-User-Id: 2`) is a member of trip 1 and has no saved interests
+- **WHEN** Ben submits `{"interests":["Art","Nature","Culture","History","Food","Shopping","Adventure"]}`
+- **THEN** the response status is 200
+- **AND** the response `interests` carries the same seven labels in the submitted order
+- **AND** the stored `codes` are
+  `["art","nature","culture","history","food","shopping","adventure"]`
 
-#### Scenario: 大小写不符被拒绝
+#### Scenario: Wrong case is rejected
 
-- **WHEN** 提交 `["art"]` 或 `["ART"]`
-- **THEN** 响应状态为 400
-- **AND** 响应体 `code` 为 `INTEREST_NOT_ALLOWED`
+- **WHEN** Ben submits `["art"]` or `["ART"]`
+- **THEN** the response status is 400
+- **AND** the response body carries `code` equal to `INTEREST_NOT_ALLOWED`
 
-#### Scenario: 前后空白被拒绝
+#### Scenario: Surrounding whitespace is rejected
 
-- **WHEN** 提交 `[" Art "]` 或 `["Art "]`
-- **THEN** 响应状态为 400
-- **AND** 响应体 `code` 为 `INTEREST_NOT_ALLOWED`
+- **WHEN** Ben submits `[" Art "]` or `["Art "]`
+- **THEN** the response status is 400
+- **AND** the response body carries `code` equal to `INTEREST_NOT_ALLOWED`
 
-#### Scenario: 空字符串与近义值被拒绝
+#### Scenario: Empty strings and near-matches are rejected
 
-- **WHEN** 提交 `[""]`、`[" "]`、`["teleport"]` 或 `["foodie"]`
-- **THEN** 响应状态为 400
-- **AND** 响应体 `code` 为 `INTEREST_NOT_ALLOWED`
+- **WHEN** Ben submits `[""]`, `[" "]`, `["teleport"]` or `["foodie"]`
+- **THEN** the response status is 400
+- **AND** the response body carries `code` equal to `INTEREST_NOT_ALLOWED`
 
-### Requirement: 保存成员兴趣
+### Requirement: Save member interests
 
-系统 SHALL 暴露 `PUT /api/trips/{tripId}/preferences`，请求体为
-`{"interests": string[]}`，并 SHALL 以调用者身份整体替换其兴趣集合。
+The system SHALL expose `PUT /api/trips/{tripId}/preferences` accepting
+`{"interests": string[]}` and SHALL replace the caller's interest set as a whole.
 
-服务端 SHALL 对提交数组去重并保留首次出现的顺序，因此响应与持久化结果中同一兴趣
-SHALL 至多出现一次。
+The server SHALL deduplicate the submitted array while keeping the first-occurrence
+order, so the response and the stored value SHALL contain each interest at most once.
 
-校验 SHALL 在写入前整体完成：任一元素不在预定义清单内，系统 SHALL 以 400 与
-`code = INTEREST_NOT_ALLOWED` 拒绝整个请求，其中合法元素 SHALL NOT 落地。
+Validation SHALL complete before any write: if any element is outside the predefined
+catalogue, the system SHALL reject the whole request with status 400 and
+`code = INTEREST_NOT_ALLOWED`, and the allowed elements SHALL NOT be stored.
 
-成功保存 SHALL 返回 200 与 `{"interests": [...]}`，内容为去重后的已保存集合。
+A successful save SHALL return status 200 with `{"interests": [...]}` carrying the
+deduplicated stored set.
 
-空数组 SHALL 被接受并表示「清空兴趣」；系统 SHALL 保留该成员的记录并将持久化内容
-置为空集合，SHALL NOT 删除记录。
+An empty array SHALL be accepted and SHALL mean "clear interests": the system SHALL keep
+the member's record and store an empty set, and SHALL NOT delete the record.
 
-同一成员同一 `kind` SHALL 至多存在一行记录，因此首次保存插入、后续保存覆盖；
-重复提交相同集合 SHALL 幂等，持久化的 `payload` SHALL 不变（`updated_at` 允许刷新）。
+A member SHALL have at most one record per `kind`, so the first save inserts and later
+saves overwrite. Repeating the same set SHALL be idempotent: the stored `payload` SHALL
+stay the same, while `updated_at` MAY be refreshed.
 
-请求体不是 JSON 对象、缺少 `interests` 字段、或 `interests` 不是字符串数组
-（包括元素为 `null` 或数字）SHALL 返回 400 与 `code = INVALID_REQUEST`。
+A request body that is not a JSON object, that omits `interests`, or whose `interests`
+is not an array of strings (including `null` or numeric elements) SHALL return status
+400 with `code = INVALID_REQUEST`.
 
-被拒绝的请求 SHALL NOT 写入任何行，也 SHALL NOT 修改既有记录的 `payload` 或
-`updated_at`。
+A rejected request SHALL NOT write any row and SHALL NOT modify the `payload` or
+`updated_at` of an existing row.
 
-#### Scenario: 重复值被折叠为一次
+#### Scenario: Duplicate values collapse to one
 
-- **GIVEN** Ben（`X-User-Id: 2`）是 trip 1 的成员且尚无保存的兴趣
-- **WHEN** Ben 提交 `{"interests":["Art","Nature","Art"]}`
-- **THEN** 响应状态为 200
-- **AND** 响应体为 `{"interests":["Art","Nature"]}`
-- **AND** 该成员的持久化 `payload` 解析后恰好含 `art`、`nature` 两个元素
-- **AND** 该成员在 `member_preference` 中只有一行记录
+- **GIVEN** Ben (`X-User-Id: 2`) is a member of trip 1 and has no saved interests
+- **WHEN** Ben submits `{"interests":["Art","Nature","Art"]}`
+- **THEN** the response status is 200
+- **AND** the response body is `{"interests":["Art","Nature"]}`
+- **AND** the stored `payload` for that member parses to exactly two elements, `art` and `nature`
+- **AND** that member holds exactly one row in `member_preference`
 
-#### Scenario: 同一集合重复提交保持幂等
+#### Scenario: Repeating the same set is idempotent
 
-- **GIVEN** Ben 已保存 `Art`、`Nature`
-- **WHEN** Ben 再次提交 `{"interests":["Art","Nature"]}`
-- **THEN** 响应状态为 200
-- **AND** 响应体与持久化的 `payload` 均与提交前一致
-- **AND** `member_preference` 中该成员仍只有一行记录
+- **GIVEN** Ben has saved `Art` and `Nature`
+- **WHEN** Ben submits `{"interests":["Art","Nature"]}` again
+- **THEN** the response status is 200
+- **AND** the response body and the stored `payload` are unchanged
+- **AND** that member still holds exactly one row in `member_preference`
 
-#### Scenario: 保存是整体替换而不是合并
+#### Scenario: A save replaces instead of merging
 
-- **GIVEN** Ben 已保存 `Art`、`Nature`
-- **WHEN** Ben 提交 `{"interests":["Food"]}`
-- **THEN** 响应状态为 200
-- **AND** 响应体为 `{"interests":["Food"]}`
-- **AND** 持久化的 `codes` 只含 `food`，`Art` 与 `Nature` 不再存在
+- **GIVEN** Ben has saved `Art` and `Nature`
+- **WHEN** Ben submits `{"interests":["Food"]}`
+- **THEN** the response status is 200
+- **AND** the response body is `{"interests":["Food"]}`
+- **AND** the stored `codes` hold `food` only, so `Art` and `Nature` are gone
 
-#### Scenario: 空数组清空兴趣但保留记录
+#### Scenario: An empty array clears interests but keeps the record
 
-- **GIVEN** Ben 已保存 `Art`、`Nature`
-- **WHEN** Ben 提交 `{"interests":[]}`
-- **THEN** 响应状态为 200
-- **AND** 响应体为 `{"interests":[]}`
-- **AND** 该成员的记录仍然存在，持久化 `payload` 为 `{"codes":[]}`
+- **GIVEN** Ben has saved `Art` and `Nature`
+- **WHEN** Ben submits `{"interests":[]}`
+- **THEN** the response status is 200
+- **AND** the response body is `{"interests":[]}`
+- **AND** the member's record still exists and its `payload` is `{"codes":[]}`
 
-#### Scenario: 非预定义值整体拒绝且已保存兴趣不变
+#### Scenario: A value outside the catalogue rejects the whole request
 
-- **GIVEN** Ben 已保存 `Art`、`Nature`
-- **WHEN** Ben 提交 `{"interests":["teleportation"]}`
-- **THEN** 响应状态为 400
-- **AND** 响应体 `code` 为 `INTEREST_NOT_ALLOWED`
-- **AND** 该成员的 `payload` 与 `updated_at` 与请求前逐字相同
+- **GIVEN** Ben has saved `Art` and `Nature`
+- **WHEN** Ben submits `{"interests":["teleportation"]}`
+- **THEN** the response status is 400
+- **AND** the response body carries `code` equal to `INTEREST_NOT_ALLOWED`
+- **AND** that member's `payload` and `updated_at` are byte-identical to the values
+  before the request
 
-#### Scenario: 合法与非法值混合时整体拒绝
+#### Scenario: A mixed request is rejected as a whole
 
-- **GIVEN** Ben 已保存 `Art`、`Nature`
-- **WHEN** Ben 提交 `{"interests":["Art","teleportation"]}`
-- **THEN** 响应状态为 400
-- **AND** 响应体 `code` 为 `INTEREST_NOT_ALLOWED`
-- **AND** `Art` 未被追加或改写，该成员仍保存 `Art`、`Nature`
+- **GIVEN** Ben has saved `Art` and `Nature`
+- **WHEN** Ben submits `{"interests":["Art","teleportation"]}`
+- **THEN** the response status is 400
+- **AND** the response body carries `code` equal to `INTEREST_NOT_ALLOWED`
+- **AND** `Art` is neither appended nor rewritten, and the member still holds
+  `Art` and `Nature`
 
-#### Scenario: 首次保存只产生一行记录
+#### Scenario: The first save creates exactly one row
 
-- **GIVEN** Ben 在 `member_preference` 中没有任何记录
-- **WHEN** Ben 保存 `{"interests":["Art"]}`
-- **THEN** 响应状态为 200
-- **AND** `member_preference` 中 `(trip_id=1, user_id=2, kind='interest')` 恰好一行
+- **GIVEN** Ben has no row in `member_preference`
+- **WHEN** Ben saves `{"interests":["Art"]}`
+- **THEN** the response status is 200
+- **AND** `member_preference` holds exactly one row for
+  `(trip_id=1, user_id=2, kind='interest')`
 
-#### Scenario: 请求结构非法被拒绝
+#### Scenario: A malformed request is rejected
 
-- **WHEN** 请求体为 JSON 数组、缺少 `interests` 字段、`interests` 为字符串
-  `"Art"`、或 `interests` 含 `null` 或数字
-- **THEN** 响应状态为 400
-- **AND** 响应体 `code` 为 `INVALID_REQUEST`
-- **AND** 该成员的已保存兴趣不变
+- **WHEN** the body is a JSON array, omits `interests`, sends `interests` as the string
+  `"Art"`, or sends an `interests` array containing `null` or a number
+- **THEN** the response status is 400
+- **AND** the response body carries `code` equal to `INVALID_REQUEST`
+- **AND** the member's saved interests are unchanged
 
-### Requirement: 读取成员兴趣
+### Requirement: Read member interests
 
-系统 SHALL 暴露 `GET /api/trips/{tripId}/preferences`，向该 trip 的成员返回全体成员的
-兴趣明细：响应体为 `{"members": [ {"userId": <整数>, "interests": [<label>...] } ]}`。
+The system SHALL expose `GET /api/trips/{tripId}/preferences`, returning the interest
+details of every member to a member of that trip, in the shape
+`{"members": [ {"userId": <integer>, "interests": [<label>...] } ]}`.
 
-成员对象 SHALL 只含 `userId` 与 `interests` 两个字段，SHALL NOT 含显示名或其它附加字段。
-`members` SHALL 按 `userId` 升序排列，以便断言可重复。
-从未保存过兴趣的成员 SHALL 以 `interests: []` 出现，因此本端点 SHALL NOT 省略成员行。
+Each member object SHALL carry exactly `userId` and `interests`; it SHALL NOT carry a
+display name or any other field. `members` SHALL be ordered by ascending `userId` so
+assertions are repeatable. A member who has never saved interests SHALL still appear
+with `interests: []`, so the endpoint SHALL NOT omit members.
 
-本端点 SHALL 是只读的：读取 SHALL NOT 新建或修改任何记录。
+The endpoint SHALL be read-only: reading SHALL NOT create or modify any row.
 
-#### Scenario: 成员读回自己保存的集合
+#### Scenario: A member reads back the saved set
 
-- **GIVEN** Ben 已保存 `Art`、`Nature`
-- **WHEN** Ben 以 `X-User-Id: 2` 请求 `GET /api/trips/1/preferences`
-- **THEN** 响应状态为 200
-- **AND** `members` 中 `userId = 2` 的元素的 `interests` 为 `["Art","Nature"]`
-- **AND** 该结果与保存响应一致（页面重新加载后仍可见）
+- **GIVEN** Ben has saved `Art` and `Nature`
+- **WHEN** Ben requests `GET /api/trips/1/preferences` with `X-User-Id: 2`
+- **THEN** the response status is 200
+- **AND** the `members` element with `userId = 2` carries `interests` equal to
+  `["Art","Nature"]`
+- **AND** the result matches the save response, so the values are still visible after
+  the page is reloaded
 
-#### Scenario: 未保存兴趣的成员返回空数组
+#### Scenario: A member without saved interests reads an empty array
 
-- **GIVEN** Chloe（`X-User-Id: 3`）是成员但从未保存兴趣
-- **WHEN** 任一成员读取偏好
-- **THEN** `members` 中存在 `userId = 3` 的元素
-- **AND** 其 `interests` 为 `[]`
+- **GIVEN** Chloe (`X-User-Id: 3`) is a member who never saved interests
+- **WHEN** any member reads the preferences
+- **THEN** `members` contains an element with `userId = 3`
+- **AND** its `interests` is `[]`
 
-#### Scenario: 成员之间互不覆盖
+#### Scenario: Members do not overwrite each other
 
-- **GIVEN** Ben 保存 `Art`，Chloe 保存 `Food`
-- **WHEN** 任一成员读取偏好
-- **THEN** `userId = 2` 的 `interests` 为 `["Art"]`
-- **AND** `userId = 3` 的 `interests` 为 `["Food"]`
+- **GIVEN** Ben has saved `Art` and Chloe has saved `Food`
+- **WHEN** any member reads the preferences
+- **THEN** the `userId = 2` element carries `interests` equal to `["Art"]`
+- **AND** the `userId = 3` element carries `interests` equal to `["Food"]`
 
-#### Scenario: 响应只含约定字段并按 userId 升序
+#### Scenario: The response carries only the agreed fields, ordered by user id
 
-- **WHEN** 任一成员读取偏好
-- **THEN** `members` 的每个元素只含 `userId` 与 `interests`
-- **AND** `userId` 按升序排列
+- **WHEN** any member reads the preferences
+- **THEN** every `members` element carries exactly `userId` and `interests`
+- **AND** the elements are ordered by ascending `userId`
 
-#### Scenario: 读取不改变任何数据
+#### Scenario: Reading changes nothing
 
-- **GIVEN** Ben 已保存 `Art`
-- **WHEN** 连续两次读取偏好
-- **THEN** 两次响应相同
-- **AND** 该成员的 `payload` 与 `updated_at` 均未变化
+- **GIVEN** Ben has saved `Art`
+- **WHEN** the preferences are read twice in a row
+- **THEN** both responses are identical
+- **AND** that member's `payload` and `updated_at` are unchanged
 
-### Requirement: 偏好页面
+### Requirement: Preferences page
 
-前端 SHALL 在既有应用内提供偏好页 `#/trips/{tripId}/preferences`，并 SHALL 从行程详情页
-提供进入该页的链接。
+The frontend SHALL provide the page `#/trips/{tripId}/preferences` inside the existing
+application, and SHALL link to it from the trip details page.
 
-页面 SHALL 渲染 7 个预定义兴趣的选中态，其唯一来源是 `GET` 返回值中与当前身份
-（顶部身份选择器）匹配的那一条。
+The page SHALL render the selected state of the seven predefined interests, whose only
+source SHALL be the `GET` response entry matching the current identity (the identity
+selector in the top bar).
 
-用户的选择 SHALL 由显式的「保存」动作一次性提交为当前选中集合；系统 SHALL NOT 在每次
-点选时单独提交。
+The user's selection SHALL be submitted as one request by an explicit "Save" action;
+the page SHALL NOT submit on every toggle.
 
-保存成功 SHALL 以响应体为准更新选中态；保存失败 SHALL 展示服务端 `message` 并把选中态
-回退到服务端已知状态；加载失败 SHALL 展示错误与重试入口，且 SHALL NOT 把未加载或过期的
-选择渲染为「已保存」。
+A successful save SHALL update the selected state from the response body. A failed save
+SHALL show the server `message` and restore the selected state to what the server
+acknowledges. A failed load SHALL show an error with a retry action, and SHALL NOT render
+unloaded or stale selections as saved.
 
-页面 SHALL NOT 使用浏览器本地存储作为「已保存」的证据。
+The page SHALL NOT use browser local storage as evidence of a saved state.
 
-#### Scenario: 加载中
+#### Scenario: Loading
 
-- **WHEN** 进入偏好页且 `GET` 尚未返回
-- **THEN** 页面显示加载提示
-- **AND** 兴趣选项与「保存」处于禁用状态
+- **WHEN** the preferences page is opened and `GET` has not returned
+- **THEN** the page shows a loading message
+- **AND** the interest controls and the "Save" action are disabled
 
-#### Scenario: 无记录时显示空态
+#### Scenario: Empty state
 
-- **GIVEN** 当前身份在该 trip 中没有保存过兴趣
-- **WHEN** 页面加载完成
-- **THEN** 7 个兴趣均未选中
-- **AND** 用户可以直接选择并保存
+- **GIVEN** the current identity has never saved interests for that trip
+- **WHEN** the page has finished loading
+- **THEN** none of the seven interests is selected
+- **AND** the user can select interests and save right away
 
-#### Scenario: 已保存兴趣回显（页面重载）
+#### Scenario: Saved interests are shown again after a reload
 
-- **GIVEN** Ben 已保存 `Art`、`Nature`
-- **WHEN** Ben 打开偏好页
-- **THEN** `Art` 与 `Nature` 为选中态
-- **AND** 其余 5 项未选中
+- **GIVEN** Ben has saved `Art` and `Nature`
+- **WHEN** Ben opens the preferences page
+- **THEN** `Art` and `Nature` are selected
+- **AND** the other five interests are not selected
 
-#### Scenario: 切换身份后按新身份重新加载
+#### Scenario: Switching identity reloads for the new identity
 
-- **GIVEN** Ben 在偏好页看到自己的选中态
-- **WHEN** 顶部身份选择器切换到 Chloe
-- **THEN** 页面重新读取偏好
-- **AND** 选中态为 Chloe 的集合，不保留 Ben 的选择
+- **GIVEN** Ben sees his own selection on the preferences page
+- **WHEN** the identity selector in the top bar switches to Chloe
+- **THEN** the page fetches the preferences again
+- **AND** the selected state is Chloe's set, with none of Ben's selection retained
 
-#### Scenario: 保存中禁用重复提交
+#### Scenario: Saving disables duplicate submissions
 
-- **WHEN** 用户点击「保存」且请求仍在途
-- **THEN** 兴趣选项与「保存」按钮均禁用
+- **WHEN** the user activates "Save" and the request is still in flight
+- **THEN** the interest controls and the "Save" action are disabled
 
-#### Scenario: 保存成功以响应为准
+#### Scenario: A successful save follows the response
 
-- **WHEN** 保存请求返回 200
-- **THEN** 选中态等于响应中的 `interests`
-- **AND** 页面不残留错误提示
+- **WHEN** the save request returns 200
+- **THEN** the selected state equals the `interests` in the response
+- **AND** no error message remains on the page
 
-#### Scenario: 非法值保存失败时内联提示并回滚
+#### Scenario: A rejected save shows an inline error and rolls back
 
-- **GIVEN** 服务端已保存 `Art`、`Nature`
-- **WHEN** 保存请求返回 400 且 `code` 为 `INTEREST_NOT_ALLOWED`
-- **THEN** 页面展示响应 `message`
-- **AND** 选中态回退为 `Art`、`Nature`
+- **GIVEN** the server holds `Art` and `Nature` for the current member
+- **WHEN** the save request returns 400 with `code` equal to `INTEREST_NOT_ALLOWED`
+- **THEN** the page shows the response `message`
+- **AND** the selected state returns to `Art` and `Nature`
 
-#### Scenario: 身份、成员资格或 trip 不存在
+#### Scenario: Identity, membership or trip is rejected
 
-- **WHEN** `GET` 或 `PUT` 返回 401、403 或 404
-- **THEN** 页面展示对应的错误文本与返回入口
-- **AND** 页面 SHALL NOT 渲染任何成员的已保存兴趣
+- **WHEN** `GET` or `PUT` returns 401, 403 or 404
+- **THEN** the page shows the matching error text and a way back
+- **AND** the page SHALL NOT render any member's saved interests
 
-#### Scenario: 加载失败
+#### Scenario: Loading fails
 
-- **WHEN** `GET` 失败（网络不可达或非 2xx）
-- **THEN** 页面展示错误文本与重试入口
-- **AND** 页面 SHALL NOT 把空白或上一次的选择显示为「已保存」
+- **WHEN** `GET` fails because the endpoint is unreachable or returns a non-2xx status
+- **THEN** the page shows an error message and a retry action
+- **AND** the page SHALL NOT show an empty or previously shown selection as saved
