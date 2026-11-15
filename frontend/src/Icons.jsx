@@ -91,6 +91,19 @@ const PATHS = {
   home: (
     <path d="M4 11l8-6.2 8 6.2v8a1 1 0 0 1-1 1h-4.2v-6H9.2v6H5a1 1 0 0 1-1-1v-8z" />
   ),
+  list: (
+    <>
+      <path d="M8.5 6h12M8.5 12h12M8.5 18h12" />
+      <path d="M4 6h.01M4 12h.01M4 18h.01" />
+    </>
+  ),
+  fork: (
+    <>
+      <path d="M12 21v-8" />
+      <path d="M12 13L6 7V3.5" />
+      <path d="M12 13l6-6V3.5" />
+    </>
+  ),
   x: <path d="M6 6l12 12M18 6L6 18" />,
   sparkle: (
     <>

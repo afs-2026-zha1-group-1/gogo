@@ -11,7 +11,7 @@ const EMPTY = {
   endLocation: '',
 }
 
-export default function CreateTrip({ userId }) {
+export default function CreateTrip({ userId, backHref }) {
   const [form, setForm] = useState(EMPTY)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -49,7 +49,7 @@ export default function CreateTrip({ userId }) {
   return (
     <div className="screen">
       <header className="appbar">
-        <a className="iconbtn" href="#/" aria-label="Back"><Icon name="left" /></a>
+        <a className="iconbtn" href={backHref} aria-label="Back"><Icon name="left" /></a>
         <div className="grow">
           <div className="title">创建行程</div>
           <div className="sub">US-001 · 建立一个共享空间</div>
