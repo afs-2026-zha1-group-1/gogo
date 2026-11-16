@@ -12,7 +12,9 @@
 - **Approvers:** VL = *待具名签署*；G3 的 SA 属另一道门禁，不在本记录内
 - **Timestamp:** *签署时填写*
 - **Target:** PR #44 `REQ-019: save member interests on main's shadcn baseline`，base `main`，
-  head `6828754`，`mergeStateStatus` = `CLEAN`（整理时点）
+  head = `feat/travel_preference` 的当前 tip（整理时为 `6828754`；其后又合入 main 的 US-065，
+  合并提交 `02fa201` 及随后的文档提交）。签署前后请以 `gh pr view 44` 的实时
+  `headRefOid` 与 check 结果为准
 
 ## Inputs
 
@@ -24,7 +26,7 @@
 | 验证矩阵 | `docs/feedback/verification-matrix.md` §REQ-019 | 逐行证据，含 remote-CI 机器证据行 |
 | G1 | `openspec/changes/req-019-save-interests/g1-decision.md`（含 "Revision re-review" 段） | IO Emily + SA evelyn.huang 均 Pass（2026-11-16） |
 | Delta Spec | `openspec/changes/req-019-save-interests/specs/preferences/spec.md` | 5 requirements / 31 scenarios |
-| ATDD / 设计 / 任务 | `atdd-design.md`、`design.md`、`tasks.md` | 对齐自检 Pass；任务 39 `[x]` / 4 `[ ]`（43） |
+| ATDD / 设计 / 任务 | `atdd-design.md`、`design.md`、`tasks.md` | 对齐自检 Pass；任务 40 `[x]` / 4 `[ ]`（44） |
 
 ### 引用的 CI run（均为机器读取）
 
@@ -47,7 +49,7 @@
 
 | 维度 | 状态 | 证据 |
 |---|---|---|
-| Build | **Pass** | 本地 `mvn -B clean test` 203/203；`npm run typecheck` 干净；`npm run build` 136 modules / 487.83 kB JS |
+| Build | **Pass** | 本地 `mvn -B clean test` 203/203（两次 main 合并均未触碰后端）；`npm run typecheck`（`tsc --noEmit`）干净；`npm run build` 136 modules / 488.36 kB JS / 38.39 kB CSS |
 | Tests | **Pass** | `PreferenceApiTest` 29/29（红先绿：改中文目录时先 15 失败 + 1 错误）、`MainPlanApiTest` 34/34、其余既有套件同样通过 |
 | Static scan / SAST | Skipped | 本仓库基线无 lint/SAST 任务，改用反向核对与 matrix 行 |
 | Code review | **待 VL** | 本地-验证报告为自评 Pass；人工复核正是本门禁 |
@@ -81,6 +83,7 @@
 | REFERENCES 缺失 | `member_preference` 实际由 `V5` 的替身先建，生效表上无 `REFERENCES` 子句（`V6` 变空操作） | 同上，已接受 |
 | 旧英文码种子 | `V5` 以 food/culture/art/nature/shopping 播种 fixture 的 interest/must_do，`MainPlanApiTest` 断言原始 code，故不改种子、不重映射；读取端对未知 code 静默跳过，不会 500 | 同上，已接受 |
 | PAGE-4/6/7 | 页面场景 Partial：~20 ms 往返使 pending 态不可观测、页面无法提交非法标签 | local-verify §E2E |
+| typecheck 脚本 | 8.8 曾定 `tsc -b`；main 的 US-065 合并后改取 `tsc --noEmit`（`tsconfig.app.json` 已删除、`tsconfig.json` 自带 `noEmit`），`build` = `npm run typecheck && vite build` | tasks 8.9；design DD9 |
 
 ## 未闭合项（不阻塞合并，阻塞归档）
 
@@ -91,13 +94,23 @@
 | 3 | G3（Merge & Archive）未记录 | 阻塞归档 | 具名 SA |
 | 4 | `cd` 从未执行 | 无（合并前无部署） | — |
 | 5 | 任务 7.3 可选 checklist 未跑 | 无（显式跳过） | — |
+| 6 | main 的 lockfile 使 Windows 无法 `npm ci`（rolldown 绑定被标 `libc: glibc`） | 不影响 Linux CI；影响 Windows 开发者 | main 侧负责人另开变更；本变更未改 lockfile |
 
 ## Baseline note（签署前请复核一次）
 
-整理时点：本地 `HEAD` = `origin/feat/travel_preference` = `6828754`；`origin/main` = `c4f9e32`
-（US-049/050 的 G1 记录，纯文档）。`bac8095..c4f9e32` 未触碰 `db/migration`、`frontend/`、
-`pom.xml`、`ci.yml`，不存在新的迁移号或前端文件冲突；PR #44 为 `MERGEABLE` / `CLEAN`。
-若签署时 `main` 又前进，请按同一方法复核（见 `docs/knowledge/` 的基线校验约定）。
+整理时点：`origin/main` = `f11d395`（PR #46 把 US-065 的前端全面 TS 化合入；`bac8095..f11d395`
+共 15 个提交，其中 `bac8095` 是第一次合并的基线）。这次合并与本变更在 `frontend/package.json`、
+`frontend/src/main.tsx` 上冲突，已在本分支解决（合并提交 `02fa201`，见 tasks 8.9）：`main.jsx`
+删除、入口改为 `main.tsx`，`App.tsx` 仍路由到 `#/trips/<id>/preferences`，`TripDetails.tsx`
+仍链接过去，`typecheck` 取 main 的 `tsc --noEmit`。解析后本地 `npm ci` + `typecheck` + `build`
+全绿，且这次合并未触碰任何后端文件。
+
+**签署前请自己再确认一次**：`gh pr view 44` 的 head check 全绿、`mergeStateStatus` = `CLEAN`；
+若 main 又前进，按同一方法复核（见 `docs/knowledge/` 的基线校验约定）。
+
+已知环境缺陷（不属本变更，仅供知情）：main 的 lockfile 把 `@rolldown/binding-win32-x64-msvc`
+标为 `libc: glibc`，Windows 上 `npm ci` 会跳过它、`vite build` 报找不到原生绑定；本地用
+`npm i --no-save` 临时补装完成验证，`package.json`/`package-lock.json` 未动，Linux CI 不受影响。
 
 ## §签核区（由 VL 手工填写后提交）
 

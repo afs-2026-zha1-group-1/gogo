@@ -207,9 +207,10 @@ on the hand-written shell:
 - **Tooling.** `typescript` + `@types/react` + `@types/react-dom`, a `tsconfig.json`
   (`strict`, `jsx: "react-jsx"`, `moduleResolution: "bundler"`, `noEmit`) and an
   `npm run typecheck` script. `origin/main` landed the TS migration first, so the merged tree
-  already has these files and every page is `.tsx` except the four REQ-003/004 pages; the
-  script is `tsc -b` because the project is now a build-mode solution and `noEmit` sits in
-  `tsconfig.app.json`.
+  already has these files and every page is `.tsx` except the four REQ-003/004 pages. The script
+  was `tsc -b` while main was a build-mode solution; the second merge (`f11d395`, US-065) flattened
+  it — `tsconfig.app.json` is gone and `tsconfig.json` carries `noEmit` itself — so the merged tree
+  takes main's `typecheck` = `tsc --noEmit` and `build` = `npm run typecheck && vite build` (tasks 8.9).
 - **Data.** `@tanstack/react-query` v5 with a `QueryClientProvider` in `main.jsx` and
   `defaultOptions.queries.retry = 0` — PAGE-9 requires a visible retry action, and the
   default three invisible retries would make the failing state arrive seconds late. Transport
