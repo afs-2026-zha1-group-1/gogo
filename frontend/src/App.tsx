@@ -80,10 +80,14 @@ export default function App() {
   }, [lastNonScanHash])
 
   useEffect(() => {
-    if (route.page === 'details') setLastTripId(route.tripId)
+    if (route.page === 'details' || route.page === 'main-plan' || route.page === 'main-plan-inputs') {
+      setLastTripId(route.tripId)
+    }
   }, [route])
 
-  const tripsHref = lastTripId != null ? `#/trips/${lastTripId}` : '#/trips'
+  // The bottom "行程" tab is the entry point to the main plan (design: tab ->
+  // US-037 review). Fall back to the empty list only when no trip is open.
+  const tripsHref = lastTripId != null ? `#/trips/${lastTripId}/main-plan` : '#/trips'
 
   if (route.page === 'login') return <LoginPage />
 

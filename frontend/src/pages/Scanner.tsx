@@ -299,7 +299,7 @@ export default function Scanner({ from }: { from: string | null }) {
         <div className="logo"><Icon name="scan" /></div>
         <div className="grow">
           <div className="title">扫码加入行程</div>
-          <div className="sub">US-067 · 扫描二维码或输入邀请链接</div>
+          <div className="sub">扫描二维码 · 相册选图 · 粘贴邀请链接</div>
         </div>
         <button
           type="button"
@@ -313,7 +313,7 @@ export default function Scanner({ from }: { from: string | null }) {
 
       <div className="body">
         <section
-          className={`scanner-viewfinder${state.kind === 'scanning' ? ' live' : ''}${state.kind === 'simulating' ? ' sim' : ''}`}
+          className={`scanner-stage${busy ? ' live' : ''}`}
           aria-live="polite"
         >
           {state.kind === 'camera-error' ? (
@@ -330,7 +330,7 @@ export default function Scanner({ from }: { from: string | null }) {
                   <Icon name="camera" className="sm" /> 重试相机
                 </button>
                 <button type="button" className="btn btn-primary" onClick={startSimulation}>
-                  <Icon name="scan" className="sm" /> 模拟扫描演示
+                  <Icon name="sparkle" className="sm" /> 模拟演示
                 </button>
               </div>
             </div>
@@ -354,19 +354,23 @@ export default function Scanner({ from }: { from: string | null }) {
               )}
               {state.kind === 'simulating' && <div className="scanner-sim-feed" aria-hidden />}
               {state.kind === 'idle' && (
-                <div className="scanner-idle-hint">
-                  <Icon name="camera" className="lg" />
-                  <p className="hint">点击下方「开始扫描」开启相机；也可以从相册选择二维码，或直接粘贴邀请链接。</p>
-                  <p className="scanner-idle-sub">电脑没有摄像头？点「模拟扫描」观看扫码加入的完整演示。</p>
+                <div className="scanner-ready">
+                  <div className="scanner-ready-badge"><Icon name="qrcode" /></div>
+                  <div className="scanner-ready-title">将二维码对准取景框</div>
+                  <p className="scanner-ready-sub">电脑没有摄像头？用下方「从相册选择」或「模拟演示」体验完整扫码流程。</p>
                 </div>
               )}
-              <div className="scanner-brackets" aria-hidden>
-                <span className="corner tl" />
-                <span className="corner tr" />
-                <span className="corner bl" />
-                <span className="corner br" />
-              </div>
-              {busy && <div className="scanner-scanline" aria-hidden />}
+              {busy && (
+                <>
+                  <div className="scanner-brackets" aria-hidden>
+                    <span className="corner tl" />
+                    <span className="corner tr" />
+                    <span className="corner bl" />
+                    <span className="corner br" />
+                  </div>
+                  <div className="scanner-scanline" aria-hidden />
+                </>
+              )}
               {state.kind === 'simulating' && (
                 <div className="scanner-sim-status">{simStatus}</div>
               )}
@@ -374,23 +378,36 @@ export default function Scanner({ from }: { from: string | null }) {
           )}
         </section>
 
-        <div className="scanner-actions">
+        <button
+          type="button"
+          className="btn btn-primary scanner-scanbtn"
+          onClick={state.kind === 'scanning' ? stopScanning : startScanning}
+          disabled={state.kind === 'simulating'}
+        >
+          <Icon name="camera" className="sm" />
+          {state.kind === 'scanning' ? '停止扫描' : '开始扫描'}
+        </button>
+
+        <div className="scanner-opts">
           <button
             type="button"
-            className="btn btn-primary"
-            onClick={state.kind === 'scanning' ? stopScanning : startScanning}
-            disabled={state.kind === 'simulating'}
-          >
-            <Icon name="camera" className="sm" />
-            {state.kind === 'scanning' ? '停止扫描' : '开始扫描'}
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary"
+            className="scanner-opt"
             onClick={() => fileInputRef.current?.click()}
             disabled={state.kind === 'simulating'}
           >
-            从相册选择
+            <span className="scanner-opt-icon"><Icon name="image" /></span>
+            <span className="scanner-opt-label">从相册选择</span>
+            <span className="scanner-opt-sub">{pickedName ?? '选择二维码图片'}</span>
+          </button>
+          <button
+            type="button"
+            className="scanner-opt"
+            onClick={state.kind === 'simulating' ? stopScanning : startSimulation}
+            disabled={state.kind === 'scanning'}
+          >
+            <span className="scanner-opt-icon"><Icon name="sparkle" /></span>
+            <span className="scanner-opt-label">{state.kind === 'simulating' ? '停止模拟' : '模拟演示'}</span>
+            <span className="scanner-opt-sub">无摄像头体验完整流程</span>
           </button>
           <input
             ref={fileInputRef}
@@ -404,23 +421,10 @@ export default function Scanner({ from }: { from: string | null }) {
             }}
           />
         </div>
-        {pickedName && (
-          <p className="scanner-picked">已选择图片：{pickedName}</p>
-        )}
 
-        <button
-          type="button"
-          className="btn scanner-demo"
-          onClick={state.kind === 'simulating' ? stopScanning : startSimulation}
-          disabled={state.kind === 'scanning'}
-        >
-          <Icon name="scan" className="sm" />
-          {state.kind === 'simulating' ? '停止模拟' : '模拟扫描（无摄像头演示）'}
-        </button>
-
-        <section className="card scanner-link">
+        <section className="card pad scanner-link">
           <div className="scanner-link-head">
-            <Icon name="info" className="sm" />
+            <span className="scanner-link-icon"><Icon name="link" className="sm" /></span>
             <span className="label">或直接粘贴邀请链接</span>
           </div>
           <div className="scanner-link-row">
@@ -437,7 +441,7 @@ export default function Scanner({ from }: { from: string | null }) {
               onClick={previewManualLink}
               disabled={manualLink.trim() === ''}
             >
-              预览邀请
+              <Icon name="arrow" className="sm" /> 预览邀请
             </button>
           </div>
           {chip && (
