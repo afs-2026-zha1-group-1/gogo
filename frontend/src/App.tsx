@@ -8,11 +8,17 @@ import TripDetails from './pages/TripDetails.jsx'
 import TripsEmpty from './pages/TripsEmpty'
 import Placeholder from './pages/Placeholder'
 import Join from './pages/Join.jsx'
+import MainPlan from './pages/MainPlan'
+import MainPlanInputs from './pages/MainPlanInputs'
 
 function parseRoute(hash: string): Route {
   const path = hash.replace(/^#/, '') || '/'
   const joinMatch = path.match(/^\/join\/([^/]+)$/)
   if (joinMatch) return { page: 'join', token: decodeURIComponent(joinMatch[1]) }
+  const mainPlanInputsMatch = path.match(/^\/trips\/(\d+)\/main-plan\/inputs$/)
+  if (mainPlanInputsMatch) return { page: 'main-plan-inputs', tripId: Number(mainPlanInputsMatch[1]) }
+  const mainPlanMatch = path.match(/^\/trips\/(\d+)\/main-plan$/)
+  if (mainPlanMatch) return { page: 'main-plan', tripId: Number(mainPlanMatch[1]) }
   const tripMatch = path.match(/^\/trips\/(\d+)$/)
   if (tripMatch) return { page: 'details', tripId: Number(tripMatch[1]) }
   if (path === '/trips') return { page: 'trips-empty' }
@@ -71,6 +77,24 @@ export default function App() {
       <div className="app">
         <ScaffoldBar userId={userId} onChange={setUserId} />
         <Join token={route.token} userId={userId} userName={user?.name} />
+      </div>
+    )
+  }
+
+  if (route.page === 'main-plan') {
+    return (
+      <div className="app">
+        <ScaffoldBar userId={userId} onChange={setUserId} />
+        <MainPlan userId={userId} tripId={route.tripId} />
+      </div>
+    )
+  }
+
+  if (route.page === 'main-plan-inputs') {
+    return (
+      <div className="app">
+        <ScaffoldBar userId={userId} onChange={setUserId} />
+        <MainPlanInputs userId={userId} tripId={route.tripId} />
       </div>
     )
   }

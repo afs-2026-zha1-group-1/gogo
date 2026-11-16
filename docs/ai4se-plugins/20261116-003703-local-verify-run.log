@@ -1,0 +1,27 @@
+===== CMD: (cd frontend && npm ci && npm run build) =====
+cwd: /d/Bootcamp Training/Trip/gogo
+started: 2026-11-16T00:37:03+0800
+
+added 49 packages, and audited 50 packages in 2s
+
+10 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+
+> gogo-frontend@0.0.1 build
+> vite build
+
+[36mvite v8.3.8 [32mbuilding client environment for production...[36m[39m
+transforming...
+✓ 53 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.40 kB │ gzip:  0.27 kB
+dist/assets/index-BehOA7Ch.css    9.58 kB │ gzip:  2.72 kB
+dist/assets/index-VCKdrhd_.js   284.38 kB │ gzip: 87.65 kB
+
+[32m✓ built in 285ms[39m
+exit: 0
+ended: 2026-11-16T00:37:12+0800
+

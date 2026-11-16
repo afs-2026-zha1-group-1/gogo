@@ -1,0 +1,291 @@
+===== CMD: ! grep -rn "Hello World" frontend/src =====
+cwd: /d/Bootcamp Training/Trip/gogo
+started: 2026-11-16T00:35:08+0800
+exit: 0
+ended: 2026-11-16T00:35:10+0800
+
+===== CMD: ! grep -inE "jpa|hibernate" backend/pom.xml =====
+cwd: /d/Bootcamp Training/Trip/gogo
+started: 2026-11-16T00:35:11+0800
+exit: 0
+ended: 2026-11-16T00:35:13+0800
+
+===== CMD: ! grep -rinE "h2database|org\.h2|jdbc:h2" backend/pom.xml backend/src =====
+cwd: /d/Bootcamp Training/Trip/gogo
+started: 2026-11-16T00:35:13+0800
+exit: 0
+ended: 2026-11-16T00:35:15+0800
+
+===== CMD: ! grep -q "artifact.oocl.com" frontend/package-lock.json =====
+cwd: /d/Bootcamp Training/Trip/gogo
+started: 2026-11-16T00:35:15+0800
+exit: 0
+ended: 2026-11-16T00:35:17+0800
+
+===== CMD: python -c "import yaml; d=yaml.safe_load(open('.github/workflows/ci.yml')); j=sorted(d['jobs']); assert j==['backend','frontend'], j; print('ci jobs:', j)" =====
+cwd: /d/Bootcamp Training/Trip/gogo
+started: 2026-11-16T00:35:18+0800
+ci jobs: ['backend', 'frontend']
+exit: 0
+ended: 2026-11-16T00:35:19+0800
+
+===== CMD: (cd backend && mvn -B test) =====
+cwd: /d/Bootcamp Training/Trip/gogo
+started: 2026-11-16T00:35:20+0800
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -----------------------< com.gogo:gogo-backend >------------------------
+[INFO] Building gogo-backend 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ gogo-backend ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 4 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ gogo-backend ---
+[INFO] Recompiling the module because of added or removed source files.
+[INFO] Compiling 33 source files with javac [debug parameters release 21] to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ gogo-backend ---
+[INFO] skip non existing resourceDirectory D:\Bootcamp Training\Trip\gogo\backend\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ gogo-backend ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 8 source files with javac [debug parameters release 21] to target\test-classes
+[INFO] 
+[INFO] --- surefire:3.5.5:test (default-test) @ gogo-backend ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.gogo.hello.GreetingApiTest
+00:35:32.110 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.gogo.hello.GreetingApiTest]: GreetingApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+00:35:32.228 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.gogo.hello.HelloApplication for test class com.gogo.hello.GreetingApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-16T00:35:32.670+08:00  INFO 49540 --- [gogo-backend] [           main] com.gogo.hello.GreetingApiTest           : Starting GreetingApiTest using Java 21.0.11 with PID 49540 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-16T00:35:32.671+08:00  INFO 49540 --- [gogo-backend] [           main] com.gogo.hello.GreetingApiTest           : No active profile set, falling back to 1 default profile: "default"
+2026-11-16T00:35:33.571+08:00  INFO 49540 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-11-16T00:35:33.737+08:00  INFO 49540 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.sqlite.jdbc4.JDBC4Connection@100ad67e
+2026-11-16T00:35:33.739+08:00  INFO 49540 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-11-16T00:35:33.750+08:00  INFO 49540 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:file:greeting-test?mode=memory&cache=shared (SQLite 3.49)
+2026-11-16T00:35:33.772+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-16T00:35:33.774+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 4 migrations (execution time 00:00.012s)
+2026-11-16T00:35:33.776+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-16T00:35:33.793+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-16T00:35:33.798+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-16T00:35:33.806+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create trip"
+2026-11-16T00:35:33.810+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "3 - create invitation"
+2026-11-16T00:35:33.815+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "5 - create main plan"
+2026-11-16T00:35:33.823+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 4 migrations to schema "main", now at version v5 (execution time 00:00.002s)
+2026-11-16T00:35:34.255+08:00  INFO 49540 --- [gogo-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-16T00:35:34.255+08:00  INFO 49540 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-16T00:35:34.256+08:00  INFO 49540 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-11-16T00:35:34.278+08:00  INFO 49540 --- [gogo-backend] [           main] com.gogo.hello.GreetingApiTest           : Started GreetingApiTest in 1.886 seconds (process running for 2.884)
+Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+WARNING: A Java agent has been loaded dynamically (C:\Users\DENGLU\.m2\repository\net\bytebuddy\byte-buddy-agent\1.17.8\byte-buddy-agent-1.17.8.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+2026-11-16T00:35:35.316+08:00  WARN 49540 --- [gogo-backend] [           main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'POST' is not supported]
+2026-11-16T00:35:35.322+08:00  WARN 49540 --- [gogo-backend] [           main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'PUT' is not supported]
+2026-11-16T00:35:35.322+08:00  WARN 49540 --- [gogo-backend] [           main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'DELETE' is not supported]
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.410 s -- in com.gogo.hello.GreetingApiTest
+[INFO] Running com.gogo.invitation.InvitationApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-16T00:35:35.408+08:00  INFO 49540 --- [gogo-backend] [           main] com.gogo.invitation.InvitationApiTest    : Starting InvitationApiTest using Java 21.0.11 with PID 49540 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-16T00:35:35.408+08:00  INFO 49540 --- [gogo-backend] [           main] com.gogo.invitation.InvitationApiTest    : No active profile set, falling back to 1 default profile: "default"
+2026-11-16T00:35:35.603+08:00  INFO 49540 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Starting...
+2026-11-16T00:35:35.604+08:00  INFO 49540 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-2 - Added connection org.sqlite.jdbc4.JDBC4Connection@96075c0
+2026-11-16T00:35:35.604+08:00  INFO 49540 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Start completed.
+2026-11-16T00:35:35.604+08:00  INFO 49540 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:file:invitation-test?mode=memory&cache=shared (SQLite 3.49)
+2026-11-16T00:35:35.610+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-16T00:35:35.611+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 4 migrations (execution time 00:00.004s)
+2026-11-16T00:35:35.611+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-16T00:35:35.612+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-16T00:35:35.613+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-16T00:35:35.616+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create trip"
+2026-11-16T00:35:35.618+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "3 - create invitation"
+2026-11-16T00:35:35.622+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "5 - create main plan"
+2026-11-16T00:35:35.623+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 4 migrations to schema "main", now at version v5 (execution time 00:00.001s)
+2026-11-16T00:35:35.690+08:00  INFO 49540 --- [gogo-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-16T00:35:35.690+08:00  INFO 49540 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-16T00:35:35.690+08:00  INFO 49540 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-16T00:35:35.694+08:00  INFO 49540 --- [gogo-backend] [           main] com.gogo.invitation.InvitationApiTest    : Started InvitationApiTest in 0.3 seconds (process running for 4.301)
+2026-11-16T00:35:35.801+08:00  WARN 49540 --- [gogo-backend] [           main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'PATCH' is not supported]
+2026-11-16T00:35:35.804+08:00  WARN 49540 --- [gogo-backend] [           main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'DELETE' is not supported]
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.521 s -- in com.gogo.invitation.InvitationApiTest
+[INFO] Running com.gogo.mainplan.BudgetOverrunsTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.006 s -- in com.gogo.mainplan.BudgetOverrunsTest
+[INFO] Running com.gogo.mainplan.FakeMainPlanProviderTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.010 s -- in com.gogo.mainplan.FakeMainPlanProviderTest
+[INFO] Running com.gogo.mainplan.LocationCompletionTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in com.gogo.mainplan.LocationCompletionTest
+[INFO] Running com.gogo.mainplan.MainPlanApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-16T00:35:35.962+08:00  INFO 49540 --- [gogo-backend] [           main] com.gogo.mainplan.MainPlanApiTest        : Starting MainPlanApiTest using Java 21.0.11 with PID 49540 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-16T00:35:35.962+08:00  INFO 49540 --- [gogo-backend] [           main] com.gogo.mainplan.MainPlanApiTest        : No active profile set, falling back to 1 default profile: "default"
+2026-11-16T00:35:36.159+08:00  INFO 49540 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-3 - Starting...
+2026-11-16T00:35:36.160+08:00  INFO 49540 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-3 - Added connection org.sqlite.jdbc4.JDBC4Connection@67d8613
+2026-11-16T00:35:36.160+08:00  INFO 49540 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-3 - Start completed.
+2026-11-16T00:35:36.161+08:00  INFO 49540 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:file:main-plan-test?mode=memory&cache=shared (SQLite 3.49)
+2026-11-16T00:35:36.165+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-16T00:35:36.165+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 4 migrations (execution time 00:00.003s)
+2026-11-16T00:35:36.165+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-16T00:35:36.166+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-16T00:35:36.168+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-16T00:35:36.172+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create trip"
+2026-11-16T00:35:36.176+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "3 - create invitation"
+2026-11-16T00:35:36.180+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "5 - create main plan"
+2026-11-16T00:35:36.182+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 4 migrations to schema "main", now at version v5 (execution time 00:00.001s)
+2026-11-16T00:35:36.248+08:00  INFO 49540 --- [gogo-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-16T00:35:36.248+08:00  INFO 49540 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-16T00:35:36.248+08:00  INFO 49540 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-16T00:35:36.252+08:00  INFO 49540 --- [gogo-backend] [           main] com.gogo.mainplan.MainPlanApiTest        : Started MainPlanApiTest in 0.308 seconds (process running for 4.859)
+[INFO] Tests run: 34, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.647 s -- in com.gogo.mainplan.MainPlanApiTest
+[INFO] Running com.gogo.mainplan.ScheduleValidatorTest
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.005 s -- in com.gogo.mainplan.ScheduleValidatorTest
+[INFO] Running com.gogo.trip.TripApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-16T00:35:36.611+08:00  INFO 49540 --- [gogo-backend] [           main] com.gogo.trip.TripApiTest                : Starting TripApiTest using Java 21.0.11 with PID 49540 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-16T00:35:36.612+08:00  INFO 49540 --- [gogo-backend] [           main] com.gogo.trip.TripApiTest                : No active profile set, falling back to 1 default profile: "default"
+2026-11-16T00:35:36.766+08:00  INFO 49540 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-4 - Starting...
+2026-11-16T00:35:36.767+08:00  INFO 49540 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-4 - Added connection org.sqlite.jdbc4.JDBC4Connection@2cfd9b0a
+2026-11-16T00:35:36.767+08:00  INFO 49540 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-4 - Start completed.
+2026-11-16T00:35:36.767+08:00  INFO 49540 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:file:trip-test?mode=memory&cache=shared (SQLite 3.49)
+2026-11-16T00:35:36.771+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-16T00:35:36.771+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 4 migrations (execution time 00:00.003s)
+2026-11-16T00:35:36.771+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-16T00:35:36.773+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-16T00:35:36.773+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-16T00:35:36.775+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create trip"
+2026-11-16T00:35:36.778+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "3 - create invitation"
+2026-11-16T00:35:36.782+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "5 - create main plan"
+2026-11-16T00:35:36.783+08:00  INFO 49540 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 4 migrations to schema "main", now at version v5 (execution time 00:00.001s)
+2026-11-16T00:35:36.839+08:00  INFO 49540 --- [gogo-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-16T00:35:36.839+08:00  INFO 49540 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-16T00:35:36.840+08:00  INFO 49540 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-11-16T00:35:36.845+08:00  INFO 49540 --- [gogo-backend] [           main] com.gogo.trip.TripApiTest                : Started TripApiTest in 0.249 seconds (process running for 5.452)
+2026-11-16T00:35:36.938+08:00  WARN 49540 --- [gogo-backend] [           main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'PUT' is not supported]
+2026-11-16T00:35:36.939+08:00  WARN 49540 --- [gogo-backend] [           main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'DELETE' is not supported]
+2026-11-16T00:35:36.939+08:00  WARN 49540 --- [gogo-backend] [           main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'GET' is not supported]
+[INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.354 s -- in com.gogo.trip.TripApiTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 90, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  11.941 s
+[INFO] Finished at: 2026-11-16T00:35:37+08:00
+[INFO] ------------------------------------------------------------------------
+exit: 0
+ended: 2026-11-16T00:35:37+0800
+
+===== CMD: (cd frontend && npm ci && npm run build) =====
+cwd: /d/Bootcamp Training/Trip/gogo
+started: 2026-11-16T00:35:37+0800
+npm error code EPERM
+npm error syscall unlink
+npm error path D:\Bootcamp Training\Trip\gogo\frontend\node_modules\@rolldown\binding-win32-x64-msvc\rolldown-binding.win32-x64-msvc.node
+npm error errno -4048
+npm error [Error: EPERM: operation not permitted, unlink 'D:\Bootcamp Training\Trip\gogo\frontend\node_modules\@rolldown\binding-win32-x64-msvc\rolldown-binding.win32-x64-msvc.node'] {
+npm error   errno: -4048,
+npm error   code: 'EPERM',
+npm error   syscall: 'unlink',
+npm error   path: 'D:\\Bootcamp Training\\Trip\\gogo\\frontend\\node_modules\\@rolldown\\binding-win32-x64-msvc\\rolldown-binding.win32-x64-msvc.node'
+npm error }
+npm error
+npm error The operation was rejected by your operating system.
+npm error It's possible that the file was already in use (by a text editor or antivirus), or that you lack permissions to access it.
+npm error
+npm error If you believe this might be a permissions issue, please double-check the permissions of the file and its containing directories, or try running the command again as root/Administrator.
+npm error A complete log of this run can be found in: C:\Users\DENGLU\AppData\Local\npm-cache\_logs\2026-11-15T16_35_41_139Z-debug-0.log
+exit: 127
+ended: 2026-11-16T00:35:42+0800
+
+===== CMD: (cd backend && python -c "import sqlite3; c=sqlite3.connect('data/gogo.db'); print('rows:', c.execute('SELECT id, message FROM greeting').fetchall()); print('count:', c.execute('SELECT COUNT(*) FROM greeting').fetchone()[0]); print('schema:', c.execute(\"SELECT sql FROM sqlite_master WHERE name='greeting'\").fetchone()[0]); print('flyway:', c.execute('SELECT version, description, success FROM flyway_schema_history').fetchall()); c.close()") =====
+cwd: /d/Bootcamp Training/Trip/gogo
+started: 2026-11-16T00:35:43+0800
+rows: [(1, 'Hello World')]
+count: 1
+schema: CREATE TABLE greeting (
+    id      INTEGER PRIMARY KEY,
+    message TEXT NOT NULL
+)
+flyway: [('1', 'create greeting', 1), ('2', 'create trip', 1), ('3', 'create invitation', 1), ('5', 'create main plan', 1)]
+exit: 0
+ended: 2026-11-16T00:35:44+0800
+
+===== CMD: curl -s -i http://localhost:8080/api/greeting =====
+cwd: /d/Bootcamp Training/Trip/gogo
+started: 2026-11-16T00:35:45+0800
+HTTP/1.1 200 
+Content-Type: application/json
+Transfer-Encoding: chunked
+Date: Sun, 15 Nov 2026 16:35:47 GMT
+
+{"message":"Hello World"}exit: 0
+ended: 2026-11-16T00:35:47+0800
+
+===== CMD: curl -s -o /dev/null -w "POST=%{http_code}\n" -X POST http://localhost:8080/api/greeting =====
+cwd: /d/Bootcamp Training/Trip/gogo
+started: 2026-11-16T00:35:47+0800
+POST=405
+exit: 0
+ended: 2026-11-16T00:35:49+0800
+
+===== CMD: curl -s -o /dev/null -w "PUT=%{http_code}\n" -X PUT http://localhost:8080/api/greeting =====
+cwd: /d/Bootcamp Training/Trip/gogo
+started: 2026-11-16T00:35:49+0800
+PUT=405
+exit: 0
+ended: 2026-11-16T00:35:51+0800
+
+===== CMD: curl -s -o /dev/null -w "DELETE=%{http_code}\n" -X DELETE http://localhost:8080/api/greeting =====
+cwd: /d/Bootcamp Training/Trip/gogo
+started: 2026-11-16T00:35:52+0800
+DELETE=405
+exit: 0
+ended: 2026-11-16T00:35:53+0800
+

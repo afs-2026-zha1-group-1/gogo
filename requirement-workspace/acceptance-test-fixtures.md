@@ -1,117 +1,236 @@
-# Acceptance-test fixtures — B 拆分主链（REQ-004~007）
+# Acceptance-test fixtures
 
-- Scope: US-038 / US-039 / US-042 / US-043（issue #17–#20）权威样本值。
-- 新增: 2026-11-15；来源 = issue #17–#20 正文 + 用户裁决（见
-  `intents/2026-11-15-req-004-007-split-planning.md`）与 `deep-dive.md` B 链段。
-- REQ-003（US-001/002）遗留草稿段已按用户 2026-11-15 裁决拆至
-  `acceptance-test-fixtures.req003-draft.md`（保留不提交，未生效）；
-  本文件为 B 链权威夹具，随 P1 产物提交。
-- **身份口径**: B 链按 `docs/knowledge/architecture/tech-stack-plan.md`：邀请码 + 昵称，
-  请求头 `X-Member-Id`（成员 id）。REQ-003 草稿的 `X-User-Id` 口径已作废，
-  对齐移交 IO/SA（OQ-N1 deferred）；本文件仅适用于 B 链 REQ-004~007。
-- Review correction, 2026-11-15: all five endpoints validate identity, then trip,
-  then membership. Missing/globally unknown id -> 401; known member with unknown
-  trip -> 404; known outsider Eve -> 403. Rejections expose no private values.
+- Scope: sample values referenced by US-001 (issue #4), US-002 (issue #5), and
+  US-008 (issue #6), US-010 (issue #7), US-012 (issue #8)
+- Source: story acceptance criteria, extended by explicit user rulings on
+  2026-11-14 (required destination, optional locations and invitation boundaries).
+  Negative inputs below are test cases, not additional story fixture values.
+- Created: 2026-11-14. The stories refer to this file but it did not exist in the
+  repository; see `intents/2026-11-14-req-003.md`.
+- Extended: 2026-11-14 for REQ-004; see `intents/2026-11-14-req-004.md`. The
+  REQ-004 section reuses the users and trip above unchanged.
 
-## 行程与成员（种子，V2 迁移）
+## Users
 
-| 项 | 值 |
+Seeded by the `V2` Flyway migration so that membership can be decided without a
+login screen. `X-User-Id` carries `id`.
+
+| id | display name | role in the fixture |
+|---|---|---|
+| 1 | Alice | organizer and first member of the sample trip |
+| 2 | Ben | member, used for the allowed read |
+| 3 | Chloe | member |
+| 4 | Daniel | member |
+| 5 | Eve | not a member, used for the denied read |
+
+## Sample trip
+
+`US-002` calls it the "Synthetic Singapore Friends Day trip on 2026-12-05,
+Asia/Singapore (+08:00)". Timezone does not affect date-only values.
+
+| field | value |
 |---|---|
-| 行程 | Singapore Friends Day，Singapore，2026-12-05 → 2026-12-05；id = 种子固定 UUID；invite_code = `SGF26A`；plan_version = 1 |
-| Alice | owner，plan_ack_version = 1 |
-| Ben / Chloe / Daniel | member，plan_ack_version = 1 |
-| Eve | **另一行程**的种子成员（全局身份有效，非本行程成员） |
-| 已确认态 | 全员 plan_ack_version = trip.plan_version（用户裁决谓词） |
-| 未确认态构造 | 测试内将任一成员 plan_ack_version 置 0，验后还原 |
+| name | Singapore Friends Day |
+| destination | Singapore |
+| start date | 2026-12-05 |
+| end date | 2026-12-05 |
+| start location | City Hall MRT |
+| end location | Merlion Park |
+| organizer | Alice (id 1) |
+| members | Alice, Ben, Chloe, Daniel (ids 1, 2, 3, 4) |
+| non-member | Eve (id 5) |
 
-## 主线 v1 stop（plan_node，branch_id = main）
+The trip id is assigned by the database; tests must read it from the create
+response rather than assume a value.
 
-| stop | 本地时刻（Asia/Singapore +08:00） | UTC（存储值） |
+## Requests
+
+| Case | Call | Expected |
 |---|---|---|
-| City Hall MRT | 09:00–09:30（scheduled end 09:30） | start_at 2026-12-05T01:00:00Z / end_at 2026-12-05T01:30:00Z |
-| Merlion Park | 11:30–12:00（scheduled start 11:30，scheduled end 12:00） | start_at 2026-12-05T03:30:00Z / end_at 2026-12-05T04:00:00Z |
+| C1 create | `POST /api/trips`, `X-User-Id: 1`, body `{"name":"Singapore Friends Day","destination":"Singapore","startDate":"2026-12-05","endDate":"2026-12-05","startLocation":"City Hall MRT","endLocation":"Merlion Park"}` | `201`, response echoes the six values, `organizerId = 1` |
+| C2 date order | same body with `"startDate":"2026-12-06"`, `"endDate":"2026-12-05"` | `400`, `code = INVALID_DATE_RANGE` |
+| C3 blank name | same body with `"name":"   "` | `400`, `code = NAME_REQUIRED` |
+| C6 required destination | C1 body with destination omitted, null, empty or whitespace-only | `400`, `code = DESTINATION_REQUIRED`; no trip or membership created |
+| C7 optional locations | C1 body with either/both locations omitted, null, empty or whitespace-only | `201`; unspecified locations saved and read as null, supplied nonblank locations unchanged; completion only during US-031 main-plan generation |
+| R1 member read | `GET /api/trips/{id}`, `X-User-Id: 2` | `200`, the six saved values |
+| R2 non-member read | `GET /api/trips/{id}`, `X-User-Id: 5` | `403`, `code = NOT_A_MEMBER`, no trip values |
+| R2-N no identity | `GET /api/trips/{id}` without `X-User-Id` | `401`, `code = USER_REQUIRED` |
+| R3-N unknown trip | `GET /api/trips/999999`, `X-User-Id: 2` | `404`, `code = TRIP_NOT_FOUND` |
+| C4-N malformed date | create body with `"startDate":"2026-13-01"` | `400`, `code = INVALID_DATE` |
 
-Singapore Zoo **不在**主线 stop 中（REQ-005 AC3 的越界选择用）。
+## Values deliberately not fixed
 
-## 拆分窗口与路线数字（issue 正文，REQ-005~007 用）
-
-| 项 | 值 |
+| Item | Why no value is set |
 |---|---|
-| 窗口 | City Hall MRT end 09:30 → Merlion Park start 11:30 = **120 分钟** |
-| 分组 | A = Alice + Ben；B = Chloe + Daniel（夹具供给） |
-| 路线 | A → National Gallery Singapore；B → Gardens by the Bay；均起 City Hall MRT、终 Merlion Park |
-| 时长算式 | A = 15+60+20+10 = **105 通过**；B = 20+60+20+10 = **110 通过**；A 末段交通改 40 → **125，超 5 分钟，拦确认** |
-| buffer | 每条路线 10 分钟；活动 60 分钟 |
-| 并发 | Alice 与 Ben 同时发起 → 最多一个活跃草稿，另一收 409 SPLIT_DRAFT_CONFLICT |
-| 版本 | After saved boundaries, generate at current N; concurrent boundary re-selection advances N+1; discard N results without overwriting N+1 |
-| 原子性 | 一条路线生成失败 → 不得保存可确认的半成品对 |
+| New trip id | Assigned by the database in C1 |
+| `createdAt` | Not required by any AC |
+| Error message wording | Only the `code` is contractual; messages are implementation text |
+| Exact locations produced by later US-031 completion | At main-plan generation use submitted member preferences; random locations if preferences are absent or yield no suitable result. Preserve supplied locations. Do not fix exact randomized outputs or run completion during REQ-003/004 tests. Owners IO Emily / SA Johnson |
 
-## B 链请求（REQ-004 部分）
+## REQ-004 — invitations (US-008 / US-010 / US-012)
+
+Same users and same sample trip as above. Eve (id 5) is the invited outsider;
+after a successful acceptance she becomes a member and the R1 read applies to her.
+
+### State setup
+
+| Item | Value | Why |
+|---|---|---|
+| Main plan of the fixture trip | unconfirmed by default | `V3` adds `trip.main_plan_confirmed` default 0; no API sets it in this change (US-037 owns the flow) |
+| Confirmed-main-plan case (J4) | test-only direct database update of `trip.main_plan_confirmed` to 1 | The confirmation flow is out of scope; the closure AC still must be exercised. Documented test-only setup, not product behavior |
+| Invitation token | assigned by the backend at issuance; tests read it from the issue response | Opaque random value; no AC fixes a token string |
+| Invalid token input | any string that was never issued, e.g. `no-such-invitation` | Test input for U1/U2/U3, not a sample value claimed by an AC |
+
+### Requests
 
 | Case | Call | Expected |
 |---|---|---|
-| S1 发起 | `POST /api/trips/{tripId}/split-draft`，`X-Member-Id: <Ben>` | `201`，data 含 initiatorMemberId=Ben、mainPlanVersion=1、draftVersion=1、status=active |
-| S2 并发 | Alice 与 Ben 同时发起 | 一 `201` 一 `409` `SPLIT_DRAFT_CONFLICT`；活跃草稿数=1 |
-| S3-N 未确认 | 构造未确认态后成员发起 | `409` `MAIN_PLAN_NOT_CONFIRMED` |
-| S4-N 非成员 | `X-Member-Id: <Eve>` | `403` `NOT_A_MEMBER` |
-| S5-N 无身份 | Missing header or globally nonexistent member id; not Eve's known id | `401` `MEMBER_REQUIRED` |
-| S6-N 未知行程 | Known member id with nonexistent tripId | `404` `TRIP_NOT_FOUND` |
-| S7 重复 | 已有活跃草稿再发起 | `409` `SPLIT_DRAFT_CONFLICT`，原草稿不变 |
+| I1 issue | `POST /api/trips/{id}/invitation`, `X-User-Id: 1` | `200`, body carries `token` and `joinPath` (`/join/<token>`); one invitation row for the trip |
+| I2 re-issue | same call again | `200`, same `token`; still one invitation row |
+| I3 non-organizer | same call, `X-User-Id: 2` | `403`, `code = NOT_ORGANIZER`; invitation row count unchanged |
+| I4-N no identity | same call without `X-User-Id` | `401`, `code = USER_REQUIRED`; nothing created |
+| I5-N unknown trip | `POST /api/trips/999999/invitation`, `X-User-Id: 1` | `404`, `code = TRIP_NOT_FOUND` |
+| J1 preview | `GET /api/invitations/{token}`, no identity header | `200`, `tripName = Singapore Friends Day`, `destination = Singapore`, `startDate = 2026-12-05`, `endDate = 2026-12-05`, joining open; no member, itinerary or preference fields |
+| J2 accept | `POST /api/invitations/{token}/accept`, `X-User-Id: 5` | `200` joined; `trip_member` row (trip, 5) exists; `GET /api/trips/{id}` with `X-User-Id: 5` → `200` |
+| J3 double accept | J2 call twice | both `200` joined; exactly one `trip_member` row for (trip, 5) |
+| J4 closed | confirmed-main-plan setup, then J2 call | `403`, `code = JOINING_CLOSED`; member rows unchanged |
+| J5-N no identity | accept without `X-User-Id` | `401`, `code = USER_REQUIRED`; no membership |
+| J6 existing member | Ben accepts a valid token, once unconfirmed and once after confirmed-state setup | both `200` joined with `alreadyMember = true`; membership count unchanged |
+| J7 identity precedence | invalid-token accept with missing identity, then unknown user id `999999` | both `401`, `code = USER_REQUIRED`; no membership; known Eve with the same invalid token receives `404` |
+| U1 invalid preview | `GET /api/invitations/no-such-invitation` | `404`, `code = INVITATION_NOT_FOUND`; no trip values |
+| U2 invalid accept | `POST /api/invitations/no-such-invitation/accept`, `X-User-Id: 5` | `404`, `code = INVITATION_NOT_FOUND`; no membership |
 
-## B 链请求（REQ-005 部分）
+### Values deliberately not fixed (REQ-004)
 
-| Case | Call | Expected |
-|---|---|---|
-| B1 正窗口 | `PUT /api/trips/{tripId}/split-draft/boundaries`，`X-Member-Id: <Ben>`，body `{departureStopId:<City Hall>, reunionStopId:<Merlion>, draftVersion:1}` | `200`，出发 09:30、会合 11:30、窗口 120；draftVersion=2 |
-| B2-N 非正窗口 | 反向选择（Merlion 出发 / City Hall 会合） | `400` `NONPOSITIVE_SPLIT_WINDOW`；已存边界与版本不变 |
-| B3-N 主线外 | 任一边界选 Singapore Zoo | `400` `BOUNDARY_NOT_IN_MAIN_PLAN`；不创建无关会合点 |
-| B4-N 非发起人 | `X-Member-Id: <Chloe>` | `403` `NOT_SPLIT_INITIATOR` |
-| B5-N 无草稿 | 无活跃草稿时保存 | `409` `SPLIT_DRAFT_NOT_ACTIVE` |
-| B6-N 过期版本 | 携带旧 draftVersion | `409` `STALE_DRAFT_VERSION` |
-
-## B 链请求（REQ-006 部分）
-
-| Case | Call | Expected |
-|---|---|---|
-| G1 成对生成 | `POST /api/trips/{tripId}/split-draft/routes:generate`，`X-Member-Id: <Ben>`，body `{draftVersion:<当前>}` | `200`，恰两条路线：A→National Gallery、B→Gardens by the Bay，同起终点；draftVersion+1 |
-| G2-N 半对失败 | 夹具构造提供者对 B 抛错 | `ROUTE_GENERATION_FAILED`；无新路线落库；版本不变 |
-| G3-N 过期 | After boundaries saved, generate at N; boundary re-selection advances N+1 before results return | `409 STALE_DRAFT_VERSION`; N+1 preserved |
-| G4-N 无边界 | 边界未保存时生成 | `409` `SPLIT_BOUNDARIES_REQUIRED` |
-| G5-N 非发起人 | `X-Member-Id: <Chloe>` | `403` `NOT_SPLIT_INITIATOR` |
-
-## B 链请求（REQ-007 部分）
-
-| Case | Call | Expected |
-|---|---|---|
-| T1 通过 | `POST /api/trips/{tripId}/split-draft/routes:check-timing`，`X-Member-Id: <Ben>`，快照 = 夹具路线对 | `200`，A total=105、B total=110，feasible=true |
-| T2-N 超窗 | A 末段交通改 40 | `200`，A total=125、overrunMinutes=5，feasible=false |
-| T3-N 缺输入 | A 活动时长或末段估算缺失 | `200`，missingInputs 列出缺失项，feasible=false |
-| T4-N 非成员 | `X-Member-Id: <Eve>` | `403` `NOT_A_MEMBER` |
-| T5-N 非法快照 | 空/路线数≠2 | `400` `INVALID_ROUTE_PAIR` |
-| T6-N entry guards | Missing/globally unknown id; known member with unknown trip; known outsider Eve | Respectively `401 MEMBER_REQUIRED`, `404 TRIP_NOT_FOUND`, `403 NOT_A_MEMBER`; `data=null`, calculator never invoked |
-
-T1 calculator isolation: entry guard may query identity/trip/membership. After
-authorization, assert no Repository dependency or database calls in the calculator;
-it reads only the supplied snapshot, never loads saved routes and writes no results.
-The whole HTTP request is not subject to a zero-read assertion.
-
-## Draft detail requests (REQ-004/005/006/007)
-
-| Case | Call | Expected |
-|---|---|---|
-| D1 reload | `GET /api/trips/{tripId}/split-draft`, `X-Member-Id: <Chloe>`, after Ben saves boundaries and routes | `200`, `error=null`; consistent snapshot with initiator, main/draft versions, status, groups, timestamps, `mainPlanStops`, boundary ids/times, window 120 and both routes with activity/endpoints/durations; no mutation |
-| D1 partial state | Same GET before boundaries/generation | Boundary ids/times/window null, `routes=[]`; stop options available; no version increment |
-| D2 empty | Same GET for an existing member trip without an active draft | `200 {data:null,error:null}`; no implicit draft creation |
-| D3-N outsider | Same GET with Eve's known member id | `403 NOT_A_MEMBER`, `data=null`; no private values |
-| D4-N identity | Same GET without header or with globally nonexistent id | `401 MEMBER_REQUIRED`, `data=null`; no private values |
-| D5-N unknown trip | Same GET with known member id and nonexistent tripId | `404 TRIP_NOT_FOUND`, `data=null`; no mutation |
-
-错误包封套：`{"data":null,"error":{"code":"...","message":"..."}}`；message 非契约。
-
-## B 链不固定值
-
-| 项 | 原因 |
+| Item | Why no value is set |
 |---|---|
-| 草稿 id / 路线节点 id | 数据库分配，测试从响应读取 |
-| 错误 message 文本 | 仅 code 为契约 |
-| 候选提供者的 R2 真实输出 | MVP 固定夹具；接口留缝，不固定未来实现 |
+| Token string | Random per issuance; tests read it from I1 |
+| Absolute invitation URL | Composed by the frontend from its own origin plus `joinPath`; the QR must encode exactly that composed URL (I6) |
+| Expiry / revocation fields | Non-MVP per US-008 and US-012 design scope; no such field or endpoint exists |
+| Error message wording | Only the `code` is contractual |
+
+## US-031-037 — main itinerary (US-031 / US-037)
+
+Same users and same sample trip as above, now seeded by the merged `V2`/`V3`
+migrations (REQ-003/004). Added 2026-11-15 from the user-supplied ACs; see
+`intents/2026-11-15-us-031-037.md`. Endpoint paths, success statuses and wire
+field names became contractual at P2 (rulings 2026-11-15: generate 201; confirm
+200 with the same projection as the draft read; inputs read member-readable).
+Error codes and HTTP status mapping were fixed by user ruling 2026-11-15
+(contract baseline below, IO Emily reviews at G1); sample values are fixed by the
+ACs or by the rulings recorded in the intent. Schema convergence (OQ-9, trigger
+fired 2026-11-15; G1 C2 ruling 2026-11-15): `member_preference` is the
+kind/payload table owned by REQ-019's `V4` on `feat/travel_preference`
+(`id`, `trip_id`, `user_id`, `kind`, `payload` JSON, `updated_at`,
+UNIQUE(`trip_id`,`user_id`,`kind`); kinds `interest` / `must_do` / `budget` /
+`submission`); this change appends `V5` with two tables (`main_plan_draft`,
+`main_plan_stop`) and two `trip_member` columns, reads `member_preference`,
+and does not alter `trip`. Merge order: REQ-019 `V4` first. C2 recommended
+default A user-selected 2026-11-15; SA Lumi re-confirmed 2026-11-15 (his earlier
+G1 Pass covered the wide-table shape).
+
+### Error contract (ruled 2026-11-15)
+
+| Code | HTTP status | Case |
+|---|---|---|
+| `MEMBERS_NOT_READY` | 409 | generate with a pending member (M2) |
+| `VALIDATION_FAILED` | 422 | confirm blocked by overrun (V2) or schedule errors (V3) |
+| `STALE_DRAFT` | 409 | confirm blocked by stale draft (V4) |
+| `NO_DRAFT` | 404 | confirm before any generation (V6) |
+| `ALREADY_CONFIRMED` | 409 | Re-confirm (V7) and generate after confirmation (M14); user accepted and Emily IO approved 2026-11-15; overall G1 Pass |
+
+Only `code` is contractual; message wording free. Precedent codes unchanged:
+USER_REQUIRED 401 / NOT_A_MEMBER 403 / NOT_ORGANIZER 403 / TRIP_NOT_FOUND 404 /
+JOINING_CLOSED 403.
+
+Every error body keeps the precedent `{code, message}` shape. Two codes carry
+structured detail fields (P2 contract; needed by US-031 AC2 and Screen 10):
+
+| Code | Extra fields | Content |
+|---|---|---|
+| `MEMBERS_NOT_READY` | `pendingMembers` | one entry per not-ready member: `userId`, `displayName` (M2: Daniel, id 4) |
+| `VALIDATION_FAILED` | `scheduleErrors`, `overruns` | `scheduleErrors`: `type` (`OUT_OF_ORDER` / `OVERLAP` / `MISSING_LEG` / `TRAVEL_EXCEEDS_GAP` / `OUT_OF_DAY`), `seq`, free `message`; `overruns`: `userId`, `displayName`, `hardBudgetCents`, `overrunCents` (V2: Alice 4000 / 1000). `TRAVEL_EXCEEDS_GAP`: the stop carrying the leg whose end time + `travelMinutesToNext` is later than the next stop's start; equality passes (G1 C1 default A, user-selected 2026-11-15; IO Emily ratified 2026-11-15) |
+
+`STALE_DRAFT`, `NO_DRAFT`, `ALREADY_CONFIRMED` and the precedent codes carry no
+extra fields; staleness is read from the plan projection.
+
+### State setup
+
+| Item | Value | Why |
+|---|---|---|
+| Readiness, default | Alice/Ben/Chloe/Daniel `ready = 1`, `preference_revision = 1` | US-031 AC1 "all four members ready at preference revision 1"; `V5` adds both columns to the merged `trip_member` and seeds these values for the fixture trip's four members; flip test-only (ruled) |
+| Readiness, later joiners | `ready` defaults to 0, `preference_revision` defaults to 1 | a member who joins through REQ-004 accept has not responded yet, so the readiness gate keeps blocking until a test-only flip; no product write path in this REQ |
+| Null-location case (M3) | test-only update of the fixture trip's `start_location` / `end_location` to NULL, restored afterwards | the merged `V2` seed supplies both locations, so the completion branch needs documented test-only setup (REQ-004 precedent); the result is observed through `GET /api/trips/{id}` |
+| Confirmed version pointer | the draft row whose `status = 'confirmed'`; `trip.main_plan_confirmed` (already added by `V3`) stays the joining flag | P2 ruling 2026-11-15: no `confirmed_draft_id` column and no `V5` ALTER of `trip`; one source of truth for the confirmed version |
+| Daniel-pending case | test-only `ready = 0` for Daniel (id 4) | US-031 AC2; no product write path in this REQ |
+| Preference snapshots | rev 1 per member (`trip_member.preference_revision`); `V5` seeds `member_preference` kind rows per member: `interest` (payload `{"codes":[…]}`) and `must_do` (payload `{"items":[…]}`); no `budget` row by default (no hard limit) | AC2 names only Alice's hard budget; budget-row absence keeps the C1 pass case feasible; kind/payload shape per G1 C2 default A (REQ-019 `V4` table, read-only here) |
+| Alice overrun case | test-only Alice `member_preference` row `kind='budget'`, payload `{"amount":4000,"currency":"SGD","limitType":"hard"}` (40 SGD) | US-037 AC2; reads map `amount` → `hardBudgetCents` when `limitType='hard'` |
+| Travel-gap case (V3) | test-only draft mutation: a stop's `travel_minutes_to_next` longer than the gap to the next stop (e.g. 45 minutes into a 30-minute gap) | G1 C1 default A: `TRAVEL_EXCEEDS_GAP` blocks confirmation; equality passes (user-selected 2026-11-15; IO Emily ratified 2026-11-15) |
+| Stale case | after a draft exists, test-only bump Ben `preference_revision` to 2 | OQ-7 ruling 2026-11-15: stale blocks confirmation |
+| Confirmed-frozen case (M13) | after V1 confirm, the same test-only Ben revision bump | P2 lint ruling 2026-11-15: the confirmed version stays `stale = false` regardless of later revision changes |
+| Fake provider stops | City Hall MRT 09:00–09:30; National Gallery Singapore 10:00–10:30; Gardens by the Bay 11:00–11:15; Merlion Park 11:30–12:00; travel legs 30/30/15 minutes; cost 50 SGD per person | US-031 AC1 supplied times and legs; US-037 AC2 known cost; legs fit the 30/30/15 gaps exactly — equality passes the C1 travel-fit rule |
+| Confirmed-state premise for later REQs | produced by the US-037 confirm flow (version 1) | supersedes the REQ-004 test-only setup for trips confirmed through this REQ |
+
+### Requests (paths contractual, P2 2026-11-15)
+
+| Case | Call | Expected |
+|---|---|---|
+| M1 generate | `POST /api/trips/{id}/main-plan`, `X-User-Id: 1`, default setup | `201`; body is the plan projection: `version` 1, `confirmed` false, `stale` false, the four `stops` in order with supplied times and `travelMinutesToNext` 30/30/15 (last null), `inputRevisions` {1:1,2:1,3:1,4:1}, `costPerPersonCents` 5000; `main_plan_confirmed` stays 0 |
+| M2 pending | same call with Daniel `ready = 0` | blocked; `409 MEMBERS_NOT_READY`; response names Daniel (id 4); no draft row |
+| M3 completion | null-location setup (test-only), then generate; separately the default seeded trip | `201`; `GET /api/trips/{id}` shows both locations completed per the signed 2026-11-14 ruling; with the seeded nonblank locations the same read shows them preserved unchanged |
+| M4 non-organizer | generate with `X-User-Id: 2` | `403 NOT_ORGANIZER`; no draft |
+| M5 regen | M1 twice | `201` with `version` 2; second draft version 2 current; version 1 superseded |
+| M14 generate after confirm | generate after V1 | `409 ALREADY_CONFIRMED`; no new draft row; confirmed version unchanged; replanning deferred to R2 (user accepted and Emily IO approved 2026-11-15; overall G1 Pass) |
+| M6 inputs read | `GET /api/trips/{id}/main-plan/inputs`, `X-User-Id: 2`, default setup | `200`; ready count 4/4 + member names, interests/must-do summary, budget lines (no limit), generation rules list |
+| M7 inputs no draft | same call before any generation | `200` summary; no `NO_DRAFT` error |
+| M8 inputs non-member | same call with `X-User-Id: 5` | `403 NOT_A_MEMBER` |
+| M9 draft read | `GET /api/trips/{id}/main-plan`, `X-User-Id: 2`, after M1 | `200`; ordered stops with times and legs, cost 5000 cents, version 1, `stale = false`, confirmed flag false |
+| M10 draft read stale | same call after Ben revision bump | `200` with `stale = true` |
+| M11 draft read no draft | same call before any generation | `404 NO_DRAFT` |
+| M12 confirmed read | same call after V1 | `200`; version 1, confirmed flag true, `stale = false` |
+| M13 confirmed frozen | same call after V1 **and** a test-only Ben revision bump to 2 | `200`; version 1, confirmed flag true, `stale = false` — the confirmed version is frozen; staleness applies to unconfirmed drafts only (P2 lint ruling 2026-11-15) |
+| V1 confirm pass | `POST /api/trips/{id}/main-plan/confirm`, `X-User-Id: 1`, current valid draft v1 | `200`; body is the same projection as the draft read with `version` 1, `confirmed` true, `stale` false; v1 confirmed shared (that draft's `status = 'confirmed'`); `main_plan_confirmed = 1`; invitation accept afterwards → `403 JOINING_CLOSED` (J4) |
+| V2 overrun | confirm with Alice hard 4000 vs cost 5000 | blocked; `422 VALIDATION_FAILED`; overrun 1000 cents (10 SGD) shown for Alice; stays unconfirmed |
+| V3 schedule | confirm a draft with overlapping stops / missing leg / leg longer than the gap to the next stop / out-of-day stop (test-only draft mutation) | blocked; `422 VALIDATION_FAILED` with the specific schedule errors (incl. `TRAVEL_EXCEEDS_GAP`, C1 default A); stays unconfirmed |
+| V4 stale | confirm after Ben revision bump | blocked; `409 STALE_DRAFT`; regenerate then confirm passes |
+| V5 non-organizer | confirm with `X-User-Id: 2` | `403 NOT_ORGANIZER`; unchanged |
+| V6 no draft | confirm before any generation | `404 NO_DRAFT`; unchanged |
+| V7 re-confirm | confirm after V1 | `409 ALREADY_CONFIRMED` (OQ-8 ruled 2026-11-15); no state change |
+| M-N / V-N identity & trip | generate/confirm without `X-User-Id`; unknown trip; Eve | `401 USER_REQUIRED`; `404 TRIP_NOT_FOUND`; `403 NOT_A_MEMBER` |
+
+### Wire projections (field names contractual at P2, DoR S1 closure)
+
+camelCase JSON, integer cents (SGD), local `HH:MM` strings on the trip date
+(Asia/Singapore), integer-minute legs. The draft read, the generate 201 body and
+the confirm 200 body are the **same projection** (one shape, one serializer).
+
+| Projection | Fields |
+|---|---|
+| Plan (`GET /main-plan`, generate 201, confirm 200) | `tripId`, `version`, `confirmed`, `stale`, `costPerPersonCents`, `inputRevisions` [{`userId`, `revision`}], `stops` [{`seq`, `name`, `startTime`, `endTime`, `travelMinutesToNext` (null on the last stop), `interests` (provider-supplied tags, may be empty)}] |
+| Generation inputs (`GET /main-plan/inputs`) | `tripId`, `readyCount`, `memberCount`, `members` [{`userId`, `displayName`, `ready`, `preferenceRevision`}], `commonInterests` [string], `mustDo` [string], `budgets` [{`userId`, `displayName`, `hardBudgetCents` (null = no limit)}], `rules` [identifier] |
+| Confirm validation detail (inside the 422 body) | `scheduleErrors` [{`type`, `seq`, `message`}], `overruns` [{`userId`, `displayName`, `hardBudgetCents`, `overrunCents`}] |
+
+`rules` identifiers (fixed set; display wording free): `ALL_MEMBERS_READY`,
+`SUPPLIED_ACTIVITY_TIMES`, `TRAVEL_LEGS_BETWEEN_STOPS`, `HARD_BUDGET_RESPECTED`,
+`STALE_DRAFT_BLOCKS_CONFIRM`, `LOCATION_COMPLETION_AT_GENERATION`.
+
+`commonInterests` = interests shared by all ready members (intersection);
+`mustDo` = deduplicated union of ready members' must-do items. Both are
+display-only aggregations (no AC depends on their content). User product review
+2026-11-15 explicitly accepts these semantics and the six fixed rule identifiers,
+free display wording and possibly empty provider-supplied per-stop tags. Emily
+subsequently approved the current package on 2026-11-15 per separate explicit
+signing instruction; G1 is Pass — the C1/C2 ratifications were recorded
+2026-11-15 (write-sync alignment with `feat/travel_preference` is non-gating
+follow-up F1 in g1-decision.md).
+
+### Values deliberately not fixed (US-031-037)
+
+| Item | Why no value is set |
+|---|---|
+| Draft ids, absolute timestamps | Assigned by the database; tests read them from responses |
+| Per-stop cost breakdown | AC fixes only the 50 SGD per-person total |
+| Exact randomized completion outputs | Inherited 2026-11-14 ruling: do not fix random outputs |
+| Interests / must-do seed content | AC1 does not depend on specific interests; fake provider supplies the stops |
+| Per-stop `interests` tags | provider-supplied; the fake provider may return none, so the array may be empty. No AC fixes tag content |
+| Error message wording | Only the `code` is contractual |
