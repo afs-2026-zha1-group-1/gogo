@@ -50,7 +50,7 @@ Non-Goals: the other three preference kinds (REQ-020/024), the explicit "no pref
 state (US-027), readiness gating (US-026), preference comparison and plan generation
 (US-031), real authentication, the `tag` table and `/api/tags`, locking preferences after
 main-plan confirmation (D4), i18n and a catalogue admin screen, and migrating the **existing**
-five pages to TypeScript (US-065) or to Ant Design. Each has a reverse check in ATDD §5.
+five pages to TypeScript (US-065) or to `shadcn/ui`. Each has a reverse check in ATDD §5.
 
 CI is no longer a non-goal: adopting TypeScript without a typecheck in CI would be
 decoration, so the frontend job gains one step (DD12).
@@ -303,7 +303,7 @@ applied to this change — every other choice follows it.
 | TS-10 | §4: `com.bettertrips.*` with one `common/GlobalExceptionHandler` | `com.gogo.*` with one advice per feature package | renaming four packages gains nothing functional; the per-package advice already exists twice and D15 follows it | DD3, D15; plan reconciliation |
 | TS-11 | §7: `flyway-core` **plus** `flyway-database-nc-sqlite` at one explicit `${flyway.version}` | `flyway-core` only; no Flyway version change | measured 2026-11-16: the module does not exist on Maven Central for the managed Flyway (11.7.2 or the Boot 3.5.14 default), and re-pinning the shared Flyway version would re-checksum `V1`–`V4` for four in-flight changes; Flyway still detects SQLite without it | DD12; plan reconciliation, reopened when the module ships |
 | TS-12 | §3: React Router for the route table | the hand-written `parseRoute` in `App.tsx`, which the splits merge now mounts from `router.tsx`; the page is one more `parseRoute` branch | `origin/main` landed the app shell (US-064) with `parseRoute` while this change was in P4; replacing it would have rewritten the router for five other pages inside a preferences change, and the addresses are identical either way | DD9; pick it up with US-064 |
-| TS-13 | §3 dependency table: UI is Ant Design 5.x | no `antd`; `.notice` (`role="alert"`) carries the two failure states | the second merge replaced the hand-written shell with `shadcn/ui` primitives and Tailwind tokens, so `antd` would have been a second design system installed for one alert box, and its lockfile entries would have to be pinned through a registry the build sandbox cannot reach; the notice keeps the page's own palette and the same accessible role | DD9; plan reconciliation decides one UI kit for the whole app |
+| TS-13 | §3 dependency table: UI is Ant Design 5.x | no `antd`; `.notice` (`role="alert"`) carries the two failure states | the second merge replaced the hand-written shell with `shadcn/ui` primitives and Tailwind tokens, so `antd` would have been a second design system installed for one alert box, and its lockfile entries would have to be pinned through a registry the build sandbox cannot reach; the notice keeps the page's own palette and the same accessible role | DD9; resolved 2026-11-16 — `shadcn/ui` is the kit for the whole app (`AGENTS.md` §Reference, `tech-stack-plan.md` §3) |
 
 What the reversal changed, for the reviewers who read the first version:
 

@@ -329,7 +329,7 @@ slice and are not required by any AC. Recorded as a non-blocking item for Dev
 | 身份头 | 已合并代码用 `X-User-Id`（技术栈计划写的是 `X-Member-Id`） | 用 `X-User-Id` | 跟随代码；计划文档修正为团队任务（OQ-16） |
 | 响应风格 | trip 接口为裸 DTO 成功 + `{"code","message"}` 失败（计划写的是 `{data,error}` 封套） | 同 trip | 跟随代码；`greeting` 仍是 `{message}`，差异记为团队级统一项（OQ-17） |
 | 兴趣词表 | 技术栈计划 §5 的 `tag` 表为 24 码 | 本需求 7 项，代码常量 | 分离：不建 `tag` 表、不提供 `/api/tags`；合并词表是 M2.5 的团队任务 |
-| 前端栈 | 计划写 Ant Design 5 + TS + TanStack Query + React Router | 已合并 `App.jsx` 为 hash 路由 + `api.js` + `app.css` | 跟随代码，不新增依赖（D5）；计划文档修正为团队任务 |
+| 前端栈 | 计划写 Ant Design 5 + TS + TanStack Query + React Router | 已合并 `App.jsx` 为 hash 路由 + `api.js` + `app.css` | 跟随代码，不新增依赖（D5）；2026-11-16 已收口：UI 定为 shadcn/ui + Tailwind v4，计划 §3 与 AGENTS.md 同步修正 |
 | UI 清单 | 参考图节点 8 展示 10 个中文 chip，映射 US-019~027 | AC 给出的 7 项英文 label | 行为以 AC 为准；示意差异记录在此，不回改参考图 |
 | 偏好存储索引 | 计划 §5 为普通索引 | 改为 UNIQUE(`trip_id`,`user_id`,`kind`) | 有意偏离：幂等覆盖写需要唯一键定位行 |
 

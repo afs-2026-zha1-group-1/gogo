@@ -43,7 +43,7 @@
 | 迁移 | Flyway（core + SQLite 社区模块） | 11.x | 两模块版本严格一致 |
 | 连接池 | HikariCP | 随 Boot | `maximum-pool-size=1`（硬约束） |
 | 前端 | React + TypeScript + Vite | 19 / 5.x / 7.x | SPA |
-| UI | Ant Design | 5.x | 表单、列表、日期选择直接用 |
+| UI | shadcn/ui（`components.json`，new-york 风格）+ Tailwind CSS | Tailwind 4.3.x | 组件源码在 `frontend/src/components/ui/`，主题令牌在 `src/index.css` 的 `@theme`；不引入第二个 UI 库（Ant Design 5 为旧口径，2026-11-15 由 G1 C4 / Leo 裁定取代） |
 | 数据请求 | TanStack Query | v5 | 缓存 + 轮询（`refetchInterval`） |
 | 路由 | React Router | 7.x | 5 个页面足够 |
 | 全局状态 | 不引入 | — | Query 缓存 + Context 已够；Zustand 留到 R2 |
