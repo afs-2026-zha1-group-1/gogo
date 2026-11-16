@@ -421,6 +421,98 @@ No notifications (email, push, queue) are in scope.
 No retention, volume or SLA is stated by any AC; the shell adds no data.
 Browser support for `100dvh` and safe-area insets is a verification item at P4
 (R19), not a requirement unknown. Recorded, not invented.
+
+## REQ-008
+
+Trigger: impact solution direction is **add** (new `auth` capability) plus
+**modify** (`trips`/`invitations` identity, `app-shell` login/switcher). This is
+the first change that stores credentials and session-derived identity, so the
+data contract covers both the persisted credential row and the runtime session.
+
+### ⑨ Data contract
+
+| Concept | Grain | Fields | State transitions |
+|---|---|---|---|
+| `account_credential` (new, V6) | One row per `app_user` account | `user_id` INTEGER PRIMARY KEY REFERENCES `app_user(id)`; `email` TEXT NOT NULL with a UNIQUE index (trimmed, lower-cased for comparison); `password_hash` TEXT NOT NULL (BCrypt, never plaintext) | Seeded once for users 1–5 by `V6` (V1–V5 occupied: V4 = splits, V5 = main plan); no create/update/delete path in this change (registration/password change out of scope) |
+| Authenticated account (wire) | One object per login/`me` response | `id` (integer), `name` (`app_user.display_name`), `email` (credential email); no password/hash field ever | Read-only projection |
+| Session (Spring Security) | One server-side session per signed-in browser | Session id in an HttpOnly cookie; principal carries account id/email/name; CSRF token bound to the session; idle timeout configurable (30 min default, short in tests) | anonymous → authenticated on valid login (session id rotated); authenticated → anonymous on expiry, invalid cookie or future logout; restart of the single server drops in-memory sessions and therefore authenticates nobody |
+| CSRF token | One token per session, exposed to the SPA | `XSRF-TOKEN` cookie readable by same-origin JS; required in the `X-XSRF-TOKEN` header for state-changing requests | Issued on bootstrap/login; validated per request; invalid/missing → 403 and no state change |
+| Pending invitation (client) | At most one token per browser tab | Invitation token string plus the intended `#/join/<token>` route, held only while signed out | Set when a guest acts on a preview without a session; consumed after login to resume the preview; cleared when the preview is left or accepted; never triggers an automatic accept |
+| Frontend auth state | One per app instance | `checking` (bootstrap `me` request), `signedIn` (account), `signedOut` (login required) | Boot → `checking`; 200 `me` → `signedIn`; 401 → `signedOut`; login success → `signedIn`; 401 on any protected call → `signedOut` + login page |
+
+No `{TBD}` field remains. The only intentionally open values are the documented
+demo password/emails (fixture content, OQ-8) and the timeout number (OQ-4); both
+have concrete proposals and do not change grain or ownership.
+
+### ⑩ Boundary enumeration
+
+| Branch | In / out | Attribution |
+|---|---|---|
+| Valid seeded email + password | in | S1; 200 account + new session; `me` 200; dashboard opens |
+| Unknown email, wrong password, malformed/blank fields | in | S3; one generic credential failure (401), no session, no account-existence signal |
+| Same email with different letter case or surrounding spaces | in | Credential comparison trims and lower-cases; same account, no duplicate row |
+| Protected endpoint without a session cookie | in | S4/S9; 401 `USER_REQUIRED`, no private data |
+| Protected endpoint with an expired/invalid session | in | S5; 401 `USER_REQUIRED`, no private data; frontend opens login |
+| Request with only the old `X-User-Id` header | in (reverse case) | S9/R-1; unauthenticated 401; the header is ignored by design |
+| Login while already authenticated | in | S10-adjacent; new login rotates the session id; already-signed-in access to `#/login` returns to dashboard (OQ-10) |
+| Login success on an existing anonymous session | in | S10; old session id stops authenticating (fixation protection) |
+| Session cookie from a previous server run | in | Invalid after restart; 401/login (in-memory session store) |
+| Public greeting / invitation preview | in | S7; unchanged, identity-free |
+| Public preview → accept while signed out | in | S2; 401 on accept, pending invitation retained, login, preview resumes, explicit accept required |
+| Authenticated accept for a valid/open invitation | in | S6; existing join rules and duplicate-membership protection unchanged |
+| Authenticated non-member reading a trip | in | S6; 403 `NOT_A_MEMBER`, no trip values (unchanged) |
+| State-changing request without a valid CSRF token | in | S8; 403, no state change; login POST also requires the bootstrap token |
+| CSRF bootstrap request | in (public) | `GET /api/auth/csrf` issues/refreshes the token cookie without exposing account data |
+| Logout / account edit / registration request | out of scope | R-2; no endpoint or UI is added (US-068/US-069 own them) |
+| Identity switcher or seeded-user list in the browser | out of scope | R-3; removed, no replacement switch affordance |
+| Plaintext password storage or logging | out of scope | R-5; BCrypt only; passwords never returned or logged |
+| Membership rule change | out of scope | R-6; authentication proves identity, not membership |
+
+Every branch referenced by a scenario has a row above.
+
+### ⑪ Cross-REQ consistency
+
+| Item | Other requirement | REQ-008 | Convergence |
+|---|---|---|---|
+| Caller identity | `trips` "Trip caller identity" (living) | MODIFY: session principal replaces `X-User-Id`; 401 `USER_REQUIRED` retained; 403 membership rule unchanged | One identity mechanism; no header fallback |
+| Trip creation/detail | `trips` creation/detail requirements | Behavior unchanged; the organizer/member is the authenticated account | Scenarios rewritten to "after login as Alice/Ben" |
+| Invitation issuance/accept | `invitations` issuance/acceptance (living) | MODIFY: principal replaces the header; preview stays public; identity-error precedence stays | Same outcomes and codes |
+| Main-plan identity | `main-itinerary` "Authorization and identity for main-plan operations" (living) | MODIFY: session principal replaces `X-User-Id`; organizer/member outcomes and `USER_REQUIRED` retained | Delta added in this change |
+| Split identity | `splits` five draft endpoints (living) | MODIFY: session principal replaces the header; `MEMBER_REQUIRED` and the `{data,error}` envelope remain documented exceptions | Delta added in this change; no split behavior change |
+| Shell identity surface | `app-shell` "Mobile shell frame" (living) | MODIFY: switcher removed, signed-in name shown read-only; login is full-screen without dock; dock/frame/join exclusion unchanged | Shell is signed-in only; guest preview outside |
+| Greeting | `greeting` (living) | Unchanged and public | No dependency |
+| Dashboard landing | `app-shell` "Dashboard tab placement"; US-061 | `#/` becomes protected and is the post-login landing; aggregation still US-061 | No dashboard data added here |
+| Scanner | US-067 (Backlog) | Consumes `#/login` and session; no scanner code | Downstream only |
+| My Account / logout | US-068/US-069 (Backlog) | Session and principal support them; no account/logout endpoint added | Downstream only |
+| Binding plan | `docs/knowledge/architecture/tech-stack-plan.md` | Plan states no accounts and `X-Member-Id`; this change adds Spring Security + credentials | Recorded deviation; reconcile at archive per `openspec/config.yaml` |
+| Fixtures/tests | trip/invitation/main-plan/splits acceptance tests use the header | Rewrite to authenticate via session; expected outcomes/codes unchanged | Test-only migration, no product contract change |
+
+No ✗ row remains. `auth` is new; `trips`, `invitations`, `app-shell`,
+`main-itinerary` and `splits` are the modified capabilities; `greeting` is
+untouched.
+
+### ⑫ Notification / display contract
+
+| Surface | Trigger | Recipient | Content + display fields | Channel |
+|---|---|---|---|---|
+| Login page | Signed-out access to a protected page, or direct `#/login` | Signed-out traveler | Full-screen (no dock) email + password form, submit, busy and generic failure text; no account-existence hints, no account data, Ant Design language | Login/CSRF endpoints over HTTP |
+| Post-login dashboard | Successful login with no pending invitation (or other intercepted page) | Signed-in traveler | `#/` dashboard/home content with the dock; signed-in account name shown read-only | Session cookie |
+| Invitation resume | Successful login with a pending invitation | Signed-in invited guest | The same `#/join/<token>` preview resumes; no automatic join; explicit accept remains | Session cookie + public preview |
+| Protected-page redirect | 401 from a protected page/API or an expired session | Signed-out/expired traveler | Login page opens; no private trip, member, invitation or account data is rendered | Client route guard + 401 |
+| Shell identity indicator | Any signed-in shell route | Signed-in traveler | Read-only account display name; no switcher, no seeded-user list, no account actions | Session-derived `me` |
+| Public greeting | Home/dashboard greeting request | Any visitor | Existing greeting content | `GET /api/greeting` (public) |
+| Public invitation preview | Guest opens `#/join/<token>` | Any visitor | Existing public preview (trip name, destination, dates, joining state); no identities | `GET /api/invitations/{token}` (public) |
+| Split error surface | Split endpoint without a valid session | Caller | `401 MEMBER_REQUIRED` with `{data:null,error:{code,message}}`; unchanged from the merged splits contract | Split endpoints (session-derived identity, documented exception) |
+
+No notifications (email, push, queue) are in scope.
+
+### NFR business-policy layer
+
+The only policy values stated are the session idle timeout (proposed 30 minutes,
+configurable) and BCrypt hashing. Rate limiting, account lockout, password
+complexity and audit logging are deployment/security-operations concerns not
+named by any AC; recorded as non-blocking for Dev/SA, not invented.
+
 | Screen 9 generate summary | page load | members (P2 ruling 2026-11-15; write actions stay organizer-only) | ready count (4/4) + member names; common interests chips; must-do summary; constraints/budget lines; generation rules list | generation inputs projection (`GET /api/trips/{id}/main-plan/inputs`, P2 ruled; members may read) |
 | Screen 10 draft timeline | draft read | members | per stop: name, time range, interest tags (provider-supplied, may be empty), cost per person; version badge; stale banner when stale | plan projection |
 | Screen 10 validation status / blocked errors | confirm attempt | organizer | scheduleErrors list; per-member overrun amount (10 SGD case); stale message | confirm validation projection |

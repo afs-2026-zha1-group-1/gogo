@@ -4,7 +4,6 @@ import Icon from '../Icons'
 import type { Trip, TripCreatePayload } from '../types'
 
 interface CreateTripProps {
-  userId: number
   backHref: string
 }
 
@@ -17,7 +16,7 @@ const EMPTY: TripCreatePayload = {
   endLocation: '',
 }
 
-export default function CreateTrip({ userId, backHref }: CreateTripProps) {
+export default function CreateTrip({ backHref }: CreateTripProps) {
   const [form, setForm] = useState<TripCreatePayload>(EMPTY)
   const [busy, setBusy] = useState<boolean>(false)
   const [error, setError] = useState<string>('')
@@ -39,7 +38,7 @@ export default function CreateTrip({ userId, backHref }: CreateTripProps) {
     setBusy(true)
     setError('')
     try {
-      const result = await api<Trip>('/api/trips', { userId, method: 'POST', body: form })
+      const result = await api<Trip>('/api/trips', { method: 'POST', body: form })
       if (result.ok && result.data) {
         window.location.hash = `#/trips/${result.data.id}`
         return

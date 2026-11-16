@@ -1,5 +1,6 @@
 package com.gogo.hello.splits;
 
+import com.gogo.auth.AccountPrincipal;
 import com.gogo.hello.common.ApiResponse;
 import com.gogo.hello.splits.domain.SplitDraftDocument;
 import com.gogo.hello.splits.domain.TimingResult;
@@ -11,19 +12,19 @@ import com.gogo.hello.splits.dto.SaveBoundariesRequest;
 import com.gogo.hello.splits.dto.SplitDraftDetailResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Thin REST adapter for the splits capability (design D1). Parses the {@code X-Member-Id} header and path variables
- * and delegates to {@link SplitDraftService}; all guards, judgments and persistence live below this layer. The
- * header is optional here so a missing identity reaches the guard and maps to 401 rather than a framework 400.
+ * Thin REST adapter for the splits capability (design D1). The caller id comes from the
+ * authenticated session; an anonymous caller reaches {@link MemberGuard} with a null id and maps to
+ * 401 MEMBER_REQUIRED, preserving the splits contract.
  */
 @RestController
 @RequestMapping("/api/trips/{tripId}/split-draft")
@@ -38,43 +39,50 @@ public class SplitDraftController {
     @GetMapping
     public ResponseEntity<ApiResponse<SplitDraftDetailResponse>> getDraftDetail(
             @PathVariable String tripId,
-            @RequestHeader(name = "X-User-Id", required = false) String memberId) {
-        SplitDraftDetailResponse detail = service.getDraftDetail(tripId, memberId);
+            Authentication authentication) {
+        SplitDraftDetailResponse detail = service.getDraftDetail(tripId, caller(authentication));
         return ResponseEntity.ok(ApiResponse.ok(detail));
     }
 
     @PostMapping
     public ResponseEntity<ApiResponse<SplitDraftDocument>> startDraft(
             @PathVariable String tripId,
-            @RequestHeader(name = "X-User-Id", required = false) String memberId) {
-        SplitDraftDocument draft = service.startDraft(tripId, memberId);
+            Authentication authentication) {
+        SplitDraftDocument draft = service.startDraft(tripId, caller(authentication));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(draft));
     }
 
     @PutMapping("/boundaries")
     public ResponseEntity<ApiResponse<BoundaryResponse>> saveBoundaries(
             @PathVariable String tripId,
-            @RequestHeader(name = "X-User-Id", required = false) String memberId,
+            Authentication authentication,
             @RequestBody SaveBoundariesRequest request) {
-        BoundaryResponse response = service.saveBoundaries(tripId, memberId, request);
+        BoundaryResponse response = service.saveBoundaries(tripId, caller(authentication), request);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     @PostMapping("/routes:generate")
     public ResponseEntity<ApiResponse<RouteGenerationResponse>> generateRoutes(
             @PathVariable String tripId,
-            @RequestHeader(name = "X-User-Id", required = false) String memberId,
+            Authentication authentication,
             @RequestBody GenerateRoutesRequest request) {
-        RouteGenerationResponse response = service.generateRoutes(tripId, memberId, request);
+        RouteGenerationResponse response = service.generateRoutes(tripId, caller(authentication), request);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     @PostMapping("/routes:check-timing")
     public ResponseEntity<ApiResponse<TimingResult>> checkTiming(
             @PathVariable String tripId,
-            @RequestHeader(name = "X-User-Id", required = false) String memberId,
+            Authentication authentication,
             @RequestBody CheckTimingRequest request) {
-        TimingResult result = service.checkTiming(tripId, memberId, request);
+        TimingResult result = service.checkTiming(tripId, caller(authentication), request);
         return ResponseEntity.ok(ApiResponse.ok(result));
+    }
+
+    private String caller(Authentication authentication) {
+        if (authentication != null && authentication.getPrincipal() instanceof AccountPrincipal principal) {
+            return String.valueOf(principal.id());
+        }
+        return null;
     }
 }

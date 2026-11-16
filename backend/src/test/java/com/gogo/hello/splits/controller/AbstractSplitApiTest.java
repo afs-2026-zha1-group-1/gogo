@@ -1,5 +1,7 @@
 package com.gogo.hello.splits.controller;
 
+import com.gogo.auth.TestAuth;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;

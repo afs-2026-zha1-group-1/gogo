@@ -289,3 +289,60 @@ The `SPLIT_TIMING_INFEASIBLE` error detail adds `totalMinutes`, `overrunMinutes`
 | Confirm/cancel response ids and timestamps | Assigned by the backend; tests read them from responses |
 | Whether the replacement draft reuses the seeded groups | MVP fixture supplies the same split; the assertion is on initiator/version/status, not group content round two |
 | Error message wording | Only `code` is contractual |
+
+## REQ-008 — login and session (US-066)
+
+Same users as above. Credentials are seeded by `V6__create_account_credential.sql`
+for the five fixture accounts. **Demo-only values**: they exist so acceptance can
+log in without a registration story; they are shown on the demo login page (not a production account directory).
+
+### Accounts
+
+| id | display name | email | demo password |
+|---|---|---|---|
+| 1 | Alice | `alice@example.com` | `gogo-demo-2026` |
+| 2 | Ben | `ben@example.com` | `gogo-demo-2026` |
+| 3 | Chloe | `chloe@example.com` | `gogo-demo-2026` |
+| 4 | Daniel | `daniel@example.com` | `gogo-demo-2026` |
+| 5 | Eve | `eve@example.com` | `gogo-demo-2026` |
+
+All five share one documented demo password; passwords are stored only as BCrypt
+hashes.
+
+### Requests
+
+| Case | Call | Expected |
+|---|---|---|
+| A1 valid login | `POST /api/auth/login` `{"email":"alice@example.com","password":"gogo-demo-2026"}` | 200, body `id = 1`, `name = Alice`, `email = alice@example.com`; no password/hash field; session cookie set |
+| A2 normalized email | A1 with `"  Alice@Example.COM  "` | 200, same account as A1 |
+| A3 wrong password | A1 with `"wrong-password"` | 401, `code = INVALID_CREDENTIALS`; no session; no account field |
+| A4 unknown email | A1 with `"nobody@example.com"` | 401, `code = INVALID_CREDENTIALS`, identical body to A3 |
+| A5 blank credentials | A1 with email or password missing/blank | 401, `code = INVALID_CREDENTIALS`; no session |
+| A6 current account | `GET /api/auth/me` with the A1 session | 200, same account as A1 |
+| A7 no session | `GET /api/auth/me` without a session cookie | 401, `code = USER_REQUIRED`; no account data |
+| A8 fixation | capture the anonymous session id, then A1 | post-login session id differs; the anonymous id returns 401 on `me` |
+| A9 expiry | test profile with a short idle timeout; wait past it, then A6 | 401, `code = USER_REQUIRED`; a fresh A1 restores access |
+| A10 CSRF missing | authenticated POST (e.g. create trip) without `X-XSRF-TOKEN` | 403, `code = CSRF_INVALID`; no state change |
+| A11 CSRF valid | bootstrap the token, repeat A10 with `X-XSRF-TOKEN` | normal success/validation outcome; state changes only as the case allows |
+| A12 login CSRF | A1 without and then with the CSRF token | without: 403 `CSRF_INVALID`; with: A1/A3 outcome |
+| P1 protected no session | `GET /api/trips/{id}` or `POST /api/trips` without a session | 401, `code = USER_REQUIRED`; no trip values and no write |
+| P2 header only | P1 with `X-User-Id: 1` but no session | 401, `code = USER_REQUIRED`; header ignored |
+| P3 public surfaces | `GET /api/greeting` and `GET /api/invitations/{token}` without a session | 200 as before; preview carries only the public basics and no member/itinerary/preference data |
+| P4 authenticated permissions | login as Alice, Ben, Eve; exercise create, details, issuance, accept | Alice organizer on create; Ben details 200; Eve details 403 `NOT_A_MEMBER`; Ben issuance 403 `NOT_ORGANIZER`; Eve accept joins once and her next read is 200 |
+| P5 main-plan protected | main-plan read/generate/confirm without a session | 401, `code = USER_REQUIRED`; no plan data; authenticated outcomes unchanged |
+| P6 invitation resume | signed-out browser opens `#/join/<token>`, acts on it, logs in | preview is public; login opens; after login the same preview resumes; no membership until explicit accept; accept then joins |
+| P7 login redirect | signed-in browser opens `#/login` | `#/` opens |
+| P8 hash storage | test-only direct read of `account_credential.password_hash` | value is a BCrypt hash (starts `$2`) and is not the demo password |
+| C1 existing acceptance | re-run create/detail/invitation/join/main-plan/split acceptance while logged in | same outcomes and codes as the archived fixtures |
+| P9 split no session | any `GET/POST/PUT /api/trips/{id}/split-draft...` without a session | 401 with `data = null` and `error.code = MEMBER_REQUIRED` (splits exception), no private data |
+| P10 split authenticated | the same split calls with a member session | existing split outcomes and `{data,error}` envelope unchanged; no header is sent |
+
+### Values deliberately not fixed (REQ-008)
+
+| Item | Why no value is set |
+|---|---|
+| Session cookie value / session id | Generated per session; tests capture it from the response |
+| BCrypt hash string | Salted per seed run; only the BCrypt format is contractual |
+| Login error message wording | Only `code = INVALID_CREDENTIALS` is contractual |
+| Exact idle timeout beyond the default | 30 minutes default; tests use a short configured timeout |
+| Demo password in UI | Never displayed; it is a fixture value documented here only |
