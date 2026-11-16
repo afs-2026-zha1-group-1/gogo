@@ -124,6 +124,12 @@ exists.
       and desktop widths: layout stays inside the mobile-first column, no
       dock, and controls match Ant Design visual conventions per I-10;
       screenshot `s8-1-scanner-styled.png`.
+- [x] 8.2 Add the dashboard scan entry (AC S1–S2, brought in from the deferred
+      follow-up story): an `.iconbtn` button (`scan` icon, `aria-label`
+      "扫码加入行程") to the right of the `我的行程` title in the Home appbar
+      (`frontend/src/pages/Home.tsx`), linking to `#/scan`. Verify the button
+      renders in the appbar and opens the full-screen scanner, then closing
+      returns to `#/`.
 
 ## 9. Integration checks (span multiple groups)
 
@@ -164,7 +170,7 @@ exists.
   Jiang) after remote CI green.
 - After US-066-log-in archives, rebase and re-run group 9 E2E against the
   session-based Join page (G1 residual note).
-- Register the follow-up UI-integration story for AC S1–S2 (scan icon next
-  to "i", opening `#/scan` from the dock) before US-067 archives.
+- AC S1–S2 (dashboard scan entry) landed in this change (Home appbar `#/scan`
+  button); no separate follow-up UI-integration story is needed.
 - `/sdd:g3-decision-record` (SA Lumi) then `/sdd:living-merge` and
   `/sdd:change-summary`.

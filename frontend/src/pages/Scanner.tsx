@@ -303,7 +303,7 @@ export default function Scanner({ from }: { from: string | null }) {
         </div>
         <button
           type="button"
-          className="icon-btn"
+          className="iconbtn"
           aria-label="关闭扫码"
           onClick={busy ? stopScanning : close}
         >

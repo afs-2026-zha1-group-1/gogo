@@ -36,7 +36,7 @@ fixtures (valid/revoked/closed/open tokens) serve as scanner test inputs directl
 
 | US-067 AC scenario | Spec coverage | Status |
 |---|---|---|
-| S1–S2 (icon placement) | Deferred OQ-3 | ✅ deferred, noted in proposal |
+| S1–S2 (icon placement) | app-shell MODIFIED: Home appbar `#/scan` entry scenario | ✅ landed in this change (OQ-3 resolved) |
 | S3 (camera not requested until start) | Scenario 1: Camera deferred | ✅ |
 | S4 (camera released on close) | Scenario 2: Camera released | ✅ |
 | S5 (valid QR → preview + accept) | Scenario 3: Valid QR routes | ✅ |

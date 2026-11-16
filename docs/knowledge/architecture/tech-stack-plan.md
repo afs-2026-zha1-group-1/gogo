@@ -372,6 +372,10 @@ US-013 在 US-066 会话认证基线上新增成员名册读取；不新增迁�
     one exception: it issues a single `POST /api/trips/1/invitation` as the
     signed-in organizer to obtain a real token, then pipes the resulting link
     through the same matcher — a UI aid, not part of the AC scan paths.
+  - **Dashboard scan entry (AC S1–S2, landed).** A `.iconbtn` button (`scan`
+    icon, `aria-label` "扫码加入行程") sits to the right of the `我的行程`
+    title in the Home appbar and links to `#/scan`. It is a plain hash link:
+    no new backend call, permission gate, or router (design D1).
   - Styling stays CSS tokens in `frontend/src/app.css` (`.screen`, `.appbar`,
     `.card`, `.btn`, `.field`, `--brand / --warn-soft / --err-soft`). No
     `antd` import; Ant Design is a **semantic** reference (primary + secondary
