@@ -56,7 +56,10 @@ composes them instead of rebuilding membership or the shell.
 Unchanged: trip creation/detail read, invitation preview/accept/closed
 behavior, main-plan readiness and preference reads, the app shell frame/dock,
 the split placeholder, the `X-User-Id` scaffold, SQLite datasource and the two
-CI jobs. No breaking change to any published contract.
+CI jobs. The CI **job contents** are unchanged; by user instruction on
+2026-11-16 the workflow trigger was broadened from `main`-only pushes to every
+branch push so this feature branch can produce its own run. No breaking change
+to any published contract.
 
 ## Capabilities
 

@@ -486,7 +486,7 @@ capability, plus a MODIFIED `app-shell` placeholder requirement).
 | API client | `frontend/src/api.ts` | Sends `X-User-Id`; returns status/ok/data; reused unchanged |
 | Design reference | `ui-design-reference/README.md` node 7, `ui-design-reference/screenshots/screen-07-members.png` | Member row, avatar stack, organizer badge, readiness ring (ring and preferences excluded by the issue) |
 | Fixtures | `requirement-workspace/acceptance-test-fixtures.md` §Users / §Sample trip | Users and trip fixed; no §US-013 section yet |
-| CI | `.github/workflows/ci.yml` | Backend `mvn -B test`, frontend `tsc -b && vite build`; unchanged |
+| CI | `.github/workflows/ci.yml` | Backend `mvn -B test`, frontend `tsc -b && vite build`; job contents unchanged. Trigger broadened to all branch pushes by user instruction 2026-11-16, so the feature branch produces its own run. |
 | Split branch | `sdd-req-004-split-planning` (unmerged) | Not part of this baseline; `V4__splits.sql` and split UI are absent on `group1/main`; no conflict in this change |
 | Active changes | `openspec/changes/` | `req-002-greeting-json-sqlite` only; this change becomes the second |
 
@@ -521,7 +521,9 @@ holds `trips`/`app-shell`; no competing spec root is introduced.
   content changes. No list-all endpoint is introduced.
 - Access control: inherits the scaffold contract; outsiders receive 403 with no
   identities.
-- CI: unchanged; backend tests cover the new endpoint, frontend build covers the
+- CI: job contents unchanged; the trigger now covers all branch pushes (user
+  instruction 2026-11-16), so the feature branch produces its own run. Backend
+  tests cover the new endpoint, frontend build covers the
   new page.
 - Ordering: no dependency on the unmerged split branch; US-013 starts from
   `group1/main`, which already has REQ-003/004, US-031-037 and US-064.
@@ -556,6 +558,7 @@ holds `trips`/`app-shell`; no competing spec root is introduced.
 | R34 | Ordering drift if the query is unordered | testability, guarded | Ascending `userId` fixed in D2/fixtures. Owner Dev |
 | R35 | Stack-plan names AntD 5 + TanStack Query v5 but the merged frontend uses token CSS + plain fetch | stack deviation, accepted for this slice | Follow the actual baseline; adopting the planned stack is a separate migration (US-065/US-066). Recorded in the proposal. Owner Dev/SA |
 | R36 | Outsider denial body leaking names through messages | security, guarded | Generic message; S3 asserts no identity fields. Owner Dev/SA |
+| R37 | CI trigger broadened to all branch pushes by user instruction 2026-11-16 | process, accepted | Job contents unchanged; the branch produces its own run so G2 can cite fresh CI without a main PR. Owner Dev/IO |
 
 No critical blocker invalidates US-013, so split may proceed.
 
@@ -567,4 +570,5 @@ halves are not independently shippable (the screen needs the read, the read is
 verified through the screen's states), so splitting would create two
 unverifiable halves. Effort: small — one controller method, one repository
 query, one DTO, one TS page, one placeholder requirement modification, fixtures
-and tests. No backend package, migration, dependency or CI change.
+and tests. No backend package, migration or dependency change; the CI job
+contents are unchanged, only the trigger was broadened to all branch pushes.

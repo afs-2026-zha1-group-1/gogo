@@ -72,7 +72,9 @@
 ## 6. Pipeline and G2 inputs (owner: Dev + VL)
 
 - [ ] 6.1 Push the branch (typed authorization) and read a fresh CI run with
-      `gh`; never inherit a green
+      `gh`; never inherit a green. The workflow trigger was broadened to all
+      branch pushes by user instruction 2026-11-16 (job contents unchanged), so
+      this branch produces its own run without a main PR.
 - [ ] 6.2 Write the P4 pipeline report under `docs/ai4se-plugins/`
 - [ ] 6.3 Prepare the G2 decision record for VL Elian Jiang; do not self-sign
 
