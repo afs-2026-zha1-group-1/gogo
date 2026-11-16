@@ -358,11 +358,12 @@ Goals already says.
 
 Consequences, recorded instead of left implicit:
 
-- **G1 needs re-review for this text.** The recorded G1 decision was made against the English
-  seven-label catalogue and a chip UI without a visual baseline. The catalogue table, four
-  API scenarios, the read scenarios and the whole page requirement changed afterwards, so the
-  gate is not re-signed by this change and the agent does not self-issue it. IO and SA have to
-  re-read the delta before G2 counts it; `dov-ac-review.md` carries the note.
+- **G1 was re-signed for this text on 2026-11-16.** The original decision was made against
+  the English seven-label catalogue and a chip UI without a visual baseline, and the catalogue
+  table, four API scenarios, the read scenarios and the whole page requirement changed
+  afterwards. IO Emily and SA evelyn.huang re-read the revised delta and signed it as Pass,
+  recorded in `g1-decision.md` §"Revision re-review (2026-11-16) — Pass"; G2 may cite it for
+  this text. The agent did not issue either signature.
 - **No data migration is needed or written.** The feature exists only on
   `feat/travel_preference` and nothing has been released, so no stored row holds a retired
   code. The local development database was re-seeded with `{"codes":[]}` for the three

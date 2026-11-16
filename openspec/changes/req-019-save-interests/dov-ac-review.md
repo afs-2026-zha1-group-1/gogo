@@ -110,9 +110,13 @@ What that means for this record, stated plainly:
 | E6 (wrong case, whitespace, empty string, near-matches) | Now asserted with Chinese examples; "wrong case" only has meaning for the retired English labels, which a new CAT-2 scenario rejects as a whole |
 | C6 (at most 7) | Superseded: at most ten |
 | §6 IO row on English-only labels | Superseded by the owner's instruction of 2026-11-16 |
-| G1 decision | **Not re-signed.** The recorded G1 approved the English seven-label text. IO and SA must re-review the revised delta before G2 cites it; the agent does not issue that review |
+| G1 decision | **Re-signed 2026-11-16 — Pass.** IO Emily and SA evelyn.huang signed the revised delta as Pass, recorded in `g1-decision.md` §"Revision re-review (2026-11-16)"; G2 may cite that record for this text. The row previously said "not re-signed"; this row supersedes it |
 
 No new ambiguity is introduced: the label order follows the prototype, which differs from the
 order the instruction listed the labels in (`手作` and `历史人文` swap, `慢游` last), and the
 page keeps only the US-019 block of screen-08. Both choices are recorded in `design.md`
 (Revision section) and `tasks.md` §8.
+
+Update, 2026-11-16: the re-review this section asked for has been recorded. IO Emily and SA
+evelyn.huang both signed the revised delta as Pass; see `g1-decision.md` §"Revision re-review
+(2026-11-16) — Pass" and `tasks.md` 8.6. No condition or finding came with either signature.

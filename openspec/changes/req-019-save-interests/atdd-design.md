@@ -5,8 +5,8 @@
   G1 Pass (IO Emily 2026-11-15, SA evelyn.huang 2026-11-15; gate closed 2026-11-16 at
   `5a255b6`). **Revised 2026-11-16** after P4: the catalogue became ten Chinese labels and
   the page gained the `screen-08-preferences.png` visual baseline. The rows below carry the
-  revised expectations; the G1 re-review that the revision needs is recorded in `design.md`
-  and `dov-ac-review.md`, not implied here.
+  revised expectations; the G1 re-review the revision needed was signed Pass by IO Emily and
+  SA evelyn.huang on 2026-11-16 (`g1-decision.md`), not implied here.
 - Fixtures: `requirement-workspace/acceptance-test-fixtures.md` (users 1–5, seeded
   trip). REQ-019 request samples stay in the delta (D16)
 - Stage: P3, `/sdd:atdd-design`. Acceptance checks guide implementation; no feature

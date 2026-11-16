@@ -133,5 +133,6 @@ REQ-019 是新增能力，深潜在范围内。`analysis/req-019-dor.md` 已复�
    截图中的必做项（US-020）、预算（US-024）、无偏好开关（US-027）与「提交并标记就绪」
    不属于本变更。
 
-该修订发生在 G1 Pass 之后，已登记的 G1 决策不覆盖新文本：需 IO 与 SA 重新评审 delta，
-代理不自签。细节见 `design.md` 的 Revision 段与 `tasks.md` §8。
+该修订发生在 G1 Pass 之后，已登记的 G1 决策不覆盖新文本；修订后的 delta 已由 IO Emily 与
+SA evelyn.huang 于 2026-11-16 重新评审并签署 Pass（代理不自签），记录见 `g1-decision.md`
+的「Revision re-review」段。细节另见 `design.md` 的 Revision 段与 `tasks.md` §8。

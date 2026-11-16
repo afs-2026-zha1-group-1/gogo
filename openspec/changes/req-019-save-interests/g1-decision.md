@@ -15,7 +15,8 @@ that the CLI is unavailable; strict validation has not passed.
 
 - Change id: `req-019-save-interests`
 - Gate: G1 (Align)
-- Status: **RECORDED — Pass; gate closed 2026-11-16**. SA evelyn.huang and IO Emily
+- Status: **RECORDED — Pass; gate closed 2026-11-16**, and **Pass again on the revised
+  delta, 2026-11-16** (see "Revision re-review" below). SA evelyn.huang and IO Emily
   have both signed. The SA's 2026-11-16 re-review of the REQ-020/024 revised
   contracts released condition 1, and no findings came with it. `openspec validate
   --strict` still exits 1 and is carried as a follow-up, not as a passed check.
@@ -42,6 +43,35 @@ Recorded limitation, deliberately not presented as a pass: `openspec validate
 --strict` still exits 1 because five ADDED requirement bodies exceed 500
 characters. The gate owners closed G1 with this item outstanding, so it is carried
 as a follow-up that blocks archive, not P4 start.
+
+## Revision re-review (2026-11-16) — Pass
+
+The delta changed after this gate closed: the catalogue became ten Chinese labels and
+the page requirement gained the `screen-08-preferences.png` visual baseline (details in
+`design.md` Revision, `dov-ac-review.md` §8, `tasks.md` §8). This section records the
+re-review of that text; it does not replace the record of the original review above.
+
+- Revision re-review: **Pass**, recorded 2026-11-16 from the requirement owner's explicit
+  instruction that both **IO Emily** and **SA evelyn.huang** signed the revised delta as
+  Pass. No conditions and no findings were attached to either signature.
+- Text re-read: the catalogue table (ten Chinese labels, codes `water`/`diving`/`photo`/
+  `food`/`coffee`/`heritage`/`craft`/`nature`/`adventure`/`slow`), the CAT-2 scenario that
+  rejects the retired English labels, the re-worded save and read scenarios, the "at most
+  ten" reading that replaces contract detail C6, and the page requirement with its visual
+  baseline.
+- Unchanged: five ADDED requirements, 31 scenarios, the two endpoints, the
+  `member_preference` payload shape `{"codes":[...]}`, `V4`, and the identity/membership
+  preconditions. No data migration follows, because nothing is released.
+- Two product choices were accepted by the same instruction rather than re-opened: chip
+  order follows the prototype (`历史人文` before `手作`, `慢游` last), and the page renders
+  only the US-019 block of screen-08 (the US-020/024/027 blocks and `提交并标记就绪` belong
+  to their own changes).
+- Carried, unchanged: `openspec validate --strict` still exits 1 on five overlong ADDED
+  requirement bodies. It remains an archive blocker, not a P4 blocker, and is not reported
+  as a passed check.
+- The `dov-ac-review.md` §8 row that says "not re-signed" is superseded by this section.
+- G2 may now cite this G1 for the revised text. The agent records the human statements
+  above; it does not sign on behalf of either role.
 
 ## Correction notice
 
@@ -115,11 +145,12 @@ instruction and does not retroactively validate the withdrawn statement.
 
 ## Decision
 
-- Decision: **Pass** — G1 closed 2026-11-16.
+- Decision: **Pass** — G1 closed 2026-11-16, and **Pass again on the revised delta**
+  (2026-11-16 revision re-review above).
 - Why Pass: both required roles have signed with no findings relayed (IO Emily
-  2026-11-15; SA evelyn.huang 2026-11-15 plus the 2026-11-16 sibling re-review),
-  AC 4/4 and DoV 5/5 still stand, blocking ambiguities are 0, and the package is
-  published at `27b09e6`.
+  2026-11-15; SA evelyn.huang 2026-11-15 plus the 2026-11-16 sibling re-review), both
+  re-signed the revised ten-label / screen-08 text on 2026-11-16, AC 4/4 and DoV 5/5
+  still stand, blocking ambiguities are 0, and the package is published at `27b09e6`.
 - Why no longer Conditional: the batch-readiness condition waited only on the
   sibling changes; both hold their signatures now, so it is closed rather than
   waived.
@@ -131,8 +162,10 @@ instruction and does not retroactively validate the withdrawn statement.
 | 2 | IO approval of current five-requirement / 31-scenario package | Emily (IO) | closed 2026-11-15; explicit user instruction; approval recorded without certifying condition 1 |
 | 3 | Fold IO product decisions into requirements and review records | evelyn.huang / Dev | closed 2026-11-15; no Clear All action and English-only labels accepted, no delta behavior change |
 | 4 | Resolve overlong requirement bodies and rerun strict validation | Dev | carried open past G1 closure: strict exit 1 at closure time; blocks archive, not P4 start |
+| 5 | Re-review the revised delta (ten Chinese labels, `screen-08-preferences.png` page baseline) | Emily (IO) / evelyn.huang (SA) | closed 2026-11-16; both roles signed Pass on the revised text per the owner's explicit instruction; no findings attached |
 
-- Approvers: **IO = Emily — Pass (2026-11-15)**, **SA = evelyn.huang — Pass**.
+- Approvers: **IO = Emily — Pass (2026-11-15)**, **SA = evelyn.huang — Pass**; both
+  re-signed the revised delta on 2026-11-16 (revision re-review above).
 - SA sign-off: **evelyn.huang — Pass**, recorded 2026-11-15 from the SA's statement
   that the SA has already signed and agreed to pass. No SA conditions were supplied.
 - SA re-review of the sibling revised contracts: **evelyn.huang — Pass**, 2026-11-16,
@@ -148,6 +181,8 @@ instruction and does not retroactively validate the withdrawn statement.
 
 - Allowed: P4 implementation of this change, provided `V4` lands in order after `V3`;
   P3 design; and presenting `preferences` as G1-aligned in the registry.
+- Allowed after the 2026-11-16 revision re-review: G2 may cite this G1 for the revised
+  ten-label / screen-08 text as well as for the original text.
 - Not allowed: reporting strict validation as passed, or archiving the change before
   the five overlong requirement bodies are fixed and the CLI rerun succeeds.
 
@@ -157,7 +192,8 @@ instruction and does not retroactively validate the withdrawn statement.
    `V4__create_member_preference.sql`, the `com.gogo.preference` package and the
    preferences page.
 2. The revised documents and Emily approval record are pushed at `27b09e6`; no
-   further push is outstanding for review.
+   further push is outstanding for review. The 2026-11-16 revision re-review is recorded
+   in the working tree first; publishing it needs the owner's authorization.
 3. Before archive, fix the five overlong requirement bodies and rerun
    `openspec validate req-019-save-interests --strict`.
 4. P3 detail still open: settle the error-advice package scope (own advice for

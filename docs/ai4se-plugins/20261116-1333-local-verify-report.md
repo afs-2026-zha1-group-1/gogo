@@ -251,5 +251,11 @@ Findings added by this revision:
 |---|---|---|---|
 | R1 | A stale backend from 13:47 (pre-revision classes) still held 8080 and answered `400 INTEREST_NOT_ALLOWED` for `水上运动` | [fact] | **Closed.** Stopped and restarted from the current tree; the same request then returned 200. This is the leftover-process trap from `verification-commands.md` firing again — always confirm the listener's start time before trusting a negative result |
 | R2 | The dev database still held retired codes (`Art`, `Culture`, `History`, `Nature`) from the English round | [fact] | **Closed.** `PUT {"interests":[]}` for users 1–4, then the page run saved `水上运动/潜水/摄影` for Alice; no environment is released, so no migration is needed |
-| R3 | The G1 record approves the English seven-label text | [fact] | **Open — owned by IO and SA.** The revision is not self-approved; G2 may not cite the old G1 as approval for this text |
+| R3 | The G1 record approves the English seven-label text | [fact] | **Closed 2026-11-16.** IO Emily and SA evelyn.huang re-reviewed and signed the revised ten-label / screen-08 text as Pass, per the requirement owner's explicit instruction; see `g1-decision.md` §"Revision re-review (2026-11-16)". G2 may cite that record |
+
+Gate impact: the revision was re-reviewed and signed **Pass** by IO Emily and SA
+evelyn.huang on 2026-11-16 (`g1-decision.md` §"Revision re-review"), with no conditions and
+no findings, so G2 may cite this G1 for the revised text. `openspec validate --strict` still
+exits 1 on five overlong ADDED requirement bodies and stays an archive blocker; Overall
+remains Partial only for the remote-CI and G2/G3 items of §Findings/WARNING.
 

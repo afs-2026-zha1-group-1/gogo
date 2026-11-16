@@ -5,7 +5,9 @@
   [ATDD design](atdd-design.md) · [design](design.md) ·
   [fixtures](../../../requirement-workspace/acceptance-test-fixtures.md)
 - G1: Pass closed 2026-11-16 (IO Emily 2026-11-15, SA evelyn.huang 2026-11-15 + sibling
-  re-review). P3 rulings: D15 own error advice, D16 no shared-fixture edits, **D17
+  re-review), then **Pass again on the revised delta, 2026-11-16** (IO Emily + SA
+  evelyn.huang; `g1-decision.md` revision re-review). P3 rulings: D15 own error advice, D16
+  no shared-fixture edits, **D17
   plan-first stack** (the plan wins; code-consistency only where the plan cannot apply).
 - Order rule: acceptance checks red before production code (ATDD design §2).
 - NFR tests: out of scope by the user's decision on 2026-11-16 (ATDD design §6). P4
@@ -173,9 +175,11 @@ so it is logged here instead of being absorbed silently.
       the read and page scenarios, the visual baseline), `design.md` (Goals, DD6, DD9,
       DD10, TS-5, TS-12 and the revision section), `atdd-design.md` (CAT rows, PAGE-10),
       `README.md`, `docs/feedback/verification-matrix.md` and the P4 report
-- [ ] 8.6 **G1 re-review by IO + SA** on the revised delta. The agent does not self-sign;
-      until the re-review is recorded, G2 may not cite the original G1 as approval for
-      this text
+- [x] 8.6 **G1 re-review by IO + SA** on the revised delta — **Pass, 2026-11-16**. IO Emily
+      and SA evelyn.huang both signed the revised text per the requirement owner's explicit
+      instruction, with no conditions and no findings; recorded in `g1-decision.md`
+      §"Revision re-review (2026-11-16) — Pass" and mirrored in `dov-ac-review.md` §8. G2 may
+      now cite that record for this text. The agent did not sign for either role.
 - [x] 8.7 Browser pass at `#/trips/<id>/preferences` against the running backend and Vite dev
       server, compared with `screen-08-preferences.png` (PAGE-10). Headless Edge captures at
       520×940 / 2×: `docs/ai4se-plugins/20261116-preferences-empty.png` (nothing selected) and
@@ -195,11 +199,12 @@ so it is logged here instead of being absorbed silently.
 | Preferences page (9) | DD9, DD10 | 4.1–4.7, 5.2, 8.3, 8.4 | PAGE-1…PAGE-10 | Pass |
 | Non-goals (other kinds, US-027, US-026, US-031, auth, `tag`, locking, i18n, page migration) | Goals / Non-Goals, DD1, DD3, DD9 | 1.2, 5.3 | ATDD §5 reverse table | Pass |
 | Display contract (deep-dive ⑫: loading/empty/error/saving) | DD9, DD10 | 4.5, 5.2 | PAGE-1, PAGE-2, PAGE-7, PAGE-8, PAGE-9 | Pass |
-| Revision 2026-11-16 (Chinese catalogue, screen-08 baseline) | DD6, DD9, DD10; Revision section | 8.1–8.7 | CAT-1…CAT-4, SAVE-1, PAGE-3, PAGE-7, PAGE-10 | Pass for 8.1–8.5 and 8.7 (screenshots in the P4 report); 8.6 (G1 re-review) stays open because it needs IO and SA |
+| Revision 2026-11-16 (Chinese catalogue, screen-08 baseline) | DD6, DD9, DD10; Revision section | 8.1–8.7 | CAT-1…CAT-4, SAVE-1, PAGE-3, PAGE-7, PAGE-10 | Pass — 8.1–8.7 all closed; 8.6 is the G1 revision re-review, signed Pass 2026-11-16 by IO Emily and SA evelyn.huang |
 | G1 condition 4 (strict validation) | Risks: strict validation still failing | 6.5 | — (not an ATDD row; archive gate) | Pass as a registered task, not as a passed check |
 | Tech-stack baseline (`config.yaml` `context`, D17 plan-first) | DD2, DD3, DD4, DD9, DD12; deviations TS-1…TS-12 | 2.1, 2.2, 4.1, 6.1, 6.6 | — (not an ATDD row; archive gate) | Pass as plan-first choices plus recorded deviations (TS-11 still open) |
 
 No silent scope creep: every task traces to a spec scenario, a declared non-goal reverse
 check, or a stage artifact. NFR testing is explicitly excluded by the user's decision, so
-its absence is not a gap. Self-check result: **Pass**, with one open item that belongs to
-someone else — 8.6 needs IO and SA.
+its absence is not a gap. Self-check result: **Pass**. 8.6 was the only item owned by
+someone else; it closed on 2026-11-16 when IO Emily and SA evelyn.huang signed the
+revised delta.
