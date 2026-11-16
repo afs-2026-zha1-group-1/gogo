@@ -1,6 +1,6 @@
-import Icon from '../Icons.jsx'
+import Icon from '../Icons'
 
-export default function Placeholder({ title, tripsHref }) {
+export default function Placeholder({ title, tripsHref }: { title: string; tripsHref: string }) {
   return (
     <div className="screen">
       <header className="appbar">

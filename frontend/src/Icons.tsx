@@ -1,4 +1,6 @@
-const PATHS = {
+import type { ReactElement } from 'react'
+
+const PATHS: Record<string, ReactElement> = {
   branch: (
     <>
       <circle cx="6" cy="6" r="2.4" />
@@ -113,7 +115,7 @@ const PATHS = {
   ),
 }
 
-export default function Icon({ name, className = '' }) {
+export default function Icon({ name, className = '' }: { name: string; className?: string }) {
   return (
     <svg className={`icon ${className}`} viewBox="0 0 24 24" aria-hidden="true">
       {PATHS[name]}

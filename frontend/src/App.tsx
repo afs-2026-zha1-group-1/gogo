@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
-import { users } from './api.js'
-import TabBar from './TabBar.jsx'
+import { users } from './api'
+import type { InAppPage, Route, TabId } from './types'
+import TabBar from './TabBar'
 import Home from './pages/Home.jsx'
-import CreateTrip from './pages/CreateTrip.jsx'
+import CreateTrip from './pages/CreateTrip'
 import TripDetails from './pages/TripDetails.jsx'
-import TripsEmpty from './pages/TripsEmpty.jsx'
-import Placeholder from './pages/Placeholder.jsx'
+import TripsEmpty from './pages/TripsEmpty'
+import Placeholder from './pages/Placeholder'
 import Join from './pages/Join.jsx'
 
-function parseRoute(hash) {
+function parseRoute(hash: string): Route {
   const path = hash.replace(/^#/, '') || '/'
   const joinMatch = path.match(/^\/join\/([^/]+)$/)
   if (joinMatch) return { page: 'join', token: decodeURIComponent(joinMatch[1]) }
@@ -21,7 +22,7 @@ function parseRoute(hash) {
   return { page: 'home' }
 }
 
-const TAB_FOR_PAGE = {
+const TAB_FOR_PAGE: Record<InAppPage, TabId> = {
   home: 'dashboard',
   'trips-empty': 'trips',
   details: 'trips',
@@ -30,7 +31,7 @@ const TAB_FOR_PAGE = {
   members: 'members',
 }
 
-function ScaffoldBar({ userId, onChange }) {
+function ScaffoldBar({ userId, onChange }: { userId: number; onChange: (id: number) => void }) {
   return (
     <div className="scaffold-bar">
       <span className="scaffold-label">IDENTITY · SCAFFOLD（非登录）</span>
@@ -48,9 +49,9 @@ function ScaffoldBar({ userId, onChange }) {
 }
 
 export default function App() {
-  const [route, setRoute] = useState(() => parseRoute(window.location.hash))
-  const [userId, setUserId] = useState(1)
-  const [lastTripId, setLastTripId] = useState(null)
+  const [route, setRoute] = useState<Route>(() => parseRoute(window.location.hash))
+  const [userId, setUserId] = useState<number>(1)
+  const [lastTripId, setLastTripId] = useState<number | null>(null)
   const user = users().find((candidate) => candidate.id === userId)
 
   useEffect(() => {

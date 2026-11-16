@@ -1,8 +1,19 @@
 import { useState } from 'react'
-import { api } from '../api.js'
-import Icon from '../Icons.jsx'
+import type { ChangeEvent, FormEvent } from 'react'
+import { api } from '../api'
+import Icon from '../Icons'
+import type { Trip } from '../types'
 
-const EMPTY = {
+interface TripForm {
+  name: string
+  destination: string
+  startDate: string
+  endDate: string
+  startLocation: string
+  endLocation: string
+}
+
+const EMPTY: TripForm = {
   name: '',
   destination: '',
   startDate: '',
@@ -11,13 +22,13 @@ const EMPTY = {
   endLocation: '',
 }
 
-export default function CreateTrip({ userId, backHref }) {
-  const [form, setForm] = useState(EMPTY)
+export default function CreateTrip({ userId, backHref }: { userId: number; backHref: string }) {
+  const [form, setForm] = useState<TripForm>(EMPTY)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [dateError, setDateError] = useState(false)
 
-  const set = (field) => (event) => {
+  const set = (field: keyof TripForm) => (event: ChangeEvent<HTMLInputElement>) => {
     const next = { ...form, [field]: event.target.value }
     setForm(next)
     if (next.startDate && next.endDate) {
@@ -27,20 +38,20 @@ export default function CreateTrip({ userId, backHref }) {
     }
   }
 
-  async function submit(event) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (dateError) return
     setBusy(true)
     setError('')
     try {
-      const { status, ok, data } = await api('/api/trips', { userId, method: 'POST', body: form })
+      const { status, ok, data } = await api<Trip>('/api/trips', { userId, method: 'POST', body: form })
       if (ok && data) {
         window.location.hash = `#/trips/${data.id}`
         return
       }
       setError(data?.message ? `${data.code}: ${data.message}` : `Request failed (HTTP ${status})`)
     } catch (cause) {
-      setError(`Failed to reach the server: ${cause.message}`)
+      setError(`Failed to reach the server: ${(cause as Error).message}`)
     } finally {
       setBusy(false)
     }

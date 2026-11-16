@@ -141,8 +141,14 @@ recipients and channels) — all Pass → **A0 Pass**, split permitted.
 
 - OQ-1/OQ-2 (open-by-id widget; dock icon/token extraction) deferred to P3 by
   the 2026-11-14 decision; OQ-4/OQ-5 (bare 行程 route naming; trip-selection
-  memory) deferred to P3 by the user on 2026-11-15. Behavior is fixed by the
-  ACs; concrete proposals recorded (`#/trips`, route-derived selection).
+  memory) resolved at P3 by design D3 (`#/trips`, route-derived selection +
+  session-only last-trip memory).
+- TypeScript amendment (user instruction 2026-11-15, design D10): the
+  US-064-scoped files are converted to strict TS per US-065 (issue #35)
+  conventions and the tech-stack plan; devDependencies `typescript`/
+  `@types/react`/`@types/react-dom` added with user authorization (the
+  "no new dependencies" non-goal is amended for dev-only type tooling;
+  runtime deps unchanged). Remaining JS files stay in US-065's scope.
 - R18: REQ-004 PR #31 was open when P1 started; merged 2026-11-15T06:23:20Z
   (gh verified). Stacking order satisfied; resolved.
 - R19: fixed dock must not obscure Home's `.actionbar` or content on short

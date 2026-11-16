@@ -95,6 +95,17 @@
 - [ ] 7.4 Record G1/G2/G3 only from named human statements; the agent never
   self-signs
 
+## 8. TypeScript amendment (owner: Dev; user instruction 2026-11-15, D10)
+
+- [x] 8.1 `tsconfig.json` (strict, allowJs/checkJs=false), `src/types.ts`
+  DTO-aligned; devDeps typescript@^5.9.3 + @types/react + @types/react-dom;
+  build script `tsc -b && vite build`
+- [x] 8.2 Convert US-064-scoped files: App/TabBar/Icons/api/CreateTrip/
+  TripsEmpty/Placeholder → .tsx/.ts; minimal import-path edits in main.jsx
+  and the four JS pages (no logic change)
+- [x] 8.3 `tsc -b` zero errors; `npm run build` green (byte-identical bundle
+  hash); browser smoke walk identical; remaining JS left for US-065
+
 ## Alignment self-check (Spec ↔ Design ↔ Tasks ↔ ATDD)
 
 | Delta requirement | Design | Tasks | ATDD rows | Result |

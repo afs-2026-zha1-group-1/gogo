@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import Icon from '../Icons.jsx'
+import type { FormEvent } from 'react'
+import Icon from '../Icons'
 
 export default function TripsEmpty() {
   const [id, setId] = useState('')
   const [error, setError] = useState('')
 
-  function openById(event) {
+  function openById(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const trimmed = id.trim()
     if (!/^\d+$/.test(trimmed)) {

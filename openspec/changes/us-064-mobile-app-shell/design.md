@@ -109,6 +109,30 @@ Decision: the ATDD E2E list is executed manually/browser-tooling against the
 running apps and recorded in the local-verify report; no Playwright.
 Rejected: introducing Playwright (new CI product, forbidden by ATDD non-goals).
 
+### D10 — TypeScript for the US-064-scoped files (user amendment 2026-11-15)
+
+Context: user instruction to convert this story's scope to TS, referencing
+`docs/knowledge/architecture/tech-stack-plan.md` (React + TypeScript 5.x +
+Vite, `types/` aligned with backend DTOs) and US-065 (issue #35, full JS→TS
+migration, assigned to sammingoocl) conventions: strict types, no `any`, no
+`@ts-ignore`, `tsc -b && vite build`, zero user-visible behavior change.
+Decision: convert the files US-064 owns — `App.tsx`, `TabBar.tsx`,
+`Icons.tsx`, `api.ts`, `pages/CreateTrip.tsx`, `pages/TripsEmpty.tsx`,
+`pages/Placeholder.tsx` — plus `src/types.ts` (DTO-aligned interfaces) and a
+strict `tsconfig.json` (`allowJs: true`, `checkJs: false` so the remaining
+US-065-scope JS still compiles). Build script becomes `tsc -b && vite build`.
+devDependencies added with user authorization: `typescript ^5.9.3`,
+`@types/react`, `@types/react-dom` (runtime dependencies unchanged). Minimal
+compile-required import-path edits in `main.jsx` and the four JS pages
+(`../api.js`→`../api`, `../Icons.jsx`→`../Icons`, `./App.jsx`→`./App.tsx`);
+no logic changes there.
+Rejected: converting the whole frontend now (US-065's scope and assignee);
+`any`/`@ts-ignore` shortcuts (forbidden by US-065 AC).
+Evidence: `tsc -b` exit 0; `npm run build` green with byte-identical bundle
+hash (`index-qP5mkQlJ.js`) to the pre-conversion build; browser smoke walk
+identical (verification-req-005.md §TypeScript amendment). Remaining JS for
+US-065: `main.jsx`, `vite.config.js`, `pages/{Home,TripDetails,Join,InvitationPanel}.jsx`.
+
 ## Risks / Trade-offs
 
 - R19: fixed dock vs short viewports — mitigated by D5 padding; verified in

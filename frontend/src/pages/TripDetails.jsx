@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { api, users } from '../api.js'
-import Icon from '../Icons.jsx'
+import { api, users } from '../api'
+import Icon from '../Icons'
 import InvitationPanel from './InvitationPanel.jsx'
 
 function organizerName(organizerId) {

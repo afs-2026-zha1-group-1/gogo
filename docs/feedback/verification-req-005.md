@@ -120,6 +120,28 @@ separate change per AGENTS.md; no backend fix in US-064.
   `TabBar.jsx`, `pages/TripsEmpty.jsx`, `pages/Placeholder.jsx` added. No
   backend, CI, lockfile or dependency change.
 
+## TypeScript amendment verification (2026-11-15, user instruction, D10)
+
+Scope: US-064-owned files converted to strict TS per US-065 (issue #35)
+conventions and `docs/knowledge/architecture/tech-stack-plan.md` (TS 5.x).
+
+- Converted: `App.tsx`, `TabBar.tsx`, `Icons.tsx`, `api.ts`,
+  `pages/CreateTrip.tsx`, `pages/TripsEmpty.tsx`, `pages/Placeholder.tsx`;
+  added `src/types.ts`, `tsconfig.json`; devDeps typescript 5.9.3,
+  @types/react, @types/react-dom; build = `tsc -b && vite build`.
+- Minimal compile-required import edits (no logic): `main.jsx` App path;
+  Home/TripDetails/Join/InvitationPanel `../api`/`../Icons` paths.
+- `npx tsc -b` → exit 0, zero errors; no `any`, no `@ts-ignore`.
+- `npm run build` → green; bundle `index-qP5mkQlJ.js` byte-identical hash and
+  size (271.58 kB) to the pre-conversion build → emitted JS unchanged.
+- Browser smoke after reload: forward walk 仪表盘→行程→分队→成员 headings
+  一起出发/尚未选择行程/分队/成员, active tabs correct, identity switch 1→5
+  propagated, `#/trips/1` details, unusable join full-screen without dock and
+  scaffold retained. Console: no JS errors (only the intentional 404).
+- Remaining JS (US-065 scope, assignee sammingoocl): `main.jsx`,
+  `vite.config.js`, `pages/Home.jsx`, `pages/TripDetails.jsx`,
+  `pages/Join.jsx`, `pages/InvitationPanel.jsx`.
+
 ## Conclusion
 
 All 20 delta-spec scenarios and reverse checks R-1/R-2/R-3 verified green in
