@@ -53,13 +53,20 @@ shadcn baseline`，`feat/travel_preference` → `main`，OPEN、非 draft、`mer
 证据：`openspec/changes/req-019-save-interests/ci-report.md`、
 `docs/ai4se-plugins/20261116-153521-pipeline-report.md`；`docs/feedback/verification-matrix.md` 中
 「无 `gh`、无 token，仅凭 owner 口头确认」的旧表述已按其自证修正（本地 `gh` 存在于
-`%LOCALAPPDATA%\Programs\gh\bin` 且已登录）。仍未完成：G2 具名 VL 签核、strict validation（exit 1，
-阻塞归档）；`main` 已前进至 `c4f9e32`（docs-only）需在 G3 前复核。
+`%LOCALAPPDATA%\Programs\gh\bin` 且已登录）。该段结论已被后续事实取代：`main` 先后前进到 `f11d395`
+（US-065 前端 TS 化）与 `40381ac`，本分支三次并入 main 后 head 为 `f16d009`、`mergeStateStatus`
+复位为 `CLEAN`，run `43829662798` 在该 head 上双 job 全绿（203/203；`Check lockfile portability`
+2/2 → `npm ci` → `typecheck` → `build`）。仍未完成：G2 具名 VL 签核、strict validation（exit 1，
+阻塞归档）。
 
 **G2 待签草稿（2026-11-16）**：`openspec/changes/req-019-save-interests/g2-decision.md` 已按 G2 输入
 清单整理——输入（local-verify / pipeline ci 含 E1 slot / 验证矩阵 / G1 / delta）、三个 run、维度结果、
 缺陷分级、偏差与已接受后果、未闭合项、基线复核说明与空白签核区；`Decision` 留作 `OPEN`、无 VL
 署名、时间戳空白，由具名 VL 复核后自行择一 Pass / Fail / Conditional。实现方不代签、不代推送签名。
+草稿已随分支推送，PR #44 `mergeable: true`：具名 VL 可直接 `git pull origin feat/travel_preference`
+后签署并提交；草稿引用的最新 CI 证据是 head `f16d009` 上的 run `43829662798`。main 的 `171ec00`
+已去掉 lockfile 非 Linux 包的 `libc` 约束（并新增 `frontend/tests/lockfile.test.mjs`），草稿中那条
+Windows 变通项随之闭合，`npm ci` 在 Windows 上也能直接装妥原生绑定。
 
 ## US-031-037 product review update (2026-11-15)
 

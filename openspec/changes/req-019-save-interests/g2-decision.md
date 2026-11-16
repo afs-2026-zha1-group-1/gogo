@@ -12,8 +12,9 @@
 - **Approvers:** VL = *待具名签署*；G3 的 SA 属另一道门禁，不在本记录内
 - **Timestamp:** *签署时填写*
 - **Target:** PR #44 `REQ-019: save member interests on main's shadcn baseline`，base `main`，
-  head = `feat/travel_preference` 的当前 tip（整理时为 `6828754`；其后又合入 main 的 US-065，
-  合并提交 `02fa201` 及随后的文档提交）。签署前后请以 `gh pr view 44` 的实时
+  head = `feat/travel_preference` 的当前 tip（整理时为 `6828754`；其后两次并入 main：`02fa201`
+  并入 US-065 前端 TS 化、`f16d009` 并入 `40381ac`）。签核前最后一次 CI 绿 head 为 `f16d009`、
+  base `40381ac`、`mergeStateStatus` = `CLEAN`。签署前后请以 `gh pr view 44` 的实时
   `headRefOid` 与 check 结果为准
 
 ## Inputs
@@ -26,14 +27,15 @@
 | 验证矩阵 | `docs/feedback/verification-matrix.md` §REQ-019 | 逐行证据，含 remote-CI 机器证据行 |
 | G1 | `openspec/changes/req-019-save-interests/g1-decision.md`（含 "Revision re-review" 段） | IO Emily + SA evelyn.huang 均 Pass（2026-11-16） |
 | Delta Spec | `openspec/changes/req-019-save-interests/specs/preferences/spec.md` | 5 requirements / 31 scenarios |
-| ATDD / 设计 / 任务 | `atdd-design.md`、`design.md`、`tasks.md` | 对齐自检 Pass；任务 40 `[x]` / 4 `[ ]`（44） |
+| ATDD / 设计 / 任务 | `atdd-design.md`、`design.md`、`tasks.md` | 对齐自检 Pass；任务 41 `[x]` / 4 `[ ]`（45） |
 
 ### 引用的 CI run（均为机器读取）
 
 | run | head | 结论 | 说明 |
 |---|---|---|---|
 | [43824457379](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43824457379) | `e7333f0` | success | `Backend tests` 43 s（`Tests run: 203, Failures: 0, Errors: 0` + `BUILD SUCCESS`）、`Frontend build` 17 s（`npm ci` → `typecheck` → `build`） |
-| [43825093537](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43825093537) | `6828754` | success | 上者之后仅文档提交，双 job 仍全绿，即当前 PR head |
+| [43829662798](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43829662798) | `f16d009` | success | **当前 PR head**（第三次并入 main 后的合并提交）：`Backend tests` 33 s（`Tests run: 203, Failures: 0, Errors: 0, Skipped: 0` + `BUILD SUCCESS`）、`Frontend build` 20 s（`Check lockfile portability` 2/2 → `npm ci` → `typecheck` → `build`，`136 modules` / `488.36 kB`） |
+| [43825093537](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43825093537) | `6828754` | success | 上者之后仅文档提交，双 job 仍全绿；其后被 main 的 US-065 合并推离 head |
 | [43822010878](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43822010878) | `ec299b7` | success | 更早 head，同一份代码 |
 
 ## 本次交付内容（供 VL 对齐范围）
@@ -49,7 +51,7 @@
 
 | 维度 | 状态 | 证据 |
 |---|---|---|
-| Build | **Pass** | 本地 `mvn -B clean test` 203/203（两次 main 合并均未触碰后端）；`npm run typecheck`（`tsc --noEmit`）干净；`npm run build` 136 modules / 488.36 kB JS / 38.39 kB CSS |
+| Build | **Pass** | 本地 `mvn -B clean test` 203/203（三次 main 合并均未触碰后端）；`node --test tests/lockfile.test.mjs` 2/2；`npm run typecheck`（`tsc --noEmit`）干净；`npm run build` 136 modules / 488.36 kB JS / 38.39 kB CSS |
 | Tests | **Pass** | `PreferenceApiTest` 29/29（红先绿：改中文目录时先 15 失败 + 1 错误）、`MainPlanApiTest` 34/34、其余既有套件同样通过 |
 | Static scan / SAST | Skipped | 本仓库基线无 lint/SAST 任务，改用反向核对与 matrix 行 |
 | Code review | **待 VL** | 本地-验证报告为自评 Pass；人工复核正是本门禁 |
@@ -63,12 +65,12 @@
 - **CRITICAL:** 无（0 项）。
 - **WARNING（8 项，逐条现状）：**
   1. `flyway-database-nc-sqlite` 无已发布版本，plan §7 的两模块方案未达成（design TS-11）— **仍开放**，由归档前计划对齐（6.6）或上游发布闭合。
-  2. 远端 CI 未跑 — **已闭合**：run 43824457379 / 43825093537 双 job 全绿。
+  2. 远端 CI 未跑 — **已闭合**：run 43824457379 / 43825093537 / 43829662798 双 job 全绿（最新一跑在当前 head `f16d009`）。
   3. G2/G3 未记录 — **本记录即 G2 待签；G3 另起**。
   4. 身份选择器不持久，刷新回落 Alice — **接受（继承行为）**，属 REQ-003/004 脚手架。
   5. 保存成功无 toast — **接受**，delta 只要求选区跟随响应、错误清除。
   6. dev 模式 StrictMode 双请求 — **接受**，服务端幂等（SAVE-2）。
-  7. 打包体积与 chunk 警告 — **接受**；并入 main 后已从 660 kB 降至 487.83 kB。
+  7. 打包体积与 chunk 警告 — **接受**；并入 main 后已从 660 kB 降至 488.36 kB。
   8. 占用 8080 的旧后端进程 — **已闭合**（owner 授权停止，新构建接管）。
 - **SUGGESTION（3 项）：** 浏览器回归误建的 trip 已删除；PAGE-4/6 的加载态本地不可观测（~20 ms 往返）已记 Partial；Mockito self-attach 警告待 JDK 禁止动态 attach 时处理。
 
@@ -94,23 +96,32 @@
 | 3 | G3（Merge & Archive）未记录 | 阻塞归档 | 具名 SA |
 | 4 | `cd` 从未执行 | 无（合并前无部署） | — |
 | 5 | 任务 7.3 可选 checklist 未跑 | 无（显式跳过） | — |
-| 6 | main 的 lockfile 使 Windows 无法 `npm ci`（rolldown 绑定被标 `libc: glibc`） | 不影响 Linux CI；影响 Windows 开发者 | main 侧负责人另开变更；本变更未改 lockfile |
+| 6 | ~~main 的 lockfile 使 Windows 无法 `npm ci`（rolldown 绑定被标 `libc: glibc`）~~ — **已闭合**：main 的 `171ec00` 去掉非 Linux 包的 `libc` 约束，并新增 `frontend/tests/lockfile.test.mjs` 作为 CI 第一步 | 无；Linux CI 与 Windows 本地均可 `npm ci`（81 包，绑定就位） | main 侧已修（`171ec00`），本变更未改 lockfile |
 
 ## Baseline note（签署前请复核一次）
 
-整理时点：`origin/main` = `f11d395`（PR #46 把 US-065 的前端全面 TS 化合入；`bac8095..f11d395`
-共 15 个提交，其中 `bac8095` 是第一次合并的基线）。这次合并与本变更在 `frontend/package.json`、
-`frontend/src/main.tsx` 上冲突，已在本分支解决（合并提交 `02fa201`，见 tasks 8.9）：`main.jsx`
-删除、入口改为 `main.tsx`，`App.tsx` 仍路由到 `#/trips/<id>/preferences`，`TripDetails.tsx`
-仍链接过去，`typecheck` 取 main 的 `tsc --noEmit`。解析后本地 `npm ci` + `typecheck` + `build`
-全绿，且这次合并未触碰任何后端文件。
+本分支三次并入 `main`，每次的基线都已核对：
+
+1. `bac8095`（splits、`V5__create_main_plan` 以 `IF NOT EXISTS` 声明 `member_preference`、shadcn/ui 搬家）—— 偏好迁移由 `V4` 改号为 `V6`（tasks 8.8）。
+2. `f11d395`（PR #46，US-065 前端全面 TS 化；`bac8095..f11d395` 共 15 个提交）—— 合并提交 `02fa201`：`frontend/package.json` 与 `frontend/src/main.tsx` 冲突已解决，`main.jsx`
+   删除、入口改为 `main.tsx`，`App.tsx` 仍路由到 `#/trips/<id>/preferences`，`TripDetails.tsx`
+   仍链接过去，`typecheck` 取 main 的 `tsc --noEmit`（tasks 8.9）。
+3. `40381ac`（`171ec00 fix(main): fixing frontend build error` + US-049/050 的 G1 记录）——
+   合并提交 `f16d009`，唯一冲突 `README.md`：保留 main 的「缺原生绑定」说明，并把本分支那句
+   `tsc -b --noEmit` 改为实际脚本的 `tsc --noEmit`；`ci.yml` 自动合并后前端 job 为
+   `Check lockfile portability` → `npm ci` → `typecheck` → `build`（tasks 8.10）。
+
+三次合并都未触碰任何后端文件，故 203/203 的后端结论沿用。最后一次合并后本地复跑：`node --test
+tests/lockfile.test.mjs` 2/2、`npm run typecheck`（`tsc --noEmit`）干净、`npm run build` 136
+modules / 488.36 kB JS / 38.39 kB CSS，`npm ci` 装 81 个包。
 
 **签署前请自己再确认一次**：`gh pr view 44` 的 head check 全绿、`mergeStateStatus` = `CLEAN`；
 若 main 又前进，按同一方法复核（见 `docs/knowledge/` 的基线校验约定）。
 
-已知环境缺陷（不属本变更，仅供知情）：main 的 lockfile 把 `@rolldown/binding-win32-x64-msvc`
-标为 `libc: glibc`，Windows 上 `npm ci` 会跳过它、`vite build` 报找不到原生绑定；本地用
-`npm i --no-save` 临时补装完成验证，`package.json`/`package-lock.json` 未动，Linux CI 不受影响。
+原记录在此的 Windows 环境缺陷（main 的 lockfile 把 `@rolldown/binding-win32-x64-msvc` 标为
+`libc: glibc`，Windows 上 `npm ci` 会跳过它）已由 main 的 `171ec00` 闭合：该提交去掉非 Linux 包的
+`libc` 约束并新增 `frontend/tests/lockfile.test.mjs`（CI 第一步即跑它）。本分支此前
+`npm i --no-save` 的临时补装随之作废，lockfile 依旧归 main 所有、本变更未改。
 
 ## §签核区（由 VL 手工填写后提交）
 

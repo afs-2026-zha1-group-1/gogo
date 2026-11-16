@@ -10,6 +10,12 @@ Full report: `docs/ai4se-plugins/20261116-153521-pipeline-report.md`.
 **Pipeline URL:** https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43824457379
 **Commit:** `e7333f0` — equals local `HEAD`, `origin/feat/travel_preference` and PR #44 `headRefOid`
 
+**Latest head (2026-11-16 16:15 UTC+08:00):** `f16d009` (third `origin/main` merge, base
+`40381ac`), PR #44 `mergeStateStatus` = `CLEAN`, run
+[43829662798](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43829662798) green on it —
+see §"Update — E1 on the merged head". The section below stays as the first E1 evidence on
+`e7333f0`.
+
 ## E1
 
 **✅ 全绿 (machine).** Run 43824457379, workflow `CI`, event `pull_request`, `conclusion: success`,
@@ -51,3 +57,20 @@ that the merge-time table reconciliation (tasks 8.8) is not a local-only artifac
 ## Human confirmation
 
 N/A — no statement is used as the basis of E1.
+
+## Update — E1 on the merged head (run 43829662798)
+
+`origin/main` advanced twice after this report was written (`171ec00` fixes the frontend build
+error, `40381ac` adds the US-049/050 G1 record), so the branch merged it a third time in `f16d009`
+and CI re-ran there. Read through the same authenticated API:
+
+| Phase | Job | Status | Duration | Evidence |
+|---|---|---|---|---|
+| ci | `Backend tests` | success | 33 s | job 133171672297; 23 per-class `Tests run` lines, aggregate `Tests run: 203, Failures: 0, Errors: 0, Skipped: 0`, then `BUILD SUCCESS` |
+| ci | `Frontend build` | success | 20 s | job 133171671773; steps `Check lockfile portability` (`node --test tests/lockfile.test.mjs`, 2/2), `Install from the lockfile`, `Typecheck`, `Build` (136 modules, `488.36 kB` JS / `38.39 kB` CSS) |
+
+Run created 2026-11-16T08:14:36Z, completed 08:15:14Z; head `f16d009`, base `40381ac`.
+
+One residual risk from the section above is now closed: `main`'s lockfile no longer breaks Windows
+`npm ci` — `171ec00` drops the `libc` constraints on non-Linux native packages and the new
+`frontend/tests/lockfile.test.mjs` guards the regression as the first CI step.

@@ -218,7 +218,19 @@ so it is logged here instead of being absorbed silently.
       the 203/203 backend run from 8.8 still stands. Local-only caveat: main's lockfile marks
       `@rolldown/binding-win32-x64-msvc` with `libc: glibc`, so Windows `npm ci` skips it and
       `vite build` cannot load a native binding; it was installed with `npm i --no-save` to build
-      here and `package.json`/`package-lock.json` were left as main owns them
+      here and `package.json`/`package-lock.json` were left as main owns them (retired in 8.10)
+- [x] 8.10 Merge `origin/main` a third time (`40381ac` = `171ec00` "fix(main): fixing frontend
+      build error" + the US-049/050 G1 record) and reconcile: one conflict, `README.md` —
+      kept main's "missing native binding" note and corrected the branch's stale
+      `tsc -b --noEmit` to the shipped `tsc --noEmit`, noting CI runs it between `npm ci` and
+      the build. `171ec00` removes the non-Linux `libc` constraints from
+      `frontend/package-lock.json` and adds `frontend/tests/lockfile.test.mjs`; `ci.yml`
+      auto-merged into `Check lockfile portability` → `npm ci` → `typecheck` → `build`. The 8.9
+      workaround is retired: `npm ci` now installs `@rolldown/binding-win32-x64-msvc` (81
+      packages). Verified on the merged tree: lockfile test 2/2, `tsc --noEmit` clean,
+      `npm run build` 136 modules / 488.36 kB JS / 38.39 kB CSS; no backend file in the merge,
+      so 203/203 still stands. Merge commit `f16d009`; PR #44 back to `CLEAN` and run
+      43829662798 green on that head
 
 ## Alignment self-check (Spec ↔ Design ↔ Tasks ↔ ATDD)
 
