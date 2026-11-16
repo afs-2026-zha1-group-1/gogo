@@ -326,3 +326,26 @@ US-066 按 IO/SA 决策把 `X-User-Id` scaffold 替换为已验证登录；这�
 - **测试**：`AuthApiTest`、`SessionExpiryApiTest` 及全部既有 trip/invitation/
   main-plan/splits API 测试改为 session/principal；C5 覆盖 CSRF、短超时（以失效
   session 等价验证，Tomcat 超时粒度为分钟）与 greeting/preview 公开 matcher。
+
+## 15. US-013 成员列表（2026-11-16，归档对齐）
+
+US-013 在 US-066 会话认证基线上新增成员名册读取；不新增迁移。
+
+- **API 新增**：`GET /api/trips/{id}/members`，仅行程成员可读，身份取 session
+  principal（不使用已退役的 `X-User-Id`）。成功 200 返回
+  `{tripId, members:[{userId, displayName, organizer}]}`，按 `userId` 升序；
+  未登录 401 `USER_REQUIRED`、非成员 403 `NOT_A_MEMBER`、未知行程 404
+  `TRIP_NOT_FOUND`；拒绝响应不含成员身份。只读，无写路径。
+- **数据**：复用 `V2` 的 `trip_member` / `app_user` / `trip.organizer_id`；无新表、
+  无新列、无种子变更。
+- **前端**：成员 Tab（`#/members`）渲染真实名册（头像首字母、姓名、组织者徽章、
+  成员数）及 loading/empty/error/permission/no-trip 状态；不展示就绪、偏好、预算
+  或生成主线操作。
+- **App shell**：Living Spec 的 `Placeholder tabs` 被移除，新增 `Tab content`：
+  分队渲染已上线的 split entry，成员渲染本名册；shell frame/dock/active-tab/
+  登录账号栏不变。
+- **身份口径**：trips/members 使用 session principal + `USER_REQUIRED`；split
+  端点使用 session 但匿名时返回 `MEMBER_REQUIRED`。该差异已接受为后续项 F2，
+  本 change 不改 split 代码。
+
+本 change 未修改技术栈、其他数据模型或其他 API。

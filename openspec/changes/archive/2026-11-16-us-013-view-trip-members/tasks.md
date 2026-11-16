@@ -94,11 +94,10 @@
       summary — US-013 paragraph added after the split section
 - [x] 7.2 Update `requirement-workspace/registry.md` and `handoff.md` at P4/P5 —
       US-013 rows added/updated for the G2 Conditional and remediation
-- [ ] 7.3 Before archive, reconcile
+- [x] 7.3 Before archive, reconcile
       `docs/knowledge/architecture/tech-stack-plan.md` §6 API list with the
       shipped `GET /api/trips/{id}/members` and append a
-      `docs/knowledge/_LOG.md` row; reconcile only what the archived change
-      actually shipped
+      `docs/knowledge/_LOG.md` row — done as §15 landed reconciliation
 
 ## 7b. G2 conditions (VL Leo, 2026-11-16)
 
@@ -124,10 +123,12 @@
 - [x] 8.1 G2 **Pass** recorded by named VL (Leo) on the merged head
       (`6061579`); C1–C5 closed; local-verify + CI evidence cited in
       `g2-decision.md` — merge (8.2) may start
-- [ ] 8.2 Human merge of the PR/branch
-- [ ] 8.3 `/sdd:living-merge` archive: add the `trips` requirement, apply the
+- [x] 8.2 Human merge of the PR/branch — merged to `main` as `364a52d`;
+      main CI run `43841187214` both jobs success
+- [x] 8.3 `/sdd:living-merge` archive: add the `trips` requirement, apply the
       REMOVED `Placeholder tabs` + ADDED `Tab content` pair, reconcile the
-      app-shell Purpose prose
+      app-shell Purpose prose — archived as
+      `2026-11-16-us-013-view-trip-members`; `openspec validate --all` passes
 - [ ] 8.4 G3 **Pass** recorded by named SA (Johnson)
 - [ ] 8.5 Close issue #9 and move the board card to Done after archive
 
