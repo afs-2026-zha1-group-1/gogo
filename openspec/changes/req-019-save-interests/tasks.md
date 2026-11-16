@@ -137,15 +137,23 @@
       (signature commit `3b2d42d`, ticked `Pass`; the timestamp is that commit's time because the
       VL left the field blank). The agent only transcribed the signature into the gate fields —
       header, Decision, Approvers, Timestamp and the Code-review dimension row — and left the
-      verdict untouched. G3 is still open and needs a named SA
+      verdict untouched. G3 is now recorded too: SA **evelyn.huang** signed
+      `g3-decision.md` Pass on 2026-11-16
 - [x] 6.4 Update `README.md` (endpoints, page route, `typecheck`) and the registry/handoff
       rows: `README.md` carries the two endpoints, `#/trips/<id>/preferences`, the
       `typecheck` command and the CI step; `requirement-workspace/registry.md` and
       `handoff.md` record P4 complete, Overall Partial and TS-11 open
-- [ ] 6.5 **Archive precondition (G1 condition 4):** fix the five ADDED requirement
+- [x] 6.5 **Archive precondition (G1 condition 4):** fix the five ADDED requirement
       bodies that exceed 500 characters and rerun
-      `openspec validate req-019-save-interests --strict` on a machine that has the CLI;
-      this environment has no `openspec` on `PATH`, so no pass may be claimed from here
+      `openspec validate req-019-save-interests --strict` on a machine that has the CLI —
+      **closed 2026-11-16.** The five bodies were rewritten from 944 / 964 / 1381 / 613 /
+      1729 characters to 460 / 522 / 443 / 330 / 488 (plain character count) by stating one
+      behaviour each and leaving the detail to the
+      scenario that already asserted it (identity checks, the label→code table, malformed
+      bodies, idempotency, the one-row rule, response field set, read-only, the screen-08
+      layout via the approved screen). No scenario was added, removed or reworded, so the
+      requirement/scenario counts stay 5 / 31. `openspec validate req-019-save-interests
+      --strict` → `Change 'req-019-save-interests' is valid`, exit 0
 - [ ] 6.6 **Final task before archive (config.yaml `rules.tasks`):** reconcile
       `docs/knowledge/architecture/tech-stack-plan.md` with what this change actually
       shipped — the two endpoints (with `interest` only), the `member_preference` columns
@@ -270,7 +278,7 @@ so it is logged here instead of being absorbed silently.
 | Non-goals (other kinds, US-027, US-026, US-031, auth, `tag`, locking, i18n, page migration) | Goals / Non-Goals, DD1, DD3, DD9 | 1.2, 5.3 | ATDD §5 reverse table | Pass |
 | Display contract (deep-dive ⑫: loading/empty/error/saving) | DD9, DD10 | 4.5, 5.2 | PAGE-1, PAGE-2, PAGE-7, PAGE-8, PAGE-9 | Pass |
 | Revision 2026-11-16 (Chinese catalogue, screen-08 baseline); merges of `origin/main` | DD6, DD9, DD10, TS-13; Revision section | 8.1–8.12 | CAT-1…CAT-4, SAVE-1, PAGE-3, PAGE-7, PAGE-10 | Pass — 8.1–8.12 all closed; 8.6 is the G1 revision re-review, signed Pass 2026-11-16 by IO Emily and SA evelyn.huang; 8.8–8.12 are the five `origin/main` merges |
-| G1 condition 4 (strict validation) | Risks: strict validation still failing | 6.5 | — (not an ATDD row; archive gate) | Pass as a registered task, not as a passed check |
+| G1 condition 4 (strict validation) | Risks: strict validation still failing | 6.5 | — (not an ATDD row; archive gate) | **Pass** — 6.5 closed 2026-11-16: `openspec validate req-019-save-interests --strict` → `is valid`, exit 0 |
 | Tech-stack baseline (`config.yaml` `context`, D17 plan-first) | DD2, DD3, DD4, DD9, DD12; deviations TS-1…TS-13 | 2.1, 2.2, 4.1, 6.1, 6.6 | — (not an ATDD row; archive gate) | Pass as plan-first choices plus recorded deviations (TS-11 still open) |
 
 No silent scope creep: every task traces to a spec scenario, a declared non-goal reverse

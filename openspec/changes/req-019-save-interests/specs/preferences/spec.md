@@ -4,23 +4,13 @@
 
 ### Requirement: Preference caller identity and membership
 
-The system SHALL identify the caller of every preference endpoint by the `X-User-Id`
-request header, whose value SHALL be the integer id of a seeded `app_user`. The header
-is a scaffold-level stand-in for authentication: the system SHALL NOT treat it as a
-verified credential, and issuing or verifying credentials is out of scope.
+The system SHALL identify the caller of both preference endpoints by the `X-User-Id`
+header, an integer id of a seeded `app_user`; it is a scaffold-level stand-in for
+authentication, not a verified credential.
 
-A caller that cannot be identified (header missing, not an integer, or not a seeded
-user) SHALL receive status 401 with `code = USER_REQUIRED`, and no preference data
-SHALL be read or written.
-
-Both preference endpoints SHALL be open only to members of the `tripId` in the path.
-A caller who is not a member SHALL receive status 403 with `code = NOT_A_MEMBER`, and
-the response SHALL NOT contain any member's interests.
-
-An unknown `tripId` SHALL return status 404 with `code = TRIP_NOT_FOUND`.
-
-The checks SHALL run in the order identity -> trip existence -> membership, matching
-the existing `GET /api/trips/{id}`.
+Both endpoints SHALL be open only to members of the `tripId` in the path. An
+unidentified caller SHALL receive 401 `USER_REQUIRED`, a non-member 403 `NOT_A_MEMBER`,
+an unknown trip 404 `TRIP_NOT_FOUND`, and no denial SHALL carry a member's interests.
 
 #### Scenario: Caller identity is missing
 
@@ -61,30 +51,12 @@ the existing `GET /api/trips/{id}`.
 
 ### Requirement: Predefined interest catalogue
 
-The system SHALL define exactly the following ten interests, in Chinese. The wire value SHALL
-be the exact `label` string and the stored value SHALL be the corresponding `code`:
-
-| label | code |
-|---|---|
-| `水上运动` | `water` |
-| `潜水` | `diving` |
-| `摄影` | `photo` |
-| `美食` | `food` |
-| `咖啡` | `coffee` |
-| `历史人文` | `heritage` |
-| `手作` | `craft` |
-| `自然风景` | `nature` |
-| `冒险` | `adventure` |
-| `慢游` | `slow` |
-
-Matching SHALL be literal: the system SHALL NOT fold case, SHALL NOT trim surrounding
-whitespace and SHALL NOT accept aliases, translations or substring matches. The English
-labels of the earlier draft (`Art`, `Nature`, `Culture`, `History`, `Food`, `Shopping`,
-`Adventure`) are therefore not accepted.
-
-The catalogue SHALL be held as code constants. This capability SHALL NOT depend on the
-`tag` table, SHALL NOT depend on `/api/tags`, and SHALL NOT expose a write endpoint that
-maintains the catalogue.
+The system SHALL accept exactly ten interests, in Chinese, and no others: `水上运动`,
+`潜水`, `摄影`, `美食`, `咖啡`, `历史人文`, `手作`, `自然风景`, `冒险`, `慢游`. The wire
+value SHALL be the exact label and the stored value the matching code, as the acceptance
+scenario below asserts. Matching SHALL be literal — no case folding, no trimming, no
+aliases, translations or substring matches. The catalogue SHALL be code constants, with
+no dependence on `tag`/`/api/tags` and no write endpoint.
 
 #### Scenario: All ten interests are accepted
 
@@ -115,32 +87,13 @@ maintains the catalogue.
 
 ### Requirement: Save member interests
 
-The system SHALL expose `PUT /api/trips/{tripId}/preferences` accepting
-`{"interests": string[]}` and SHALL replace the caller's interest set as a whole.
+`PUT /api/trips/{tripId}/preferences` SHALL accept `{"interests": string[]}`, replace the
+caller's set as a whole and deduplicate it in first-occurrence order.
 
-The server SHALL deduplicate the submitted array while keeping the first-occurrence
-order, so the response and the stored value SHALL contain each interest at most once.
-
-Validation SHALL complete before any write: if any element is outside the predefined
-catalogue, the system SHALL reject the whole request with status 400 and
-`code = INTEREST_NOT_ALLOWED`, and the allowed elements SHALL NOT be stored.
-
-A successful save SHALL return status 200 with `{"interests": [...]}` carrying the
-deduplicated stored set.
-
-An empty array SHALL be accepted and SHALL mean "clear interests": the system SHALL keep
-the member's record and store an empty set, and SHALL NOT delete the record.
-
-A member SHALL have at most one record per `kind`, so the first save inserts and later
-saves overwrite. Repeating the same set SHALL be idempotent: the stored `payload` SHALL
-stay the same, while `updated_at` MAY be refreshed.
-
-A request body that is not a JSON object, that omits `interests`, or whose `interests`
-is not an array of strings (including `null` or numeric elements) SHALL return status
-400 with `code = INVALID_REQUEST`.
-
-A rejected request SHALL NOT write any row and SHALL NOT modify the `payload` or
-`updated_at` of an existing row.
+Validation SHALL complete before any write: an out-of-catalogue element rejects the
+request with 400 `INTEREST_NOT_ALLOWED`, a malformed body with 400 `INVALID_REQUEST`,
+storing nothing. A success returns 200 with the deduplicated set; `[]` clears the interests
+but keeps the record.
 
 #### Scenario: Duplicate values collapse to one
 
@@ -211,16 +164,11 @@ A rejected request SHALL NOT write any row and SHALL NOT modify the `payload` or
 
 ### Requirement: Read member interests
 
-The system SHALL expose `GET /api/trips/{tripId}/preferences`, returning the interest
-details of every member to a member of that trip, in the shape
-`{"members": [ {"userId": <integer>, "interests": [<label>...] } ]}`.
-
-Each member object SHALL carry exactly `userId` and `interests`; it SHALL NOT carry a
-display name or any other field. `members` SHALL be ordered by ascending `userId` so
-assertions are repeatable. A member who has never saved interests SHALL still appear
-with `interests: []`, so the endpoint SHALL NOT omit members.
-
-The endpoint SHALL be read-only: reading SHALL NOT create or modify any row.
+`GET /api/trips/{tripId}/preferences` SHALL return
+`{"members": [{"userId": <integer>, "interests": [<label>...] }]}`, carrying every
+member of that trip ordered by ascending `userId`, each object with exactly those two
+fields. A member who never saved interests SHALL appear with `interests: []`. The
+endpoint SHALL be read-only.
 
 #### Scenario: A member reads back the saved set
 
@@ -261,33 +209,12 @@ The endpoint SHALL be read-only: reading SHALL NOT create or modify any row.
 
 ### Requirement: Preferences page
 
-The frontend SHALL provide the page `#/trips/{tripId}/preferences` inside the existing
-application, and SHALL link to it from the trip details page.
-
-The page SHALL render the selected state of the ten predefined interests, whose only
-source SHALL be the `GET` response entry matching the current identity (the identity
-selector in the top bar).
-
-The layout SHALL follow the approved screen `screen-08-preferences.png`: a top app bar
-with a back control, the title `我的偏好`, the subtitle `<display name> · US-019` and a
-save-state badge; a section heading `兴趣（US-019 · 预设列表、不重复）`; one selectable
-chip per catalogue interest, showing its emoji and Chinese label, in the catalogue order
-(`水上运动`, `潜水`, `摄影`, `美食`, `咖啡`, `历史人文`, `手作`, `自然风景`, `冒险`,
-`慢游`), with the selected chip filled in the dark ink colour and the rest on the light
-surface; a hint line explaining that saved interests are visible to every member; and a
-fixed bottom action bar holding the primary save button. The remaining screen-08 blocks
-(mandatory items, budget, the no-preference switch and ``提交并标记就绪``) belong to
-other changes and SHALL NOT be rendered here.
-
-The user's selection SHALL be submitted as one request by an explicit "Save" action;
-the page SHALL NOT submit on every toggle.
-
-A successful save SHALL update the selected state from the response body. A failed save
-SHALL show the server `message` and restore the selected state to what the server
-acknowledges. A failed load SHALL show an error with a retry action, and SHALL NOT render
-unloaded or stale selections as saved.
-
-The page SHALL NOT use browser local storage as evidence of a saved state.
+The frontend SHALL provide `#/trips/{tripId}/preferences`, linked from the trip page, with
+only the interests section of `screen-08-preferences.png`; that screen's other blocks belong
+to other changes. The selected state SHALL come from the `GET` entry matching the current
+identity. A save SHALL send the selection as one explicit request, adopt the response and
+on failure show the server `message` with the state rolled back. Local storage SHALL NOT
+count as evidence of a saved state.
 
 #### Scenario: Loading
 
