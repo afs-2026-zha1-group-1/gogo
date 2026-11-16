@@ -1,7 +1,7 @@
 # Change summary — req-004-trip-invitations
 
-> Draft. G2 is not recorded; this summary is not a gate decision and not
-> Living Spec authority.
+> Final summary. G2 is recorded Pass (VL Elian Jiang) and PR #31 is merged.
+> This summary is not a gate decision and not Living Spec authority.
 
 ## Intent
 
@@ -50,8 +50,8 @@ Iteration 0.
   organizer-only denial.
 - Evidence: `docs/feedback/verification-req-004.md`,
   `docs/ai4se-plugins/20261114-225027-local-verify-report.md`.
-- CI: PR #31, run 43608236232 on head `91dca19`, both jobs success
-  (`docs/ai4se-plugins/20261114-230558-pipeline-report.md`).
+- CI: PR #31, runs 43608236232 on `91dca19` and 43608439854 on `d4f67f0`, both
+  jobs success (`docs/ai4se-plugins/20261114-230558-pipeline-report.md`).
 
 ## Residual risks
 
@@ -63,7 +63,8 @@ Iteration 0.
   documented test-only update changes it.
 - Invitation URLs use the `#` hash route; QR equality is proven against that
   composed URL.
-- G2/G3 and the archive remain open pending the VL; CI is green on PR #31.
+- G2 is recorded Pass; the G3 SA decision remains open. Archive follows REQ-003
+  for the shared `trips` capability.
 
 ## Links
 
