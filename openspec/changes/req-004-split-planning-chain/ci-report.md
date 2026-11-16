@@ -3,77 +3,75 @@
 **Date:** 2026-11-16 (timezone: UTC+08:00)
 **Root:** `d:\study\gogo`
 **Phase:** ci
-**Data source:** API（gh 只读，绝对路径调用）
+**Data source:** API（gh 只读）
 **Change id:** `req-004-split-planning-chain`
-**Target:** branch `sdd-req-004-split-planning` / commit `e708a30`
-**Pipeline URL:** n/a — 本提交无 run
-**Commit:** `e708a306338e6a128d06daab5a8dc816ec7eff87`
+**Target:** PR #36 `WIP: split-planning P4` / commit `0cd351f`（merge origin/main into branch）
+**Pipeline URL:** https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43791174218
+**Commit:** `0cd351f`
 
 ## Summary
 
 | Phase | Status | Conclusion | Upstream URL | Notes |
 |-------|--------|------------|--------------|-------|
-| ci | Partial | **未建立 / not established** — 本提交零 run | n/a | `.github/workflows/ci.yml` 仅 `on: push[main]` 与 `pull_request[main]`；特性分支 push 不触发，且本分支无 PR |
+| ci | **Pass** | 两 job 全绿（backend + frontend） | run 43791174218 | PR #36 head 0cd351f；mergeStateStatus=CLEAN |
 | cd | n/a | 无部署 / CD（design Non-Goals） | — | 未宣称 |
-| **Overall** | **Partial** | gh 可读，但本提交确无 run | — | E1 ❓ 未验证 |
+| **Overall** | **Pass** | E1 全绿 | — | — |
 
 ## E1 判定 (Machine Evidence)
 
 | Condition | E1 status |
 |-----------|-----------|
-| All in-scope jobs success | 未建立 — 无 run 存在 |
-| Any failed job | 未观测到（"无数据"不等于"绿灯"） |
-| Skipped / manual not run | E2E 设计不覆盖（atdd §3） |
-| No remote data | ❓ E1 未验证 — gh 已登录(lianyue910-a11y) 但 `gh run list --branch sdd-req-004-split-planning` 与 `--commit e708a30` 均返回空；无 PR 触发 |
+| All in-scope jobs success | ✅ E1 全绿 — Backend tests pass, Frontend build pass |
+| Any failed job | 无 |
+| Skipped / manual not run | E2E 设计不覆盖（atdd §3 / ci.yml 无 E2E runner） |
+| No remote data | 否 — gh 读到本次 PR run |
 
-**E1:** ❓ 未验证
-
-本地机器证据（绿）：`mvn -B test` 91 绿、`npm ci` 0 vuln、`tsc -b && vite build` 91 modules、greeting 回归 200 裸 JSON + 405×3、Screen 11–14 浏览器走查。这些记录在 `docs/ai4se-plugins/20261115-231508-local-verify-report.md`，但**本地绿不等于 E1 远程证据**。
+**E1:** ✅ 全绿
 
 ## Jobs / checks
 
 | Phase | Job/Stage | Status | Duration | URL | Failure reason |
 |-------|-----------|--------|----------|-----|----------------|
-| ci | `backend`（mvn -B test, Java 21） | not run for this commit | n/a | n/a | 提交未进 PR；特性分支 push 不触发 |
-| ci | `frontend`（npm ci + build, Node 24） | not run for this commit | n/a | n/a | 同上 |
-| ci | E2E / 浏览器验收 | 设计不覆盖 | n/a | n/a | 无浏览器编排（atdd §3） |
+| ci | `backend`（mvn -B test, Java 21） | success | 25s | job 133049693962 | — |
+| ci | `frontend`（npm ci + npm run build, Node 24） | success | 15s | job 133049693510 | — |
+| ci | E2E / 浏览器验收 | 设计不覆盖 | n/a | n/a | 无浏览器编排 |
 | cd | any | n/a | n/a | n/a | 无部署在范围内 |
+
+本地等价证据：`mvn -B clean test` → 115 tests, 0 failures（splits + main trip/invitation）；`npm run build` 绿 127 modules。
 
 ## 失败详情 (when any failed)
 
-无。未观测到任何运行，故无失败可报；本节不得读作"无失败发生"。
+无。
 
 ## 安全与合规
 
 | Check | Status | Notes |
 |-------|--------|-------|
-| Secret scan | n/a | `ci.yml` 未配置 secret-scan job |
+| Secret scan | n/a | ci.yml 未配置 secret-scan job |
 | SAST | n/a | 未配置 |
-| Dependency audit | ⏭️ | `npm ci` 本地 "found 0 vulnerabilities" 为安装期审计，非 CI audit job |
+| Dependency audit | ⏭️ | npm ci 本地 0 vulnerabilities |
 
-补充：L3 深度安全评审（qodersec）已对 e708a30 运行 → **0 findings**（属本地/工具证据，非 CI 任务，不改 E1 判定）。
+补充：L3 深度安全评审（qodersec）对 e708a30 运行 → 0 findings（工具证据，非 CI 任务）。
 
 ## Residual risks (for local-verify / G2)
 
 | # | Risk | Source | Status |
 |---|------|--------|--------|
-| 1 | 本提交无远程 CI；要 E1 全绿须先解决与 main 的 9 处合并冲突（Flyway V2 撞车 / 前端架构互斥 / REQ-004 编号撞车）再开 PR | merge-tree 预演 | open |
-| 2 | 特性分支 push 不触发 CI（仅 main push / PR-to-main） | ci.yml triggers | open |
-| 3 | 依赖在 GitHub runner 的解析（Maven Central / npm registry）未证 | 首次远程跑即测 | open |
-| 4 | gh 仅非 PATH 绝对路径可用（探针 gh:no） | 环境 | accepted（绝对路径已用） |
+| 1 | PR #36 仍是 draft（WIP）；正式合并需转正式并走 G2/G3 | PR 元数据 | open |
+| 2 | requirement-workspace 文档仅务实解析；完整并集/REQ 重编号延后 | 整合决策 | accepted |
+| 3 | E3 Human（G2 VL 签核）待定；local-verify Overall 仍 Partial（pyyaml + E3），需 VL 具名签核升 Pass | local-verify | open |
 
 ## Artifacts (if any)
 
-- `docs/ai4se-plugins/20261116-093556-pipeline-report-checkpoints.md` — checkpoint
-- `docs/ai4se-plugins/20261116-093707-pipeline-report.md` — 本报告持久化副本
-- `docs/ai4se-plugins/20261115-231508-local-verify-report.md` — 本地证据（Overall Partial）
+- `docs/ai4se-plugins/20261116-101844-pipeline-report.md` — 本报告持久化副本
+- `docs/ai4se-plugins/20261116-093707-pipeline-report.md` — 整合前（Partial，无 run）检查点
+- PR #36：https://github.com/afs-2026-zha1-group-1/gogo/pull/36
 
 ## Human confirmation
 
-N/A — 未申请人工确认，agent 不自签。
+N/A — 远程 CI 已机器验证（gh）。
 
 ## Next
 
-- ✅ 要 E1 全绿：重启合并解 9 冲突 → 开 PR-to-main → CI 真跑 → 重跑本技能
-- 或具名人工接受 ci 阶段（Overall → Partial `Pass-by-human-confirm`，绝不称 API-verified Pass）
-- `/sdd:g2-decision-record` 仍需 VL 具名签核 + 证据（本报告 E1 未验证，G2 无法干净 Pass）
+- E1 ✅ 全绿 → `/sdd:g2-decision-record`（G2 仍须 VL 具名签核，VL 待定）
+- 正式合并前：PR #36 由 draft 转正式 + G2/G3
