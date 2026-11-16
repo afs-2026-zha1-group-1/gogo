@@ -1,5 +1,7 @@
 package com.gogo.invitation;
 
+import com.gogo.auth.TestAuth;
+
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -72,9 +74,7 @@ class InvitationApiTest {
 
     private MvcResult issue(String userId) throws Exception {
         var request = post("/api/trips/" + tripId + "/invitation");
-        if (userId != null) {
-            request = request.header("X-User-Id", userId);
-        }
+        request = request.with(TestAuth.asUser(userId));
         return mockMvc.perform(request).andReturn();
     }
 
@@ -86,9 +86,7 @@ class InvitationApiTest {
 
     private MvcResult accept(String token, String userId) throws Exception {
         var request = post("/api/invitations/" + token + "/accept");
-        if (userId != null) {
-            request = request.header("X-User-Id", userId);
-        }
+        request = request.with(TestAuth.asUser(userId));
         return mockMvc.perform(request).andReturn();
     }
 
@@ -118,7 +116,7 @@ class InvitationApiTest {
     // I3: a member who is not the organizer is denied and nothing is created.
     @Test
     void nonOrganizerIsDenied() throws Exception {
-        mockMvc.perform(post("/api/trips/" + tripId + "/invitation").header("X-User-Id", "2"))
+        mockMvc.perform(post("/api/trips/" + tripId + "/invitation").with(TestAuth.asUser("2")))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("NOT_ORGANIZER"));
         org.junit.jupiter.api.Assertions.assertEquals(0, invitationCount());
@@ -128,10 +126,10 @@ class InvitationApiTest {
     @Test
     void issuanceRequiresKnownIdentity() throws Exception {
         issue(null);
-        mockMvc.perform(post("/api/trips/" + tripId + "/invitation"))
+        mockMvc.perform(post("/api/trips/" + tripId + "/invitation").with(TestAuth.csrfOnly()))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("USER_REQUIRED"));
-        mockMvc.perform(post("/api/trips/" + tripId + "/invitation").header("X-User-Id", "999999"))
+        mockMvc.perform(post("/api/trips/" + tripId + "/invitation").with(TestAuth.asUser("999999")))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("USER_REQUIRED"));
         org.junit.jupiter.api.Assertions.assertEquals(0, invitationCount());
@@ -140,7 +138,7 @@ class InvitationApiTest {
     // I5-N: an unknown trip id is reported as TRIP_NOT_FOUND.
     @Test
     void unknownTripIsReported() throws Exception {
-        mockMvc.perform(post("/api/trips/999999/invitation").header("X-User-Id", "1"))
+        mockMvc.perform(post("/api/trips/999999/invitation").with(TestAuth.asUser("1")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("TRIP_NOT_FOUND"));
     }
@@ -174,7 +172,7 @@ class InvitationApiTest {
         org.junit.jupiter.api.Assertions.assertFalse(body.get("alreadyMember").asBoolean());
         org.junit.jupiter.api.Assertions.assertTrue(isMember(5));
         org.junit.jupiter.api.Assertions.assertEquals(before + 1, memberCount());
-        mockMvc.perform(get("/api/trips/" + tripId).header("X-User-Id", "5"))
+        mockMvc.perform(get("/api/trips/" + tripId).with(TestAuth.asUser("5")))
                 .andExpect(status().isOk());
     }
 
@@ -198,7 +196,7 @@ class InvitationApiTest {
         String token = issueToken();
         long before = memberCount();
         setMainPlanConfirmed(true);
-        mockMvc.perform(post("/api/invitations/" + token + "/accept").header("X-User-Id", "5"))
+        mockMvc.perform(post("/api/invitations/" + token + "/accept").with(TestAuth.asUser("5")))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("JOINING_CLOSED"));
         org.junit.jupiter.api.Assertions.assertEquals(before, memberCount());
@@ -210,10 +208,10 @@ class InvitationApiTest {
     void acceptanceRequiresKnownIdentity() throws Exception {
         String token = issueToken();
         accept(token, null);
-        mockMvc.perform(post("/api/invitations/" + token + "/accept"))
+        mockMvc.perform(post("/api/invitations/" + token + "/accept").with(TestAuth.csrfOnly()))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("USER_REQUIRED"));
-        mockMvc.perform(post("/api/invitations/" + token + "/accept").header("X-User-Id", "999999"))
+        mockMvc.perform(post("/api/invitations/" + token + "/accept").with(TestAuth.asUser("999999")))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("USER_REQUIRED"));
         org.junit.jupiter.api.Assertions.assertFalse(isMember(5));
@@ -240,13 +238,13 @@ class InvitationApiTest {
     // J7: identity errors take precedence over an invalid token.
     @Test
     void identityErrorsPrecedeInvalidToken() throws Exception {
-        mockMvc.perform(post("/api/invitations/no-such-invitation/accept"))
+        mockMvc.perform(post("/api/invitations/no-such-invitation/accept").with(TestAuth.csrfOnly()))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("USER_REQUIRED"));
-        mockMvc.perform(post("/api/invitations/no-such-invitation/accept").header("X-User-Id", "999999"))
+        mockMvc.perform(post("/api/invitations/no-such-invitation/accept").with(TestAuth.asUser("999999")))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("USER_REQUIRED"));
-        mockMvc.perform(post("/api/invitations/no-such-invitation/accept").header("X-User-Id", "5"))
+        mockMvc.perform(post("/api/invitations/no-such-invitation/accept").with(TestAuth.asUser("5")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("INVITATION_NOT_FOUND"));
         org.junit.jupiter.api.Assertions.assertFalse(isMember(5));
@@ -267,7 +265,7 @@ class InvitationApiTest {
     // U2: accepting an invalid invitation creates no membership.
     @Test
     void invalidAcceptanceCreatesNothing() throws Exception {
-        mockMvc.perform(post("/api/invitations/no-such-invitation/accept").header("X-User-Id", "5"))
+        mockMvc.perform(post("/api/invitations/no-such-invitation/accept").with(TestAuth.asUser("5")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("INVITATION_NOT_FOUND"));
         org.junit.jupiter.api.Assertions.assertFalse(isMember(5));
@@ -277,15 +275,15 @@ class InvitationApiTest {
     @Test
     void noConfirmationOrRevocationSurfaceExists() throws Exception {
         String token = issueToken();
-        mockMvc.perform(post("/api/trips/" + tripId + "/confirm").header("X-User-Id", "1"))
+        mockMvc.perform(post("/api/trips/" + tripId + "/confirm").with(TestAuth.asUser("1")))
                 .andExpect(status().isNotFound());
-        mockMvc.perform(patch("/api/trips/" + tripId).header("X-User-Id", "1"))
+        mockMvc.perform(patch("/api/trips/" + tripId).with(TestAuth.asUser("1")))
                 .andExpect(status().isMethodNotAllowed());
-        mockMvc.perform(post("/api/invitations/" + token + "/confirm").header("X-User-Id", "1"))
+        mockMvc.perform(post("/api/invitations/" + token + "/confirm").with(TestAuth.asUser("1")))
                 .andExpect(status().isNotFound());
-        mockMvc.perform(post("/api/invitations/" + token + "/revoke").header("X-User-Id", "1"))
+        mockMvc.perform(post("/api/invitations/" + token + "/revoke").with(TestAuth.asUser("1")))
                 .andExpect(status().isNotFound());
-        mockMvc.perform(delete("/api/invitations/" + token).header("X-User-Id", "1"))
+        mockMvc.perform(delete("/api/invitations/" + token).with(TestAuth.asUser("1")))
                 .andExpect(status().isMethodNotAllowed());
         Integer confirmed = jdbcTemplate.queryForObject(
                 "SELECT main_plan_confirmed FROM trip WHERE id = ?", Integer.class, tripId);

@@ -1,6 +1,14 @@
-export interface User {
-  id: number
+export interface GreetingResponse {
+  message: string
+}
+
+export interface TripCreatePayload {
   name: string
+  destination: string
+  startDate: string
+  endDate: string
+  startLocation: string
+  endLocation: string
 }
 
 export interface Trip {
@@ -12,6 +20,7 @@ export interface Trip {
   startLocation: string | null
   endLocation: string | null
   organizerId: number
+  mainPlanConfirmed?: boolean
 }
 
 export interface InvitationPreview {
@@ -41,16 +50,23 @@ export interface ApiError {
   message?: string
 }
 
-export interface ApiResult<T> {
-  status: number
-  ok: boolean
-  data: (T & ApiError) | null
-}
+export type ApiResult<T> =
+  | {
+      status: number
+      ok: true
+      data: T | null
+    }
+  | {
+      status: number
+      ok: false
+      data: (ApiError & Partial<T>) | null
+    }
 
 export type TabId = 'dashboard' | 'trips' | 'split' | 'members'
 
 export type Route =
   | { page: 'home' }
+  | { page: 'login' }
   | { page: 'trips-empty' }
   | { page: 'create' }
   | { page: 'split' }
@@ -61,10 +77,10 @@ export type Route =
   | { page: 'main-plan-inputs'; tripId: number }
   | { page: 'scan'; from: string | null }
 
-// main-plan and scan screens are full-page flows (like join) without the
-// bottom TabBar. 'scan' additionally owns its own app-bar close control, so
+// main-plan, login, and scan screens are full-page flows (like join) without
+// the bottom TabBar. 'scan' additionally owns its own app-bar close control, so
 // it must not appear in TAB_FOR_PAGE (Record<InAppPage, TabId>).
 export type InAppPage = Exclude<
   Route['page'],
-  'join' | 'main-plan' | 'main-plan-inputs' | 'scan'
+  'join' | 'login' | 'main-plan' | 'main-plan-inputs' | 'scan'
 >

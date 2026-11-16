@@ -48,11 +48,11 @@ REQ-003 adds shared trips: `POST /api/trips` creates a trip and atomically
 records the caller as organizer and member; `GET /api/trips/{id}` returns the
 saved trip to members only (403 without values for non-members, 404 for unknown
 ids). The frontend adds three screens on a hash router: `#/create` (US-001),
-`#/trips/<id>` (US-002), and `#/` for the landing page. Identity is the REQ-003
-scaffold: the header select writes `X-User-Id` on every request and is labeled
-as a scaffold, not a login; seeded users 1–5, and the seeded sample trip is
-readable by users 1–4. Trip creation requires a name, destination and an end
-date not before the start date; both locations are optional.
+`#/trips/<id>` (US-002), and `#/` for the landing page. The original REQ-003
+identity was the header-select scaffold (`X-User-Id`, seeded users 1–5, sample
+trip readable by users 1–4); US-066 replaces it with verified login (see below).
+Trip creation requires a name, destination and an end date not before the start
+date; both locations are optional.
 
 REQ-004 adds the invitation flow. On `#/trips/<id>` the organizer sees a panel
 with the invitation link, a copy action and a QR encoding the same absolute URL
@@ -77,12 +77,30 @@ and hard budgets first (422 `VALIDATION_FAILED` with both error lists, 409
 provider is a fixture-backed fake (`FakeMainPlanProvider`); preference rows are
 a read-only stand-in until REQ-019 lands.
 
+US-066 replaces the scaffold identity with verified login. `POST /api/auth/login`
+accepts an email and password, establishes a server-side session cookie and
+returns the account; `GET /api/auth/me` reports the current account and
+`GET /api/auth/csrf` bootstraps the CSRF token used by state-changing requests.
+Protected trip, invitation, main-plan and split endpoints derive the caller from
+the session; `X-User-Id` no longer authenticates anything. The frontend serves a
+full-screen `#/login` (and `/login` for the split router) and sends signed-out
+visitors there, except the public invitation preview, which resumes after login
+without joining automatically. Demo-only seeded accounts (shown on the login page in this demo build)
+share the password `gogo-demo-2026`: `alice@example.com`, `ben@example.com`,
+`chloe@example.com`, `daniel@example.com`, `eve@example.com`. There is no
+registration, password reset or logout yet (US-067/068/069 own those).
+
+US-038–043 add the split flow under `/trips/:tripId/split`: members start one
+draft, select boundaries, generate paired routes and check the reunion window.
+The split API keeps its `{data,error}` envelope and `401 MEMBER_REQUIRED`
+contract, now with the caller taken from the session.
+
 The database is SQLite at `backend/data/gogo.db`. The Flyway migrations create the
 schema and seed data on first start (`V1` greeting, `V2` users/trips/members,
-`V3` invitations and the main-plan column, `V5` main-plan drafts/stops plus
-readiness and preference seeds; `V4` is reserved for REQ-019); the application
-creates the `data/` directory itself, because the SQLite driver creates the file
-but not its parent. Delete `backend/data/` to rebuild it.
+`V3` invitations and the main-plan column, `V4` splits, `V5` main-plan
+drafts/stops plus readiness and preference seeds, `V6` account credentials); the
+application creates the `data/` directory itself, because the SQLite driver
+creates the file but not its parent. Delete `backend/data/` to rebuild it.
 
 Backend on port 8080:
 
@@ -99,20 +117,34 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173/. Check the API directly with
+If Vite reports a missing native binding after updating the lockfile, run
+`npm install --include=optional` in `frontend/` and start it again. Native
+bindings are platform-specific optional dependencies.
+
+Open http://localhost:5173/. Log in with a seeded demo account; the dashboard is
+the landing page. Check the public API directly with
 `curl -i http://localhost:8080/api/greeting`, which returns
 `Content-Type: application/json` and the body `{"message":"Hello World"}`.
-Create a trip with:
+Protected calls require a session; the old `X-User-Id` curl is no longer
+authenticated. For a cookie-based smoke call:
 
 ```sh
-curl -i -X POST http://localhost:8080/api/trips \
-  -H "Content-Type: application/json" -H "X-User-Id: 1" \
-  -d '{"name":"Day out","destination":"Singapore","startDate":"2026-12-05","endDate":"2026-12-05"}'
+curl -s -c /tmp/gogo-cookies http://localhost:8080/api/auth/csrf
+TOKEN=$(awk '$6=="XSRF-TOKEN" {print $7}' /tmp/gogo-cookies)
+curl -s -b /tmp/gogo-cookies -c /tmp/gogo-cookies \
+  -H "Content-Type: application/json" -H "X-XSRF-TOKEN: $TOKEN" \
+  -d '{"email":"alice@example.com","password":"gogo-demo-2026"}' \
+  http://localhost:8080/api/auth/login
+curl -s -b /tmp/gogo-cookies -c /tmp/gogo-cookies \
+  -H "Content-Type: application/json" -H "X-XSRF-TOKEN: $(awk '$6=="XSRF-TOKEN" {print $7}' /tmp/gogo-cookies)" \
+  -d '{"name":"Day out","destination":"Singapore","startDate":"2026-12-05","endDate":"2026-12-05"}' \
+  http://localhost:8080/api/trips
 ```
 
-Run the backend tests with `cd backend && mvn test` (`GreetingApiTest`,
-`TripApiTest`, `InvitationApiTest`, `MainPlanApiTest` plus the main-plan unit
-suites); they use the same SQLite engine and the same migrations as production.
+Run the backend tests with `cd backend && mvn test` (`AuthApiTest`,
+`SessionExpiryApiTest`, `GreetingApiTest`, `TripApiTest`, `InvitationApiTest`,
+`MainPlanApiTest`, the split API suites and the unit suites); they use the same
+SQLite engine and migrations as production.
 
 Inspect the stored row without stopping the app (Python 3 ships `sqlite3`; no
 separate CLI is needed):

@@ -256,7 +256,6 @@ export default function Scanner({ from }: { from: string | null }) {
       let token = ''
       try {
         const result = await api<IssuedInvitation>('/api/trips/1/invitation', {
-          userId: 1,
           method: 'POST',
         })
         if (result.ok && result.data && 'token' in result.data) token = result.data.token

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api'
+import { useAuth } from '../features/auth/AuthProvider'
 import Icon from '../Icons'
 import type { MainPlan, MainPlanError, MainPlanInputs, TripSummary } from '../types/mainPlan'
 
@@ -31,11 +32,11 @@ type InputsState =
   | { kind: 'failed'; message: string }
 
 interface MainPlanInputsProps {
-  userId: number
   tripId: number
 }
 
-export default function MainPlanInputs({ userId, tripId }: MainPlanInputsProps) {
+export default function MainPlanInputs({ tripId }: MainPlanInputsProps) {
+  const { account } = useAuth()
   const [state, setState] = useState<InputsState>({ kind: 'loading' })
   const [generating, setGenerating] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -45,8 +46,8 @@ export default function MainPlanInputs({ userId, tripId }: MainPlanInputsProps) 
     setState({ kind: 'loading' })
     setActionError(null)
     Promise.all([
-      api<TripSummary>(`/api/trips/${tripId}`, { userId }),
-      api<MainPlanInputs & MainPlanError>(`/api/trips/${tripId}/main-plan/inputs`, { userId }),
+      api<TripSummary>(`/api/trips/${tripId}`),
+      api<MainPlanInputs & MainPlanError>(`/api/trips/${tripId}/main-plan/inputs`),
     ])
       .then(([tripResult, inputsResult]) => {
         if (!active) return
@@ -70,7 +71,7 @@ export default function MainPlanInputs({ userId, tripId }: MainPlanInputsProps) 
     return () => {
       active = false
     }
-  }, [userId, tripId])
+  }, [tripId])
 
   useEffect(() => load(), [load])
 
@@ -78,7 +79,7 @@ export default function MainPlanInputs({ userId, tripId }: MainPlanInputsProps) 
     setGenerating(true)
     setActionError(null)
     try {
-      const { status, ok, data } = await api<MainPlan & MainPlanError>(`/api/trips/${tripId}/main-plan`, { userId, method: 'POST' })
+      const { status, ok, data } = await api<MainPlan & MainPlanError>(`/api/trips/${tripId}/main-plan`, { method: 'POST' })
       if (ok) {
         window.location.hash = `#/trips/${tripId}/main-plan`
         return
@@ -147,7 +148,7 @@ export default function MainPlanInputs({ userId, tripId }: MainPlanInputsProps) 
   }
 
   const { trip, inputs } = state
-  const isOrganizer = trip.organizerId === userId
+  const isOrganizer = trip.organizerId === account?.id
 
   return (
     <div className="screen">

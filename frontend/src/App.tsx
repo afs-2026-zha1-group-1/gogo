@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react'
-import { users } from './api'
 import type { InAppPage, Route, TabId } from './types'
 import TabBar from './TabBar'
-import Home from './pages/Home.jsx'
+import Home from './pages/Home'
 import CreateTrip from './pages/CreateTrip'
-import TripDetails from './pages/TripDetails.jsx'
+import TripDetails from './pages/TripDetails'
 import TripsEmpty from './pages/TripsEmpty'
 import Placeholder from './pages/Placeholder'
-import Join from './pages/Join.jsx'
+import Join from './pages/Join'
 import MainPlan from './pages/MainPlan'
 import MainPlanInputs from './pages/MainPlanInputs'
 import Scanner from './pages/Scanner'
+import LoginPage from './features/auth/LoginPage'
+import { useAuth } from './features/auth/AuthProvider'
 
 function parseRoute(hash: string): Route {
   const path = hash.replace(/^#/, '') || '/'
@@ -20,6 +21,7 @@ function parseRoute(hash: string): Route {
   if (path === '/scan') return { page: 'scan', from: null }
   const joinMatch = path.match(/^\/join\/([^/]+)$/)
   if (joinMatch) return { page: 'join', token: decodeURIComponent(joinMatch[1]) }
+  if (path === '/login') return { page: 'login' }
   const mainPlanInputsMatch = path.match(/^\/trips\/(\d+)\/main-plan\/inputs$/)
   if (mainPlanInputsMatch) return { page: 'main-plan-inputs', tripId: Number(mainPlanInputsMatch[1]) }
   const mainPlanMatch = path.match(/^\/trips\/(\d+)\/main-plan$/)
@@ -42,26 +44,17 @@ const TAB_FOR_PAGE: Record<InAppPage, TabId> = {
   members: 'members',
 }
 
-function ScaffoldBar({ userId, onChange }: { userId: number; onChange: (id: number) => void }) {
+function AccountBar({ name }: { name: string }) {
   return (
     <div className="scaffold-bar">
-      <span className="scaffold-label">IDENTITY · SCAFFOLD（非登录）</span>
-      <select
-        aria-label="Demo identity"
-        value={userId}
-        onChange={(event) => onChange(Number(event.target.value))}
-      >
-        {users().map((candidate) => (
-          <option key={candidate.id} value={candidate.id}>{candidate.name}</option>
-        ))}
-      </select>
+      <span className="scaffold-label">已登录 · {name}</span>
     </div>
   )
 }
 
 export default function App() {
+  const { status, account } = useAuth()
   const [route, setRoute] = useState<Route>(() => parseRoute(window.location.hash))
-  const [userId, setUserId] = useState<number>(1)
   const [lastTripId, setLastTripId] = useState<number | null>(null)
   // Tracks the last non-scanner hash so closing the scanner can restore
   // the originating route (spec S-5 / design D2). Falls back to `#/` via
@@ -70,7 +63,6 @@ export default function App() {
     const initial = window.location.hash
     return initial && initial.replace(/^#/, '') !== '/scan' ? initial : null
   })
-  const user = users().find((candidate) => candidate.id === userId)
 
   useEffect(() => {
     const onHash = () => {
@@ -93,20 +85,33 @@ export default function App() {
 
   const tripsHref = lastTripId != null ? `#/trips/${lastTripId}` : '#/trips'
 
+  if (route.page === 'login') return <LoginPage />
+
   if (route.page === 'join') {
     return (
       <div className="app">
-        <ScaffoldBar userId={userId} onChange={setUserId} />
-        <Join token={route.token} userId={userId} userName={user?.name} />
+        <Join token={route.token} />
       </div>
     )
+  }
+
+  if (status === 'checking') {
+    return (
+      <div className="app">
+        <div className="shell-content"><div className="loading">正在验证登录…</div></div>
+      </div>
+    )
+  }
+
+  if (status !== 'signedIn' || !account) {
+    return <LoginPage />
   }
 
   if (route.page === 'main-plan') {
     return (
       <div className="app">
-        <ScaffoldBar userId={userId} onChange={setUserId} />
-        <MainPlan userId={userId} tripId={route.tripId} />
+        <AccountBar name={account.name} />
+        <MainPlan tripId={route.tripId} />
       </div>
     )
   }
@@ -114,8 +119,8 @@ export default function App() {
   if (route.page === 'main-plan-inputs') {
     return (
       <div className="app">
-        <ScaffoldBar userId={userId} onChange={setUserId} />
-        <MainPlanInputs userId={userId} tripId={route.tripId} />
+        <AccountBar name={account.name} />
+        <MainPlanInputs tripId={route.tripId} />
       </div>
     )
   }
@@ -127,7 +132,7 @@ export default function App() {
   if (route.page === 'scan') {
     return (
       <div className="app">
-        <ScaffoldBar userId={userId} onChange={setUserId} />
+        <AccountBar name={account.name} />
         <Scanner from={route.from} />
       </div>
     )
@@ -135,14 +140,44 @@ export default function App() {
 
   return (
     <div className="app">
-      <ScaffoldBar userId={userId} onChange={setUserId} />
+      <AccountBar name={account.name} />
       <div className="shell-content">
         {route.page === 'home' && <Home />}
-        {route.page === 'create' && <CreateTrip userId={userId} backHref={tripsHref} />}
-        {route.page === 'details' && <TripDetails userId={userId} tripId={route.tripId} />}
+        {route.page === 'create' && <CreateTrip backHref={tripsHref} />}
+        {route.page === 'details' && <TripDetails tripId={route.tripId} />}
         {route.page === 'trips-empty' && <TripsEmpty />}
         {route.page === 'split' && (
-          <Placeholder title="分队" tripsHref={tripsHref} />
+          <div className="screen">
+            <header className="appbar">
+              <div className="grow">
+                <div className="title">分队规划</div>
+                <div className="sub">A/B 分头游玩 · 到点会合</div>
+              </div>
+            </header>
+            <div className="body">
+              {lastTripId != null ? (
+                <section className="card pad">
+                  <p className="hint" style={{ marginBottom: 12 }}>
+                    进入当前行程（#{lastTripId}）的分队：发起草稿、选择边界、生成路线、校验会合窗口。
+                  </p>
+                  <button
+                    className="btn btn-primary"
+                    type="button"
+                    onClick={() => { window.location.href = `/trips/${lastTripId}/split` }}
+                  >
+                    进入分队规划
+                  </button>
+                </section>
+              ) : (
+                <section className="card pad">
+                  <p className="hint" style={{ marginBottom: 12 }}>
+                    请先在「行程」页打开一个行程，再从行程详情或底部「分队」进入分队规划。
+                  </p>
+                  <a className="btn btn-ghost" href={tripsHref}>去行程</a>
+                </section>
+              )}
+            </div>
+          </div>
         )}
         {route.page === 'members' && (
           <Placeholder title="成员" tripsHref={tripsHref} />
