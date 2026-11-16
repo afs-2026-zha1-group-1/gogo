@@ -154,7 +154,7 @@
       layout via the approved screen). No scenario was added, removed or reworded, so the
       requirement/scenario counts stay 5 / 31. `openspec validate req-019-save-interests
       --strict` → `Change 'req-019-save-interests' is valid`, exit 0
-- [ ] 6.6 **Final task before archive (config.yaml `rules.tasks`):** reconcile
+- [x] 6.6 **Final task before archive (config.yaml `rules.tasks`):** reconcile
       `docs/knowledge/architecture/tech-stack-plan.md` with what this change actually
       shipped — the two endpoints (with `interest` only), the `member_preference` columns
       and `UNIQUE(trip_id,user_id,kind)`, the §7 datasource baseline, the frontend stack
@@ -162,7 +162,15 @@
       reconcile only work completed by an archived change, never planned or
       still-unarchived work; append a row to `docs/knowledge/_LOG.md` when the plan
       changes; close this task before `/opsx:archive` (config.yaml
-      `operations.archive`)
+      `operations.archive`) — **closed 2026-11-16.** §17 records only what shipped: the
+      `GET`/`PUT /api/trips/{tripId}/preferences` contract on session identity, the ten-label
+      catalogue with its codes, `V7__create_member_preference.sql` and the
+      `UNIQUE(trip_id,user_id,kind)` key (noting `V5`'s `IF NOT EXISTS` pre-declaration makes
+      it a no-op on this baseline), the page route and the CI `typecheck` step, plus TS-2 and
+      TS-11 as accepted deviations. §5's `member_id`/plain index and §6's `X-Member-Id` are
+      marked as superseded rather than rewritten, so the plan keeps its planning history. One
+      `_LOG.md` row appended; `scripts/kb-lint.sh` still prints SKIP (documented baseline), so
+      `_INDEX.md` needs no row because no new knowledge file was created
 
 ## 7. Stage artifacts (owner: Dev)
 
@@ -275,6 +283,16 @@ so it is logged here instead of being absorbed silently.
       test 2/2, `npm run build` 645.74 kB JS / 44.41 kB CSS / 142 modules (main's `Scanner.tsx`
       and `scan.ts` grew the bundle; the >500 kB chunk warning is pre-existing),
       `openspec validate req-019-save-interests --strict` still `is valid`
+- [x] 8.14 Land G3 in `main` and archive (2026-11-16): the G3 record, the strict-validation fix
+      and the sixth merge reached `main` through **PR #50** (`head b3c5b92`, base `81af3d1`,
+      3 commits / 5 files +174 −110, pull-request run `43876766780` green, merge commit
+      `5183291`, main push run `43877290310` green); `ci-report.md` gained the PR #50 section.
+      The archive was then cut from `origin/main` `db45609` (US-072's archive plus two `lumi_dev`
+      syncs), ran `openspec archive req-019-save-interests -y`, moved the package to
+      `openspec/changes/archive/2026-11-16-req-019-save-interests/` and merged the delta into
+      `openspec/specs/preferences/spec.md`; `change-summary.md` was authored, tech-stack §17 and
+      a `_LOG.md` row were added (6.6), and the registry/handoff rows now carry G3 Pass and the
+      archive path. Result recorded in `g3-decision.md` under "Archive result"
 
 ## Alignment self-check (Spec ↔ Design ↔ Tasks ↔ ATDD)
 
@@ -287,7 +305,7 @@ so it is logged here instead of being absorbed silently.
 | Preferences page (9) | DD9, DD10 | 4.1–4.7, 5.2, 8.3, 8.4 | PAGE-1…PAGE-10 | Pass |
 | Non-goals (other kinds, US-027, US-026, US-031, auth, `tag`, locking, i18n, page migration) | Goals / Non-Goals, DD1, DD3, DD9 | 1.2, 5.3 | ATDD §5 reverse table | Pass |
 | Display contract (deep-dive ⑫: loading/empty/error/saving) | DD9, DD10 | 4.5, 5.2 | PAGE-1, PAGE-2, PAGE-7, PAGE-8, PAGE-9 | Pass |
-| Revision 2026-11-16 (Chinese catalogue, screen-08 baseline); merges of `origin/main` | DD6, DD9, DD10, TS-13; Revision section | 8.1–8.13 | CAT-1…CAT-4, SAVE-1, PAGE-3, PAGE-7, PAGE-10 | Pass — 8.1–8.13 all closed; 8.6 is the G1 revision re-review, signed Pass 2026-11-16 by IO Emily and SA evelyn.huang; 8.8–8.13 are the six `origin/main` merges |
+| Revision 2026-11-16 (Chinese catalogue, screen-08 baseline); merges of `origin/main`; archive | DD6, DD9, DD10, TS-13; Revision section | 8.1–8.14 | CAT-1…CAT-4, SAVE-1, PAGE-3, PAGE-7, PAGE-10 | Pass — 8.1–8.14 all closed; 8.6 is the G1 revision re-review, signed Pass 2026-11-16 by IO Emily and SA evelyn.huang; 8.8–8.13 are the six `origin/main` merges; 8.14 is the G3 landing through PR #50 and the archive
 | G1 condition 4 (strict validation) | Risks: strict validation still failing | 6.5 | — (not an ATDD row; archive gate) | **Pass** — 6.5 closed 2026-11-16: `openspec validate req-019-save-interests --strict` → `is valid`, exit 0 |
 | Tech-stack baseline (`config.yaml` `context`, D17 plan-first) | DD2, DD3, DD4, DD9, DD12; deviations TS-1…TS-13 | 2.1, 2.2, 4.1, 6.1, 6.6 | — (not an ATDD row; archive gate) | Pass as plan-first choices plus recorded deviations (TS-11 still open) |
 

@@ -96,6 +96,39 @@ PR #44 合并后 `origin/main` 又前进到 `81af3d1`（US-067 的扫码入口�
 这条更新不改变 SA 的 Pass 结论：它只说明合并后的分支基线更新，签署的对象仍是已合并的 PR #44
 （`6c0ccb1`）。
 
+## Update — 本记录经 PR #50 进入 main（2026-11-16，签署后）
+
+PR #44 只带走了功能代码；G3 记录、strict 压字数与第六次合并是在那之后提交的，因此另开 PR #50
+（`docs(req-019): G3 Pass, strict-validation fix and a sixth sync with main`，
+`feat/travel_preference` → `main`，head `b3c5b92`，base `81af3d1`，3 个提交 / 5 个文件、
++174 / −110，纯文档）。PR 侧 run `43876766780` 双 job 全绿（`Backend tests` 255/255、
+`Frontend build` 含 lockfile 2/2 + `typecheck` + `build`），`mergeable=true`、`clean`，
+于 2026-11-16T13:35:47Z 合为 **`5183291`**；main 侧 push run `43877290310` 亦为 success。
+
+合并后 `origin/main` 又前进到 `db45609`（US-072 归档与 `lumi_dev` 的两次同步），归档即以该
+提交为基线，故本记录的三段历史是：`6c0ccb1`（PR #44，功能）→ `5183291`（PR #50，记录）→
+归档提交。`Approvers`、`Decision`、`Timestamp` 三行保持签署时的原样，本条只补充落地事实。
+
+## Archive result（2026-11-16）
+
+归档由实现方（代理）执行、SA 事后核对；本节按 Recording rule 3 补记结果，不改写上方签署内容。
+
+| 项 | 结果 |
+|---|---|
+| 命令 | `openspec archive req-019-save-interests -y`（CLI 1.16.1），exit 0 |
+| 归档路径 | `openspec/changes/archive/2026-11-16-req-019-save-interests/`（12 个文件，含本记录与新增的 `change-summary.md`） |
+| Living Spec | **新建** `openspec/specs/preferences/spec.md`：+5 requirements / 31 scenarios；归档复核时补写了 Purpose（原先为 archiver 生成的 TBD 占位） |
+| 归档前提（6.6） | 已闭合：`tech-stack-plan.md` §17 落地对齐 + `_LOG.md` 一行 |
+| 任务状态 | 归档时 48/49 已勾；唯一未勾的是 7.3（可选 quality-checklist，当时明示跳过、从未声称通过） |
+| 台账 | `registry.md` 新增「归档（2026-11-16）」节并更新 REQ-019 行的状态与 change 路径；`handoff.md` 的 REQ-019 行同步 G3 Pass 与归档路径 |
+| 记录落地 | 本记录自身经 PR #50 进入 main（`5183291`，PR run `43876766780` 双 job 全绿）；归档提交见包含本文件的提交 |
+
+**未改动**：`Decision`、`Approvers`、`Timestamp`、`Sign-off` 与「本记录允许与不允许」保持签署时原样。
+
+**归档后仍未闭合**（与本记录 `Open at Pass` 一致）：TS-2（Living Spec 的 requirement 文本
+沿用 G1 原文的 `X-User-Id`，实现取会话）与 TS-11（`flyway-database-nc-sqlite` 无发布物）作为
+登记偏差随归档保留；若要让 Living Spec 直接写会话身份，需单开一次契约修订。
+
 ## Recording rules
 
 1. G3 需要具名 SA 决策，G1/G2 签名不继承。
