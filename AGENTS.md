@@ -13,7 +13,9 @@ This guide applies to coding agents working in this repository. Read the relevan
 Please refer to the [knowledge base](docs/knowledge/_INDEX.md) for additional information.
 
 ## Reference
-UI design please refer to Ant Design 
+UI design please refer to [shadcn/ui](https://ui.shadcn.com/docs): components live in
+`frontend/src/components/ui/` and tokens in `frontend/src/index.css` (`@theme`). Do not add a
+second UI library.
 
 ## Rules pointers
 
