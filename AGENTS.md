@@ -14,3 +14,10 @@ Please refer to the [knowledge base](docs/knowledge/_INDEX.md) for additional in
 
 ## Reference
 UI design please refer to Ant Design 
+
+## Rules pointers
+
+- Authority: `docs/knowledge/rules/` (MECE categories)
+- Prefer `@rule:<id>` references; do not paste rule bodies here.
+- Host projections are derived copies — authority wins on conflict.
+
