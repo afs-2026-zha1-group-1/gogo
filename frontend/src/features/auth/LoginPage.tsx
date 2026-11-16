@@ -2,6 +2,15 @@ import { useEffect, useState } from 'react'
 import Icon from '../../Icons'
 import { useAuth } from './AuthProvider'
 
+const DEMO_PASSWORD = 'gogo-demo-2026'
+const DEMO_ACCOUNTS = [
+  { name: 'Alice', email: 'alice@example.com' },
+  { name: 'Ben', email: 'ben@example.com' },
+  { name: 'Chloe', email: 'chloe@example.com' },
+  { name: 'Daniel', email: 'daniel@example.com' },
+  { name: 'Eve', email: 'eve@example.com' },
+]
+
 export default function LoginPage() {
   const { status, pendingInvite, login } = useAuth()
   const [email, setEmail] = useState('')
@@ -111,6 +120,34 @@ export default function LoginPage() {
           <p className="hint" style={{ marginTop: 14 }}>
             登录后会回到你的仪表盘；如果正在打开邀请，会先回到邀请预览，再由你确认加入。
           </p>
+
+          <div className="sec-title"><Icon name="user" className="sm" /> 演示账号（仅演示）</div>
+          <section className="card pad">
+            <p className="hint" style={{ marginBottom: 10 }}>
+              点击账号自动填入邮箱与统一密码，便于演示登录。
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {DEMO_ACCOUNTS.map((account) => (
+                <button
+                  key={account.email}
+                  className="btn btn-ghost sm"
+                  type="button"
+                  style={{ justifyContent: 'space-between' }}
+                  onClick={() => {
+                    setEmail(account.email)
+                    setPassword(DEMO_PASSWORD)
+                    setError('')
+                  }}
+                >
+                  <span>{account.name}</span>
+                  <span style={{ color: 'var(--ink-3)', fontWeight: 500 }}>{account.email}</span>
+                </button>
+              ))}
+            </div>
+            <p className="hint" style={{ marginTop: 10 }}>
+              统一密码：<code>{DEMO_PASSWORD}</code>（仅演示环境，不是生产账号目录）
+            </p>
+          </section>
         </div>
       </div>
     </div>

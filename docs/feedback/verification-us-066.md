@@ -22,6 +22,7 @@
 | E13 | split 发起草稿 | 返回业务错误 `MAIN_PLAN_NOT_CONFIRMED`（非 CSRF 403），证明 session+CSRF 生效 | snapshot “操作被拒绝 / MAIN_PLAN_NOT_CONFIRMED” |
 | E14 | 后端重启后访问受保护路由 | session 失效 → 登录页；重新登录可用 | 重启后 snapshot `#/login` |
 | E15 | 未登录登录页布局 | 与仪表盘同款移动壳：`.app` 430px 居中、appbar + “一起出发” hero + 卡片表单；非全宽大屏 | `getBoundingClientRect().width = 430`（viewport 876） |
+| E16 | 登录页演示账号 | 显示 Alice/Ben/Chloe/Daniel/Eve 与统一密码 `gogo-demo-2026`，标注仅演示；点击 Alice 自动填入邮箱/密码并可登录 | snapshot 演示账号区块；点击后输入框值正确 |
 
 说明：Tomcat 的 session 超时粒度为分钟，短超时 profile 在 API 层以“失效 session
 → 401”等价验证；浏览器用后端重启模拟过期。G1 C5 的 CSRF/公开面/短超时设计见

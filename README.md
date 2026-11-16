@@ -85,7 +85,7 @@ Protected trip, invitation, main-plan and split endpoints derive the caller from
 the session; `X-User-Id` no longer authenticates anything. The frontend serves a
 full-screen `#/login` (and `/login` for the split router) and sends signed-out
 visitors there, except the public invitation preview, which resumes after login
-without joining automatically. Demo-only seeded accounts (never shown in the UI)
+without joining automatically. Demo-only seeded accounts (shown on the login page in this demo build)
 share the password `gogo-demo-2026`: `alice@example.com`, `ben@example.com`,
 `chloe@example.com`, `daniel@example.com`, `eve@example.com`. There is no
 registration, password reset or logout yet (US-067/068/069 own those).

@@ -32,7 +32,7 @@
 |---|---|---|---|
 | R1 | SA/Dev | The in-flight `us-031-037-main-itinerary` delta still names `X-User-Id` in its identity scenarios, while `auth` makes the header non-authenticating | Reconcile at implementation: update that delta or add a MODIFIED living-spec delta after its archive. Recorded as a consistency WARNING and a G1 condition candidate |
 | R2 | SA | `INVALID_CREDENTIALS` and `CSRF_INVALID` are new error codes introduced in P2 (the proposal named only generic failures) | Acknowledge at G1; they follow the repository's `code` convention |
-| R3 | IO/SA | Demo credentials (`alice@example.com` … / `gogo-demo-2026`) live in the fixture file | Demo-only; never shown in UI; registration remains out of scope |
+| R3 | IO/SA | Demo credentials (`alice@example.com` … / `gogo-demo-2026`) live in the fixture file | Demo-only; shown on the demo login page and labeled; registration remains out of scope |
 | R4 | SA | In-memory sessions are lost on restart | Accepted MVP behavior; re-login required |
 | R5 | Dev | Historical scenario names are retained in MODIFIED app-shell blocks (e.g. "The identity switcher stays a scaffold in the shell") because OpenSpec requires archive-retained scenario names | Content documents removal; treat the names as identifiers, not current behavior |
 

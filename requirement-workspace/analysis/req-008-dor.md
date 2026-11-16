@@ -39,7 +39,7 @@
 | WARNING | resolved | REQ-008 OQ-9/OQ-10 | Switcher replacement and login route/placement | Read-only signed-in name and `#/login` full-screen; user accepted 2026-11-16. Owner Dev/IO |
 | WARNING | resolved | deep-dive ⑨ | In-memory sessions are lost on server restart; users re-login | Accepted for a single-instance MVP; document in the proposal; no Spring Session dependency. User accepted 2026-11-16. Owner SA |
 | SUGGESTION | resolved | REQ-008 §Constraints | `tech-stack-plan.md` says "no accounts" and `X-Member-Id` | Deliberate deviation; record in proposal and reconcile at archive per `openspec/config.yaml`. Owner SA |
-| SUGGESTION | resolved | fixtures | Seeded demo passwords live in the repository | Demo-only account set; never surfaced in UI or logs; documented. Owner SA |
+| SUGGESTION | resolved | fixtures | Seeded demo passwords live in the repository | Demo-only account set; shown on the demo login page (clearly labeled); never logged; documented. Owner SA |
 | SUGGESTION | resolved | tests | All existing trip/invitation/main-plan tests drive the `X-User-Id` header | Migrate tests to session login at P4; expected outcomes/codes unchanged. Owner Dev |
 | SUGGESTION | resolved | CSRF | SPA must bootstrap the token before the first POST (including login) | P3 defines the bootstrap order; acceptance S8 covers it. Owner Dev |
 

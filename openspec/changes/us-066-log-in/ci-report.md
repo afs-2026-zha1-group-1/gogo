@@ -51,7 +51,7 @@ None.
 | 1 | No dedicated security scan job in CI | workflow | accepted for MVP; local verify has static checks and security-focused tests |
 | 2 | Session expiry acceptance uses invalidated/restarted sessions (Tomcat minute granularity) | local verify | accepted; documented |
 | 3 | Splits Living Spec Purpose prose drift (`X-Member-Id`) | local verify | tracking; SA at archive |
-| 4 | Demo-only seeded credentials | local verify | accepted; never shown in UI |
+| 4 | Demo-only seeded credentials | local verify | accepted; shown only on the demo login page, labeled demo-only |
 
 ## Artifacts
 

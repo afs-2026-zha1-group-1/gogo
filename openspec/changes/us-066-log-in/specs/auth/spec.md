@@ -268,3 +268,11 @@ to `#/login` SHALL return to the dashboard.
 - **WHEN** a protected page receives 401 because the session expired
 - **THEN** the login page opens without private data
 - **AND** logging in again restores access
+
+#### Scenario: Demo accounts are offered on the login page
+
+- **WHEN** the login page renders in this demo build
+- **THEN** the five seeded demo accounts and the shared demo password are shown,
+  clearly labeled as demo-only and not a production account directory
+- **AND** selecting an account fills the email and password fields for an
+  explicit login submission

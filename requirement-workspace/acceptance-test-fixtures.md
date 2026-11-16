@@ -291,7 +291,7 @@ The `SPLIT_TIMING_INFEASIBLE` error detail adds `totalMinutes`, `overrunMinutes`
 
 Same users as above. Credentials are seeded by `V6__create_account_credential.sql`
 for the five fixture accounts. **Demo-only values**: they exist so acceptance can
-log in without a registration story; they are never shown in product UI.
+log in without a registration story; they are shown on the demo login page (not a production account directory).
 
 ### Accounts
 

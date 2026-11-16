@@ -25,7 +25,7 @@ JWT（注销需要黑名单，US-069 复杂化）；前端本地模拟（不满�
 **Decision**：新增 `account_credential(user_id PK/FK, email UNIQUE, password_hash)`
 （`V6__create_account_credential.sql`），seed 五个账号：
 `alice@example.com` … `eve@example.com`，统一演示密码 `gogo-demo-2026`
-（仅夹具文件记录，不进 UI）。邮箱比较前 trim + lower-case；密码仅存 BCrypt 哈希。
+（夹具文件记录，并在演示登录页展示、标注仅演示）。邮箱比较前 trim + lower-case；密码仅存 BCrypt 哈希。
 `app_user.id` 保持不变，供既有 trip_member/plan 引用。
 **Rejected**：直接给 `app_user` 加列（SQLite ALTER 限制、凭据与展示混表）；
 单独凭据服务/外部 IdP（超出 MVP）；注册流程（无故事）。
