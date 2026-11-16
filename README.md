@@ -121,8 +121,13 @@ npm run dev
 ```
 
 Typecheck the TypeScript sources with `cd frontend && npm run typecheck`
-(`tsc -b --noEmit`). `checkJs` is off, so the four un-migrated `.jsx` pages are not
-typechecked yet; the preferences page is TypeScript and is.
+(`tsc --noEmit`). `checkJs` is off, so the four un-migrated `.jsx` pages are not
+typechecked yet; the preferences page is TypeScript and is. The CI job runs the
+same command after `npm ci` and before the build.
+
+If Vite reports a missing native binding after updating the lockfile, run
+`npm install --include=optional` in `frontend/` and start it again. Native
+bindings are platform-specific optional dependencies.
 
 Open http://localhost:5173/. Check the API directly with
 `curl -i http://localhost:8080/api/greeting`, which returns
