@@ -61,50 +61,55 @@ the existing `GET /api/trips/{id}`.
 
 ### Requirement: Predefined interest catalogue
 
-The system SHALL define exactly the following seven interests. The wire value SHALL be
-the exact `label` string and the stored value SHALL be the corresponding `code`:
+The system SHALL define exactly the following ten interests, in Chinese. The wire value SHALL
+be the exact `label` string and the stored value SHALL be the corresponding `code`:
 
 | label | code |
 |---|---|
-| `Art` | `art` |
-| `Nature` | `nature` |
-| `Culture` | `culture` |
-| `History` | `history` |
-| `Food` | `food` |
-| `Shopping` | `shopping` |
-| `Adventure` | `adventure` |
+| `水上运动` | `water` |
+| `潜水` | `diving` |
+| `摄影` | `photo` |
+| `美食` | `food` |
+| `咖啡` | `coffee` |
+| `历史人文` | `heritage` |
+| `手作` | `craft` |
+| `自然风景` | `nature` |
+| `冒险` | `adventure` |
+| `慢游` | `slow` |
 
 Matching SHALL be literal: the system SHALL NOT fold case, SHALL NOT trim surrounding
-whitespace and SHALL NOT accept aliases, translations or substring matches.
+whitespace and SHALL NOT accept aliases, translations or substring matches. The English
+labels of the earlier draft (`Art`, `Nature`, `Culture`, `History`, `Food`, `Shopping`,
+`Adventure`) are therefore not accepted.
 
 The catalogue SHALL be held as code constants. This capability SHALL NOT depend on the
 `tag` table, SHALL NOT depend on `/api/tags`, and SHALL NOT expose a write endpoint that
 maintains the catalogue.
 
-#### Scenario: All seven interests are accepted
+#### Scenario: All ten interests are accepted
 
 - **GIVEN** Ben (`X-User-Id: 2`) is a member of trip 1 and has no saved interests
-- **WHEN** Ben submits `{"interests":["Art","Nature","Culture","History","Food","Shopping","Adventure"]}`
+- **WHEN** Ben submits `{"interests":["水上运动","潜水","摄影","美食","咖啡","历史人文","手作","自然风景","冒险","慢游"]}`
 - **THEN** the response status is 200
-- **AND** the response `interests` carries the same seven labels in the submitted order
+- **AND** the response `interests` carries the same ten labels in the submitted order
 - **AND** the stored `codes` are
-  `["art","nature","culture","history","food","shopping","adventure"]`
+  `["water","diving","photo","food","coffee","heritage","craft","nature","adventure","slow"]`
 
-#### Scenario: Wrong case is rejected
+#### Scenario: English labels from the earlier draft are rejected
 
-- **WHEN** Ben submits `["art"]` or `["ART"]`
+- **WHEN** Ben submits `["Art"]`, `["art"]`, `["ART"]`, `["Food"]` or `["Water"]`
 - **THEN** the response status is 400
 - **AND** the response body carries `code` equal to `INTEREST_NOT_ALLOWED`
 
 #### Scenario: Surrounding whitespace is rejected
 
-- **WHEN** Ben submits `[" Art "]` or `["Art "]`
+- **WHEN** Ben submits `[" 潜水 "]` or `["潜水 "]`
 - **THEN** the response status is 400
 - **AND** the response body carries `code` equal to `INTEREST_NOT_ALLOWED`
 
 #### Scenario: Empty strings and near-matches are rejected
 
-- **WHEN** Ben submits `[""]`, `[" "]`, `["teleport"]` or `["foodie"]`
+- **WHEN** Ben submits `[""]`, `[" "]`, `["浮潜"]` or `["美食家"]`
 - **THEN** the response status is 400
 - **AND** the response body carries `code` equal to `INTEREST_NOT_ALLOWED`
 
@@ -140,31 +145,31 @@ A rejected request SHALL NOT write any row and SHALL NOT modify the `payload` or
 #### Scenario: Duplicate values collapse to one
 
 - **GIVEN** Ben (`X-User-Id: 2`) is a member of trip 1 and has no saved interests
-- **WHEN** Ben submits `{"interests":["Art","Nature","Art"]}`
+- **WHEN** Ben submits `{"interests":["摄影","自然风景","摄影"]}`
 - **THEN** the response status is 200
-- **AND** the response body is `{"interests":["Art","Nature"]}`
-- **AND** the stored `payload` for that member parses to exactly two elements, `art` and `nature`
+- **AND** the response body is `{"interests":["摄影","自然风景"]}`
+- **AND** the stored `payload` for that member parses to exactly two elements, `photo` and `nature`
 - **AND** that member holds exactly one row in `member_preference`
 
 #### Scenario: Repeating the same set is idempotent
 
-- **GIVEN** Ben has saved `Art` and `Nature`
-- **WHEN** Ben submits `{"interests":["Art","Nature"]}` again
+- **GIVEN** Ben has saved `摄影` and `自然风景`
+- **WHEN** Ben submits `{"interests":["摄影","自然风景"]}` again
 - **THEN** the response status is 200
 - **AND** the response body and the stored `payload` are unchanged
 - **AND** that member still holds exactly one row in `member_preference`
 
 #### Scenario: A save replaces instead of merging
 
-- **GIVEN** Ben has saved `Art` and `Nature`
-- **WHEN** Ben submits `{"interests":["Food"]}`
+- **GIVEN** Ben has saved `摄影` and `自然风景`
+- **WHEN** Ben submits `{"interests":["美食"]}`
 - **THEN** the response status is 200
-- **AND** the response body is `{"interests":["Food"]}`
-- **AND** the stored `codes` hold `food` only, so `Art` and `Nature` are gone
+- **AND** the response body is `{"interests":["美食"]}`
+- **AND** the stored `codes` hold `food` only, so `摄影` and `自然风景` are gone
 
 #### Scenario: An empty array clears interests but keeps the record
 
-- **GIVEN** Ben has saved `Art` and `Nature`
+- **GIVEN** Ben has saved `摄影` and `自然风景`
 - **WHEN** Ben submits `{"interests":[]}`
 - **THEN** the response status is 200
 - **AND** the response body is `{"interests":[]}`
@@ -172,8 +177,8 @@ A rejected request SHALL NOT write any row and SHALL NOT modify the `payload` or
 
 #### Scenario: A value outside the catalogue rejects the whole request
 
-- **GIVEN** Ben has saved `Art` and `Nature`
-- **WHEN** Ben submits `{"interests":["teleportation"]}`
+- **GIVEN** Ben has saved `摄影` and `自然风景`
+- **WHEN** Ben submits `{"interests":["蹦极"]}`
 - **THEN** the response status is 400
 - **AND** the response body carries `code` equal to `INTEREST_NOT_ALLOWED`
 - **AND** that member's `payload` and `updated_at` are byte-identical to the values
@@ -181,17 +186,17 @@ A rejected request SHALL NOT write any row and SHALL NOT modify the `payload` or
 
 #### Scenario: A mixed request is rejected as a whole
 
-- **GIVEN** Ben has saved `Art` and `Nature`
-- **WHEN** Ben submits `{"interests":["Art","teleportation"]}`
+- **GIVEN** Ben has saved `摄影` and `自然风景`
+- **WHEN** Ben submits `{"interests":["摄影","蹦极"]}`
 - **THEN** the response status is 400
 - **AND** the response body carries `code` equal to `INTEREST_NOT_ALLOWED`
-- **AND** `Art` is neither appended nor rewritten, and the member still holds
-  `Art` and `Nature`
+- **AND** `摄影` is neither appended nor rewritten, and the member still holds
+  `摄影` and `自然风景`
 
 #### Scenario: The first save creates exactly one row
 
 - **GIVEN** Ben has no row in `member_preference`
-- **WHEN** Ben saves `{"interests":["Art"]}`
+- **WHEN** Ben saves `{"interests":["摄影"]}`
 - **THEN** the response status is 200
 - **AND** `member_preference` holds exactly one row for
   `(trip_id=1, user_id=2, kind='interest')`
@@ -199,7 +204,7 @@ A rejected request SHALL NOT write any row and SHALL NOT modify the `payload` or
 #### Scenario: A malformed request is rejected
 
 - **WHEN** the body is a JSON array, omits `interests`, sends `interests` as the string
-  `"Art"`, or sends an `interests` array containing `null` or a number
+  `"摄影"`, or sends an `interests` array containing `null` or a number
 - **THEN** the response status is 400
 - **AND** the response body carries `code` equal to `INVALID_REQUEST`
 - **AND** the member's saved interests are unchanged
@@ -219,11 +224,11 @@ The endpoint SHALL be read-only: reading SHALL NOT create or modify any row.
 
 #### Scenario: A member reads back the saved set
 
-- **GIVEN** Ben has saved `Art` and `Nature`
+- **GIVEN** Ben has saved `摄影` and `自然风景`
 - **WHEN** Ben requests `GET /api/trips/1/preferences` with `X-User-Id: 2`
 - **THEN** the response status is 200
 - **AND** the `members` element with `userId = 2` carries `interests` equal to
-  `["Art","Nature"]`
+  `["摄影","自然风景"]`
 - **AND** the result matches the save response, so the values are still visible after
   the page is reloaded
 
@@ -236,10 +241,10 @@ The endpoint SHALL be read-only: reading SHALL NOT create or modify any row.
 
 #### Scenario: Members do not overwrite each other
 
-- **GIVEN** Ben has saved `Art` and Chloe has saved `Food`
+- **GIVEN** Ben has saved `摄影` and Chloe has saved `美食`
 - **WHEN** any member reads the preferences
-- **THEN** the `userId = 2` element carries `interests` equal to `["Art"]`
-- **AND** the `userId = 3` element carries `interests` equal to `["Food"]`
+- **THEN** the `userId = 2` element carries `interests` equal to `["摄影"]`
+- **AND** the `userId = 3` element carries `interests` equal to `["美食"]`
 
 #### Scenario: The response carries only the agreed fields, ordered by user id
 
@@ -249,7 +254,7 @@ The endpoint SHALL be read-only: reading SHALL NOT create or modify any row.
 
 #### Scenario: Reading changes nothing
 
-- **GIVEN** Ben has saved `Art`
+- **GIVEN** Ben has saved `摄影`
 - **WHEN** the preferences are read twice in a row
 - **THEN** both responses are identical
 - **AND** that member's `payload` and `updated_at` are unchanged
@@ -259,9 +264,20 @@ The endpoint SHALL be read-only: reading SHALL NOT create or modify any row.
 The frontend SHALL provide the page `#/trips/{tripId}/preferences` inside the existing
 application, and SHALL link to it from the trip details page.
 
-The page SHALL render the selected state of the seven predefined interests, whose only
+The page SHALL render the selected state of the ten predefined interests, whose only
 source SHALL be the `GET` response entry matching the current identity (the identity
 selector in the top bar).
+
+The layout SHALL follow the approved screen `screen-08-preferences.png`: a top app bar
+with a back control, the title `我的偏好`, the subtitle `<display name> · US-019` and a
+save-state badge; a section heading `兴趣（US-019 · 预设列表、不重复）`; one selectable
+chip per catalogue interest, showing its emoji and Chinese label, in the catalogue order
+(`水上运动`, `潜水`, `摄影`, `美食`, `咖啡`, `历史人文`, `手作`, `自然风景`, `冒险`,
+`慢游`), with the selected chip filled in the dark ink colour and the rest on the light
+surface; a hint line explaining that saved interests are visible to every member; and a
+fixed bottom action bar holding the primary save button. The remaining screen-08 blocks
+(mandatory items, budget, the no-preference switch and ``提交并标记就绪``) belong to
+other changes and SHALL NOT be rendered here.
 
 The user's selection SHALL be submitted as one request by an explicit "Save" action;
 the page SHALL NOT submit on every toggle.
@@ -283,15 +299,15 @@ The page SHALL NOT use browser local storage as evidence of a saved state.
 
 - **GIVEN** the current identity has never saved interests for that trip
 - **WHEN** the page has finished loading
-- **THEN** none of the seven interests is selected
+- **THEN** none of the ten interests is selected
 - **AND** the user can select interests and save right away
 
 #### Scenario: Saved interests are shown again after a reload
 
-- **GIVEN** Ben has saved `Art` and `Nature`
+- **GIVEN** Ben has saved `摄影` and `自然风景`
 - **WHEN** Ben opens the preferences page
-- **THEN** `Art` and `Nature` are selected
-- **AND** the other five interests are not selected
+- **THEN** `摄影` and `自然风景` are selected
+- **AND** the other eight interests are not selected
 
 #### Scenario: Switching identity reloads for the new identity
 
@@ -313,10 +329,10 @@ The page SHALL NOT use browser local storage as evidence of a saved state.
 
 #### Scenario: A rejected save shows an inline error and rolls back
 
-- **GIVEN** the server holds `Art` and `Nature` for the current member
+- **GIVEN** the server holds `摄影` and `自然风景` for the current member
 - **WHEN** the save request returns 400 with `code` equal to `INTEREST_NOT_ALLOWED`
 - **THEN** the page shows the response `message`
-- **AND** the selected state returns to `Art` and `Nature`
+- **AND** the selected state returns to `摄影` and `自然风景`
 
 #### Scenario: Identity, membership or trip is rejected
 

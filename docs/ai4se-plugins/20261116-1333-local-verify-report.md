@@ -200,3 +200,56 @@ in `docs/ai4se-plugins/p4-*.png`.
 
 N/A — no waiver. Overall is Partial because items 1–3 of §Findings/WARNING await human
 action, not because anything is bypassed. **Agent must not self-approve this section.**
+
+## Revision 2026-11-16 — ten Chinese labels and the screen-08 page
+
+Trigger: the requirement owner asked for two changes to the `preference` feature after the P4
+code had landed — (1) the page must match
+`ui-design-reference/screenshots/screen-08-preferences.png`, (2) the interest tags become
+Chinese, with the selectable set exactly `水上运动`, `潜水`, `摄影`, `美食`, `咖啡`,
+`历史人文`, `手作`, `自然风景`, `冒险`, `慢游`. This revises a G1-passed delta, so it is
+recorded here and in `design.md` (Revision section), `dov-ac-review.md` §8 and `tasks.md` §8.
+
+What moved:
+
+- `InterestCatalogue`: ten Chinese labels, codes
+  `water`, `diving`, `photo`, `food`, `coffee`, `heritage`, `craft`, `nature`, `adventure`,
+  `slow`. Storage shape `{"codes":[...]}` unchanged, so no migration.
+- `PreferenceApiTest`: `ALL_TEN`, CAT-1 renamed, CAT-2 re-pointed at the retired English
+  vocabulary, CAT-3/CAT-4 re-pointed at Chinese examples, and every label/code assertion in
+  SAVE/READ replaced.
+- `frontend/src/types/preferences.ts` (`INTEREST_OPTIONS` with emoji), `app.css` (one new
+  class `.pick`), `Icons.tsx` (`star`), `PreferencesPage.tsx` (screen-08 layout),
+  `App.tsx` (passes `userName`).
+
+Evidence:
+
+| Check | Result | Command / artefact |
+|---|---|---|
+| Red first | 15 failures + 1 error in 29 cases, all on the retired labels | `mvn -B test -Dtest=PreferenceApiTest` before the catalogue change |
+| Green | 29/29 | same command after the catalogue change |
+| Full suite | `Tests run: 119, Failures: 0, Errors: 0` | `(cd backend && mvn -B test)` — the count is higher than the 60/60 above because `origin/main` merged the main-plan suites (`MainPlanApiTest` 34, `ScheduleValidatorTest` 11, …) before this revision |
+| Typecheck | clean | `(cd frontend && npm run typecheck)` → `tsc -b --noEmit` |
+| Build | `1489 modules transformed`, `429.75 kB` JS / `11.03 kB` CSS | `(cd frontend && npm run build)` |
+| API round trip | `PUT {"interests":["水上运动","潜水","摄影"]}` → 200 with the same three labels; `GET` returns them for `userId=1` and `[]` for the other three members | curl against the running backend on 8080 |
+| PAGE-3 / PAGE-10 | Fresh page load renders the three saved interests as selected dark chips, in the prototype's order and layout | headless Edge screenshots `docs/ai4se-plugins/20261116-preferences-empty.png` and `…-selected.png` (520×940 at 2×, compared against `screen-08-preferences.png`) |
+
+Deliberate differences from `screen-08-preferences.png`, each traceable to scope rather than
+oversight:
+
+- The subtitle reads `<name> · US-019`, not `· US-019~027`; the badge reports the real save
+  state (`已保存` / `未保存`), not the prototype's `未提交`; the primary button says
+  `保存偏好`, not `提交并标记就绪`.
+- The US-027 no-preference switch, the US-020 must-do block and the US-024 budget block are
+  not rendered — they belong to other changes and are named as non-goals.
+- Chip order follows the prototype (`历史人文` before `手作`, `慢游` last), which differs from
+  the order the instruction listed the labels in.
+
+Findings added by this revision:
+
+| # | Finding | Mark | Disposition |
+|---|---|---|---|
+| R1 | A stale backend from 13:47 (pre-revision classes) still held 8080 and answered `400 INTEREST_NOT_ALLOWED` for `水上运动` | [fact] | **Closed.** Stopped and restarted from the current tree; the same request then returned 200. This is the leftover-process trap from `verification-commands.md` firing again — always confirm the listener's start time before trusting a negative result |
+| R2 | The dev database still held retired codes (`Art`, `Culture`, `History`, `Nature`) from the English round | [fact] | **Closed.** `PUT {"interests":[]}` for users 1–4, then the page run saved `水上运动/潜水/摄影` for Alice; no environment is released, so no migration is needed |
+| R3 | The G1 record approves the English seven-label text | [fact] | **Open — owned by IO and SA.** The revision is not self-approved; G2 may not cite the old G1 as approval for this text |
+

@@ -6,8 +6,8 @@
 `greeting` 与 `trips` 两条能力：REQ-003 已把 `app_user` / `trip` / `trip_member`
 建好并 seed 了 fixture 数据，但没有任何偏好能力。
 
-US-019 的两条验收标准把可验证边界钉死了：客户端会重复提交（`Art, Nature, Art`），
-所以去重必须由服务端收口；非法值（`teleportation`）必须整体拒绝且不破坏已保存数据；
+US-019 的两条验收标准把可验证边界钉死了：客户端会重复提交（`摄影, 自然风景, 摄影`），
+所以去重必须由服务端收口；非法值（`蹦极`）必须整体拒绝且不破坏已保存数据；
 已保存的兴趣在页面重新加载后仍可见。三条合起来要求"真落库 + 写事务内的全量校验 +
 可回读"，不能靠前端状态或内存集合糊过去。
 
@@ -21,14 +21,14 @@ blocking 开放问题为 0、DoR BLOCKER 为 0、A0 深潜四项 Pass，因此�
 
 - **ADDED** 能力 `preferences`：成员兴趣的读写契约。
   - `PUT /api/trips/{tripId}/preferences`：`X-User-Id` 定位当前成员，幂等覆盖
-    `interests`；请求体 `{"interests":["Art","Nature","Art"]}`，响应
-    `{"interests":["Art","Nature"]}`。
+    `interests`；请求体 `{"interests":["摄影","自然风景","摄影"]}`，响应
+    `{"interests":["摄影","自然风景"]}`。
   - `GET /api/trips/{tripId}/preferences`：返回全员明细
-    `{"members":[{"userId":2,"interests":["Art","Nature"]}]}`，前端取自己那条。
-- 新增 7 项兴趣常量（`code` / `label` 一一对应，顺序即 AC 顺序）：
-  `art/Art`、`nature/Nature`、`culture/Culture`、`history/History`、`food/Food`、
-  `shopping/Shopping`、`adventure/Adventure`。接口收发用 `label`，落库写 `code`，
-  **不做大小写与空白归一化**。
+    `{"members":[{"userId":2,"interests":["摄影","自然风景"]}]}`，前端取自己那条。
+- 新增 10 项中文兴趣常量（`label` / `code` 一一对应，顺序即 AC 顺序）：
+  `水上运动/water`、`潜水/diving`、`摄影/photo`、`美食/food`、`咖啡/coffee`、
+  `历史人文/heritage`、`手作/craft`、`自然风景/nature`、`冒险/adventure`、`慢游/slow`。
+  接口收发用 `label`，落库写 `code`，**不做大小写与空白归一化**。
 - 校验语义：任一值不匹配 label 即 `400 INTEREST_NOT_ALLOWED`，在写事务之前判定，
   合法值也不落地；空数组表示清空，写 `{"codes":[]}` 但保留行。
 - 新增迁移 `V4__create_member_preference.sql`：只有一张表
@@ -38,8 +38,9 @@ blocking 开放问题为 0、DoR BLOCKER 为 0、A0 深潜四项 Pass，因此�
 - 后端新增 `preference` 包（Controller/Service/Repository/dto）与错误 advice；
   身份与成员判定复用 `TripRepository.findUserId` / `isMember`。
 - 前端在现有 app 内新增偏好页：`parseRoute` 增一条 `#/trips/{id}/preferences`，
-  新页面用 `api.js` 与 `app.css`，7 个 chip + 显式「保存」批量提交 + 四态；
-  行程详情页增一个进入该页的链接；**不新增任何依赖**。
+  版式对齐 `ui-design-reference/screenshots/screen-08-preferences.png`（顶栏 + 区块标题
+  + 10 个中文 emoji chip + 底部固定主按钮），复用 `app.css` 设计系统与既有 `Icon`，
+  显式「保存偏好」批量提交 + 四态；行程详情页增一个进入该页的链接。
 - 测试与证据：后端接口测试覆盖去重、非法值、混合值、空数组、缺身份、非成员、
   未知 trip、幂等；`docs/feedback/verification-*.md` 与 `README.md` 增行。
 
@@ -105,8 +106,8 @@ REQ-019 是新增能力，深潜在范围内。`analysis/req-019-dor.md` 已复�
 
 ## Known deviations carried into later stages
 
-- **传输值与存储值分离**：AC 以 `Art` 传值；若接口只认小写 code，AC1 直接失败。
-  线上用 label、库里用 code，严格性按 label 判定（`art`、` Art ` 均 400）。
+- **传输值与存储值分离**：AC 以中文 label 传值（`摄影`）；若接口只认 code，AC1 直接失败。
+  线上用 label、库里用 code，严格性按 label 判定（`摄影 `、` 摄影 ` 均 400）。
 - **JSON payload 无内部唯一约束**：去重不变量在 Service 层，验证必须断言
   "payload 解析后集合元素唯一"，而不是仅看 HTTP 200。
 - **索引类型偏离计划**：`member_preference` 由技术栈计划 §5 的普通索引改为 UNIQUE；
@@ -121,3 +122,16 @@ REQ-019 是新增能力，深潜在范围内。`analysis/req-019-dor.md` 已复�
   US-019 的行为样例写在本需求场景表，是否回填该文件见 OQ-15。
 - **编号体系**：需求号沿故事号取 `REQ-019`，与 REQ-00x 序列并行，需在 registry 注明。
 - **文档语言**：本变更 P1/P2 产物用中文，标识符与命令保留原文。
+
+## Revision 2026-11-16
+
+需求负责人在 P4 代码已落地后修订了两条契约，本节取代上文对应描述：
+
+1. 兴趣清单改为 10 项中文标签，旧英文 7 项（`Art`/`Nature`/`Culture`/`History`/`Food`/
+   `Shopping`/`Adventure`）不再接受。存储形状 `{"codes":[...]}` 不变。
+2. 偏好页版式以 `ui-design-reference/screenshots/screen-08-preferences.png` 为基线；
+   截图中的必做项（US-020）、预算（US-024）、无偏好开关（US-027）与「提交并标记就绪」
+   不属于本变更。
+
+该修订发生在 G1 Pass 之后，已登记的 G1 决策不覆盖新文本：需 IO 与 SA 重新评审 delta，
+代理不自签。细节见 `design.md` 的 Revision 段与 `tasks.md` §8。

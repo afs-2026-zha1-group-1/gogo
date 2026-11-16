@@ -87,3 +87,32 @@
 - DoV: 5/5 Pass (DoV-3 carries non-blocking SA/IO concerns)
 - Blocking ambiguities: 0
 - Ready for `/sdd:g1-decision-record`. This file is not a G1 decision and does not claim that any code is implemented.
+
+## 8. Revision 2026-11-16 — this review no longer covers the delta
+
+After G1 Pass and after the P4 code existed, the requirement owner revised two statements of
+the delta:
+
+1. The catalogue is now ten Chinese labels (`水上运动`, `潜水`, `摄影`, `美食`, `咖啡`,
+   `历史人文`, `手作`, `自然风景`, `冒险`, `慢游`) instead of seven English ones. This
+   supersedes the §6 IO row "seven English-only interest labels; localization excluded" and
+   contract detail C6 ("the set is inherently at most 7").
+2. The page requirement now carries the `screen-08-preferences.png` visual baseline (app bar,
+   section heading, emoji chips with inverted selection, hint line, fixed bottom primary
+   button) and states that the US-020/024/027 blocks are out of scope.
+
+What that means for this record, stated plainly:
+
+| Item | Status |
+|---|---|
+| AC-1…AC-4 | Still hold in form: 5 requirements, still 31 scenarios, still observable, no vague words |
+| DoV-1 (scope) | Still holds; the revision replaces the label set inside the same scope and adds a layout baseline, not a new capability |
+| E6 (wrong case, whitespace, empty string, near-matches) | Now asserted with Chinese examples; "wrong case" only has meaning for the retired English labels, which a new CAT-2 scenario rejects as a whole |
+| C6 (at most 7) | Superseded: at most ten |
+| §6 IO row on English-only labels | Superseded by the owner's instruction of 2026-11-16 |
+| G1 decision | **Not re-signed.** The recorded G1 approved the English seven-label text. IO and SA must re-review the revised delta before G2 cites it; the agent does not issue that review |
+
+No new ambiguity is introduced: the label order follows the prototype, which differs from the
+order the instruction listed the labels in (`手作` and `历史人文` swap, `慢游` last), and the
+page keeps only the US-019 block of screen-08. Both choices are recorded in `design.md`
+(Revision section) and `tasks.md` §8.

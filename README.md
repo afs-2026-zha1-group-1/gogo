@@ -66,14 +66,15 @@ the flag directly in SQLite.
 
 REQ-019 adds member interests (US-019): `GET` and `PUT
 /api/trips/{tripId}/preferences`. The `PUT` body is `{"interests":[<label>...]}`
-over exactly seven labels (`Art`, `Nature`, `Culture`, `History`, `Food`,
-`Shopping`, `Adventure`); matching is literal, duplicates collapse keeping the
-first occurrence, and the array replaces the stored set as a whole (`[]` clears it
-and keeps the row). One row per `(trip_id, user_id, kind)` stores
+over exactly ten Chinese labels (`水上运动`, `潜水`, `摄影`, `美食`, `咖啡`,
+`历史人文`, `手作`, `自然风景`, `冒险`, `慢游`); matching is literal, duplicates
+collapse keeping the first occurrence, and the array replaces the stored set as a whole (`[]`
+clears it and keeps the row). One row per `(trip_id, user_id, kind)` stores
 `{"codes":[...]}`, so labels are presentation and codes are storage. The `GET`
 answers `{"members":[{"userId":n,"interests":[...]}]}` for every member of the
 trip, ordered by `userId`, with `[]` for anyone who has not saved yet. The page
-lives at `#/trips/<id>/preferences`, is linked from `#/trips/<id>`, and is the
+lives at `#/trips/<id>/preferences`, is linked from `#/trips/<id>`, follows
+`ui-design-reference/screenshots/screen-08-preferences.png`, and is the
 first TypeScript/Ant Design page: Save is explicit, a failed save rolls back to
 the acknowledged set, and a failed load offers Retry instead of an empty state.
 
@@ -140,7 +141,7 @@ Get or set the caller's interests with:
 curl -s -H "X-User-Id: 2" http://localhost:8080/api/trips/1/preferences
 curl -s -X PUT http://localhost:8080/api/trips/1/preferences \
   -H "Content-Type: application/json" -H "X-User-Id: 2" \
-  -d '{"interests":["Art","Nature"]}'
+  -d '{"interests":["摄影","自然风景"]}'
 ```
 
 Run the backend tests with `cd backend && mvn test` (`GreetingApiTest`,

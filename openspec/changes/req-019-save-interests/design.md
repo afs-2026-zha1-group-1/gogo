@@ -35,12 +35,12 @@ UI reference `ui-design-reference/screenshots/screen-08-preferences.png`.
 
 Goals:
 
-- `GET` and `PUT /api/trips/{tripId}/preferences` with the 31 specified scenarios; seven
-  interest constants (label on the wire, code in the row); one row per
+- `GET` and `PUT /api/trips/{tripId}/preferences` with the 31 specified scenarios; ten
+  Chinese interest constants (label on the wire, code in the row); one row per
   `(trip_id, user_id, kind)` replaced as a whole; strict literal matching.
 - The preferences page built with the plan's frontend stack (TypeScript, Ant Design 5,
-  TanStack Query 5, React Router 7), so the in-flight JS→TS migration gets a worked example
-  instead of a fifth hand-written page.
+  TanStack Query 5), so the page is a worked example of the stack rather than a sixth
+  hand-written page. Routing stays on the merged `parseRoute` (TS-12).
 - The datasource and Flyway baseline brought to plan §5/§7 in this change: WAL, busy
   timeout, enforced foreign keys, single-connection pool, pinned Flyway and SQLite artifacts.
 - A details-page entry link to the new page.
@@ -153,7 +153,7 @@ and `INVALID_REQUEST` wins over a missing identity. The delta specifies single-f
 scenarios only, so no scenario is contradicted; combined cases are not asserted and no
 ordering is claimed for them.
 
-**DD6 — Catalogue and dedupe.** `InterestCatalogue` holds the seven `(label, code)` pairs in
+**DD6 — Catalogue and dedupe.** `InterestCatalogue` holds the ten `(label, code)` pairs in
 the AC order as code constants. Matching is `List.indexOf` on the exact label — no `trim`,
 no `equalsIgnoreCase`, no substring. Submission goes through a `LinkedHashSet<String>` so
 the first occurrence order survives; the resulting labels map to codes and are serialized as
@@ -192,11 +192,11 @@ member and no other key (READ-4).
 **DD9 — Frontend stack per plan §3/§4.** The page is built on the stack the plan names, not
 on the hand-written shell:
 
-- **Tooling.** `typescript` + `@types/react` + `@types/react-dom`, a new `tsconfig.json`
-  (`strict`, `jsx: "react-jsx"`, `moduleResolution: "bundler"`, `allowJs: true`,
-  `checkJs: false`, `noEmit: true`) and an `npm run typecheck` script (`tsc --noEmit`).
-  `checkJs: false` keeps the five un-migrated pages out of type checking, so the script is
-  green from day one; the JS→TS story can flip it later.
+- **Tooling.** `typescript` + `@types/react` + `@types/react-dom`, a `tsconfig.json`
+  (`strict`, `jsx: "react-jsx"`, `moduleResolution: "bundler"`, `noEmit`) and an
+  `npm run typecheck` script. `origin/main` landed the TS migration first, so the merged tree
+  already has these files and every page is `.tsx` except the four REQ-003/004 pages; the
+  script is `tsc -b --noEmit` because the project is now a build-mode solution.
 - **Data.** `@tanstack/react-query` v5 with a `QueryClientProvider` in `main.jsx` and
   `defaultOptions.queries.retry = 0` — PAGE-9 requires a visible retry action, and the
   default three invisible retries would make the failing state arrive seconds late. Transport
@@ -204,20 +204,25 @@ on the hand-written shell:
   message}`), with `src/api/preferences.ts` for the two calls and `src/types/preferences.ts`
   for the payload types, following the plan's `api/` + `types/` layout. `api.js` stays for
   the pages that have not migrated yet.
-- **Routing.** `react-router-dom` 7 with `HashRouter`. The route table replaces
-  `parseRoute` and covers the existing URLs unchanged — `/`, `/create`, `/trips/:tripId`,
-  `/join/:token` — plus `/trips/:tripId/preferences`. Because the addresses do not move,
-  the REQ-003 and REQ-004 deltas keep their contracts, and the new page is a `<Route>`
-  instead of another branch in a hand-written parser.
-- **UI.** `antd` 5 wrapped in a `ConfigProvider` whose `theme.token.colorPrimary` is
-  `#0d9488` (the existing `--brand` token), so the new page matches the hand-written pages
-  rather than introducing a second palette. Chips are `Tag.CheckableTag` keyed by the
-  interest label (the delta's labels are the wire values), Save is a `Button`, a failed save
-  is an `Alert` carrying the server `message`, loading uses `Skeleton` and `Button loading`.
-  No new hand-written CSS classes are added to `app.css`.
-- **Shared-file cost.** `App.jsx` and `main.jsx` are the only pre-existing frontend files
-  touched (router + provider). The JS→TS migration owner must be told, and whoever lands the
-  shell first wins the merge.
+- **Routing.** `react-router-dom` 7 with `HashRouter` was the intent: a route table covering
+  `/`, `/create`, `/trips/:tripId`, `/join/:token` and the new
+  `/trips/:tripId/preferences`. The merge with `origin/main` settled it the other way —
+  `App.tsx` kept the hand-written `parseRoute`, and the new page is one more branch there, so
+  no routing dependency was added and the existing addresses keep their contracts. Recorded
+  as TS-12.
+- **UI.** The page reuses the design system `origin/main` introduced in `app.css` —
+  `.appbar`/`.grow`/`.title`/`.sub`, `.iconbtn`, `.sec-title`, `.chips`, `.actionbar`,
+  `.btn.btn-primary`, `.pill` and `.hint` — plus `Icon` from `Icons.tsx`, so it matches the
+  hand-written pages instead of introducing a second palette. One class is new, `.pick`
+  (chip, hover, selected and disabled states), because the merged `.chip` is a static label
+  used by the main-itinerary pages and reusing it would have changed those pages. Ant Design
+  is wrapped in a `ConfigProvider` whose `theme.token.colorPrimary` is `#0d9488` (the existing
+  `--brand` token) and supplies `Alert` for load and save failures; selection, save and the
+  loading state are hand-written DOM so they can carry the screen-08 shapes. Detail:
+  Revision 2026-11-16.
+- **Shared-file cost.** `App.tsx`, `main.jsx` and `app.css` are the pre-existing frontend
+  files touched. The merge made this cheaper — most of `app.css` was already there — but the
+  owners of the main-itinerary pages still need to know that `.pick` arrived.
 
 **DD10 — Page behaviour `#/trips/<id>/preferences`.** The query key is
 `['preferences', tripId, userId]`, so mounting and switching identity both refetch without
@@ -225,7 +230,7 @@ manual wiring. The selection is local component state seeded from the fetched da
 one `useMutation` PUT, and on success the state is set to the response and the cache is
 seeded with `setQueryData`; on failure the `Alert` shows the server `message` and the
 selection rolls back to the last acknowledged set; a failed load renders the error plus a
-retry action (`refetch`). No `localStorage`. Clearing means deselecting all seven and saving
+retry action (`refetch`). No `localStorage`. Clearing means deselecting all ten and saving
 (accepted product ruling), so no Clear All control is added. The details page adds one entry
 link.
 
@@ -273,13 +278,14 @@ applied to this change — every other choice follows it.
 | TS-2 | §6: `X-Member-Id` | `X-User-Id` | every delta scenario names `X-User-Id`, and `V2` identity is `app_user.id` | Delta spec; plan reconciliation |
 | TS-3 | §5: `member_preference` with `member_id` and a plain index `(trip_id, member_id, kind)` | `user_id` + `UNIQUE (trip_id, user_id, kind)` | `V2` has no `member_id`, and inventing one would fork identity from the merged trip code; the delta also needs "one row per kind", which a plain index cannot express (UNIQUE also serves the lookup) | DD1; plan reconciliation |
 | TS-4 | §5: `./data/bettertrips.db` | `./data/gogo.db` | renaming a database file is a data migration for every existing checkout, not a config edit; the URL **parameters** the plan mandates are applied (DD2) | Plan reconciliation |
-| TS-5 | §5, DR-12: interests stored as `tag.code` from the 24-code vocabulary | seven constants; no `tag` table, no `/api/tags` | the vocabulary ships with M2.5/US-031, and the AC fixes exactly seven labels and forbids aliases | D2; plan reconciliation |
+| TS-5 | §5, DR-12: interests stored as `tag.code` from the 24-code vocabulary | ten constants; no `tag` table, no `/api/tags` | the vocabulary ships with M2.5/US-031, and the AC fixes exactly ten Chinese labels and forbids aliases | D2; plan reconciliation |
 | TS-6 | §6: one `PUT /preferences` carrying all four kinds | `interest` only; REQ-020/024 add `/must-dos` and `/budget` | each kind has its own validation and save timing, and this delta is interest-only by scope | Delta spec; plan reconciliation |
 | TS-7 | §3: Vite 7.x | Vite 8.3 | a downgrade is a regression with no gain; Vite 8 runs the plan's React 19 + TypeScript setup | Plan reconciliation |
 | TS-8 | §3: Maven Wrapper | none; `mvn` from `PATH` | developer tooling, unrelated to the feature | Plan reconciliation |
 | TS-9 | §3: no extra frontend dependency | `qrcode` + `jsqr` from REQ-004 | the QR join flow needed them (Apache-2.0) | REQ-004 record |
 | TS-10 | §4: `com.bettertrips.*` with one `common/GlobalExceptionHandler` | `com.gogo.*` with one advice per feature package | renaming four packages gains nothing functional; the per-package advice already exists twice and D15 follows it | DD3, D15; plan reconciliation |
 | TS-11 | §7: `flyway-core` **plus** `flyway-database-nc-sqlite` at one explicit `${flyway.version}` | `flyway-core` only; no Flyway version change | measured 2026-11-16: the module does not exist on Maven Central for the managed Flyway (11.7.2 or the Boot 3.5.14 default), and re-pinning the shared Flyway version would re-checksum `V1`–`V4` for four in-flight changes; Flyway still detects SQLite without it | DD12; plan reconciliation, reopened when the module ships |
+| TS-12 | §3: React Router for the route table | the hand-written `parseRoute` in `App.tsx`; the page is one more branch | `origin/main` landed the app shell (US-064) with `parseRoute` while this change was in P4; replacing it would have rewritten the router for five other pages inside a preferences change, and the addresses are identical either way | DD9; pick it up with US-064 |
 
 What the reversal changed, for the reviewers who read the first version:
 
@@ -289,8 +295,8 @@ What the reversal changed, for the reviewers who read the first version:
   `{"interests":[42]}` answer `INVALID_REQUEST` instead of `INTEREST_NOT_ALLOWED`.
 - `application.yml` now carries §7's WAL / busy-timeout / foreign-keys parameters and pins
   the pool to one connection — inside this change, not later.
-- The page and its routing use TypeScript, Ant Design, TanStack Query and React Router, and
-  CI typechecks the frontend.
+- The page uses TypeScript, Ant Design (theme + `Alert`) and TanStack Query, CI typechecks
+  the frontend, and routing stayed on `parseRoute` once the merge settled it (TS-12).
 - Flyway gains the SQLite module with one pinned version, subject to the DD12 caveat. The
   caveat fired: the module is not published, so `flyway-core` stays and TS-11 records it.
 
@@ -325,3 +331,49 @@ What the reversal changed, for the reviewers who read the first version:
 - **Implementation corrected DD4.** Character-level Jakarta constraints could not express the
   delta's token-level distinction, so presence moved to `@NotNull` and element type moved to a
   field deserializer. The design says so; the code and the delta agree.
+
+## Revision 2026-11-16 — Chinese catalogue and the screen-08 baseline
+
+After the P4 code had landed, the requirement owner revised two statements of the G1-passed
+delta. Both are product changes, not implementation choices, so they are recorded here with
+their consequences rather than folded into the decisions above.
+
+**1. The interests are Chinese.** The catalogue is exactly `水上运动`, `潜水`, `摄影`,
+`美食`, `咖啡`, `历史人文`, `手作`, `自然风景`, `冒险`, `慢游`, stored as `water`,
+`diving`, `photo`, `food`, `coffee`, `heritage`, `craft`, `nature`, `adventure`, `slow`. The
+seven English labels of the first draft (`Art`, `Nature`, `Culture`, `History`, `Food`,
+`Shopping`, `Adventure`) are no longer accepted, and a scenario now asserts that. Matching is
+still literal on the label: case folding is moot for Chinese, while trimming, aliases and
+near-matches (`浮潜`, `美食家`) are still rejected. The wire value is the label and the row
+still stores `{"codes":[...]}` — the storage shape did not change.
+
+**2. The page follows `screen-08-preferences.png`.** The chips render in the prototype's
+order, which is *not* the order the request listed the labels in: `历史人文` precedes `手作`
+and `慢游` comes last. The page keeps the app bar (back control, `我的偏好`,
+`<name> · US-019`, save-state badge), the section heading, the emoji chips with the selected
+one inverted to the dark ink colour, the hint line, and a fixed bottom bar holding the
+primary save button. The remaining screen-08 blocks — mandatory items (US-020), budget
+(US-024), the no-preference switch (US-027) and the readiness submit — stay out of scope, as
+Goals already says.
+
+Consequences, recorded instead of left implicit:
+
+- **G1 needs re-review for this text.** The recorded G1 decision was made against the English
+  seven-label catalogue and a chip UI without a visual baseline. The catalogue table, four
+  API scenarios, the read scenarios and the whole page requirement changed afterwards, so the
+  gate is not re-signed by this change and the agent does not self-issue it. IO and SA have to
+  re-read the delta before G2 counts it; `dov-ac-review.md` carries the note.
+- **No data migration is needed or written.** The feature exists only on
+  `feat/travel_preference` and nothing has been released, so no stored row holds a retired
+  code. The local development database was re-seeded with `{"codes":[]}` for the three
+  fixture members by hand, so it matches what the verify report checks.
+- **The merge with `main` moved two DD9 bullets.** `origin/main` had already migrated every
+  page to TypeScript and introduced the `app.css` design system, so this change introduces no
+  tooling and needs no router: `App.tsx` keeps `parseRoute` and the new page is one more
+  branch there (TS-12). The page reuses `.appbar`, `.sec-title`, `.chips`, `.actionbar`,
+  `.btn.btn-primary`, `.pill` and `.hint`, adds exactly one class (`.pick`), and leaves the
+  main-itinerary pages that use `.chip` untouched.
+- **Tests are the evidence, not the claim.** `PreferenceApiTest` was rewritten to the Chinese
+  labels first and failed against the old catalogue (15 failures + 1 error across 29 cases),
+  then passed after the catalogue change; `npm run typecheck` and `npm run build` pass. The
+  reruns are in the P4 report.

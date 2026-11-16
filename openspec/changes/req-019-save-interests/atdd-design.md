@@ -3,7 +3,10 @@
 - Change: `openspec/changes/req-019-save-interests/` (REQ-019, US-019)
 - Delta Spec: `specs/preferences/spec.md` — 5 ADDED requirements, 31 scenarios,
   G1 Pass (IO Emily 2026-11-15, SA evelyn.huang 2026-11-15; gate closed 2026-11-16 at
-  `5a255b6`)
+  `5a255b6`). **Revised 2026-11-16** after P4: the catalogue became ten Chinese labels and
+  the page gained the `screen-08-preferences.png` visual baseline. The rows below carry the
+  revised expectations; the G1 re-review that the revision needs is recorded in `design.md`
+  and `dov-ac-review.md`, not implied here.
 - Fixtures: `requirement-workspace/acceptance-test-fixtures.md` (users 1–5, seeded
   trip). REQ-019 request samples stay in the delta (D16)
 - Stage: P3, `/sdd:atdd-design`. Acceptance checks guide implementation; no feature
@@ -42,11 +45,11 @@ the same SQLite file through `JdbcClient`; no multi-system path is needed to pro
 | ID-3 | Surrounding whitespace in the identity header is tolerated (`" 2 "`) | API | — | parity with `TripRepository.findUserId` |
 | ID-4 | A non-member is denied (Eve, id 5) | API | privacy (advisory) | 403 `NOT_A_MEMBER` plus unchanged member rows |
 | ID-5 | An unknown trip is reported before membership | API | — | 404 precedes 403; single request |
-| CAT-1 | All seven interests are accepted | API | — | order and stored codes read from the DB |
-| CAT-2 | Wrong case is rejected (`art`, `ART`) | API | — | literal matching |
-| CAT-3 | Surrounding whitespace is rejected (` Art `, `Art `) | API | — | literal matching, no trim |
-| CAT-4 | Empty strings and near-matches are rejected (`""`, `" "`, `teleport`, `foodie`) | API | — | literal matching, no substring |
-| SAVE-1 | Duplicate values collapse to one (`Art, Nature, Art`) | API | — | AC1; payload parsed, row count read |
+| CAT-1 | All ten Chinese interests are accepted | API | — | order and stored codes read from the DB |
+| CAT-2 | English labels and case variants are rejected (`Art`, `art`, `ART`, `Food`, `Water`) | API | — | literal matching; the retired draft vocabulary |
+| CAT-3 | Surrounding whitespace is rejected (` 潜水 `, `潜水 `) | API | — | literal matching, no trim |
+| CAT-4 | Empty strings and near-matches are rejected (`""`, `" "`, `浮潜`, `美食家`) | API | — | literal matching, no substring |
+| SAVE-1 | Duplicate values collapse to one (`摄影, 自然风景, 摄影`) | API | — | AC1; payload parsed, row count read |
 | SAVE-2 | Repeating the same set is idempotent | API | consistency (advisory) | payload unchanged; `updated_at` may move |
 | SAVE-3 | A save replaces instead of merging | API | — | C1; second write overwrites |
 | SAVE-4 | An empty array clears interests but keeps the record | API | — | row still present with `{"codes":[]}` |
@@ -68,6 +71,7 @@ the same SQLite file through `JdbcClient`; no multi-system path is needed to pro
 | PAGE-7 | A rejected save shows an inline error and rolls back | E2E | — | 400 `message` shown; selection restored |
 | PAGE-8 | Identity, membership or trip is rejected | E2E | — | 401/403/404 surface; no saved data rendered |
 | PAGE-9 | Loading fails | E2E | — | error plus retry; never renders stale selection as saved |
+| PAGE-10 | The page matches `screen-08-preferences.png` | E2E | — | back control, `我的偏好`, `<name> · US-019`, save-state badge, section heading, ten emoji chips in catalogue order with the selected one inverted, hint line, fixed bottom primary button; the US-020/024/027 blocks are absent |
 | UT-1 | Dedupe keeps first-occurrence order | Defer UT | — | pure list transform |
 | UT-2 | `label` → `code` mapping in both directions | Defer UT | — | pure constant lookup |
 | UT-3 | `payload` serialization / parsing of `{"codes":[...]}` | Defer UT | — | pure transform |

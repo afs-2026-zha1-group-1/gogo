@@ -28,8 +28,9 @@
       `InvitationApiTest` still green — this run is also the first proof that the §7
       datasource change (2.1) breaks nothing. Red: 29 errors, all
       `no such table: member_preference`; after the green phase the full suite is 60/60
-- [x] 1.4 Write the E2E check list (PAGE-1…PAGE-9) as numbered browser steps with
-      expected observations (see the P4 local-verify report, §E2E)
+- [x] 1.4 Write the E2E check list (PAGE-1…PAGE-9, plus PAGE-10 for the screen-08
+      baseline added on 2026-11-16) as numbered browser steps with expected observations
+      (see the P4 local-verify report, §E2E)
 
 ## 2. Platform baseline and persistence (owner: Dev)
 
@@ -80,20 +81,20 @@
       un-migrated pages
 - [x] 4.3 `main.jsx`: `QueryClientProvider` with `queries.retry = 0` so PAGE-9's retry is
       a user action (DD9)
-- [x] 4.4 `App.jsx`: `HashRouter` + route table for `/`, `/create`, `/trips/:tripId`,
-      `/trips/:tripId/preferences`, `/join/:token`; the addresses must not move, so the
-      REQ-003/004 deltas stay satisfied (DD9). Tell the JS→TS migration owner before this
-      lands
-- [x] 4.5 `PreferencesPage.tsx`: seven `Tag.CheckableTag` chips keyed by label, `Button`
-      for Save, `Alert` for the server `message`, `Skeleton`/`loading` for the pending
-      state, `ConfigProvider` theme `colorPrimary = #0d9488`; query key
-      `['preferences', tripId, userId]`, `useMutation` for the single PUT, rollback to the
-      last acknowledged set on failure, retry action on load failure, no `localStorage`,
-      no Clear All (DD9, DD10)
+- [x] 4.4 Routing (as the merge settled it): `App.tsx` gains the
+      `#/trips/:tripId/preferences` branch in the hand-written `parseRoute`. `HashRouter` was
+      not adopted because `origin/main` landed the app shell with `parseRoute` first (TS-12).
+      The addresses did not move, so the REQ-003/004 deltas stay satisfied (DD9)
+- [x] 4.5 `PreferencesPage.tsx`: query key `['preferences', tripId, userId]`,
+      `useMutation` for the single PUT, rollback to the last acknowledged set on failure,
+      retry action on load failure, no `localStorage`, no Clear All (DD9, DD10). First
+      delivered with seven `Tag.CheckableTag` chips; revised on 2026-11-16 to the screen-08
+      layout with ten Chinese `.pick` chips (8.3)
 - [x] 4.6 `TripDetails.jsx`: one entry link to `#/trips/<id>/preferences` (D13)
-- [x] 4.7 `npm ci && npm run typecheck && npm run build` pass, and no new hand-written
-      CSS classes are added to `app.css` (DD9). Build warns about a 660 kB chunk, the
-      expected cost recorded in the design's risks
+- [x] 4.7 `npm ci && npm run typecheck && npm run build` pass. `app.css` gained exactly
+      one class, `.pick` (8.4): the earlier "no new hand-written CSS classes" constraint
+      predates the screen-08 baseline and is superseded by it. The build warns about a
+      660 kB chunk, the expected cost recorded in the design's risks
 
 ## 5. Runtime acceptance and E2E (owner: Dev; evidence in the local-verify report)
 
@@ -150,6 +151,39 @@
       **not run, optional and skipped**; no checklist report exists for this change, so no
       pass may be claimed from it
 
+## 8. Revision 2026-11-16 — Chinese catalogue and the screen-08 page (owner: Dev)
+
+Raised by the requirement owner after the P4 code existed. It changes the G1-passed delta,
+so it is logged here instead of being absorbed silently.
+
+- [x] 8.1 Catalogue: `InterestCatalogue` holds the ten Chinese labels (`水上运动`, `潜水`,
+      `摄影`, `美食`, `咖啡`, `历史人文`, `手作`, `自然风景`, `冒险`, `慢游`) with codes
+      `water`, `diving`, `photo`, `food`, `coffee`, `heritage`, `craft`, `nature`,
+      `adventure`, `slow`
+- [x] 8.2 `PreferenceApiTest`: `ALL_TEN`, CAT-1…CAT-4 renamed and re-pointed, every label
+      and code assertion in the SAVE/READ scenarios replaced. Red first (15 failures + 1
+      error in 29 cases), green after 8.1
+- [x] 8.3 Page: top app bar (back, `我的偏好`, `<name> · US-019`, save-state badge), the
+      `兴趣（US-019 · 预设列表、不重复）` heading, ten emoji chips in prototype order with
+      the selected chip inverted, a hint line and a fixed bottom primary button; the
+      US-020/024/027 blocks are not rendered (PAGE-10)
+- [x] 8.4 `app.css` gains one class, `.pick` (hover/selected/disabled); the merged `.chip`
+      used by the main-itinerary pages is untouched
+- [x] 8.5 Documents follow the code: `specs/preferences/spec.md` (catalogue table, CAT-2,
+      the read and page scenarios, the visual baseline), `design.md` (Goals, DD6, DD9,
+      DD10, TS-5, TS-12 and the revision section), `atdd-design.md` (CAT rows, PAGE-10),
+      `README.md`, `docs/feedback/verification-matrix.md` and the P4 report
+- [ ] 8.6 **G1 re-review by IO + SA** on the revised delta. The agent does not self-sign;
+      until the re-review is recorded, G2 may not cite the original G1 as approval for
+      this text
+- [x] 8.7 Browser pass at `#/trips/<id>/preferences` against the running backend and Vite dev
+      server, compared with `screen-08-preferences.png` (PAGE-10). Headless Edge captures at
+      520×940 / 2×: `docs/ai4se-plugins/20261116-preferences-empty.png` (nothing selected) and
+      `20261116-preferences-selected.png` (水上运动/潜水/摄影 after a save plus reload). App
+      bar, heading, chip order and selection inversion match; the scoped differences
+      (subtitle, badge text, button text, absent US-020/024/027 blocks) are listed in the P4
+      report
+
 ## Alignment self-check (Spec ↔ Design ↔ Tasks ↔ ATDD)
 
 | Spec requirement | Design decision | Tasks | ATDD rows | Result |
@@ -158,12 +192,14 @@
 | Predefined interest catalogue (4) | DD4, DD6 | 2.5, 3.2, 1.1 | CAT-1…CAT-4, UT-1/UT-2 | Pass |
 | Save member interests (8) | DD1, DD4, DD6, DD7 | 2.3, 2.4, 3.2, 1.1 | SAVE-1…SAVE-8, UT-3/UT-4 | Pass |
 | Read member interests (5) | DD8 | 2.4, 3.4, 1.1 | READ-1…READ-5 | Pass |
-| Preferences page (9) | DD9, DD10 | 4.1–4.7, 5.2 | PAGE-1…PAGE-9 | Pass |
+| Preferences page (9) | DD9, DD10 | 4.1–4.7, 5.2, 8.3, 8.4 | PAGE-1…PAGE-10 | Pass |
 | Non-goals (other kinds, US-027, US-026, US-031, auth, `tag`, locking, i18n, page migration) | Goals / Non-Goals, DD1, DD3, DD9 | 1.2, 5.3 | ATDD §5 reverse table | Pass |
 | Display contract (deep-dive ⑫: loading/empty/error/saving) | DD9, DD10 | 4.5, 5.2 | PAGE-1, PAGE-2, PAGE-7, PAGE-8, PAGE-9 | Pass |
+| Revision 2026-11-16 (Chinese catalogue, screen-08 baseline) | DD6, DD9, DD10; Revision section | 8.1–8.7 | CAT-1…CAT-4, SAVE-1, PAGE-3, PAGE-7, PAGE-10 | Pass for 8.1–8.5 and 8.7 (screenshots in the P4 report); 8.6 (G1 re-review) stays open because it needs IO and SA |
 | G1 condition 4 (strict validation) | Risks: strict validation still failing | 6.5 | — (not an ATDD row; archive gate) | Pass as a registered task, not as a passed check |
-| Tech-stack baseline (`config.yaml` `context`, D17 plan-first) | DD2, DD3, DD4, DD9, DD12; deviations TS-1…TS-11 | 2.1, 2.2, 4.1, 6.1, 6.6 | — (not an ATDD row; archive gate) | Pass as plan-first choices plus recorded deviations (TS-11 still open) |
+| Tech-stack baseline (`config.yaml` `context`, D17 plan-first) | DD2, DD3, DD4, DD9, DD12; deviations TS-1…TS-12 | 2.1, 2.2, 4.1, 6.1, 6.6 | — (not an ATDD row; archive gate) | Pass as plan-first choices plus recorded deviations (TS-11 still open) |
 
 No silent scope creep: every task traces to a spec scenario, a declared non-goal reverse
 check, or a stage artifact. NFR testing is explicitly excluded by the user's decision, so
-its absence is not a gap. Self-check result: **Pass**.
+its absence is not a gap. Self-check result: **Pass**, with one open item that belongs to
+someone else — 8.6 needs IO and SA.
