@@ -2,8 +2,11 @@ spring:
   application:
     name: gogo-backend
   datasource:
-    url: jdbc:sqlite:./data/gogo.db
+    # SQLite three iron rules (design D4): WAL + busy_timeout=5000 + foreign_keys=on, single writer pool=1.
+    url: jdbc:sqlite:./data/gogo.db?journal_mode=WAL&busy_timeout=5000&foreign_keys=on
     driver-class-name: org.sqlite.JDBC
+    hikari:
+      maximum-pool-size: 1
   flyway:
     locations: classpath:db/migration
 
