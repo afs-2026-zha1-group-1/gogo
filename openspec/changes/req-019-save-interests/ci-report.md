@@ -114,5 +114,16 @@ preference feature changed — no migration, endpoint, test or page line was tou
 
 Local on the merged tree: `mvn -B clean test` **255/255** (the 243 above plus main's
 `TripMembersApiTest` 12), `node --test tests/lockfile.test.mjs` 2/2, `npm run typecheck` clean,
-`npm run build` 503.85 kB JS. The run on this merge head is the PR's own check on the head that
-is merged; the main-side push run is recorded in the change's P5 archive notes.
+`npm run build` 503.85 kB JS. The head that is merged is `15bfa95`, and CI is green on it twice:
+
+| Phase | Job | Status | Duration | Evidence |
+|---|---|---|---|---|
+| ci | `Backend tests` | success | 49 s | job 133215246924, push run 43842757828, started 09:46:26Z, ended 09:47:15Z; aggregate `Tests run: 255, Failures: 0, Errors: 0, Skipped: 0` |
+| ci | `Frontend build` | success | 36 s | job 133215246482, push run 43842757828, started 09:46:27Z, ended 09:47:03Z; `Check lockfile portability` 2/2, `Install from the lockfile`, `Typecheck`, `Build` |
+| ci | `Backend tests` | success | 36 s | job 133215288937, pull-request run 43842769894 (the PR #44 check), started 09:46:31Z, ended 09:47:07Z |
+| ci | `Frontend build` | success | 22 s | job 133215288260, pull-request run 43842769894, started 09:46:31Z, ended 09:46:53Z |
+
+Push run 43842757828 and pull-request run 43842769894 were both created 09:46:2xZ on head `15bfa95`
+(base `5b7a1be`) and both concluded `success`; `pulls/44` reported `mergeable=true`,
+`mergeable_state=clean` at merge time. The main-side push run that follows the merge belongs to the
+merge commit, not to this change, and is recorded in the change's P5 archive notes.
