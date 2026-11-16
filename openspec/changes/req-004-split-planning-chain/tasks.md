@@ -66,7 +66,7 @@
 
 - [x] 9.1 P4 `/sdd:atdd-apply` 红绿 TDD（含 Defer-UT 单元：窗口/timing 算术/版本谓词/草稿序列化）— 验证每场景红→绿证据；UT 套件 P4 展开（本 P3 不写）。
 - [x] 9.2 P4 `/sdd:local-verify-report`（V1-V8 + 五问 + 人工评审辅助）— 验证每场景/反向有命令输出或浏览器观察；未验项 Partial 非 Pass。
-- [ ] 9.3 P4 quality-checklist + `g2-decision.md` — 验证 G2 保持 **NOT RECORDED** 直至具名 VL 签核；agent 不自批。
+- [x] 9.3 P4 quality-checklist + `g2-decision.md` — G2 **RECORDED Pass**（VL Elian Jiang 2026-11-16 具名签核，agent 代录非自批）；F-1~F-3 已入条件 C1–C3。
 - [ ] 9.4 P5 `/sdd:living-merge` + change-summary + `g3-decision.md` — 验证 merge-ready 人工确认前置；G3 具名 SA 签核；**proposal/KB AntD5→shadcn 口径 P5 同步**（C4/R7）；KB 更新据实。
 
 ## Spec ↔ Design ↔ Tasks ↔ ATDD 对齐自检（P3 必需）
