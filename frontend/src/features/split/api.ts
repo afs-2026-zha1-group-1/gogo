@@ -8,6 +8,7 @@ import type {
   SaveBoundariesRequest,
   SplitDraftDetail,
   SplitDraftDocument,
+  SplitErrorDetails,
   TimingResult,
 } from "./types"
 
@@ -19,12 +20,14 @@ import type {
 export class SplitApiError extends Error {
   readonly code: string
   readonly status: number
+  readonly details: SplitErrorDetails | null
 
-  constructor(code: string, message: string, status: number) {
+  constructor(code: string, message: string, status: number, details: SplitErrorDetails | null = null) {
     super(message)
     this.name = "SplitApiError"
     this.code = code
     this.status = status
+    this.details = details
   }
 }
 
@@ -49,7 +52,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     }
     const code = envelope?.error?.code ?? "UNKNOWN"
     const message = envelope?.error?.message ?? `HTTP ${response.status}`
-    throw new SplitApiError(code, message, response.status)
+    throw new SplitApiError(code, message, response.status, envelope?.error?.details ?? null)
   }
   // 2xx: data may legitimately be null (empty draft state, spec D2).
   return (envelope?.data ?? null) as T
@@ -86,5 +89,21 @@ export function checkTiming(tripId: string, body: CheckTimingRequest): Promise<T
   return request<TimingResult>(`/${tripId}/split-draft/routes:check-timing`, {
     method: "POST",
     body: JSON.stringify(body),
+  })
+}
+
+/** POST confirm the current draft as the trip's split (US-049); organizer only, server revalidates. */
+export function confirmSplitDraft(tripId: string, draftVersion: number): Promise<SplitDraftDetail> {
+  return request<SplitDraftDetail>(`/${tripId}/split-draft:confirm`, {
+    method: "POST",
+    body: JSON.stringify({ draftVersion }),
+  })
+}
+
+/** POST cancel the initiator's unconfirmed draft (US-050); frees the row for a replacement. */
+export function cancelSplitDraft(tripId: string, draftVersion: number): Promise<SplitDraftDetail> {
+  return request<SplitDraftDetail>(`/${tripId}/split-draft:cancel`, {
+    method: "POST",
+    body: JSON.stringify({ draftVersion }),
   })
 }

@@ -9,6 +9,8 @@ import com.gogo.hello.splits.domain.ReunionTimingCalculator;
 import com.gogo.hello.splits.domain.RouteCandidate;
 import com.gogo.hello.splits.domain.SplitDraftDocument;
 import com.gogo.hello.splits.domain.SplitDraftDocument.RouteDurations;
+import com.gogo.hello.splits.domain.RouteTimingInput;
+import com.gogo.hello.splits.domain.RouteTimingResult;
 import com.gogo.hello.splits.domain.SplitWindow;
 import com.gogo.hello.splits.domain.TimingResult;
 import com.gogo.hello.splits.dto.BoundaryResponse;
@@ -68,6 +70,20 @@ public class SplitDraftService {
         Map<String, List<String>> groups =
                 SplitDraftDocument.partitionGroups(repository.findMemberIdsOrdered(tripId));
         String now = Instant.now().toString();
+
+        String existingJson = repository.findDraftJson(tripId);
+        if (existingJson != null) {
+            SplitDraftDocument existing = fromJson(existingJson);
+            if (!"cancelled".equals(existing.status())) {
+                throw new ApiException(ErrorCode.SPLIT_DRAFT_CONFLICT, "an active split draft already exists");
+            }
+            SplitDraftDocument rebuilt = SplitDraftDocument.initialRebuilt(memberId, 1, groups, now);
+            if (repository.rebuildIfCancelled(tripId, toJson(rebuilt), now) == 0) {
+                throw new ApiException(ErrorCode.SPLIT_DRAFT_CONFLICT, "a concurrent request replaced the draft");
+            }
+            return rebuilt;
+        }
+
         SplitDraftDocument draft = SplitDraftDocument.initial(memberId, 1, groups, now);
         if (repository.createDraftIfAbsent(tripId, toJson(draft)) == 0) {
             throw new ApiException(ErrorCode.SPLIT_DRAFT_CONFLICT, "an active split draft already exists");
@@ -89,6 +105,9 @@ public class SplitDraftService {
         SplitDraftDocument draft = fromJson(json);
         if (!draft.initiatorMemberId().equals(memberId)) {
             throw new ApiException(ErrorCode.NOT_SPLIT_INITIATOR, "only the initiator may edit the draft");
+        }
+        if (!"active".equals(draft.status())) {
+            throw new ApiException(ErrorCode.SPLIT_DRAFT_NOT_ACTIVE, "no active split draft");
         }
         if (request.draftVersion() != draft.draftVersion()) {
             throw new ApiException(ErrorCode.STALE_DRAFT_VERSION, "draft version is stale");
@@ -130,6 +149,9 @@ public class SplitDraftService {
         SplitDraftDocument draft = fromJson(json);
         if (!draft.initiatorMemberId().equals(memberId)) {
             throw new ApiException(ErrorCode.NOT_SPLIT_INITIATOR, "only the initiator may edit the draft");
+        }
+        if (!"active".equals(draft.status())) {
+            throw new ApiException(ErrorCode.SPLIT_DRAFT_NOT_ACTIVE, "no active split draft");
         }
         if (draft.departureStopId() == null || draft.reunionStopId() == null) {
             throw new ApiException(ErrorCode.SPLIT_BOUNDARIES_REQUIRED, "boundaries must be saved before generation");
@@ -238,6 +260,140 @@ public class SplitDraftService {
                 draft.initiatorMemberId(), draft.mainPlanVersion(), draft.draftVersion(), draft.status(),
                 draft.groups(), draft.createdAt(), draft.updatedAt(), mainPlanStops,
                 departureStopId, reunionStopId, departureAt, reunionAt, windowMinutes, routes);
+    }
+
+    /**
+     * Confirms the current draft as the trip's effective split (spec US-049, design D4/D5/D11). Only the organizer may
+     * confirm. Completeness is checked before any timing work; the server recomputes both routes from the saved
+     * document (a client-declared verdict is never trusted); the status write is a conditional update that leaves the
+     * stored column version untouched.
+     */
+    public SplitDraftDetailResponse confirmDraft(String tripId, String memberId, int draftVersion) {
+        guard.requireMember(memberId, tripId);
+        requireOrganizer(tripId, memberId);
+        SplitDraftDocument draft = requireActiveDraft(tripId);
+        if (draft.draftVersion() != draftVersion) {
+            throw new ApiException(ErrorCode.STALE_DRAFT_VERSION, "draft version is stale");
+        }
+        List<String> missing = missingDraftParts(draft);
+        if (!missing.isEmpty()) {
+            throw new ApiException(ErrorCode.SPLIT_DRAFT_INCOMPLETE, "the draft is not complete",
+                    Map.of("missing", missing));
+        }
+        TimingResult timing = calculator.compute(windowMinutes(tripId, draft), timingInputs(draft));
+        if (!timing.feasible()) {
+            throw new ApiException(ErrorCode.SPLIT_TIMING_INFEASIBLE, "the route pair does not fit the window",
+                    Map.of("routes", timingDetails(timing)));
+        }
+        String now = Instant.now().toString();
+        if (repository.confirmDraftIfActive(tripId, draftVersion, toJson(draft.confirmed(now)), now) == 0) {
+            SplitDraftDocument current = currentDraft(tripId);
+            if (current == null || !"active".equals(current.status())) {
+                throw new ApiException(ErrorCode.SPLIT_DRAFT_NOT_ACTIVE, "no active split draft");
+            }
+            throw new ApiException(ErrorCode.STALE_DRAFT_VERSION, "draft version is stale");
+        }
+        return getDraftDetail(tripId, memberId);
+    }
+
+    /**
+     * Cancels the initiator's unconfirmed draft (spec US-050, design D4/D6/D9/D11). The status write and the split
+     * route node deletion share one transaction; the document routes are cleared in the same write so a cancelled
+     * detail never shows ghost routes. The main plan rows are never touched.
+     */
+    public SplitDraftDetailResponse cancelDraft(String tripId, String memberId, int draftVersion) {
+        guard.requireMember(memberId, tripId);
+        SplitDraftDocument draft = requireActiveDraft(tripId);
+        if (!draft.initiatorMemberId().equals(memberId)) {
+            throw new ApiException(ErrorCode.NOT_SPLIT_INITIATOR, "only the initiator may cancel the draft");
+        }
+        if (draft.draftVersion() != draftVersion) {
+            throw new ApiException(ErrorCode.STALE_DRAFT_VERSION, "draft version is stale");
+        }
+        String now = Instant.now().toString();
+        SplitDraftDocument cancelled = draft.cancelled(now);
+        transactionTemplate.executeWithoutResult(status -> {
+            if (repository.cancelDraftIfActive(tripId, draftVersion, toJson(cancelled), now) == 0) {
+                throw new ApiException(ErrorCode.STALE_DRAFT_VERSION, "draft version is stale");
+            }
+            repository.deleteSplitRoutes(tripId);
+        });
+        return getDraftDetail(tripId, memberId);
+    }
+
+    private void requireOrganizer(String tripId, String memberId) {
+        String organizerId = repository.findOrganizerId(tripId).orElse(null);
+        if (organizerId == null || !organizerId.equals(memberId)) {
+            throw new ApiException(ErrorCode.NOT_SPLIT_ORGANIZER, "only the trip organizer may confirm the split");
+        }
+    }
+
+    private SplitDraftDocument requireActiveDraft(String tripId) {
+        SplitDraftDocument draft = currentDraft(tripId);
+        if (draft == null || !"active".equals(draft.status())) {
+            throw new ApiException(ErrorCode.SPLIT_DRAFT_NOT_ACTIVE, "no active split draft");
+        }
+        return draft;
+    }
+
+    private SplitDraftDocument currentDraft(String tripId) {
+        String json = repository.findDraftJson(tripId);
+        return json == null ? null : fromJson(json);
+    }
+
+    private List<String> missingDraftParts(SplitDraftDocument draft) {
+        List<String> missing = new ArrayList<>();
+        if (draft.departureStopId() == null || draft.reunionStopId() == null) {
+            missing.add("boundaries");
+        }
+        Map<String, RouteDurations> routes = draft.routes();
+        if (routes == null) {
+            missing.add("routes");
+        } else {
+            if (routes.get("A") == null) {
+                missing.add("routes.A");
+            }
+            if (routes.get("B") == null) {
+                missing.add("routes.B");
+            }
+        }
+        return missing;
+    }
+
+    /** Window length derived from the confirmed main-plan boundary stops (design D5). */
+    private long windowMinutes(String tripId, SplitDraftDocument draft) {
+        PlanStop departure = repository.findMainPlanStop(tripId, draft.departureStopId(), draft.mainPlanVersion())
+                .orElseThrow(() -> new ApiException(ErrorCode.BOUNDARY_NOT_IN_MAIN_PLAN,
+                        "departure stop is not in the confirmed main plan"));
+        PlanStop reunion = repository.findMainPlanStop(tripId, draft.reunionStopId(), draft.mainPlanVersion())
+                .orElseThrow(() -> new ApiException(ErrorCode.BOUNDARY_NOT_IN_MAIN_PLAN,
+                        "reunion stop is not in the confirmed main plan"));
+        return SplitWindow.between(departure.endAt(), reunion.startAt()).minutes();
+    }
+
+    /** Maps the saved A/B duration breakdown to the calculator's nullable inputs (design D8). */
+    private List<RouteTimingInput> timingInputs(SplitDraftDocument draft) {
+        List<RouteTimingInput> inputs = new ArrayList<>();
+        for (String label : List.of("A", "B")) {
+            RouteDurations durations = draft.routes().get(label);
+            inputs.add(new RouteTimingInput(label, durations.activityMinutes(),
+                    durations.travelLegsMinutes(), durations.bufferMinutes()));
+        }
+        return inputs;
+    }
+
+    /** Per-route detail rows for {@code error.details.routes[]} (contractual shape, US-049 CF2-N/CF3-N). */
+    private List<Map<String, Object>> timingDetails(TimingResult timing) {
+        List<Map<String, Object>> details = new ArrayList<>();
+        for (RouteTimingResult route : timing.routes()) {
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("groupLabel", route.groupLabel());
+            row.put("totalMinutes", route.totalMinutes());
+            row.put("overrunMinutes", route.overrunMinutes());
+            row.put("missingInputs", route.missingInputs());
+            details.add(row);
+        }
+        return details;
     }
 
     private static PlanStop stopById(List<PlanStop> stops, String id) {

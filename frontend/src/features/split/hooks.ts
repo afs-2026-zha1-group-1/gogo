@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { checkTiming, fetchDraftDetail, generateRoutes, saveBoundaries, startDraft } from "./api"
+import { cancelSplitDraft, checkTiming, confirmSplitDraft, fetchDraftDetail, generateRoutes, saveBoundaries, startDraft } from "./api"
 import type { CheckTimingRequest, GenerateRoutesRequest, SaveBoundariesRequest } from "./types"
 
 /**
@@ -46,5 +46,23 @@ export function useGenerateRoutes(tripId: string) {
 export function useCheckTiming(tripId: string) {
   return useMutation({
     mutationFn: (body: CheckTimingRequest) => checkTiming(tripId, body),
+  })
+}
+
+/** Confirm the current draft (US-049): organizer-only write, server revalidates timing. */
+export function useConfirmDraft(tripId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (draftVersion: number) => confirmSplitDraft(tripId, draftVersion),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [DETAIL_KEY, tripId] }),
+  })
+}
+
+/** Cancel the initiator's unconfirmed draft (US-050); the row becomes replaceable afterwards. */
+export function useCancelDraft(tripId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (draftVersion: number) => cancelSplitDraft(tripId, draftVersion),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [DETAIL_KEY, tripId] }),
   })
 }

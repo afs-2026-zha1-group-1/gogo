@@ -23,9 +23,9 @@
 
 #### Scenario: 组织者确认成功并锁定（CF1）
 
-- **GIVEN** 活跃草稿为版本 2，两组齐全互斥，边界已保存，路线对 A = 15+60+20+10 = 105、B = 20+60+20+10 = 110（窗口 120）
-- **WHEN** 组织者 Alice（`X-User-Id: 1`）携带 `draftVersion: 2` 调用确认
-- **THEN** 响应 `200`，`data.status = confirmed`，`data.draftVersion = 2`
+- **GIVEN** 活跃草稿为版本 3（发起 1 → 保存边界 2 → 生成路线 3），两组齐全互斥，边界已保存，路线对 A = 15+60+20+10 = 105、B = 20+60+20+10 = 110（窗口 120）
+- **WHEN** 组织者 Alice（`X-User-Id: 1`）携带 `draftVersion: 3` 调用确认
+- **THEN** 响应 `200`，`data.status = confirmed`，`data.draftVersion = 3`
 - **AND** 再次读取草稿详情返回同一 `status = confirmed`
 - **AND** 之后的 `PUT .../boundaries` 与 `POST .../routes:generate` 均返回 `409 SPLIT_DRAFT_NOT_ACTIVE`
 
@@ -48,7 +48,7 @@
 
 #### Scenario: 草稿不完整无确认（CF7-N）
 
-- **GIVEN** 活跃草稿版本 2，边界已保存但路线未生成（`routes = null`）；或边界只保存一侧（半边界）
+- **GIVEN** 活跃草稿版本 3，边界已保存但路线未生成（`routes = null`）；或边界只保存一侧（半边界）
 - **WHEN** 组织者调用确认
 - **THEN** 响应 `409` 且 `error.code = SPLIT_DRAFT_INCOMPLETE`
 - **AND** `error.details.missing` 列出缺失项（`boundaries` / `routes` / 某一组路线）
@@ -56,7 +56,7 @@
 
 #### Scenario: 版本过期拒绝（CF4-N）
 
-- **GIVEN** 活跃草稿已推进到版本 2
+- **GIVEN** 活跃草稿已推进到版本 3
 - **WHEN** 确认请求携带 `draftVersion: 1`
 - **THEN** 响应 `409` 且 `error.code = STALE_DRAFT_VERSION`
 - **AND** 草稿状态与版本不变
@@ -90,8 +90,8 @@
 
 #### Scenario: 发起人取消并允许替换（CN1）
 
-- **GIVEN** Ben 发起并完成边界与路线生成的活跃草稿（版本 2）
-- **WHEN** Ben（`X-User-Id: 2`）携带 `draftVersion: 2` 调用取消
+- **GIVEN** Ben 发起并完成边界与路线生成的活跃草稿（版本 3）
+- **WHEN** Ben（`X-User-Id: 2`）携带 `draftVersion: 3` 调用取消
 - **THEN** 响应 `200`，`data.status = cancelled`，`data.routes = []`
 - **AND** 该行程 `branch_id = 'main'` 的 `plan_node` 行逐行不变，`split-a`/`split-b` 行数为 0
 - **AND** 随后读取草稿详情仍返回 `status = cancelled` 且 `routes = []`（不出现已删节点撑起的幽灵路线）
@@ -120,8 +120,8 @@
 
 #### Scenario: 取消的版本过期拒绝（CN6-N）
 
-- **GIVEN** 草稿被取消后已由他人重建为新草稿（`draftVersion = 1`，`status = active`）
-- **WHEN** 旧的取消请求（携带重建前的 `draftVersion`）到达
+- **GIVEN** 草稿被取消后已由 Alice 重建为新草稿（`draftVersion = 1`，`status = active`，initiator = Alice）
+- **WHEN** Alice 携带重建前的旧版本号调用取消（页面停留后的迟到提交）
 - **THEN** 响应 `409` 且 `error.code = STALE_DRAFT_VERSION`
 - **AND** 新草稿仍为 `active`，`initiatorMemberId` 与边界/路线不变
 

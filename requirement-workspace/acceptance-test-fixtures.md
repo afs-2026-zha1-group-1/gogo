@@ -245,11 +245,11 @@ Day, users 1-5, window 09:30-11:30 = 120 minutes, routes A=105 / B=110).
 
 | Item | Value | Why |
 |---|---|---|
-| Active draft v2 (confirmable case) | `POST split-draft` (Ben, `X-User-Id: 2`) then `PUT boundaries` (City Hall MRT -> Merlion Park) then `POST routes:generate`; fixture groups A = Alice+Ben / B = Chloe+Daniel; resulting `draftVersion = 2` | Both stories assume a draft with boundaries and a route pair already saved; the B chain owns those steps |
+| Active draft v3 (confirmable case) | `POST split-draft` (Ben, `X-User-Id: 2`) → v1; `PUT boundaries` (City Hall MRT -> Merlion Park) → v2; `POST routes:generate` → **v3**; fixture groups A = Alice+Ben / B = Chloe+Daniel | Both stories assume a draft with boundaries and a route pair already saved; each write bumps the version, so the confirmable draft is v3 |
 | Timing verdict on that draft | A = 15+60+20+10 = 105, B = 20+60+20+10 = 110, window 120 -> both feasible | Same arithmetic as the US-043 section; the confirm recomputation must reproduce it |
 | Infeasible case (CF2-N) | test-only document mutation: route A `travelLegsMinutes` last leg 20 -> 40 (A = 125) | US-049 AC2 names 125 in a 120-minute window; no product write path makes an infeasible pair, so the setup is documented as test-only |
 | Missing-input case (CF3-N) | test-only document mutation: route A `activityMinutes` = null | AC-equivalent to US-043 S3-N (missing input must not be declared feasible) |
-| Stale-version case (CF4-N) | request `draftVersion: 1` while the stored draft is v2 | Value comes from the difference, not from a sample claim |
+| Stale-version case (CF4-N) | request `draftVersion: 1` while the stored draft is v3 | Value comes from the difference, not from a sample claim |
 | Non-organizer case (CF5-N) | confirm with `X-User-Id: 2` (Ben, member not organizer; organizer = 1) | US-049 AC3 "Ben attempts organizer-only confirmation" |
 | Non-initiator case (CN3-N) | cancel with `X-User-Id: 3` (Chloe) while initiator = Ben (2) | US-050 AC3 |
 | Confirmed-then-cancel case (CN2-N) | after CF1 succeeds, call cancel as the initiator | US-050 AC2 "split plan is confirmed" |
@@ -260,15 +260,15 @@ Day, users 1-5, window 09:30-11:30 = 120 minutes, routes A=105 / B=110).
 
 | Case | Call | Expected |
 |---|---|---|
-| CF1 confirm pass | `POST /api/trips/1/split-draft:confirm` `X-User-Id: 1`, `{"draftVersion":2}` | `200`; draft detail with `status = confirmed`; `GET split-draft` returns the same; a later `PUT boundaries` -> `409 SPLIT_DRAFT_NOT_ACTIVE` |
+| CF1 confirm pass | `POST /api/trips/1/split-draft:confirm` `X-User-Id: 1`, `{"draftVersion":3}` | `200`; draft detail with `status = confirmed`; `GET split-draft` returns the same; a later `PUT boundaries` -> `409 SPLIT_DRAFT_NOT_ACTIVE` |
 | CF2-N over window | same call on the infeasible draft | `409 SPLIT_TIMING_INFEASIBLE`; `error.details.routes[0]` = {`groupLabel: "A"`, `totalMinutes: 125`, `overrunMinutes: 5`, `missingInputs: []`}, `routes[1]` = {`groupLabel: "B"`, `totalMinutes: 110`, `overrunMinutes: 0`, `missingInputs: []`}; draft stays `active`, `draftVersion` unchanged |
 | CF3-N missing input | same call on the missing-input draft | `409 SPLIT_TIMING_INFEASIBLE`; `error.details.routes[0].missingInputs` non-empty (field names, e.g. `activityMinutes`), `routes[1].missingInputs` empty; stays `active` |
 | CF7-N incomplete draft | confirm on a draft with boundaries but no generated routes (or only one boundary) | `409 SPLIT_DRAFT_INCOMPLETE`; `error.details.missing` lists `routes` / `boundaries`; stays `active`; no timing recomputation |
 | CF4-N stale | same call with `{"draftVersion":1}` | `409 STALE_DRAFT_VERSION`; no state change |
 | CF5-N non-organizer | same call `X-User-Id: 2` | `403 NOT_SPLIT_ORGANIZER`; no state change |
 | CF6-N not active | confirm before any draft, after CF1 (confirmed), and after CN1 (cancelled) | `409 SPLIT_DRAFT_NOT_ACTIVE` in all three |
-| CN1 cancel pass | `POST /api/trips/1/split-draft:cancel` `X-User-Id: 2`, `{"draftVersion":2}` | `200`; `status = cancelled` and `routes = []`; `plan_node` main rows unchanged, split rows deleted; reading detail again shows `status = cancelled`, `routes = []`; ensuing `POST split-draft` `X-User-Id: 1` -> `201`, `draftVersion = 1`, `status = active`, `initiatorMemberId = 1`, and `split_draft.draft_version` column = 1 |
-| CN6-N stale cancel | cancel a rebuilt draft using the pre-rebuild `draftVersion` | `409 STALE_DRAFT_VERSION`; new draft stays `active` with its initiator/boundaries/routes |
+| CN1 cancel pass | `POST /api/trips/1/split-draft:cancel` `X-User-Id: 2`, `{"draftVersion":3}` | `200`; `status = cancelled` and `routes = []`; `plan_node` main rows unchanged, split rows deleted; reading detail again shows `status = cancelled`, `routes = []`; ensuing `POST split-draft` `X-User-Id: 1` -> `201`, `draftVersion = 1`, `status = active`, `initiatorMemberId = 1`, and `split_draft.draft_version` column = 1 |
+| CN6-N stale cancel | after the cancelled row is rebuilt by Alice (v1, active), Alice cancels using the pre-rebuild `draftVersion` (3) | `409 STALE_DRAFT_VERSION`; new draft stays `active` with its initiator/boundaries/routes |
 | CN2-N cancel confirmed | cancel after CF1 | `409 SPLIT_DRAFT_NOT_ACTIVE`; confirmed document and split rows unchanged |
 | CN3-N non-initiator | `X-User-Id: 3` cancel | `403 NOT_SPLIT_INITIATOR`; draft stays `active` |
 | CN4-N no draft | cancel before any draft | `409 SPLIT_DRAFT_NOT_ACTIVE` |

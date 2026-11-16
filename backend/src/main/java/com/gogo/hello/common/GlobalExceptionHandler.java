@@ -16,6 +16,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleApiException(ApiException ex) {
         ErrorCode code = ex.errorCode();
         return ResponseEntity.status(code.httpStatus())
-                .body(ApiResponse.error(code, ex.getMessage()));
+                .body(ApiResponse.error(code, ex.getMessage(), ex.details()));
     }
 }

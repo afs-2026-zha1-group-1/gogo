@@ -6,6 +6,7 @@ import com.gogo.hello.splits.domain.SplitDraftDocument;
 import com.gogo.hello.splits.domain.TimingResult;
 import com.gogo.hello.splits.dto.BoundaryResponse;
 import com.gogo.hello.splits.dto.CheckTimingRequest;
+import com.gogo.hello.splits.dto.DraftVersionRequest;
 import com.gogo.hello.splits.dto.GenerateRoutesRequest;
 import com.gogo.hello.splits.dto.RouteGenerationResponse;
 import com.gogo.hello.splits.dto.SaveBoundariesRequest;
@@ -27,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 401 MEMBER_REQUIRED, preserving the splits contract.
  */
 @RestController
-@RequestMapping("/api/trips/{tripId}/split-draft")
+@RequestMapping("/api/trips/{tripId}")
 public class SplitDraftController {
 
     private final SplitDraftService service;
@@ -36,7 +37,7 @@ public class SplitDraftController {
         this.service = service;
     }
 
-    @GetMapping
+    @GetMapping("/split-draft")
     public ResponseEntity<ApiResponse<SplitDraftDetailResponse>> getDraftDetail(
             @PathVariable String tripId,
             Authentication authentication) {
@@ -44,7 +45,7 @@ public class SplitDraftController {
         return ResponseEntity.ok(ApiResponse.ok(detail));
     }
 
-    @PostMapping
+    @PostMapping("/split-draft")
     public ResponseEntity<ApiResponse<SplitDraftDocument>> startDraft(
             @PathVariable String tripId,
             Authentication authentication) {
@@ -52,7 +53,7 @@ public class SplitDraftController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(draft));
     }
 
-    @PutMapping("/boundaries")
+    @PutMapping("/split-draft/boundaries")
     public ResponseEntity<ApiResponse<BoundaryResponse>> saveBoundaries(
             @PathVariable String tripId,
             Authentication authentication,
@@ -61,7 +62,7 @@ public class SplitDraftController {
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
-    @PostMapping("/routes:generate")
+    @PostMapping("/split-draft/routes:generate")
     public ResponseEntity<ApiResponse<RouteGenerationResponse>> generateRoutes(
             @PathVariable String tripId,
             Authentication authentication,
@@ -70,13 +71,33 @@ public class SplitDraftController {
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
-    @PostMapping("/routes:check-timing")
+    @PostMapping("/split-draft/routes:check-timing")
     public ResponseEntity<ApiResponse<TimingResult>> checkTiming(
             @PathVariable String tripId,
             Authentication authentication,
             @RequestBody CheckTimingRequest request) {
         TimingResult result = service.checkTiming(tripId, caller(authentication), request);
         return ResponseEntity.ok(ApiResponse.ok(result));
+    }
+
+    /** Confirms the current draft as the trip's split (US-049, design D1/D5). */
+    @PostMapping("/split-draft:confirm")
+    public ResponseEntity<ApiResponse<SplitDraftDetailResponse>> confirmDraft(
+            @PathVariable String tripId,
+            Authentication authentication,
+            @RequestBody DraftVersionRequest request) {
+        SplitDraftDetailResponse detail = service.confirmDraft(tripId, caller(authentication), request.draftVersion());
+        return ResponseEntity.ok(ApiResponse.ok(detail));
+    }
+
+    /** Cancels the initiator's unconfirmed draft and frees the row for a replacement (US-050, design D1/D6). */
+    @PostMapping("/split-draft:cancel")
+    public ResponseEntity<ApiResponse<SplitDraftDetailResponse>> cancelDraft(
+            @PathVariable String tripId,
+            Authentication authentication,
+            @RequestBody DraftVersionRequest request) {
+        SplitDraftDetailResponse detail = service.cancelDraft(tripId, caller(authentication), request.draftVersion());
+        return ResponseEntity.ok(ApiResponse.ok(detail));
     }
 
     private String caller(Authentication authentication) {

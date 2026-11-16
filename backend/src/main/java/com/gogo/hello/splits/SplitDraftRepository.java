@@ -118,6 +118,46 @@ public class SplitDraftRepository {
                 "DELETE FROM plan_node WHERE trip_id = ? AND branch_id IN ('split-a', 'split-b')", tripId);
     }
 
+    /** Trip organizer id as the identity string used by {@code X-User-Id} (app_user.id); empty when missing. */
+    public Optional<String> findOrganizerId(String tripId) {
+        List<String> ids = jdbcTemplate.queryForList(
+                "SELECT organizer_id FROM trip WHERE id = ?", String.class, tripId);
+        return ids.stream().findFirst();
+    }
+
+    /**
+     * Conditional confirmation (design D4/D5/D11): succeeds only while the stored draft is active at the expected
+     * version. The JSON status is part of the predicate so a concurrent cancel/confirm cannot be overwritten, and the
+     * column version deliberately stays unchanged because confirmation is not a draft content edit.
+     */
+    public int confirmDraftIfActive(String tripId, int expectedVersion, String draftJson, String now) {
+        return jdbcTemplate.update(
+                "UPDATE split_draft SET document = ?, updated_at = ? "
+                        + "WHERE trip_id = ? AND draft_version = ? "
+                        + "AND json_extract(document, '$.status') = 'active'",
+                draftJson, now, tripId, expectedVersion);
+    }
+
+    /** Conditional cancellation (design D4/D6/D11): same active + version predicate as confirmation. */
+    public int cancelDraftIfActive(String tripId, int expectedVersion, String draftJson, String now) {
+        return jdbcTemplate.update(
+                "UPDATE split_draft SET document = ?, updated_at = ? "
+                        + "WHERE trip_id = ? AND draft_version = ? "
+                        + "AND json_extract(document, '$.status') = 'active'",
+                draftJson, now, tripId, expectedVersion);
+    }
+
+    /**
+     * Rebuilds a cancelled draft in place (design D7/D11): the replacement document and the reset column version both
+     * land only while the stored status is still cancelled, so concurrent rebuilds collapse to a single winner.
+     */
+    public int rebuildIfCancelled(String tripId, String draftJson, String now) {
+        return jdbcTemplate.update(
+                "UPDATE split_draft SET document = ?, draft_version = 1, updated_at = ? "
+                        + "WHERE trip_id = ? AND json_extract(document, '$.status') = 'cancelled'",
+                draftJson, now, tripId);
+    }
+
     /**
      * Inserts one split route structure node (design D6): {@code branch_id = split-a/split-b}, activity title and
      * location, the shared window start/end, {@code plan_version = mainPlanVersion}. Durations live in the draft
