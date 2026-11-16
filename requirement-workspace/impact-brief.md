@@ -816,3 +816,78 @@ after the G1 C2 amendment; no `trip` ALTER), 2 write + 2 read endpoints (3 wire 
 acceptance tests (M1ΓÇôM14 / V1ΓÇôV7 + reverses). Ordering: backend contract and
 seeds first, frontend screens second; G1 to rule data model/API contract as a
 named decision item (capability-pack convention).
+
+# Impact brief - US-049-050 (appended 2026-11-16)
+
+## 1. Requirement set
+
+| Item | Path |
+|---|---|
+| Requirement entry | `requirement-workspace/requirements/US-049-050.md`（BQ-1..BQ-9，blocking 全 resolved） |
+| Intent capture | `intents/2026-11-16-us-049-050-split-confirm-cancel.md`（#21/#22 逐字 AC） |
+| DoR | `analysis/us-049-050-dor.md`（BLOCKER = 0；⑨–⑫ 全 Pass） |
+| Deep-dive | `deep-dive.md` §US-049-050 |
+| Fixtures | `acceptance-test-fixtures.md` §US-049-050（CF1–CF6 / CN1–CN4 / R1–R2） |
+
+## 2. As-is asset inventory (evidence paths)
+
+| Asset | State | Evidence |
+|---|---|---|
+| Living Spec `splits` | 5 requirement，显式声明不实现确认/取消 | `openspec/specs/splits/spec.md` |
+| 后端 splits 包 | 5 端点、`MemberGuard`、`SplitDraftService`、`SplitDraftRepository`、`SplitDraftDocument`、`ReunionTimingCalculator`、夹具 provider | `backend/src/main/java/com/gogo/hello/splits/**` |
+| 数据库 | V4 已建 `split_draft`（`trip_id UNIQUE`）与 `plan_node` | `db/migration/V4__splits.sql` |
+| 错误码 | 13 码共用枚举（含 `NOT_SPLIT_INITIATOR`、`SPLIT_DRAFT_NOT_ACTIVE`、`STALE_DRAFT_VERSION`） | `common/ErrorCode.java` |
+| 后端测试 | `AbstractSplitApiTest` + 4 个 API 测试 + 域/仓储/provider 测试 | `backend/src/test/java/com/gogo/hello/splits/**` |
+| 前端 | Screen 11–14（`features/split/*`），`router.tsx` 注释声明「flow ends at timing」 | `frontend/src/features/split/**`、`router.tsx` |
+| 设计参考 | Screen 15 截图存在 | `ui-design-reference/screenshots/screen-15-confirm.png` |
+| 技术基准 | tech-stack-plan 绑定实现口径 | `docs/knowledge/architecture/tech-stack-plan.md` |
+
+## 3. As-is → proposed delta
+
+| # | Delta | Kind |
+|---|---|---|
+| 1 | 新增确认要求（组织者、服务端从草稿复算、成对提交、锁定） | ADDED requirement |
+| 2 | 新增取消要求（发起人、`status=cancelled`、清除 split 路线节点、允许替换） | ADDED requirement |
+| 3 | `startDraft` 扩展：行存在且 `cancelled` → 同行重建（`draftVersion = 1`） | MODIFIED requirement（G requirement） |
+| 4 | 修正链级约定漂移：`X-Member-Id`→`X-User-Id`、`trip.split_draft` 列→`split_draft` 表、V2→V4 | MODIFIED requirement（Chain 约定） |
+| 5 | 错误枚举 +2：`NOT_SPLIT_ORGANIZER` 403、`SPLIT_TIMING_INFEASIBLE` 409（附明细） | 契约扩展 |
+| 6 | 新端点 `POST .../split-draft:confirm`、`POST .../split-draft:cancel`（无 schema 变更） | 契约扩展 |
+| 7 | Screen 15 路由 `/trips/:tripId/split/confirm` + 四态 + 两终态展示 | 前端新增 |
+
+## 4. Blast radius
+
+- **修改**：`SplitDraftController`、`SplitDraftService`、`SplitDraftRepository`、`domain/SplitDraftDocument`、`common/ErrorCode`、新增两个 DTO；`SplitDraftStartApiTest`（重建语义）；前端 `features/split/*`、`router.tsx`。
+- **新增**：`SplitConfirmApiTest`、`SplitCancelApiTest`、`screen-confirm.tsx`（+ 可能的共享状态条组件）。
+- **不动**：greeting / trip / invitation / mainplan 包；`V1–V5` 迁移（无新迁移）；`.github/workflows/ci.yml`；app-shell 导航（不新增 tab）。
+- **文档**：Living Spec `splits`（P2 delta）、tech-stack-plan API 清单（P5 对账）、`registry.md`、`handoff.md`。
+
+## 5. Artifact impact
+
+| Artifact | Impact |
+|---|---|
+| `openspec/specs/splits/spec.md` | P2 delta：MODIFIED（Chain 约定 + Split draft start）+ ADDED（confirm、cancel） |
+| `openspec/changes/us-049-050-split-confirm-cancel/` | proposal（P1）→ delta/design/tasks（P2–P3）→ ATDD 矩阵 |
+| `acceptance-test-fixtures.md` | 已追加 §US-049-050（P1） |
+| `api.ts` / `types.ts`（frontend） | 新增两个请求方法与状态枚举 |
+| `docs/knowledge/architecture/tech-stack-plan.md` | P5 归档时补 API 清单两行 |
+
+## 6. Dual-track notes
+
+OpenSpec track only；`/sdd:story-split` Skipped（两条 US、同一 capability、一个垂直切片，issue 已在看板）。
+
+## 7. Risks & blockers
+
+| id | Risk | Severity | Status |
+|---|---|---|---|
+| R1 | Living Spec 漂移导致新契约基于幻影身份/表结构 | high | closed by BQ-4：本 delta 以 MODIFIED 收敛（P2 必须落地） |
+| R2 | 取消删除 split 路线节点可能与「主线不变」验证口径混淆 | med | closed by BQ-7 + 夹具 CN1 逐行比对（`branch_id='main'`） |
+| R3 | 确认后锁定依赖既有写端点的 `SPLIT_DRAFT_NOT_ACTIVE` 语义，若缺失会漏锁 | med | 现有实现已在 `saveBoundaries`/`generateRoutes` 检查活跃态；P3 设计追加「已 confirmed 时同样 409」的反向用例 |
+| R4 | `main` 直开发无 PR 审查环节 | med | 用户 2026-11-16 裁决；以 G1（设计冻结）+ G2（本地验证 + main CI）+ G3 签核补偿 |
+| R5 | 新增两个错误码扩展契约枚举 | low | 已列入 delta；G1 由 IO 复核 |
+| R6 | 旧 change 残留（`req-002-greeting-json-sqlite`、空壳 `req-004-split-draft-start`）干扰 active-change 探测 | low | 不影响本变更构建；记作 follow-up |
+
+No critical blocker invalidates US-049-050; split may proceed.
+
+## 8. Suggested split boundaries
+
+One change `us-049-050-split-confirm-cancel`（用户 BQ-1 裁决）。Effort: **small-medium** — 2 个写端点、2 个新错误码、无迁移、1 个新屏幕、~12 条验收 case（CF/CN + 反向）。Ordering: 后端契约（守卫/状态机/复算/锁）→ 前端 Screen 15 → ATDD 矩阵；无并行轨道。

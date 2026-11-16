@@ -35,7 +35,7 @@ export default function TripsEmpty() {
           </a>
           <form className="open-by-id" onSubmit={openById}>
             <label className="label" htmlFor="trip-id-input">按编号打开行程</label>
-            <div className="row">
+            <div className="row" style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
               <input
                 id="trip-id-input"
                 className="input"
@@ -43,8 +43,9 @@ export default function TripsEmpty() {
                 placeholder="行程编号，如 1"
                 value={id}
                 onChange={(event) => { setId(event.target.value); setError('') }}
+                style={{ flex: '1 1 0', minWidth: 0 }}
               />
-              <button className="btn btn-ghost" type="submit">打开</button>
+              <button className="btn btn-ghost" type="submit" style={{ width: 'auto', flexShrink: 0 }}>打开</button>
             </div>
             {error && (
               <div className="err-msg">

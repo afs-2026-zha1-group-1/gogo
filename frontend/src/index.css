@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens mapped from ui-design-reference (the site-wide visual authority):
+ * warm neutral stage, ocean teal brand, blue/orange split routes, ok/warn/err states.
+ * Tailwind v4 CSS-first theme; utilities like bg-surface / text-ink / border-line /
+ * rounded-card derive from these tokens so all screens share one visual language.
+ */
+@theme {
+  --font-sans: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+
+  --color-bg: #f4f3ef;
+  --color-surface: #ffffff;
+  --color-surface-2: #faf9f7;
+  --color-surface-3: #f5f4f1;
+
+  --color-ink: #1c1917;
+  --color-ink-2: #57534e;
+  --color-ink-3: #a8a29e;
+
+  --color-line: #e9e7e2;
+  --color-line-2: #f0eee9;
+
+  --color-brand: #0d9488;
+  --color-brand-2: #06b6d4;
+  --color-brand-ink: #0f766e;
+  --color-brand-soft: #ccfbf1;
+
+  --color-a: #2563eb;
+  --color-a-soft: #e6efff;
+  --color-a-line: #c7dbff;
+
+  --color-b: #ea580c;
+  --color-b-soft: #fff0e2;
+  --color-b-line: #ffd9b8;
+
+  --color-ok: #059669;
+  --color-ok-soft: #d7f5e6;
+  --color-warn: #d97706;
+  --color-warn-soft: #fef3c7;
+  --color-err: #dc2626;
+  --color-err-soft: #fee2e2;
+
+  --radius-control: 10px;
+  --radius-card: 14px;
+  --radius-panel: 20px;
+  --radius-hero: 26px;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+}

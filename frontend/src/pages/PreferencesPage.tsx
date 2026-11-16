@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Alert } from 'antd'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import Icon from '../Icons'
@@ -122,12 +121,10 @@ export default function PreferencesPage({ tripId, userId, userName }: Preference
         {appbar}
         <div className="body">
           <div className="card pad">
-            <Alert
-              type="error"
-              showIcon
-              message={rejection ? rejection.heading : '无法加载兴趣设置'}
-              description={rejection ? rejection.explanation : messageOf(query.error)}
-            />
+            <div className="notice" role="alert">
+              <strong>{rejection ? rejection.heading : '无法加载兴趣设置'}</strong>
+              <span>{rejection ? rejection.explanation : messageOf(query.error)}</span>
+            </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
               {!rejection && (
                 <button
@@ -191,7 +188,11 @@ export default function PreferencesPage({ tripId, userId, userName }: Preference
           选中你在这趟旅程中喜欢的主题；保存后行程成员都能看到。
         </p>
 
-        {failure && <Alert type="error" showIcon message={failure} style={{ marginTop: 14 }} />}
+        {failure && (
+          <div className="notice" role="alert" style={{ marginTop: 14 }}>
+            <strong>{failure}</strong>
+          </div>
+        )}
       </div>
 
       <div className="actionbar">

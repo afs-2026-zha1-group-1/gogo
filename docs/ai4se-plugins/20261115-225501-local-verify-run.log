@@ -1,0 +1,35 @@
+===== CMD: ! grep -rn "Hello World" frontend/src =====
+cwd: /d/study/gogo
+started: 2026-11-15T22:55:01+0800
+exit: 0
+ended: 2026-11-15T22:55:03+0800
+
+===== CMD: ! grep -inE "jpa|hibernate" backend/pom.xml =====
+cwd: /d/study/gogo
+started: 2026-11-15T22:55:04+0800
+exit: 0
+ended: 2026-11-15T22:55:06+0800
+
+===== CMD: ! grep -rinE "h2database|org\.h2|jdbc:h2" backend/pom.xml backend/src =====
+cwd: /d/study/gogo
+started: 2026-11-15T22:55:06+0800
+exit: 0
+ended: 2026-11-15T22:55:08+0800
+
+===== CMD: ! grep -q "artifact.oocl.com" frontend/package-lock.json =====
+cwd: /d/study/gogo
+started: 2026-11-15T22:55:09+0800
+exit: 0
+ended: 2026-11-15T22:55:11+0800
+
+===== CMD: python -c "import yaml; d=yaml.safe_load(open('.github/workflows/ci.yml')); j=sorted(d['jobs']); assert j==['backend','frontend'], j; print('ci jobs:', j)" =====
+cwd: /d/study/gogo
+started: 2026-11-15T22:55:11+0800
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import yaml; d=yaml.safe_load(open('.github/workflows/ci.yml')); j=sorted(d['jobs']); assert j==['backend','frontend'], j; print('ci jobs:', j)
+    ^^^^^^^^^^^
+ModuleNotFoundError: No module named 'yaml'
+exit: 1
+ended: 2026-11-15T22:55:13+0800
+

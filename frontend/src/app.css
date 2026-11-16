@@ -28,10 +28,15 @@
     "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+/* Global reset placed in the base cascade layer so Tailwind utilities (utilities layer)
+   can override spacing for the Tailwind-based split screens, while the legacy app keeps
+   its reset where no utility applies. */
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 }
 
 html,
@@ -703,6 +708,23 @@ body {
 .pick:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Inline feedback on the preferences page (formerly antd Alert; keeps the dependency list flat) */
+.notice {
+  border: 1px solid #f0c0bd;
+  background: #fdf3f2;
+  color: #9a2723;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.notice strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 2px;
 }
 
 .chip {

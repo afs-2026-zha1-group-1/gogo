@@ -120,7 +120,44 @@ export default function App() {
         {route.page === 'details' && <TripDetails userId={userId} tripId={route.tripId} />}
         {route.page === 'trips-empty' && <TripsEmpty />}
         {route.page === 'split' && (
-          <Placeholder title="分队" tripsHref={tripsHref} />
+          <div className="screen">
+            <header className="appbar">
+              <div className="grow">
+                <div className="title">分队规划</div>
+                <div className="sub">A/B 分头游玩 · 到点会合</div>
+              </div>
+            </header>
+            <div className="body">
+              {lastTripId != null ? (
+                <section className="card pad">
+                  <p className="hint" style={{ marginBottom: 12 }}>
+                    进入当前行程（#{lastTripId}）的分队：发起草稿、选择边界、生成路线、校验会合窗口。
+                  </p>
+                  <button
+                    className="btn btn-primary"
+                    type="button"
+                    onClick={() => {
+                      try {
+                        localStorage.setItem('gogo.split.memberId', String(userId))
+                      } catch {
+                        /* storage unavailable */
+                      }
+                      window.location.href = `/trips/${lastTripId}/split`
+                    }}
+                  >
+                    进入分队规划
+                  </button>
+                </section>
+              ) : (
+                <section className="card pad">
+                  <p className="hint" style={{ marginBottom: 12 }}>
+                    请先在「行程」页打开一个行程，再从行程详情或底部「分队」进入分队规划。
+                  </p>
+                  <a className="btn btn-ghost" href={tripsHref}>去行程</a>
+                </section>
+              )}
+            </div>
+          </div>
         )}
         {route.page === 'members' && (
           <Placeholder title="成员" tripsHref={tripsHref} />
