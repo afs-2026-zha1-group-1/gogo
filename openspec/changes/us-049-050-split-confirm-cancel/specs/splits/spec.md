@@ -206,7 +206,7 @@
 - **GIVEN** 成员打开拆分发起屏幕（该行程可能无草稿、有活跃草稿、或已有终态草稿）
 - **WHEN** 草稿读取返回
 - **THEN** 页面呈现草稿状态（initiator、mainPlanVersion、draftVersion、status）
-- **AND** 动作按 `status` 分支：无草稿或 `cancelled` → 展示「发起（替换）分队草稿」并调用 `POST split-draft`；`active` → 「下一步：选择边界」；`confirmed` → 只读终态（无发起入口）
+- **AND** 动作按 `status` 分支：无草稿或 `cancelled` → 展示「发起（替换）分队草稿」并调用 `POST split-draft`；`active` → 「下一步：选择边界」；`confirmed` → 只读终态（无发起入口，但提供「查看已确认分队」入口跳转复核页）
 - **AND** 冲突 / 主线未确认 / 无权限错误态与 loading / empty 态均可观察
 - **AND** 前端不自行判定唯一性或确认状态（判定归后端）
 
