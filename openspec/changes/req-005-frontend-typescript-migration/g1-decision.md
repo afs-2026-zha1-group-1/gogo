@@ -17,6 +17,6 @@
 - Approvers: IO=Emily Li; SA=Sammi Ng
 - Sign-off status: Pending; this draft is not an approved G1 decision until both approvers sign.
 - Signatures:
-  - IO (Emily Li): Pending
+  - IO (Emily Li): Emily Li
   - SA (Sammi Ng): Sammi Ng
 - Timestamp: 2026-11-16T11:07:04+08:00
