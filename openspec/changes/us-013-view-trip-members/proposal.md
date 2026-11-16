@@ -32,7 +32,10 @@ membership, identity or the shell.
     `trip.organizer_id`; only Alice is `true` in the fixture.
   - The projection contains no readiness, preference, budget or main-plan
     field. Readiness/preferences stay with US-026/US-027/US-031.
-- **MODIFIED** `app-shell` requirement "Placeholder tabs":
+- **REMOVED** the obsolete `app-shell` requirement "Placeholder tabs" and
+  **ADDED** "Tab content":
+  - The old placeholder requirement is removed because both tabs now render
+    shipped content; the new requirement records that behavior.
   - The 成员 tab keeps `#/members` and its active-tab rule, but renders the real
     trip roster instead of a not-implemented placeholder.
   - The 分队 tab renders main's shipped split entry (the trip-scoped split
@@ -75,9 +78,9 @@ None.
 - `trips` — one **ADDED** requirement "Trip member list read". Existing
   identity, creation, detail-read and main-plan-state requirements are
   unchanged.
-- `app-shell` — one **MODIFIED** requirement "Placeholder tabs". The 成员 tab
-  content changes from a placeholder to the roster; the shell frame and dock
-  requirements are unchanged.
+- `app-shell` — one **REMOVED** requirement "Placeholder tabs" and one
+  **ADDED** requirement "Tab content". 分队 renders the shipped split entry and
+  成员 renders the roster; the shell frame and dock requirements are unchanged.
 
 ## Impact
 
@@ -98,8 +101,8 @@ None.
 - **Dependencies**: none new.
 - **Cross-REQ**: `invitations` accept creates membership rows that this read
   composes (Eve appears once); `main-itinerary` readiness/preferences are
-  deliberately not exposed; `app-shell` placeholder requirement is modified,
-  not silently contradicted.
+  deliberately not exposed; the `app-shell` placeholder requirement is
+  explicitly removed and replaced, not silently contradicted.
 - **Upstream**: REQ-003/004 membership schema and invitation accept, US-064
   shell/dock, US-031-037 fixtures, US-066 login/session and the split flow are
   all merged on `group1/main` (`135d3df`); this change composes them without
@@ -108,7 +111,7 @@ None.
   extend the same screen; split endpoints keep their separate anonymous error
   code until follow-up F2.
 - **Risks**: R30 Screen 7 scope creep (guarded by S10/U1); R31 placeholder
-  contract (MODIFIED requirement); R32 `USER_REQUIRED` vs `MEMBER_REQUIRED`
+  contract (REMOVED/ADDED requirement); R32 `USER_REQUIRED` vs `MEMBER_REQUIRED`
   live divergence (accepted, follow-up F2); R33 no durable trip selection on
   `#/members` (P3 choice); R34 deterministic ordering; R35 design-system
   migration gap; R36 denial-body leakage; R37 all-branch CI trigger
@@ -154,14 +157,16 @@ states). All four Pass → **A0 Pass**, split permitted.
   is separate; this read-only screen follows the merged frontend's shell, token
   CSS and shared `api()` helper.
 - **Placeholder supersession (R31/C3):** US-064's `Placeholder tabs` requirement
-  is explicitly a pre-US-013 state. The MODIFIED requirement records the
-  shipped split entry for 分队 and the roster for 成员; the Living Spec purpose
-  is reconciled at archive.
+  is explicitly a pre-US-013 state. The REMOVED/ADDED pair records the shipped
+  split entry for 分队 and the roster for 成员; the Living Spec purpose is
+  reconciled at archive.
 - **Identity divergence (R32/C4):** trips/members use the US-066 session
   principal and `USER_REQUIRED`; split endpoints are also session-based but
   return `MEMBER_REQUIRED` for anonymous callers. Accepted for this slice with
   follow-up **F2**; no split code is changed here.
 - **G2 remediation (C1–C5):** main was merged (`135d3df`), the auth/session and
   app-shell deltas were applied, and the evidence matrix was expanded
-  (retired-header 401, PUT/DELETE 405, direct-insert wording). The VL
-  re-records G2 on the merged head.
+  (retired-header 401, PUT/DELETE 405, direct-insert wording). The app-shell
+  delta is structured as REMOVED + ADDED so `openspec validate --strict`
+  passes on CLI 1.16.1. The VL re-recorded G2 **Pass** on the merged head
+  (2026-11-16).

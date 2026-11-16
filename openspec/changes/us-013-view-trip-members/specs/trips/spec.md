@@ -4,18 +4,13 @@
 
 ### Requirement: Trip member list read
 
-The system SHALL expose `GET /api/trips/{id}/members` and SHALL return the
-trip's member roster to an authenticated caller who is a member of that trip.
-The caller identity SHALL be the account/session principal established by the
-merged login flow (US-066); the endpoint SHALL NOT authenticate from the retired
-`X-User-Id` header. The roster SHALL contain each current member exactly once
-with `userId`, `displayName` and `organizer`, ordered by ascending `userId`.
-`organizer` SHALL be true only for the user recorded as the trip's organizer and
-SHALL NOT imply extra permission. The system SHALL deny a caller who is not a
-member without returning any member identity, and SHALL report an unknown trip
-id distinctly from a denial. The projection SHALL NOT contain readiness,
-preference, budget or main-plan values, and the endpoint SHALL NOT mutate any
-state.
+The system SHALL expose read-only `GET /api/trips/{id}/members` to an
+authenticated member, identified by the US-066 session principal rather than
+the retired `X-User-Id` header. The roster SHALL list each member once with
+`userId`, `displayName` and `organizer`, ordered by ascending `userId`; only
+the organizer is flagged. Non-members SHALL be denied without member identity,
+unknown trips reported separately, and no readiness, preference, budget or
+main-plan value exposed.
 
 #### Scenario: A member reads the roster
 

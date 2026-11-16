@@ -6,6 +6,9 @@
 - Baseline: `group1/main` `729a889`
 - Scope: `GET /api/trips/{id}/members` + Screen 7 member roster
 
+> The pre-merge 101/101 and `X-User-Id` matrix below is kept as history; the
+> §Merged-head re-verification section (198/198, session auth) supersedes it.
+
 ## Backend
 
 Command: `cd backend && mvn -B test`

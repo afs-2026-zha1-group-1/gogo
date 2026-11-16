@@ -90,8 +90,10 @@ add US-026/US-027/US-031 behavior without an AC.
 **D7 — app-shell integration: replace only the 成员 placeholder.**
 `App.tsx` renders `Members` for `route.page === 'members'`; `#/split` keeps the
 shipped split entry shipped by main. The dock order, active-tab mapping and
-signed-in account bar are untouched. The MODIFIED `Placeholder tabs` requirement
-records both real destinations; the Purpose prose is reconciled at P5.
+signed-in account bar are untouched. The obsolete `Placeholder tabs`
+requirement is REMOVED and replaced by the ADDED `Tab content` requirement
+(a MODIFIED block cannot drop the obsolete placeholder scenarios); the Purpose
+prose is reconciled at P5.
 
 **D8 — Testing: MockMvc API tests plus a manual browser checklist.**
 `TripMembersApiTest` uses its own in-memory SQLite database, the merged
@@ -116,8 +118,8 @@ identity values.
 ## Risks
 
 - Screen 7 scope creep (R30) — guarded by S10/U1 and the hint copy.
-- Placeholder contract (R31/C3) — MODIFIED requirement covers both real tabs;
-  P5 purpose reconciliation.
+- Placeholder contract (R31/C3) — the REMOVED/ADDED requirement covers both
+  real tabs; the Purpose prose is reconciled at P5.
 - `USER_REQUIRED` vs `MEMBER_REQUIRED` (R32/C4) — accepted divergence, follow-up
   F2; no split code change.
 - No durable trip selection (R33) — no-trip guidance state is contractual.

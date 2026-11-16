@@ -1,17 +1,19 @@
 # Spec Delta
 
-## MODIFIED Requirements
+## REMOVED Requirements
 
 ### Requirement: Placeholder tabs
 
-The 分队 tab SHALL target `#/split` and SHALL render the shipped split entry
-for the selected trip (the entry that leads to the trip-scoped split flow),
-with a unique visible heading; with no trip selected it SHALL show guidance
-back to 行程. The 成员 tab SHALL target `#/members` and SHALL render the trip
-member list defined by the `trips` capability requirement "Trip member list
-read". Neither tab SHALL render a not-implemented placeholder or fabricate demo
-members, routes or statuses. The shell frame, bottom-dock order, active-tab rule
-and signed-in account bar SHALL remain unchanged.
+## ADDED Requirements
+
+### Requirement: Tab content
+
+The 分队 tab SHALL target `#/split` and render the shipped split entry for the
+selected trip, with a unique heading and guidance back to 行程 when no trip is
+selected. The 成员 tab SHALL target `#/members` and render the roster defined by
+the `trips` requirement "Trip member list read". Neither tab SHALL render a
+not-implemented placeholder or fabricate demo data; the shell frame, dock
+order, active-tab rule and signed-in account bar SHALL remain unchanged.
 
 #### Scenario: 分队 shows the shipped split entry
 

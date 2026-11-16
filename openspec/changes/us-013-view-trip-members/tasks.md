@@ -84,9 +84,9 @@
 - [x] 6.2 Write the P4 pipeline report under `docs/ai4se-plugins/` —
       `20261116-165200-pipeline-report.md` (merged head); E1 slot
       `ci-report.md`.
-- [x] 6.3 Prepare the G2 decision record for VL Leo; do not self-sign —
-      `g2-decision.md` records VL **Leo**'s Conditional (C1–C5); the re-record
-      remains with the VL
+- [x] 6.3 G2 decision recorded by named VL **Leo**: first **Conditional**
+      (C1–C5), then re-recorded **Pass** on the merged head (2026-11-16);
+      `g2-decision.md` cites the local-verify + CI evidence
 
 ## 7. Documentation reconciliation (owner: Dev/SA)
 
@@ -121,12 +121,13 @@
 
 ## 8. Gates and archive (owner: humans)
 
-- [ ] 8.1 G2 re-record **Pass** by named VL (Leo) on the merged head with fresh
-      local-verify + CI evidence; the current record is **Conditional**
-      (C1–C5), which does not authorize merge
+- [x] 8.1 G2 **Pass** recorded by named VL (Leo) on the merged head
+      (`6061579`); C1–C5 closed; local-verify + CI evidence cited in
+      `g2-decision.md` — merge (8.2) may start
 - [ ] 8.2 Human merge of the PR/branch
 - [ ] 8.3 `/sdd:living-merge` archive: add the `trips` requirement, apply the
-      MODIFIED `app-shell` requirement, reconcile the app-shell Purpose prose
+      REMOVED `Placeholder tabs` + ADDED `Tab content` pair, reconcile the
+      app-shell Purpose prose
 - [ ] 8.4 G3 **Pass** recorded by named SA (Johnson)
 - [ ] 8.5 Close issue #9 and move the board card to Done after archive
 
