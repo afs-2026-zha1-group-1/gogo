@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [US-065-migrate-frontend-fully-from-JavaScript-to-TypeScript]
   pull_request:
     branches: [main]
 
