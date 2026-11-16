@@ -59,8 +59,10 @@ with the invitation link, a copy action and a QR encoding the same absolute URL
 (`/api/trips/{id}/invitation`). Guests open `#/join/<token>` to preview the five
 public fields and accept once (`/api/invitations/{token}` and
 `/api/invitations/{token}/accept`); joining closes once the trip's main plan is
-confirmed, and unknown links render a generic unusable page. `main_plan_confirmed`
-has no product mutation path until US-037, so tests set it directly in SQLite.
+confirmed, and unknown links render a generic unusable page. The only product
+path that sets `main_plan_confirmed` is the US-037
+`/api/trips/{id}/main-plan/confirm` endpoint, so the invitation tests still write
+the flag directly in SQLite.
 
 REQ-019 adds member interests (US-019): `GET` and `PUT
 /api/trips/{tripId}/preferences`. The `PUT` body is `{"interests":[<label>...]}`
@@ -75,16 +77,32 @@ lives at `#/trips/<id>/preferences`, is linked from `#/trips/<id>`, and is the
 first TypeScript/Ant Design page: Save is explicit, a failed save rolls back to
 the acknowledged set, and a failed load offers Retry instead of an empty state.
 
+US-031-037 adds main itinerary planning. `GET /api/trips/{id}/main-plan/inputs`
+aggregates ready members, common interests, the deduplicated must-do union, hard
+budgets and the six fixed generation rules for any member. The organizer
+generates a timed draft with `POST /api/trips/{id}/main-plan` (201; 409
+`MEMBERS_NOT_READY` while members are pending, 409 `ALREADY_CONFIRMED` after
+confirmation); any member reads it with `GET /api/trips/{id}/main-plan` (404
+`NO_DRAFT` before the first generation, computed `stale` against preference
+revisions). `POST /api/trips/{id}/main-plan/confirm` (200) validates the schedule
+and hard budgets first (422 `VALIDATION_FAILED` with both error lists, 409
+`STALE_DRAFT`), then freezes the draft and closes joining. The frontend adds
+`#/trips/<id>/main-plan/inputs` (Screen 9) and `#/trips/<id>/main-plan`
+(Screen 10), each with loading, empty, failure and permission states. The plan
+provider is a fixture-backed fake (`FakeMainPlanProvider`); it reads the
+`member_preference` rows that REQ-019 writes.
+
 The database is SQLite at `backend/data/gogo.db`, opened with
 `journal_mode=WAL`, `busy_timeout=5000` and `foreign_keys=on`, and the pool is
 pinned to one connection because SQLite has a single writer. The Flyway
 migrations create the schema and seed data on first start (`V1` greeting, `V2`
 users/trips/members, `V3` invitations and the main-plan column, `V4` member
-preferences); the application creates the `data/` directory itself, because the
-SQLite driver creates the file but not its parent. `flyway-core` alone is on the
-classpath: `flyway-database-nc-sqlite` has no published artifact for the managed
-Flyway version, a gap recorded as TS-11 in the REQ-019 design. Delete
-`backend/data/` to rebuild it.
+preferences, `V5` main-plan drafts/stops plus readiness and preference seeds);
+the application creates the `data/` directory itself, because the SQLite driver
+creates the file but not its parent. `flyway-core` alone is on the classpath:
+`flyway-database-nc-sqlite` has no published artifact for the managed Flyway
+version, a gap recorded as TS-11 in the REQ-019 design. Delete `backend/data/`
+to rebuild it.
 
 Backend on port 8080:
 
@@ -102,7 +120,7 @@ npm run dev
 ```
 
 Typecheck the TypeScript sources with `cd frontend && npm run typecheck`
-(`tsc --noEmit`). `checkJs` is off, so the four un-migrated `.jsx` pages are not
+(`tsc -b --noEmit`). `checkJs` is off, so the four un-migrated `.jsx` pages are not
 typechecked yet; the preferences page is TypeScript and is.
 
 Open http://localhost:5173/. Check the API directly with
@@ -126,8 +144,9 @@ curl -s -X PUT http://localhost:8080/api/trips/1/preferences \
 ```
 
 Run the backend tests with `cd backend && mvn test` (`GreetingApiTest`,
-`TripApiTest`, `InvitationApiTest`, `PreferenceApiTest`); they use the same
-SQLite engine and the same migrations as production.
+`TripApiTest`, `InvitationApiTest`, `PreferenceApiTest`, `MainPlanApiTest` plus
+the main-plan unit suites); they use the same SQLite engine and the same
+migrations as production.
 
 Inspect the stored row without stopping the app (Python 3 ships `sqlite3`; no
 separate CLI is needed):

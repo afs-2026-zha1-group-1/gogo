@@ -264,3 +264,53 @@ M0 通过后，后续每个 Activity 只追加 Flyway 迁移与业务包，不�
 ## 12. R2 预留（本期不实现）
 
 PostgreSQL/PostGIS 替换 SQLite（Repository 层已隔离 SQL 与方言）→ Fork/Join 用现成 `branch_id` → 求解器替代模板排期 → STOMP WebSocket 替代轮询 → JWT 账号体系 → 编辑态协同与冲突提示。
+
+## 13. Landed reconciliation — US-031-037 main itinerary (archived 2026-11-16)
+
+> Scope discipline (per `openspec/config.yaml`): this addendum records **only what
+> the `us-031-037-main-itinerary` change actually shipped** and how it diverges from
+> the aspirational design above. It deliberately does **not** rewrite sections that
+> belong to earlier changes (trip/invitation identity, envelope, provider) — those
+> alignments are out of this change's scope and are left as recorded observations.
+
+**Main-plan capability (US-031 generate + US-037 confirm), as shipped:**
+
+- Data model (Flyway `V5__create_main_plan.sql`) — §5 of this plan described a
+  `plan_node` tree with `trip.plan_version` / `trip_member.plan_ack_version`. What
+  actually landed for the main plan is different and self-contained:
+  - new tables `main_plan_draft` (one row per generated version, `status`
+    `draft`/`confirmed`, `cost_per_person_cents`, `input_revisions`) and
+    `main_plan_stop` (ordered stops: `seq`, `name`, `start_time`, `end_time`,
+    `travel_minutes_to_next`, per-stop `lat`/`lng`);
+  - new `trip_member` columns `ready` and `preference_revision` (readiness gate +
+    staleness source); the confirmed version is the draft row marked
+    `status='confirmed'` — there is **no** `trip.plan_version` bump and **no**
+    `plan_node` tree for this capability;
+  - a read-only `member_preference` stand-in table is created `IF NOT EXISTS` so
+    the migration is self-contained until REQ-019 lands its authoritative
+    kind/payload `member_preference` at `V4` (this change renumbers to `V5` per
+    G1 C2).
+- API (§6 listed `POST /plan:generate`, `GET /plan`, `POST /plan:ack`). The main
+  plan instead ships four endpoints under the trip resource:
+  - `POST /api/trips/{id}/main-plan` → 201 draft projection (readiness-gated;
+    rejects with 409 `MEMBERS_NOT_READY` / `ALREADY_CONFIRMED`);
+  - `GET /api/trips/{id}/main-plan` → 200 current-or-confirmed projection (404
+    `NO_DRAFT`; `stale` computed on read, confirmed version frozen);
+  - `GET /api/trips/{id}/main-plan/inputs` → 200 member-readable generation
+    summary (ready count, common interests, must-do, budgets, rules);
+  - `POST /api/trips/{id}/main-plan/confirm` → 200 same projection, gated by
+    schedule + hard-budget + staleness validation (422 `VALIDATION_FAILED` with
+    `scheduleErrors`/`overruns`, 409 `STALE_DRAFT`), closes joining on success.
+- Provider (§7 planned a real LLM `PlanGenerator` with `TemplatePlanGenerator`
+  fallback). MVP ships a `MainPlanProvider` port with a deterministic
+  `FakeMainPlanProvider` (four fixture stops) behind the seam; the real provider is
+  deferred, consistent with the signed fake-provider MVP ruling.
+- Identity / envelope: main-plan calls reuse the trip capability's established
+  `X-User-Id` header and `{code, message}` error envelope (introduced by earlier
+  changes, not by this one) rather than the `X-Member-Id` header / `{data, error}`
+  envelope sketched in §6–§7. Noted as a pre-existing divergence, out of scope here.
+- Frontend: Screens 9/10 (`MainPlanInputs.tsx`, `MainPlan.tsx`) added as
+  join-style full-page routes on the shared TypeScript `api<T>()` client (§4
+  sketch of `client.ts` was not adopted; the shell already provides `api.ts`).
+
+No other section of this plan was modified by this change.

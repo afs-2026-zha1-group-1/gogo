@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ConfigProvider } from 'antd'
-import App from './App.jsx'
+import App from './App.tsx'
 import './app.css'
 
 // PAGE-9 needs a visible retry action, so a failed load must not retry invisibly three times.

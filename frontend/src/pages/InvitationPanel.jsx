@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import QRCode from 'qrcode'
-import { api } from '../api.js'
-import Icon from '../Icons.jsx'
+import { api } from '../api'
+import Icon from '../Icons'
 
 function invitationUrl(joinPath) {
   return `${window.location.origin}${window.location.pathname}#${joinPath}`
