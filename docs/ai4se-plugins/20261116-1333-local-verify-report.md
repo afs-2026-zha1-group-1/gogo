@@ -309,3 +309,16 @@ What this section does not change: the G1 record (schema, payload and scenarios 
 text), the Overall verdict (still Partial for the remote CI run and G2/G3), and
 `openspec validate --strict` (still exit 1).
 
+## Update, 2026-11-16 — the E1 slot is filled (machine-read)
+
+`openspec/changes/req-019-save-interests/ci-report.md` now holds a machine-read E1 slot: run
+`43824457379` (PR #44) completed `success` on head `e7333f0` — `Backend tests` 43 s with
+`Tests run: 203, Failures: 0, Errors: 0` then `BUILD SUCCESS`, `Frontend build` 17 s
+(`npm ci` → `typecheck` → `build`). Nothing above is rewritten; what changes:
+
+- The `npm ci` caveat closes. A clean runner ran the locked install green, which is exactly the
+  proof this checkout could not produce (EPERM on the vendored binding).
+- Remote CI leaves the open items; what stays open is G2/G3 (tasks 6.3) and
+  `openspec validate --strict` (task 6.5). Overall remains **Partial** for those two only.
+- Full body, jobs and URLs: `docs/ai4se-plugins/20261116-153521-pipeline-report.md`.
+

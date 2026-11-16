@@ -126,8 +126,12 @@
 - [x] 6.1 `.github/workflows/ci.yml`: frontend job gains `npm run typecheck` between
       `npm ci` and `npm run build` (DD12); backend job unchanged. Shared file — tell the
       other in-flight change owners
-- [ ] 6.2 Push `feat/travel_preference` only on the owner's explicit authorization; read
-      the fresh CI run for this change's commit and write the pipeline report
+- [x] 6.2 Push `feat/travel_preference` only on the owner's explicit authorization; read
+      the fresh CI run for this change's commit and write the pipeline report — pushed to
+      `e7333f0`, the owner opened PR #44, and run `43824457379` is green on that head
+      (`Backend tests` 203/203, `Frontend build` with `typecheck`), read through the
+      authenticated gh API; `ci-report.md` +
+      `docs/ai4se-plugins/20261116-153521-pipeline-report.md`
 - [ ] 6.3 G2 decision record by a named VL; G3 by a named SA; the agent never self-signs
 - [x] 6.4 Update `README.md` (endpoints, page route, `typecheck`) and the registry/handoff
       rows: `README.md` carries the two endpoints, `#/trips/<id>/preferences`, the

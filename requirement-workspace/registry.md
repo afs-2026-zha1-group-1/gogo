@@ -46,6 +46,16 @@ REQ-019 在 P4 之后把兴趣标签改为 10 项中文、并按 `screen-08-pref
 （design TS-13）。需求文本、payload 与场景未变，不重开 G1。REQ-020/024/026 条目中
 「硬前置 REQ-019 的 `V4`」应读作 `V6`（表结构与页面契约不变）。
 
+**PR #44 与 CI（2026-11-16）**：owner 已开 PR #44（`REQ-019: save member interests on main's
+shadcn baseline`，`feat/travel_preference` → `main`，OPEN、非 draft、`mergeStateStatus` = `CLEAN`）；run
+`43824457379` 以 `pull_request` 事件在 head `e7333f0` 上双 job 全绿（`Backend tests` 203/203 +
+`BUILD SUCCESS`，`Frontend build` 含 `typecheck`），E1 为**机器读取**（gh API 已认证），不再是人工确认。
+证据：`openspec/changes/req-019-save-interests/ci-report.md`、
+`docs/ai4se-plugins/20261116-153521-pipeline-report.md`；`docs/feedback/verification-matrix.md` 中
+「无 `gh`、无 token，仅凭 owner 口头确认」的旧表述已按其自证修正（本地 `gh` 存在于
+`%LOCALAPPDATA%\Programs\gh\bin` 且已登录）。仍未完成：G2 具名 VL 签核、strict validation（exit 1，
+阻塞归档）；`main` 已前进至 `c4f9e32`（docs-only）需在 G3 前复核。
+
 ## US-031-037 product review update (2026-11-15)
 
 This update supersedes pending product-choice wording in the snapshot row below.
