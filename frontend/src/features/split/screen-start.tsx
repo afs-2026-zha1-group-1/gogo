@@ -13,8 +13,8 @@ import { shortId } from "@/lib/format"
  * Screen 11 — split start (spec REQ-004 / US-038, US-050 replacement). Empty state (GET data=null) shows the
  * fork-join intro and a start button wired to POST start; an existing draft shows the saved status. The action
  * branches on status: no draft or `cancelled` starts (or replaces) the draft, `active` continues to boundaries,
- * `confirmed` is a read-only terminal state. Rejections surface from the backend — the client never judges
- * uniqueness, confirmation or cancellation eligibility.
+ * `confirmed` opens the confirmed review on Screen 15 (read-only terminal state, no start entry). Rejections
+ * surface from the backend — the client never judges uniqueness, confirmation or cancellation eligibility.
  */
 export function ScreenStart() {
   const { tripId = "" } = useParams()
@@ -29,8 +29,8 @@ export function ScreenStart() {
       下一步：选择边界 <IconArrowRight />
     </Button>
   ) : status === "confirmed" ? (
-    <Button className="flex-1" disabled>
-      已确认拆分（只读） <IconCheck />
+    <Button className="flex-1" onClick={() => navigate(`/trips/${tripId}/split/confirm`)}>
+      查看已确认分队 <IconArrowRight />
     </Button>
   ) : (
     <Button className="flex-1" disabled={start.isPending} onClick={() => start.mutate()}>
@@ -99,7 +99,7 @@ export function ScreenStart() {
                 ) : null}
                 {detail.status === "confirmed" ? (
                   <p className="mt-2 text-[11.5px] leading-relaxed text-ink-2">
-                    当前拆分已确认并锁定，不可再编辑或取消。
+                    当前拆分已确认并锁定，不可再编辑或取消；可点下方「查看已确认分队」查看路线与分组。
                   </p>
                 ) : null}
               </CardContent>

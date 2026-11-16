@@ -62,6 +62,19 @@ public class TripController {
         return trip;
     }
 
+    @GetMapping("/{id}/members")
+    public TripMemberListResponse members(
+            @AuthenticationPrincipal AccountPrincipal principal,
+            @PathVariable long id) {
+        long userId = principal.id();
+        repository.findById(id)
+                .orElseThrow(() -> new TripApiException(404, "TRIP_NOT_FOUND", "No trip with id " + id));
+        if (!repository.isMember(id, userId)) {
+            throw new TripApiException(403, "NOT_A_MEMBER", "Caller is not a member of this trip");
+        }
+        return repository.findMembers(id);
+    }
+
     @PostMapping("/{id}/main-plan:confirm")
     public TripResponse confirmMainPlan(
             @AuthenticationPrincipal AccountPrincipal principal,

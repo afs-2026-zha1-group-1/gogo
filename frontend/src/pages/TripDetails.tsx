@@ -165,6 +165,16 @@ export default function TripDetails({ tripId }: TripDetailsProps) {
           </div>
         </section>
 
+        <div className="sec-title"><Icon name="sparkle" className="sm" /> 旅行偏好</div>
+        <section className="card pad">
+          <p className="hint" style={{ marginTop: 0 }}>
+            选择你在这趟旅程中喜欢的主题，保存后所有成员都能看到。
+          </p>
+          <a className="btn btn-primary" href={`#/trips/${trip.id}/preferences`}>
+            设置我的兴趣
+          </a>
+        </section>
+
         <InvitationPanel
           tripId={trip.id}
           isOrganizer={isOrganizer}

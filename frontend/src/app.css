@@ -678,6 +678,55 @@ body {
   gap: 8px;
 }
 
+/* US-019 interest picker: the clickable counterpart of the static .chip below */
+.pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: 0.16s;
+}
+
+.pick:hover {
+  border-color: var(--ink-3);
+}
+
+.pick.on {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #fff;
+}
+
+.pick:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Inline feedback on the preferences page (formerly antd Alert; keeps the dependency list flat) */
+.notice {
+  border: 1px solid #f0c0bd;
+  background: #fdf3f2;
+  color: #9a2723;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.notice strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+
 .chip {
   display: inline-flex;
   align-items: center;
@@ -1182,4 +1231,71 @@ body {
 
 .scanner-error-actions .btn {
   flex: 1;
+}
+
+/* US-013 member roster */
+.pill.brand {
+  border-color: #99f6e4;
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+}
+
+.member-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.member-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line-2);
+}
+
+.member-row:last-child {
+  border-bottom: none;
+}
+
+.member-avatar {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+  font-size: 15px;
+  font-weight: 750;
+}
+
+.member-avatar.tone-2 {
+  background: #e6efff;
+  color: #2563eb;
+}
+
+.member-avatar.tone-3 {
+  background: #fff0e2;
+  color: #ea580c;
+}
+
+.member-avatar.tone-4 {
+  background: #fce7f3;
+  color: #db2777;
+}
+
+.member-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.member-name {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.member-meta {
+  font-size: 12px;
+  color: var(--ink-3);
 }

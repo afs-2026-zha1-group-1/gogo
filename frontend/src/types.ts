@@ -45,6 +45,17 @@ export interface InvitationIssue {
   tripName: string
 }
 
+export interface TripMember {
+  userId: number
+  displayName: string
+  organizer: boolean
+}
+
+export interface TripMemberList {
+  tripId: number
+  members: TripMember[]
+}
+
 export interface ApiError {
   code?: string
   message?: string
@@ -76,11 +87,12 @@ export type Route =
   | { page: 'main-plan'; tripId: number }
   | { page: 'main-plan-inputs'; tripId: number }
   | { page: 'scan'; from: string | null }
+  | { page: 'preferences'; tripId: number }
 
-// main-plan, login, and scan screens are full-page flows (like join) without
-// the bottom TabBar. 'scan' additionally owns its own app-bar close control, so
-// it must not appear in TAB_FOR_PAGE (Record<InAppPage, TabId>).
+// login, join, main-plan, preference and scan screens are full-page flows
+// without the bottom TabBar. 'scan' additionally owns its own app-bar close
+// control, so it must not appear in TAB_FOR_PAGE (Record<InAppPage, TabId>).
 export type InAppPage = Exclude<
   Route['page'],
-  'join' | 'login' | 'main-plan' | 'main-plan-inputs' | 'scan'
+  'join' | 'login' | 'main-plan' | 'main-plan-inputs' | 'scan' | 'preferences'
 >

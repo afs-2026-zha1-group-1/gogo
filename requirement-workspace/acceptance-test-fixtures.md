@@ -387,3 +387,59 @@ hashes.
 | Login error message wording | Only `code = INVALID_CREDENTIALS` is contractual |
 | Exact idle timeout beyond the default | 30 minutes default; tests use a short configured timeout |
 | Demo password in UI | Never displayed; it is a fixture value documented here only |
+## US-013 — members (US-013)
+
+Scope: the roster read for an existing trip. Reuses §Users and §Sample trip
+unchanged: Alice (1) organizer, Ben (2), Chloe (3), Daniel (4) members, Eve (5)
+not a member. Identity is the merged account/session login (US-066, REQ-008);
+`X-User-Id` is retired for trip endpoints. API tests use `TestAuth.asUser`
+instead of a header; the browser uses the demo accounts in §REQ-008 (password
+`gogo-demo-2026`). The trip id is assigned by the database; tests read it from
+the create response (or the fixture trip) rather than assume a value.
+
+### Requests
+
+| Case | Call | Expected |
+|---|---|---|
+| M1 member list | authenticated as Ben (user 2), `GET /api/trips/{id}/members` | `200`; `tripId` is the requested trip; exactly four members with `userId` 1, 2, 3, 4 in ascending order; `organizer = true` only for user 1 (Alice) |
+| M2 organizer reads | authenticated as Alice (user 1), same call | `200`; same four rows; Alice is still the only `organizer = true` row |
+| M3 outsider denied | authenticated as Eve (user 5), same call | `403`, `code = NOT_A_MEMBER`; the body carries no `userId`, `displayName` or organizer value |
+| M4 no session | same call without authentication | `401`, `code = USER_REQUIRED`; no member data |
+| M5 retired header | same call with only `X-User-Id` (blank, non-numeric or a seeded id) and no session | `401`, `code = USER_REQUIRED`; the header does not authenticate |
+| M6 unknown trip | authenticated as Ben, `GET /api/trips/999999/members` | `404`, `code = TRIP_NOT_FOUND` |
+| M7 outsider unknown trip | authenticated as Eve, same unknown trip | `404`, `code = TRIP_NOT_FOUND` (trip existence is checked before membership) |
+| M8 joined member | direct test-only `trip_member` insert for Eve (or invitation acceptance), then read as Eve | `200`; five members; Eve (5) appears exactly once; Alice is still the only organizer |
+| M9 repeated insert | direct test-only insert twice for Eve, then read | Eve still appears exactly once (`trip_member` composite primary key) |
+| M10 no personal fields | authenticated as Ben, read | The body contains no readiness, preference, budget or main-plan field values |
+| M11 non-read verbs | authenticated, `POST` / `PUT` / `DELETE /api/trips/{id}/members` | `405` method not allowed; no state change |
+
+### Wire projection
+
+| Projection | Fields |
+|---|---|
+| Member list (`GET /api/trips/{id}/members`) | `tripId` (integer), `members` [{`userId` (integer), `displayName` (string), `organizer` (boolean)}] ordered by ascending `userId` |
+
+`organizer` is derived as `userId == trip.organizer_id`; it is not a stored
+column and does not imply extra permission. Only the organizer row is `true`.
+
+### Error contract
+
+| code | Status | Case |
+|---|---|---|
+| `USER_REQUIRED` | 401 | no authenticated session, including a request with only a retired `X-User-Id` header (M4, M5) |
+| `NOT_A_MEMBER` | 403 | authenticated caller who is not a member of an existing trip (M3) |
+| `TRIP_NOT_FOUND` | 404 | unknown trip id, for a member or an outsider (M6, M7) |
+
+Error bodies keep the existing `{code, message}` shape; only `code` is
+contractual. Denial bodies contain no member identity, name or organizer value.
+
+### Values deliberately not fixed (US-013)
+
+| Item | Why no value is set |
+|---|---|
+| Avatar colour and initial rendering | Visual treatment from `ui-design-reference`; not an AC |
+| Row spacing, heading/subtitle wording, count wording | Presentation text; the contract is the visible roster and organizer identification |
+| Error message wording | Only the `code` is contractual |
+| Trip id | Assigned by the database; tests read it from the create response or fixture |
+| Member display order beyond ascending `userId` | `userId` ascending is fixed for deterministic tests; visual grouping may vary |
+| Readiness, preference, budget or plan values | Out of scope; the projection must not contain them |

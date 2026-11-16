@@ -25,7 +25,7 @@
 - report_path: `docs/ai4se-plugins/20261116-154727-quality-checklist-report.md`
 - overall: Pass
 - required_failed: none
-- skipped_optional: P4-4 (not deployed), P4-5 (G2 human)
+- skipped_optional: P4-4 (not deployed); P4-5 now Pass (G2 VL lumi)
 
 ## Next
 

@@ -56,7 +56,7 @@
 - [x] 7.1 E2E 步骤清单 `docs/feedback/e2e-us-049-050.md`（P4 执行并回填观察结果）
 - [x] 7.2 `mvn -B test` 全量 + `npm run build`；schema 断言（迁移计数 `V1–V5`、`split_draft` 列集不变）（D15）
 - [x] 7.3 `openspec validate us-049-050-split-confirm-cancel --strict` 复跑；fixtures §US-049-050 与实现逐项核对
-- [ ] 7.4 `/sdd:local-verify-report`（P4 末）→ G2 前必备
+- [x] 7.4 `/sdd:local-verify-report`（P4 末）→ G2 前必备
 
 ## 8. 文档与收尾（P5 承接）
 
