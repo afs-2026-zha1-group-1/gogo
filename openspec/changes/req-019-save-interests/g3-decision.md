@@ -83,6 +83,19 @@
 - 不允许：代替 SA 复核归档结果；把本记录当作对归档后新增提交（例如后续再并入 `origin/main`）
   的批准；把 G1/G2 的签署算作 G3 的签署。
 
+## Update — 归档前的第六次并入 main（2026-11-16，签署后）
+
+PR #44 合并后 `origin/main` 又前进到 `81af3d1`（US-067 的扫码入口与 US-071 的 P1/P2 文档，
+相对 merge base 共 24 个提交），故本分支作第六次并入，合并提交 `58d5cd9`。该次合并没有冲突：
+`README.md`、`docs/knowledge/_LOG.md`、`frontend/src/App.tsx`、`app.css`、`types.ts` 与
+`package.json`/`package-lock.json` 均由 git 自动保留两侧内容，**本变更的 spec/tasks/g3 三个文件
+未被触碰**。合并后本地复验：`mvn -B clean test` 255/255（28 套件）、lockfile 2/2、`typecheck`
+干净、`npm run build` 645.74 kB / 142 modules（main 的 `Scanner.tsx` + `scan.ts` 导致体积增长）、
+`openspec validate req-019-save-interests --strict` 仍为 `is valid`（tasks 8.13）。
+
+这条更新不改变 SA 的 Pass 结论：它只说明合并后的分支基线更新，签署的对象仍是已合并的 PR #44
+（`6c0ccb1`）。
+
 ## Recording rules
 
 1. G3 需要具名 SA 决策，G1/G2 签名不继承。

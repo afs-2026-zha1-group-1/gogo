@@ -265,6 +265,16 @@ so it is logged here instead of being absorbed silently.
       code, migration or test line changed. Verified: `mvn -B clean test` 255/255 (243 plus
       main's `TripMembersApiTest` 12), `npm run typecheck` clean, lockfile test 2/2,
       `npm run build` 503.85 kB JS
+- [x] 8.13 Merge `origin/main` a sixth time (`81af3d1`, US-067's QR scanner and US-071's
+      P1/P2 documents) after PR #44 was merged: 24 commits, **no conflict** — the automatic
+      merge kept both sides for `README.md`, `docs/knowledge/_LOG.md`, `frontend/src/App.tsx`,
+      `app.css`, `types.ts`, `package.json`/`package-lock.json` (the merge itself changed none
+      of this change's files, since the branch side only carried `spec.md`, `tasks.md` and
+      `g3-decision.md`). No preference code, migration, test or spec line changed. Verified: `mvn -B clean test` 255/255 (28
+      suites; main's new work was frontend and docs only), `npm run typecheck` clean, lockfile
+      test 2/2, `npm run build` 645.74 kB JS / 44.41 kB CSS / 142 modules (main's `Scanner.tsx`
+      and `scan.ts` grew the bundle; the >500 kB chunk warning is pre-existing),
+      `openspec validate req-019-save-interests --strict` still `is valid`
 
 ## Alignment self-check (Spec ↔ Design ↔ Tasks ↔ ATDD)
 
@@ -277,7 +287,7 @@ so it is logged here instead of being absorbed silently.
 | Preferences page (9) | DD9, DD10 | 4.1–4.7, 5.2, 8.3, 8.4 | PAGE-1…PAGE-10 | Pass |
 | Non-goals (other kinds, US-027, US-026, US-031, auth, `tag`, locking, i18n, page migration) | Goals / Non-Goals, DD1, DD3, DD9 | 1.2, 5.3 | ATDD §5 reverse table | Pass |
 | Display contract (deep-dive ⑫: loading/empty/error/saving) | DD9, DD10 | 4.5, 5.2 | PAGE-1, PAGE-2, PAGE-7, PAGE-8, PAGE-9 | Pass |
-| Revision 2026-11-16 (Chinese catalogue, screen-08 baseline); merges of `origin/main` | DD6, DD9, DD10, TS-13; Revision section | 8.1–8.12 | CAT-1…CAT-4, SAVE-1, PAGE-3, PAGE-7, PAGE-10 | Pass — 8.1–8.12 all closed; 8.6 is the G1 revision re-review, signed Pass 2026-11-16 by IO Emily and SA evelyn.huang; 8.8–8.12 are the five `origin/main` merges |
+| Revision 2026-11-16 (Chinese catalogue, screen-08 baseline); merges of `origin/main` | DD6, DD9, DD10, TS-13; Revision section | 8.1–8.13 | CAT-1…CAT-4, SAVE-1, PAGE-3, PAGE-7, PAGE-10 | Pass — 8.1–8.13 all closed; 8.6 is the G1 revision re-review, signed Pass 2026-11-16 by IO Emily and SA evelyn.huang; 8.8–8.13 are the six `origin/main` merges |
 | G1 condition 4 (strict validation) | Risks: strict validation still failing | 6.5 | — (not an ATDD row; archive gate) | **Pass** — 6.5 closed 2026-11-16: `openspec validate req-019-save-interests --strict` → `is valid`, exit 0 |
 | Tech-stack baseline (`config.yaml` `context`, D17 plan-first) | DD2, DD3, DD4, DD9, DD12; deviations TS-1…TS-13 | 2.1, 2.2, 4.1, 6.1, 6.6 | — (not an ATDD row; archive gate) | Pass as plan-first choices plus recorded deviations (TS-11 still open) |
 
