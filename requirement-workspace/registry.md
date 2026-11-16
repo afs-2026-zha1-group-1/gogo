@@ -56,17 +56,21 @@ shadcn baseline`，`feat/travel_preference` → `main`，OPEN、非 draft、`mer
 `%LOCALAPPDATA%\Programs\gh\bin` 且已登录）。该段结论已被后续事实取代：`main` 先后前进到 `f11d395`
 （US-065 前端 TS 化）与 `40381ac`，本分支三次并入 main 后 head 为 `f16d009`、`mergeStateStatus`
 复位为 `CLEAN`，run `43829662798` 在该 head 上双 job 全绿（203/203；`Check lockfile portability`
-2/2 → `npm ci` → `typecheck` → `build`）。仍未完成：G2 具名 VL 签核、strict validation（exit 1，
-阻塞归档）。
+2/2 → `npm ci` → `typecheck` → `build`）。仍未完成：strict validation（exit 1，阻塞归档）；G2 已于
+同日由 VL 签署 Pass（见下）。
 
 **G2 待签草稿（2026-11-16）**：`openspec/changes/req-019-save-interests/g2-decision.md` 已按 G2 输入
 清单整理——输入（local-verify / pipeline ci 含 E1 slot / 验证矩阵 / G1 / delta）、三个 run、维度结果、
-缺陷分级、偏差与已接受后果、未闭合项、基线复核说明与空白签核区；`Decision` 留作 `OPEN`、无 VL
-署名、时间戳空白，由具名 VL 复核后自行择一 Pass / Fail / Conditional。实现方不代签、不代推送签名。
-草稿已随分支推送，PR #44 `mergeable: true`：具名 VL 可直接 `git pull origin feat/travel_preference`
-后签署并提交；草稿引用的最新 CI 证据是 head `f16d009` 上的 run `43829662798`。main 的 `171ec00`
-已去掉 lockfile 非 Linux 包的 `libc` 约束（并新增 `frontend/tests/lockfile.test.mjs`），草稿中那条
-Windows 变通项随之闭合，`npm ci` 在 Windows 上也能直接装妥原生绑定。
+缺陷分级、偏差与已接受后果、未闭合项、基线复核说明与空白签核区；草稿阶段 `Decision` 留作 `OPEN`、
+无 VL 署名、时间戳空白，由具名 VL 复核后自行择一 Pass / Fail / Conditional。实现方不代签、不代推送签名。
+草稿已随分支推送，PR #44 `mergeable: true`；main 的 `171ec00` 已去掉 lockfile 非 Linux 包的
+`libc` 约束（并新增 `frontend/tests/lockfile.test.mjs`），草稿中那条 Windows 变通项随之闭合。
+
+**G2 = Pass（2026-11-16 17:19 +0800）**：VL **Sammi Ng** 在 `g2-decision.md` 的签核区勾选 `Pass` 并
+署名，签署提交 `3b2d42d docs(g2): signed by Sammi Ng`。该行原仅写了 `Decision` 与姓名、`Timestamp`
+留白，代理仅把签署转写进门禁字段（标题/状态改为 RECORDED、`Decision: Pass`、`Approvers: Sammi Ng`、
+`Timestamp: 2026-11-16 17:19 (+0800)` 并注明取自签署提交时间）与维度表的 Code review 行，未改判、
+未补写整改项。未完成：G3（具名 SA）与 strict validation（exit 1）。
 
 ## US-031-037 product review update (2026-11-15)
 

@@ -132,10 +132,12 @@
       (`Backend tests` 203/203, `Frontend build` with `typecheck`), read through the
       authenticated gh API; `ci-report.md` +
       `docs/ai4se-plugins/20261116-153521-pipeline-report.md`
-- [ ] 6.3 G2 decision record by a named VL; G3 by a named SA; the agent never self-signs —
-      **draft ready, unsigned**: `g2-decision.md` carries the inputs, the dimension table, the
-      defect grades, the deviations and an empty §Sign-off block (`Decision: OPEN`), so a named VL
-      reviews and signs it without the implementer pre-filling a verdict
+- [x] 6.3 G2 decision record by a named VL; G3 by a named SA; the agent never self-signs —
+      **G2 Pass recorded**. VL **Sammi Ng** signed `g2-decision.md` on 2026-11-16 17:19 (+0800)
+      (signature commit `3b2d42d`, ticked `Pass`; the timestamp is that commit's time because the
+      VL left the field blank). The agent only transcribed the signature into the gate fields —
+      header, Decision, Approvers, Timestamp and the Code-review dimension row — and left the
+      verdict untouched. G3 is still open and needs a named SA
 - [x] 6.4 Update `README.md` (endpoints, page route, `typecheck`) and the registry/handoff
       rows: `README.md` carries the two endpoints, `#/trips/<id>/preferences`, the
       `typecheck` command and the CI step; `requirement-workspace/registry.md` and

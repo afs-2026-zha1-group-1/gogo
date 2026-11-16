@@ -1,16 +1,15 @@
-# G2 decision — req-019-save-interests（草稿，待 VL 签署）
+# G2 decision — req-019-save-interests（G2 Pass，VL Sammi Ng）
 
-> **状态：草稿（DRAFT）— 不是已记录的决定。**
-> 本文件由实现方（代理）整理成待签核骨架，供具名 VL 复核证据后自行记录
-> **Pass | Fail | Conditional**。`Decision` 字段刻意留空、`Approvers` 未署名、
-> `Timestamp` 空白：按仓库规则，实现方不得代签，也不得用自评代替人工复核。
-> 签署步骤见文末 §签核区。
+> **状态：已记录（RECORDED）。** `Decision` = **Pass**，由 VL **Sammi Ng** 于
+> 2026-11-16 17:19 (+0800) 签署（签署提交 `3b2d42d docs(g2): signed by Sammi Ng`）。
+> 本文件的输入、维度结果、缺陷分级与未闭合项由实现方（代理）整理，代理不代签也不改判；
+> `Timestamp` 取自该签署提交的提交时间（VL 未在签核区内自行填写）。
 
 - **Change id:** `req-019-save-interests`（REQ-019 / US-019 成员兴趣保存）
 - **Gate:** G2 (Verify)
-- **Decision:** `OPEN` — 由 VL 在 **Pass | Fail | Conditional** 中择一（见 §签核区）
-- **Approvers:** VL = *待具名签署*；G3 的 SA 属另一道门禁，不在本记录内
-- **Timestamp:** *签署时填写*
+- **Decision:** **Pass**（VL Sammi Ng，2026-11-16 17:19 (+0800)；签署提交 `3b2d42d`）
+- **Approvers:** VL = **Sammi Ng**（2026-11-16）；G3 的 SA 属另一道门禁，不在本记录内
+- **Timestamp:** 2026-11-16 17:19 (+0800)
 - **Target:** PR #44 `REQ-019: save member interests on main's shadcn baseline`，base `main`，
   head = `feat/travel_preference` 的当前 tip（整理时为 `6828754`；其后两次并入 main：`02fa201`
   并入 US-065 前端 TS 化、`f16d009` 并入 `40381ac`）。本记录定稿时的 head 为 `0e93804`
@@ -28,7 +27,7 @@
 | 验证矩阵 | `docs/feedback/verification-matrix.md` §REQ-019 | 逐行证据，含 remote-CI 机器证据行 |
 | G1 | `openspec/changes/req-019-save-interests/g1-decision.md`（含 "Revision re-review" 段） | IO Emily + SA evelyn.huang 均 Pass（2026-11-16） |
 | Delta Spec | `openspec/changes/req-019-save-interests/specs/preferences/spec.md` | 5 requirements / 31 scenarios |
-| ATDD / 设计 / 任务 | `atdd-design.md`、`design.md`、`tasks.md` | 对齐自检 Pass；任务 41 `[x]` / 4 `[ ]`（45） |
+| ATDD / 设计 / 任务 | `atdd-design.md`、`design.md`、`tasks.md` | 对齐自检 Pass；任务 42 `[x]` / 3 `[ ]`（45） |
 
 ### 引用的 CI run（均为机器读取）
 
@@ -56,9 +55,9 @@
 | Build | **Pass** | 本地 `mvn -B clean test` 203/203（三次 main 合并均未触碰后端）；`node --test tests/lockfile.test.mjs` 2/2；`npm run typecheck`（`tsc --noEmit`）干净；`npm run build` 136 modules / 488.36 kB JS / 38.39 kB CSS |
 | Tests | **Pass** | `PreferenceApiTest` 29/29（红先绿：改中文目录时先 15 失败 + 1 错误）、`MainPlanApiTest` 34/34、其余既有套件同样通过 |
 | Static scan / SAST | Skipped | 本仓库基线无 lint/SAST 任务，改用反向核对与 matrix 行 |
-| Code review | **待 VL** | 本地-验证报告为自评 Pass；人工复核正是本门禁 |
+| Code review | **Pass** | 由 VL Sammi Ng 于 2026-11-16 复核并签署 Pass（§签核区；签署提交 `3b2d42d`） |
 | Evidence (OpenSpec) | **Pass** | V2–V8 Pass；V1 由 30/35 提升为 39/43（6.2 已闭合），余项均属归档泳道 |
-| CI (phase=ci) | **Pass** | E1 全绿，见上表三个 run |
+| CI (phase=ci) | **Pass** | E1 全绿，见上表四个 run |
 | CD (phase=cd) | n/a | 合并前无部署 |
 | **代理的汇总建议** | **可支持 Pass** | 0 CRITICAL；未闭合项均不阻塞合并、只阻塞归档（见 §未闭合项） |
 
@@ -67,8 +66,8 @@
 - **CRITICAL:** 无（0 项）。
 - **WARNING（8 项，逐条现状）：**
   1. `flyway-database-nc-sqlite` 无已发布版本，plan §7 的两模块方案未达成（design TS-11）— **仍开放**，由归档前计划对齐（6.6）或上游发布闭合。
-  2. 远端 CI 未跑 — **已闭合**：run 43824457379 / 43825093537 / 43829662798 双 job 全绿（最新一跑在当前 head `f16d009`）。
-  3. G2/G3 未记录 — **本记录即 G2 待签；G3 另起**。
+  2. 远端 CI 未跑 — **已闭合**：run 43824457379 / 43825093537 / 43829662798 / 43830251839 双 job 全绿（最新一跑在 `0e93804`，其后仅文档提交）。
+  3. G2/G3 未记录 — **G2 已由 VL Sammi Ng 于 2026-11-16 记录 Pass**；G3 另起。
   4. 身份选择器不持久，刷新回落 Alice — **接受（继承行为）**，属 REQ-003/004 脚手架。
   5. 保存成功无 toast — **接受**，delta 只要求选区跟随响应、错误清除。
   6. dev 模式 StrictMode 双请求 — **接受**，服务端幂等（SAVE-2）。
@@ -125,32 +124,26 @@ modules / 488.36 kB JS / 38.39 kB CSS，`npm ci` 装 81 个包。
 `libc` 约束并新增 `frontend/tests/lockfile.test.mjs`（CI 第一步即跑它）。本分支此前
 `npm i --no-save` 的临时补装随之作废，lockfile 依旧归 main 所有、本变更未改。
 
-## §签核区（由 VL 手工填写后提交）
+## §签核区（已由 VL 填写）
 
 ```
 Decision:      [X] Pass        [ ] Fail        [ ] Conditional
 VL name:       Sammi Ng
-Timestamp:     ____-__-__ __:__ (+0800)
+Timestamp:     2026-11-16 17:19 (+0800)   # 取自签署提交 3b2d42d 的提交时间；VL 未自行填写
 ```
 
 - Conditional 必须逐条写出待整改项 + owner（无整改项的 Conditional 无效，不算 Verified）。
-- Pass 的前提是我已实际打开并复核：local-verify 报告、pipeline ci 报告（含 E1 slot）、
+- Pass 的前提是签署人已实际打开并复核：local-verify 报告、pipeline ci 报告（含 E1 slot）、
   `verification-matrix.md` §REQ-019，以及 PR #44 的 check 结果。
 - 若判 Fail：请写明回到 apply 泳道要修的具体项。
 
-**签署并提交的方式**（VL 本人执行；代理不会代签，也不会代推送签名）：
-
-```bash
-git pull origin feat/travel_preference
-# 编辑本文件：填 Decision / VL name / Timestamp，并按需勾选
-git add openspec/changes/req-019-save-interests/g2-decision.md
-git commit -m "g2(req-019): VL <name> records <Pass|Fail|Conditional>"
-git push origin feat/travel_preference
-```
+**签署留痕**：VL 的签署以提交 `3b2d42d docs(g2): signed by Sammi Ng`（2026-11-16 17:19 +0800）
+落在 `feat/travel_preference` 上；代理只把该签署转写进上面的门禁字段（Decision / Approvers /
+Timestamp）与维度表，不修改 Pass 结论，也不补写 VL 未写的整改项。
 
 ## Next
 
-- Pass → 由人/IO 合并 PR #44（代理不合并）→ P5：`/sdd:living-merge` → `/sdd:change-summary`
-  → `/sdd:g3-decision-record`（具名 SA）→ `/sdd:evolve`
+- **G2 Pass 已记录（VL Sammi Ng）** → 合并 PR #44 → P5：`/sdd:living-merge` →
+  `/sdd:change-summary` → `/sdd:g3-decision-record`（具名 SA）→ `/sdd:evolve`
 - Conditional → 按整改项回到 apply 泳道；整改后重新验证并请 VL 复核
 - Fail → 记录具体缺陷，回到 `/sdd:atdd-apply`
