@@ -11,7 +11,7 @@
 | id | topic | choice | rationale | status |
 |----|-------|--------|-----------|--------|
 | C1 | phase | ci | P4 recipe after PR | answered |
-| C2 | target | PR #47 / `US-066-log-in` / run 43826922671 / `f104477` | user authorized PR + CI | answered |
+| C2 | target | PR #47 / `US-066-log-in` / run 43828244877 / `f104477` | user authorized PR + CI | answered |
 
 ## Probe
 
@@ -25,7 +25,7 @@
 
 - data_source: API
 - phases_covered: ci
-- upstream_urls: https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43826922671
+- upstream_urls: https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43828244877
 
 ## Report
 

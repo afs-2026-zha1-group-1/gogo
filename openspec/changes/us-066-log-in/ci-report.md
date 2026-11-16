@@ -6,14 +6,14 @@
 **Data source:** API (GitHub Actions via `gh` at `%LOCALAPPDATA%\Programs\gh\bin\gh.exe`)
 **Change id:** us-066-log-in
 **Target:** PR #47 / branch `US-066-log-in`
-**Pipeline URL:** https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43826922671
-**Commit:** f10447744af0f57d96a0495911f2858549e3fd08
+**Pipeline URL:** https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43828244877
+**Commit:** 7c5b1dd5cdc4cb514b3655ab450ec98122a31e9e
 
 ## Summary
 
 | Phase | Status | Conclusion | Upstream URL | Notes |
 |-------|--------|------------|--------------|-------|
-| ci | Pass | success | https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43826922671 | both CI jobs green |
+| ci | Pass | success | https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43828244877 | both CI jobs green |
 | cd | n/a | not run | — | deploy is a later human-gated step |
 | **Overall** | Pass | success | — | CI phase only |
 
@@ -29,8 +29,8 @@
 
 | Phase | Job/Stage | Status | Duration | URL | Failure reason |
 |-------|-----------|--------|----------|-----|----------------|
-| ci | Backend tests (`mvn -B test`) | success | 44 s (07:52:57–07:53:41Z) | https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43826922671/job/133162851397 | — |
-| ci | Frontend build (`npm ci && npm run build`) | success | 16 s (07:52:57–07:53:13Z) | https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43826922671/job/133162850997 | — |
+| ci | Backend tests (`mvn -B test`) | success | 41 s (08:03:40–08:04:21Z) | https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43828244877/job/133167069095 | — |
+| ci | Frontend build (`npm ci && npm run build`) | success | 22 s (08:03:39–08:04:01Z) | https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43828244877/job/133167067556 | — |
 
 ## 失败详情
 
@@ -56,7 +56,7 @@ None.
 ## Artifacts
 
 - PR: https://github.com/afs-2026-zha1-group-1/gogo/pull/47
-- CI run: https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43826922671
+- CI run: https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43828244877
 - Local verify: `docs/ai4se-plugins/20261116-154649-local-verify-report.md`
 
 ## Human confirmation
