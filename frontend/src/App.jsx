@@ -4,11 +4,17 @@ import Home from './pages/Home.jsx'
 import CreateTrip from './pages/CreateTrip.jsx'
 import TripDetails from './pages/TripDetails.jsx'
 import Join from './pages/Join.jsx'
+import MainPlanInputs from './pages/MainPlanInputs.tsx'
+import MainPlan from './pages/MainPlan.tsx'
 
 function parseRoute(hash) {
   const path = hash.replace(/^#/, '') || '/'
   const joinMatch = path.match(/^\/join\/([^/]+)$/)
   if (joinMatch) return { page: 'join', token: decodeURIComponent(joinMatch[1]) }
+  const inputsMatch = path.match(/^\/trips\/(\d+)\/main-plan\/inputs$/)
+  if (inputsMatch) return { page: 'main-plan-inputs', tripId: Number(inputsMatch[1]) }
+  const planMatch = path.match(/^\/trips\/(\d+)\/main-plan$/)
+  if (planMatch) return { page: 'main-plan', tripId: Number(planMatch[1]) }
   const tripMatch = path.match(/^\/trips\/(\d+)$/)
   if (tripMatch) return { page: 'details', tripId: Number(tripMatch[1]) }
   if (path === '/create') return { page: 'create' }
@@ -44,6 +50,8 @@ export default function App() {
       {route.page === 'create' && <CreateTrip userId={userId} />}
       {route.page === 'details' && <TripDetails userId={userId} tripId={route.tripId} />}
       {route.page === 'join' && <Join token={route.token} userId={userId} userName={user?.name} />}
+      {route.page === 'main-plan-inputs' && <MainPlanInputs userId={userId} tripId={route.tripId} />}
+      {route.page === 'main-plan' && <MainPlan userId={userId} tripId={route.tripId} />}
     </div>
   )
 }

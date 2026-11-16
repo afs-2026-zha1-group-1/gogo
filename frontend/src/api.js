@@ -27,3 +27,21 @@ export async function api(path, { userId, method = 'GET', body } = {}) {
   }
   return { status: response.status, ok: response.ok, data }
 }
+
+// Main itinerary (US-031-037): the four contractual calls, same fetch helper
+// and X-User-Id identity as the rest of the app.
+export function getMainPlanInputs(tripId, userId) {
+  return api(`/api/trips/${tripId}/main-plan/inputs`, { userId })
+}
+
+export function generateMainPlan(tripId, userId) {
+  return api(`/api/trips/${tripId}/main-plan`, { userId, method: 'POST' })
+}
+
+export function getMainPlan(tripId, userId) {
+  return api(`/api/trips/${tripId}/main-plan`, { userId })
+}
+
+export function confirmMainPlan(tripId, userId) {
+  return api(`/api/trips/${tripId}/main-plan/confirm`, { userId, method: 'POST' })
+}

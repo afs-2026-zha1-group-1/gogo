@@ -21,92 +21,134 @@
 
 ## 1. Red acceptance checks (owner: Dev; before any production code)
 
-- [ ] 1.1 `V5__create_main_plan.sql` first: `main_plan_draft` + `main_plan_stop`
+- [x] 1.1 `V5__create_main_plan.sql` first: `main_plan_draft` + `main_plan_stop`
       + `trip_member.ready` / `preference_revision` + `member_preference`
       stand-in + readiness/preference seeds (idempotent `INSERT OR IGNORE`,
       design D1); `mvn test` confirms existing suites stay green on V5
-- [ ] 1.2 Author `MainPlanApiTest` red: M1–M14, V1–V7, identity/trip negatives
+- [x] 1.2 Author `MainPlanApiTest` red: M1–M14, V1–V7, identity/trip negatives
       (M-N/V-N) per fixtures §US-031-037; own in-memory SQLite, Flyway V1–V5,
       pool size 1, `@BeforeEach` reset (design D12)
-- [ ] 1.3 Add the API reverse checks (ATDD §5): preference write paths absent +
+- [x] 1.3 Add the API reverse checks (ATDD §5): preference write paths absent +
       `member_preference` rows unchanged, split routes absent, soft budget does
       not block, no auto-confirm, invitation suite untouched
-- [ ] 1.4 Write the E2E checklist (S9, S10, four mandatory states) into
+- [x] 1.4 Write the E2E checklist (S9, S10, four mandatory states) into
       `docs/feedback/e2e-us-031-037.md` as numbered browser steps with expected
       observations (ATDD §1/§2)
-- [ ] 1.5 Run `mvn test`: the new class fails for missing routes (red);
-      Greeting/Trip/Invitation suites still pass
+- [x] 1.5 Run `mvn test`: the new class fails for missing routes (red);
+      Greeting/Trip/Invitation suites still pass — observed 2026-11-15:
+      MainPlanApiTest 34 tests / 32 failures (missing routes → 404; the two
+      absent-route reverse checks pass by design), Greeting 3/3, Trip 13/13,
+      Invitation 15/15 green
 
 ## 2. Provider port and repository (owner: Dev)
 
-- [ ] 2.1 `MainPlanProvider` port + `FakeMainPlanProvider` `@Component` with the
+- [x] 2.1 `MainPlanProvider` port + `FakeMainPlanProvider` `@Component` with the
       four fixture stops, legs 30/30/15, cost 5000 (design D3); unit checks
       deferred to apply-time TDD (ATDD UT-1/UT-2)
-- [ ] 2.2 `MainPlanRepository`: draft/stop insert + version supersession, draft
+- [x] 2.2 `MainPlanRepository`: draft/stop insert + version supersession, draft
       selection (confirmed > current), readiness/revision reads, preference
       kind-row reads (read-only), inputs aggregation queries (design D4/D6/D7)
-- [ ] 2.3 Location completion component: preferences first, random fallback,
+- [x] 2.3 Location completion component: preferences first, random fallback,
       supplied preserved (design D5); apply-time unit TDD
 
 ## 3. Generation and reads (owner: Dev)
 
-- [ ] 3.1 `POST /api/trips/{id}/main-plan`: gate order identity → trip →
+- [x] 3.1 `POST /api/trips/{id}/main-plan`: gate order identity → trip →
       membership → organizer → confirmed (409 `ALREADY_CONFIRMED`, G6) →
       readiness (409 `MEMBERS_NOT_READY`, G2); completion + provider +
       versioned persist in one transaction; 201 plan projection (design D4);
       reused codes `USER_REQUIRED` / `TRIP_NOT_FOUND` / `NOT_A_MEMBER` /
       `NOT_ORGANIZER` per D2/D10
-- [ ] 3.2 `GET /api/trips/{id}/main-plan`: member read; confirmed-row selection;
+- [x] 3.2 `GET /api/trips/{id}/main-plan`: member read; confirmed-row selection;
       computed `stale` (unconfirmed only, confirmed frozen); 404 `NO_DRAFT`
       (design D6)
-- [ ] 3.3 `GET /api/trips/{id}/main-plan/inputs`: member-readable before any
+- [x] 3.3 `GET /api/trips/{id}/main-plan/inputs`: member-readable before any
       draft; members/readyCount/commonInterests/mustDo/budgets/rules (design D7)
-- [ ] 3.4 `MainPlanApiException` + `MainPlanErrorAdvice` with detail fields for
+- [x] 3.4 `MainPlanApiException` + `MainPlanErrorAdvice` with detail fields for
       `MEMBERS_NOT_READY` / `VALIDATION_FAILED` (design D10)
-- [ ] 3.5 Run `mvn test`: M1–M11, M14, I1–I3 and identity negatives green
+- [x] 3.5 Run `mvn test`: M1–M11, M14, I1–I3 and identity negatives green —
+      observed 2026-11-15: M1–M11 + I1–I3 green; M12–M14 and the V matrix
+      stay red until the confirm endpoint lands in 4.3 (they exercise it);
+      UT suites FakeMainPlanProviderTest 3/3 + LocationCompletionTest 6/6 green
 
 ## 4. Validation and confirmation (owner: Dev)
 
-- [ ] 4.1 Schedule validator: five error types `OUT_OF_ORDER` / `OVERLAP` /
+- [x] 4.1 Schedule validator: five error types `OUT_OF_ORDER` / `OVERLAP` /
       `MISSING_LEG` / `TRAVEL_EXCEEDS_GAP` (equality passes, offending seq =
       leg-carrying stop) / `OUT_OF_DAY` (design D9); apply-time unit TDD
-      red-green
-- [ ] 4.2 Budget overrun computation: hard budget only, null = no limit,
-      `overrunCents` per member (design D8); apply-time unit TDD
-- [ ] 4.3 `POST /api/trips/{id}/main-plan/confirm`: gate order identity → trip →
+      red-green — observed 2026-11-15: ScheduleValidatorTest 11 tests written
+      first, compile-red, then green (equality + day-window boundaries covered)
+- [x] 4.2 Budget overrun computation: hard budget only, null = no limit,
+      `overrunCents` per member (design D8); apply-time unit TDD — observed
+      2026-11-15: BudgetOverrunsTest 5 tests compile-red then green
+- [x] 4.3 `POST /api/trips/{id}/main-plan/confirm`: gate order identity → trip →
       organizer → no-draft (404 `NO_DRAFT`, V6) → already-confirmed (409
       `ALREADY_CONFIRMED`, V7) → stale (409 `STALE_DRAFT`, C4) → validation
       (422 `VALIDATION_FAILED`, both lists); success flips status + flag in one
-      transaction; 200 same projection (design D8)
-- [ ] 4.4 Run `mvn test`: full M/V matrix green incl. C1→J4 closure (accept
-      403 `JOINING_CLOSED`); all four suites pass (`mvn -B test`)
+      transaction; 200 same projection (design D8) — membership gate added
+      before organizer per spec (Eve confirm → `NOT_A_MEMBER`); response
+      reuses the read projection
+- [x] 4.4 Run `mvn test`: full M/V matrix green incl. C1→J4 closure (accept
+      403 `JOINING_CLOSED`); all four suites pass (`mvn -B test`) — observed
+      2026-11-15: 90/90 green (MainPlanApiTest 34/34, TripApiTest 13,
+      InvitationApiTest 15, GreetingApiTest 3, UT 25), BUILD SUCCESS
 
 ## 5. Frontend (owner: Dev)
 
-- [ ] 5.1 Extend `parseRoute` + `api.js` with the two routes and four calls;
-      no new dependency (design D11)
-- [ ] 5.2 Screen 9 (`#/trips/<id>/main-plan/inputs`): ready count, member names,
+- [x] 5.1 Extend `parseRoute` + `api.js` with the two routes and four calls;
+      no new dependency (design D11) — observed 2026-11-15: inputs/plan routes
+      matched before the generic trip route; four named calls in api.js
+- [x] 5.2 Screen 9 (`#/trips/<id>/main-plan/inputs`): ready count, member names,
       interest chips, must-do summary, budget lines, rules list; organizer-only
-      generate action; loading/empty/error/permission states
-- [ ] 5.3 Screen 10 (`#/trips/<id>/main-plan`): timeline, version badge, stale
+      generate action; loading/empty/error/permission states — observed
+      2026-11-15: MainPlanInputs.jsx; generate navigates to Screen 10;
+      MEMBERS_NOT_READY names pending members
+- [x] 5.3 Screen 10 (`#/trips/<id>/main-plan`): timeline, version badge, stale
       banner + regenerate, confirm with blocked-error rendering (schedule
       errors, overrun amounts, stale message), confirmed state + joining-closed
-      notice; four mandatory states
-- [ ] 5.4 `npm ci && npm run build` passes
+      notice; four mandatory states — observed 2026-11-15: MainPlan.jsx; 422
+      renders both lists, 409 STALE_DRAFT refreshes the banner, confirmed
+      state hides all write actions
+- [x] 5.4 `npm ci && npm run build` passes — observed 2026-11-15: npm ci 0
+      vulnerabilities; vite build 53 modules, built in 251ms
+- [x] 5.5 TypeScript migration of this story's two screens, per user
+      instruction 2026-11-16 aligned with kanban US-065 (issue #35) and
+      tech-stack-plan (React + TypeScript + Vite); scope limited to the two
+      new pages — observed 2026-11-16: MainPlan.tsx / MainPlanInputs.tsx
+      replace the .jsx files; minimal infra added (typescript + @types/react
+      + @types/react-dom devDeps, tsconfig.json strict + allowJs, `typecheck`
+      script, src/types/mainPlan.ts wire types aligned with backend records,
+      src/api.d.ts typed surface for the unchanged api.js); App.jsx import
+      paths updated only; no `any`, no `@ts-ignore`; `tsc --noEmit` zero
+      errors; vite build 54 modules green; browser regression 8/8 (empty →
+      inputs → generate → confirm → member view → ALREADY_CONFIRMED →
+      unknown trip → greeting), screenshots in frontend/logs/regression-*;
+      DB reset to seed state afterwards. Remaining JS files stay for US-065
+      itself (its "current state" describes remote main, not this branch)
 
 ## 6. Runtime acceptance and E2E (owner: Dev; evidence in local-verify report)
 
-- [ ] 6.1 Start backend (8080) + frontend (5173); verify by port owner and
-      endpoint response, not logs alone
-- [ ] 6.2 Execute `docs/feedback/e2e-us-031-037.md`: S9 summary + roles, S10
+- [x] 6.1 Start backend (8080) + frontend (5173); verify by port owner and
+      endpoint response, not logs alone — observed 2026-11-15: 8080 owned by
+      java PID 28576, 5173 by node PID 42164; inputs endpoint 200; backend
+      restarted from the same jar after ST-3 and re-verified by endpoint
+- [x] 6.2 Execute `docs/feedback/e2e-us-031-037.md`: S9 summary + roles, S10
       draft → blocked confirm → confirmed flow, four states on both surfaces;
       test-only flips for pending/overrun/stale/null-location browser cases
-      (ATDD §4)
-- [ ] 6.3 Re-run the API matrix against the running backend with curl
-      (M1–M14, V1–V7, negatives, reverses) incl. the J4 accept closure
-- [ ] 6.4 Write `docs/feedback/verification-us-031-037.md` and the P4
+      (ATDD §4) — observed 2026-11-15: 8 browser rounds, all rows observed
+      (ST-1 Partial: loading skeleton not capturable locally); 25 screenshots
+      in `frontend/logs/`; results in
+      `docs/feedback/verification-us-031-037.md`
+- [x] 6.3 Re-run the API matrix against the running backend with curl
+      (M1–M14, V1–V7, negatives, reverses) incl. the J4 accept closure —
+      observed 2026-11-15: 65/65 PASS,
+      `docs/feedback/us-031-037-matrix-run.log`
+- [x] 6.4 Write `docs/feedback/verification-us-031-037.md` and the P4
       local-verify report; mark Partial where evidence is missing, never Pass
-      by assertion
+      by assertion — done 2026-11-16: verification report authored (22 E2E
+      rows observed, ST-1 Partial); local-verify persisted at
+      `docs/ai4se-plugins/20261116-004329-local-verify-report.md`
+      (Overall Partial: E1 local-only, E3 pending; no CRITICAL, no Waiver)
 
 ## 7. CI and gates (owner: Dev drafts; IO/SA/VL decide)
 
@@ -115,7 +157,10 @@
 - [ ] 7.2 G2 decision record by named VL; then P5 change summary, G3, archive
       via `/sdd:living-merge` — merge order REQ-019 V4 first; execute F1
       write-sync alignment before/at that merge (g1-decision.md)
-- [ ] 7.3 Update `README.md` run instructions and the registry/handoff rows
+- [x] 7.3 Update `README.md` run instructions and the registry/handoff rows —
+      observed 2026-11-16: README US-031-037 paragraph + V5 migration note +
+      test-suite list; registry status/notes and handoff note record P4
+      locally verified, push/PR + G2 pending authorization
 
 ## 8. Stage artifacts (owner: Dev)
 
