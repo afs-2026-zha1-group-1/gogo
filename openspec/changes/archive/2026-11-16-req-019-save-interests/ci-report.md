@@ -145,3 +145,25 @@ of `Scanner.tsx` and `scan.ts`; the >500 kB chunk warning predates this change),
 `openspec validate req-019-save-interests --strict` → `is valid`. No new remote run is claimed here:
 this merge only re-bases the branch on main, and the change's CI evidence above stays attached to the
 head that was actually merged (`9f24fa9`, runs 43842757828 / 43842769894).
+
+## Update — PR #50 lands this record (2026-11-16, after PR #44)
+
+PR #44 carried the feature; the G3 record, the strict-validation fix and the sixth merge were
+committed after that merge, so they needed a second PR. **PR #50**
+(`docs(req-019): G3 Pass, strict-validation fix and a sixth sync with main`,
+`feat/travel_preference` → `main`, head `b3c5b92`, base `81af3d1`) carried three commits and five
+files — `g3-decision.md` (new), `specs/preferences/spec.md`, `tasks.md`, this report and
+`docs/feedback/verification-matrix.md` (+174 / −110, documentation only — no code, migration or
+test line).
+
+| Phase | Event | Run | Jobs | Evidence |
+|---|---|---|---|---|
+| ci | `pull_request` (PR #50) | 43876766780 | `Backend tests` success, `Frontend build` success | head `b3c5b92`; the frontend job ran `Check lockfile portability` 2/2 → `npm ci` → `typecheck` → `build` |
+| ci | `push` | 43874225529 | both success | same head, created before the PR was opened |
+| cd | `push` on `main` | 43877290310 | success | merge commit `5183291`, created 13:36Z |
+
+`pulls/50` reported `mergeable=true`, `mergeable_state=clean` with 3 commits / 5 files and merged
+at 2026-11-16T13:35:47Z as **`5183291`**. After the merge `origin/main` moved on again (US-072's
+archive plus two `lumi_dev` syncs reached `db45609`), so the archive that follows is cut from
+`db45609`; its result is recorded in `g3-decision.md` rather than here, because the runs above are
+the last remote evidence this change itself produced.

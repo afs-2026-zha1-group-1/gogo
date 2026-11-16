@@ -410,3 +410,39 @@ US-013 在 US-066 会话认证基线上新增成员名册读取；不新增迁�
 No other section of this plan is modified by US-067. Sections §5 (data
 model) and §6 (API) remain accurate because the scanner introduces
 neither tables nor endpoints.
+
+## 17. REQ-019 成员兴趣（2026-11-16，归档对齐）
+
+REQ-019 在 US-066 会话认证基线上落地 `preferences` 能力的兴趣段：一张新表、两个端点。
+
+- **API 新增**：`GET` / `PUT /api/trips/{tripId}/preferences`。身份取 session principal
+  （`AccountPrincipal`；US-066 已退役 `X-User-Id`，匿名 401 `USER_REQUIRED`），仅本行程
+  成员可读写（非成员 403 `NOT_A_MEMBER`，未知行程 404 `TRIP_NOT_FOUND`）。
+  - `PUT` 接受 `{"interests": string[]}`，整集替换并按首次出现顺序去重；写入前完成
+    校验：清单外元素 400 `INTEREST_NOT_ALLOWED`，畸形 body 400 `INVALID_REQUEST`
+    （`StrictStringListDeserializer` 拦数字/`null` 元素）；成功 200 返回去重后的集合，
+    `[]` 清空兴趣但保留记录。
+  - `GET` 返回 `{members:[{userId, interests:[label…]}]}`，按 `userId` 升序，每个对象
+    只有这两个字段；从未保存过的成员为 `interests: []`；只读。
+- **兴趣清单**：`InterestCatalogue` 十个中文标签（`水上运动`/`潜水`/`摄影`/`美食`/
+  `咖啡`/`历史人文`/`手作`/`自然风景`/`冒险`/`慢游`）↔ 十个 code（`water`/`diving`/
+  `photo`/`food`/`coffee`/`heritage`/`craft`/`nature`/`adventure`/`slow`）；线上传标签、
+  库里存 code，字面匹配（不做大小写折叠、去空白、别名或子串）。清单是代码常量，
+  不依赖 `tag` 表或 `/api/tags`。
+- **数据**：`V7__create_member_preference.sql`（两次改号：`main` 先取 `V4` 给 splits、
+  再取 `V6` 给账号凭证）建 `member_preference(id, trip_id→trip, user_id→app_user,
+  kind, payload TEXT JSON, updated_at TEXT)` + `UNIQUE(trip_id, user_id, kind)`；
+  `V5__create_main_plan.sql` 已以 `IF NOT EXISTS` 预先声明该表，故本迁移在原基线上是 no-op。
+  与 §5 的差异：列名是 `user_id` 而非 `member_id`，去重键是唯一约束
+  `UNIQUE(trip_id,user_id,kind)` 而非普通索引。
+- **前端**：`frontend/src/pages/PreferencesPage.tsx`（`#/trips/{tripId}/preferences`，行程
+  详情页的「旅行偏好」卡片给入口），只实现 `screen-08-preferences.png` 的兴趣段；选中态
+  来自 `GET` 中与当前身份匹配的条目，保存是单次 `PUT` 并采用响应，失败回滚并显示服务端
+  `message`。沿用 main 的 `api()` + `useAuth()` + `lib/csrf`，无新依赖。
+- **CI**：前端 job 在 `npm ci` 与 `npm run build` 之间增加 `npm run typecheck`。
+- **已登记偏差**：该 change 的 delta spec 文本沿用 G1 原文的 `X-User-Id` 口径，实现在合并后
+  改取会话（两条反向用例钉住匿名 401 与头/会话不一致）；`flyway-database-nc-sqlite` 在受管
+  Flyway 版本下无发布物，维持 `flyway-core` 单模块（TS-2 / TS-11）。
+
+§3 技术栈表与 §7 关键实现约定无需改动；§5/§6 中计划期的 `member_id`、普通索引与
+`X-Member-Id` 口径以本节为准。本 change 未修改其他数据模型或其他 API。
