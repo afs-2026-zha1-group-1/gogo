@@ -94,105 +94,283 @@ Effort: small — 3 backend classes, 1 migration, 1 test, 5 frontend files,
 
 ---
 
-# Impact brief — REQ-004~007（B 拆分主链，合并澄清）
+# Impact brief — REQ-003 (2026-11-14)
 
-- Date: 2026-11-15
-- Workdir: `requirement-workspace/`
-- Mode: embedded at the end of `/sdd:pre-spec-req`（blocking OQ not-resolved = 0，DoR BLOCKER = 0，见 `analysis/req-004-007-dor.md`）
-- Change id（建议）: `req-004-split-planning-chain`（用户裁决 OQ-4：一个 B 链 change 承载四个 delta）
-- Solution direction: **add**（新能力 `splits`，现有栈上增量）
+Sections 1–8 above describe the REQ-001 baseline and are not authoritative for
+this change. This section is self-contained.
 
-## 1. Requirement set
+## 9. Requirement set
 
-| id | Covers | Path |
-|---|---|---|
-| REQ-004 | US-038（issue #17）拆分草稿启动 | `requirement-workspace/requirements/REQ-004.md` |
-| REQ-005 | US-039（issue #18）拆分边界选择 | `requirement-workspace/requirements/REQ-005.md` |
-| REQ-006 | US-042（issue #19）分组路线生成 | `requirement-workspace/requirements/REQ-006.md` |
-| REQ-007 | US-043（issue #20）会合时间校验 | `requirement-workspace/requirements/REQ-007.md` |
+| id | Path |
+|---|---|
+| REQ-003 | `requirement-workspace/requirements/REQ-003.md` |
 
-Supporting: `deep-dive.md` B 链段（⑨–⑫ 权威数据契约）、
-`intents/2026-11-15-req-004-007-split-planning.md`、
-`analysis/req-004-007-dor.md`、`acceptance-test-fixtures.md` B 链段、
-`docs/knowledge/architecture/tech-stack-plan.md`（4 表精简版权威）。
+Supporting: `requirement-workspace/deep-dive.md` §REQ-003,
+`requirement-workspace/intents/2026-11-14-req-003.md`,
+`requirement-workspace/analysis/req-003-dor.md`,
+`requirement-workspace/acceptance-test-fixtures.md`.
 
-## 2. As-is asset inventory（证据路径）
+## 10. As-is asset inventory (evidence paths)
 
 | Asset | Evidence | State |
 |---|---|---|
-| 知识库 | `docs/knowledge/_INDEX.md`、`docs/knowledge/architecture/tech-stack-plan.md` | P0 已权威化：4 表（trip/trip_member/member_preference/plan_node）+ Java 21/Spring Boot 3.5.x/JdbcClient 无 ORM/SQLite 三铁律/Flyway 独占；Rules 树已重建（`docs/knowledge/rules/`） |
-| Living Spec | `openspec/specs/greeting/spec.md` | 仅 `greeting` 一个能力，且仍是 REQ-001 口径（text/plain `Hello World`）；REQ-002 的 JSON delta 尚未 merge 入 Living |
-| Post-archive 资产 | `openspec/changes/archive/2026-11-13-req-001-hello-world/`（11 文件齐全）；`archive/2026-11-13-req-002-greeting-json-sqlite/specs/greeting/`（空目录骨架） | req-001 完整归档；req-002 归档不完整（gap，见 R2） |
-| 活跃 change | `openspec/changes/req-002-greeting-json-sqlite/`（全套产物含 g3-decision）；`openspec/changes/req-004-split-draft-start/`（仅 `.openspec.yaml`，untracked） | req-002 G3 已签但未归档/未 merge；req-004-split-draft-start 是前次会话单 story 拆分的残留 stub（用户裁决 OQ-4 后作废，见 R3） |
-| 后端代码 | `backend/src/main/java/com/gogo/hello/`（4 类）、`resources/application.yml`、`db/migration/V1__create_greeting.sql` | REQ-002 实现已在树：JSON greeting、SQLite 文件库 `./data/gogo.db`、Flyway V1；无 trips/splits 代码 |
-| 前端代码 | `frontend/package.json`、`src/App.jsx` | React 19 + Vite 8 纯 JSX；无 TS/AntD/TanStack Query/Router；仅 greeting 页 |
-| CI | `.github/workflows/ci.yml` | backend `mvn -B test` + frontend `npm ci && npm run build`，已提交 |
-| REQ-003 遗留 | stash（未恢复，用户 P0 裁决）；`deep-dive.md` §REQ-003；`acceptance-test-fixtures.req003-draft.md`（拆出的草稿文件，untracked 不提交） | 草稿口径（X-User-Id、5+ 表）已被用户裁决作废；B 链不依赖其实现（夹具自包含，OQ-1） |
+| Backend | `backend/src/main/java/com/gogo/hello/` — `GreetingController`, `GreetingRepository`, `GreetingResponse`, `HelloApplication` | One capability, `JdbcTemplate`, no ORM. No trip code exists |
+| Migrations | `backend/src/main/resources/db/migration/V1__create_greeting.sql` | One migration; next free version is `V2` |
+| Config | `backend/src/main/resources/application.yml` | SQLite at `./data/gogo.db`, Flyway enabled |
+| Backend tests | `backend/src/test/java/com/gogo/hello/GreetingApiTest.java` | One MockMvc acceptance test to model the new tests on |
+| Frontend | `frontend/src/App.jsx`, `main.jsx` | One screen, no router, no component library, plain CSS absent |
+| Frontend deps | `frontend/package.json` | React 19, Vite 8 only |
+| CI | `.github/workflows/ci.yml` | Backend `mvn -B test`, frontend `npm ci && npm run build` |
+| Living Spec | `openspec/specs/greeting/spec.md` | `trips` does not exist |
+| Fixtures | — | `acceptance-test-fixtures.md` did not exist; authored in this change |
 
-Baseline classification: brownfield-on-greenfield —— `greeting` 能力已落地，
-`splits` 为全新能力；权威树 `openspec/specs/` 存在且唯一，不引入竞争性 spec 根。
+## 11. As-is → proposed delta
 
-## 3. As-is → proposed delta
-
-| Touched asset | As-is（证据） | Proposed delta |
+| Touched asset | As-is | Proposed delta |
 |---|---|---|
-| `openspec/specs/` | Greeting only | New splits capability on archive: five requirements, four business operations plus shared Split draft detail read |
-| Backend | Greeting only | Five endpoints: draft POST and member-only GET, boundaries PUT, generate POST, check-timing POST; `{data,error}` envelope, `X-Member-Id` guards; in-process replaceable candidate provider |
-| 数据库 schema | 仅 V1 greeting 表 | V2 迁移：建 4 表（trip/trip_member/member_preference/plan_node）+ `trip.split_draft` 可空 TEXT 列（唯一 schema 扩展，用户裁决 OQ-N2 严格 4 表）+ 自包含种子（行程/5 成员/主线 v1 两 stop，OQ-1）；SQLite 三铁律（池=1、WAL、busy_timeout=5000、foreign_keys=on） |
-| 前端应用 | React 19 纯 JSX，仅 greeting 页 | 增量引入 TS + AntD 5 + TanStack Query v5 + React Router 7（OQ-N3）；新增 Screen 11~14 对应页面；greeting 页保持 JSX（vite 混编） |
-| `openspec/changes/req-004-split-draft-start/` | 仅 `.openspec.yaml` 残留 stub | proposal 阶段移除 stub，改建 `req-004-split-planning-chain`（OQ-4） |
-| Living Spec `greeting` | REQ-001 口径 | Checked, no impact —— B 链不触碰 greeting；req-002 未 merge 的漂移记为 R2，不在本 change 处置 |
-| `.github/workflows/ci.yml` | mvn test + npm ci/build | Checked, no impact anticipated —— 命令不变（vite build 原生支持 TS 混编）；新依赖入 lockfile 后 P4 验证 |
-| `docs/knowledge/**` | tech-stack-plan 权威 + Rules 已重建 | Checked, no impact at P1 —— 归档时按 living-merge 更新 KB（P5） |
-| REQ-003 遗留草稿 | stash + deep-dive §REQ-003 + `acceptance-test-fixtures.req003-draft.md` | 用户裁决保留不提交、维持现状（OQ-N1 deferred）；B 链按 tech-stack-plan 独立成立 |
+| `openspec/specs/` | Only `greeting` | New capability `trips` created at archive time from this change's delta spec |
+| Migrations | `V1` only | `V2__create_trip.sql` creating `app_user`, `trip`, `trip_member`, seeding five users and the fixture trip with four members |
+| Backend code | `com.gogo.hello` only | New `com.gogo.trip` package: controller, repository, request/response records, error handling for the six `code` values |
+| Backend tests | `GreetingApiTest` | New `TripApiTest` covering C1–C5-N and R1–R3-N |
+| Frontend | Single greeting screen | Create screen and details screen, a shell that reaches both, and the required loading/error/denied states |
+| Frontend deps | React, Vite | Possibly one routing dependency, decided at P3 (OQ-4); otherwise no new dependency |
+| CI | Two jobs | Unchanged |
+| Config | SQLite, Flyway | Unchanged |
+| Docs | `README.md`, `docs/feedback/verification-*.md` | Run instructions and verification entries for the two endpoints |
 
-## 4. Blast radius
+## 12. Blast radius
 
-- 后端运行时：同一 Spring Boot 进程（8080）新增 splits 端点族；SQLite 单写者
-  （池=1），草稿并发用条件更新（影响行数 0 → 409 SPLIT_DRAFT_CONFLICT），
-  成对路线单事务原子写入。无外部服务依赖（候选/时长全部夹具供给）。
-- 前端运行时：同一 Vite dev server（5173，`/api` 代理 8080）；新增路由与
-  AntD/Query 依赖 bundle；greeting 页行为不变。
-- 数据运行时：`./data/gogo.db` 由 V2 迁移扩展；既有 greeting 表与种子不受影响。
-- 身份边界：MVP 邀请码+昵称、`X-Member-Id` 头不校验签名（用户裁决 OQ-2），
-  越权防护 = 成员关系查询（NOT_A_MEMBER 403 / MEMBER_REQUIRED 401）。
+- Runtime: same backend port 8080, same SQLite file, one new migration at startup.
+- Data: three new tables and five seeded users. No existing table is altered, so
+  the `greeting` capability is unaffected.
+- API: two new paths. No existing path changes.
+- CI: unchanged, but a new test class runs in the existing `mvn -B test` job.
+- Local verification needs two concurrent identities (`X-User-Id: 2` and `: 5`)
+  against the same running backend — no extra process required.
 
-## 5. Artifact impact
+## 13. Artifact impact
 
-- Specs: `openspec/changes/req-004-split-planning-chain/specs/splits/spec.md`
-  (five ADDED requirements / 34 scenarios, current P2 review package).
-- Tests planned: start/boundaries/generation/timing/detail requests in fixtures;
-  frontend build; timing calculator zero database I/O assertion after entry guard.
-  Entry guards may read identity/trip/membership, never saved routes for calculation.
-- Docs: 本 workdir（四 REQ/deep-dive/DoR/意图/夹具/registry 已就位）、
-  `docs/ai4se-plugins/` 检查点与质量报告。
-- KB entries: P1 无新增；P5 归档时更新。
+- Specs: `openspec/changes/req-003-trip-create-and-view/specs/trips/spec.md` (P2).
+- Tests: `TripApiTest` (backend); frontend verified by build plus browser checks.
+- Docs: this workdir, `docs/ai4se-plugins/` stage reports, `README.md`.
+- KB: not configured; `scripts/kb-lint.sh` remains a documented `SKIP`.
 
-## 6. Dual-track notes
-
-OpenSpec track only。四个 story（US-038/039/042/043）已是需求条目粒度且用户
-裁决合并为一个 B 链 change（OQ-4），`/sdd:story-split` Skipped，理由：
-不重复拆敏捷 backlog，链内依赖以 REQ 顺序表达（004→005→006→007）。
-
-## 7. Risks & blockers
+## 14. Risks & blockers
 
 | id | Risk | Severity | Status |
 |---|---|---|---|
-| R1 | REQ-003 草稿口径（X-User-Id/多表）与 B 链（X-Member-Id/严格 4 表）分叉，未来 US-037 对齐可能返工 | non-blocking | 用户裁决维持现状（OQ-N1 deferred，owner IO/SA）；已用 V2 起编号 + 独立 JSON 文档缓解 |
-| R2 | req-002 G3 已签但未归档、Living Spec greeting 仍是旧口径 | harness debt, non-blocking | B 链不依赖 greeting；记录备查，归档处置不在本 change 范围 |
-| R3 | `req-004-split-draft-start` 残留 stub 与新 change 命名冲突 | non-blocking | **resolved**：proposal 阶段已删 stub 文件（仅含 `.openspec.yaml`，无产物损失；余空目录壳 untracked 不入 git） |
-| R4 | SQLite 单写者下草稿并发/成对原子性实现不当 → 脏草稿或半对路线 | design risk | 契约已定（条件更新 + 单事务整对回滚 + draft_version 递增）；P3 设计、P4 用例验证 |
-| R5 | 前端 JSX/TS 混编 + 新依赖 lockfile 在 CI 的安装/构建 | operational | P4 本地 `npm ci && npm run build` + CI 观察验证 |
-| R6 | 夹具文件混合（REQ-003 草稿段 + B 链段同文件）与「保留不提交」裁决的提交边界 | process | **resolved**（用户 2026-11-15 裁决拆成两个文件）：B 链段留 `acceptance-test-fixtures.md` 随 P1 提交；草稿段拆至 `acceptance-test-fixtures.req003-draft.md`（untracked 不提交） |
+| R6 | `X-User-Id` is trusted without verification, so any caller can impersonate any user | accepted for a scaffold | Recorded in REQ-003 §Actors and must not be presented as a security control. Owner Dev/SA |
+| R7 | `403` for a non-member reveals that the trip id exists | accepted | OQ-2 trade-off; wording follows the AC. Owner SA |
+| R8 | The UI screenshots are unavailable (`ui-design-reference/` untracked) | advisory | Layout is a design judgement from AC text. Owner IO/BA |
+| R9 | The React app has no router | advisory | Decide at P3; a new dependency is the fallback, not the default. Owner Dev |
+| R10 | `req-002-greeting-json-sqlite` remains an active change | process | Different capability, no spec conflict; archive order is independent. Owner Dev |
+| R11 | Seeding the sample trip in `V2` puts fixture data in every environment | accepted for a scaffold | Required so R1/R2 are reproducible without test-only setup. Owner Dev |
 
-**Critical blockers: 0** —— 无关键未知依赖使需求失效，可进入 proposal-split。
+No critical blocker invalidates REQ-003, so split may proceed.
 
-## 8. Suggested split boundaries
+## 15. Suggested split boundaries
 
-One change: `req-004-split-planning-chain`, one capability `splits`, five ADDED
-requirements: REQ-004~007 operations plus their shared draft detail read.
-链内实现顺序建议：REQ-004（草稿+V2 迁移+种子）→ REQ-005（边界）→
-REQ-006（成对生成）→ REQ-007（纯校验，可与 006 并行）。前端四页面随后端
-契约逐环接入。Effort: medium-large: one migration, five endpoints, provider and
-fixture implementation, four frontend pages/new stack, five acceptance groups.
-No cross-change dependency; greeting unaffected. G1 remains Conditional.
+One change: `req-003-trip-create-and-view`, one new capability `trips`, two ADDED
+requirements (creation, detail read).
+Effort: medium — 1 migration, 4–6 backend classes, 1 test class, 2–3 frontend
+screens, documentation. Ordering: migration → repository → endpoints → frontend,
+with the details screen dependent on the create screen only through the trip id.
+
+---
+
+# Impact brief — REQ-004 (2026-11-14)
+
+Sections 1–15 above describe REQ-001 and REQ-003 and are not authoritative for
+this change. This section is self-contained.
+
+## 16. Requirement set
+
+| id | Path |
+|---|---|
+| REQ-004 | `requirement-workspace/requirements/REQ-004.md` |
+
+Supporting: `requirement-workspace/deep-dive.md` §REQ-004,
+`requirement-workspace/intents/2026-11-14-req-004.md`,
+`requirement-workspace/analysis/req-004-dor.md`,
+`requirement-workspace/acceptance-test-fixtures.md` §REQ-004.
+
+## 17. As-is asset inventory (evidence paths)
+
+| Asset | Evidence | State |
+|---|---|---|
+| Backend | `backend/src/main/java/com/gogo/hello/` only | `com.gogo.trip` does not exist yet; REQ-003 is P2-complete, unimplemented |
+| Migrations | `V1__create_greeting.sql` on disk; `V2__create_trip.sql` planned by REQ-003 | Next free version for this change is `V3`, after REQ-003's `V2` lands |
+| Living Spec | `openspec/specs/greeting/spec.md` | `trips` exists only as REQ-003's pending delta; `invitations` does not exist |
+| Active changes | `openspec list --json` | `req-002-greeting-json-sqlite`, `req-003-trip-create-and-view`; this change becomes the third |
+| Frontend | `frontend/src/App.jsx`, `main.jsx`; `package.json` React 19 + Vite 8 | One screen, no router, no QR capability |
+| UI reference | `git ls-tree group1/main ui-design-reference/` | Screens 04/05/06 present on `group1/main`, absent locally; extracted read-only for design |
+| Fixtures | `requirement-workspace/acceptance-test-fixtures.md` | Extended with a REQ-004 section in this change |
+| CI | `.github/workflows/ci.yml` | Two jobs, unchanged |
+| Tooling | `gh` at `C:\Users\SUNJO\AppData\Local\Programs\gh\gh.exe`; `/d/nvm4w/nodejs/openspec` 1.16.1 | Board and issues readable; PATH openspec 1.6.0 must not be used |
+
+## 18. As-is → proposed delta
+
+| Touched asset | As-is | Proposed delta |
+|---|---|---|
+| `openspec/specs/` | `greeting` only | New capability `invitations` (four ADDED requirements) plus one ADDED `trips` requirement (main-plan state), merged at archive time |
+| Migrations | `V1` (+ REQ-003 `V2` pending) | `V3__create_invitation.sql`: `trip_invitation` table; `ALTER TABLE trip ADD COLUMN main_plan_confirmed` default 0 |
+| Backend code | `com.gogo.hello` (+ REQ-003 `com.gogo.trip` pending) | New `com.gogo.invitation` package: controller, repository, token generator, response records; three new `code` values |
+| Backend tests | `GreetingApiTest` (+ REQ-003 `TripApiTest` pending) | New `InvitationApiTest` covering I1–I5, J1–J5, U1–U2 and reverse cases R-1/R-2 |
+| Frontend | Greeting screen (+ REQ-003 create/details pending) | Invitation panel (link, copy, QR), join page (preview/accept/joined/closed/unusable), token route; one QR encoding dependency and the routing decision shared with REQ-003 OQ-4 |
+| CI | Two jobs | Unchanged |
+| Config | SQLite, Flyway | Unchanged |
+| Docs | `README.md`, verification docs | Run instructions and verification entries for the invitation flow |
+
+## 19. Blast radius
+
+- Runtime: same backend port 8080, same SQLite file, one additive migration.
+- Data: one new table; one new column on `trip` with a default, so REQ-003 rows
+  and reads are unaffected. No existing column changes.
+- API: three new paths (`POST /api/trips/{id}/invitation`,
+  `GET /api/invitations/{token}`, `POST /api/invitations/{token}/accept`).
+  No existing path changes.
+- CI: unchanged; the new test class runs in the existing backend job.
+- Ordering constraint: REQ-003 P4 must land first (its `V2` creates the tables
+  this change alters and reads). P0–P3 of REQ-004 are independent of that.
+- Local verification needs three identities (1 organizer, 2 member, 5 outsider)
+  against one running backend, plus a test-only state flip for J4.
+
+## 20. Artifact impact
+
+- Specs: `openspec/changes/req-004-trip-invitations/specs/invitations/spec.md`
+  and `specs/trips/spec.md` (P2).
+- Tests: `InvitationApiTest` (backend); frontend verified by build plus browser
+  checks including QR decode equality (I6).
+- Docs: this workdir, `docs/ai4se-plugins/` stage reports, `README.md`.
+- KB: not configured; `scripts/kb-lint.sh` remains a documented `SKIP`.
+
+## 21. Risks & blockers
+
+| id | Risk | Severity | Status |
+|---|---|---|---|
+| R12 | REQ-003 unimplemented and G1 unsigned; REQ-004 P4 blocked until REQ-003 P4 | process, blocking for P4 only | Recorded; P0–P3 proceed. Owner Dev/IO |
+| R13 | Main-plan state without a product mutation path may look like dead data | accepted | OQ-1; US-037 owns the flow; R-1 reverse case documents the absence. Owner SA |
+| R14 | Preview exposes destination/dates before acceptance | accepted with tradeoff | OQ-2, from screen 05; IO confirms at G1 |
+| R15 | QR encoding needs a new frontend dependency | advisory | OQ-6; MIT-licensed encoder preferred; corporate npm mirror applies. Owner Dev |
+| R16 | `X-User-Id` remains unverified; invitation acceptance can be impersonated | accepted for a scaffold | Inherited from REQ-003 R6; never a security control. Owner Dev/SA |
+| R17 | Three active changes coexist | process | Disjoint requirement sets; archive order independent except `trips` merge order. Owner Dev |
+
+No critical blocker invalidates REQ-004, so split may proceed.
+
+## 22. Suggested split boundaries
+
+One change: `req-004-trip-invitations`, new capability `invitations` with four
+ADDED requirements (issuance, preview, acceptance/joining, unusable) plus one
+ADDED `trips` requirement (main-plan confirmation state).
+Effort: medium — 1 migration, 4–6 backend classes, 1 test class, 2 frontend
+surfaces plus states, one QR dependency decision. Ordering: migration →
+repository → issue endpoint → preview/accept endpoints → frontend panel → join
+page → verification. `/sdd:story-split` is Skipped: the three stories already
+exist as GitHub issues.
+
+---
+
+# Impact brief — REQ-005 (2026-11-15)
+
+Sections 1–22 above describe REQ-001, REQ-003 and REQ-004 and are not
+authoritative for this change. This section is self-contained.
+
+## 23. Requirement set
+
+| id | Path |
+|---|---|
+| REQ-005 | `requirement-workspace/requirements/REQ-005.md` |
+
+Supporting: `requirement-workspace/deep-dive.md` §REQ-005,
+`requirement-workspace/intents/2026-11-14-req-005.md` (incl. P1 continuation
+2026-11-15), `requirement-workspace/analysis/req-005-dor.md`.
+
+Mode: embedded at the end of `/sdd:pre-spec-req` (blocking OQs = 0, DoR
+BLOCKERs = 0). Solution direction: **add** (new frontend-only `app-shell`
+capability) → deep-dive Phase 2.5 in scope.
+
+## 24. As-is asset inventory (evidence paths)
+
+| Asset | Evidence | State |
+|---|---|---|
+| Frontend shell frame | `frontend/src/App.jsx:29-48`, `frontend/src/app.css:51-60` | `.app` already centers a ≤430 px, 100 dvh column; identity scaffold bar renders on every route; no dock exists |
+| Hash router | `frontend/src/App.jsx:8-27` | `parseRoute` handles `/`, `/create`, `/trips/<id>`, `/join/<token>`; unknown paths fall back to home; identity is App-level `useState`, survives hash changes |
+| Pages | `frontend/src/pages/{Home,CreateTrip,TripDetails,Join,InvitationPanel}.jsx` | All five surfaces implemented and verified by REQ-001/003/004; Home owns a bottom `.actionbar`; CreateTrip back targets `#/` (`CreateTrip.jsx:52`) |
+| Design tokens | `frontend/src/app.css:1-29`, `ui-design-reference/README.md` §一 | Token values already mirror the reference (brand `#0d9488`/`#06b6d4`, warm neutrals, radii 10/14/20/26, system font); reference present locally incl. `screen-01-dashboard.png` |
+| Icons | `frontend/src/Icons.jsx` | Inline SVG set (109 lines); dock needs home/list/fork/users glyphs — existing set covers most, additions are local SVG, no dependency |
+| Backend / migrations | `backend/src/main/java/com/gogo/{hello,trip,invitation}/`, `V1`–`V3` | Untouched by this story (issue #32: Backend no, Database no) |
+| Living Spec | `openspec/specs/greeting/spec.md` | `greeting` only; `trips`/`invitations` are pending deltas of in-flight changes |
+| Active changes | `openspec list --json` | `req-002-greeting-json-sqlite`, `req-003-trip-create-and-view`, `req-004-trip-invitations` (29/31 tasks); this change becomes the fourth |
+| CI | `.github/workflows/ci.yml` | Two jobs (backend `mvn -B test`, frontend `npm ci && npm run build`); unchanged |
+| Fixtures | `requirement-workspace/acceptance-test-fixtures.md` | Scoped to REQ-003/REQ-004; US-064 carries its own text-only verification table, so no fixture dependency at P1 |
+| Tooling | `openspec` 1.9.0 on PATH (this machine); gh at `%LOCALAPPDATA%\Programs\gh\bin` | Change creation and board reads verified in this session |
+| Working tree | `git status` on `sdd-req-005-trip-setup` (created from e904fff) | REQ-004 G2 Pass committed at e904fff; PR #30 and #31 merged during this session; REQ-005 P1 artifacts are added alongside without touching REQ-004 records |
+
+Baseline classification: brownfield, frontend-only. Authority tree
+`openspec/specs/` exists (`greeting`); no competing spec root is introduced.
+
+## 25. As-is → proposed delta
+
+| Touched asset | As-is (evidence) | Proposed delta |
+|---|---|---|
+| `openspec/specs/` | `greeting` only | New capability `app-shell` (six ADDED requirements) created at archive time from this change's delta spec |
+| `frontend/src/App.jsx` | Flat route switch + scaffold bar, no dock | Shell composition: frame + scaffold bar + routed page + fixed dock for in-app routes; join route bypasses the dock; route table gains the no-trip, `#/split`, `#/members` entries |
+| New frontend components | — | Shell/dock component(s), no-trip empty-state page, 分队 and 成员 placeholder pages (text + link back to 行程) |
+| `frontend/src/pages/CreateTrip.jsx:52` | Back link targets `#/` | Back targets the 行程 tab (story page-function table); form, validation and submit navigation unchanged |
+| `frontend/src/app.css` | `.app` column exists; no dock styles | Dock styles (fixed bottom, safe-area inset, active highlight from brand tokens), content bottom padding so the dock never obscures `.actionbar`/content; placeholder/empty-state styles from existing tokens |
+| `frontend/src/Icons.jsx` | Existing glyph set | Dock glyphs added locally if missing (inline SVG, no dependency) |
+| Backend / migrations / API | `V1`–`V3`, three capability packages | **No change** (reverse case R-3) |
+| CI | Two jobs | Unchanged; frontend build job covers the change |
+| Docs | `README.md`, verification docs | Run/verification notes for the shell and the text-only tab walk |
+
+## 26. Blast radius
+
+- Runtime: frontend only; same Vite dev server and `/api` proxy; no new
+  process, port, dependency or environment variable.
+- Data: none. No migration, no schema or row change; existing reads reused.
+- API: no new or changed path; `X-User-Id` contract unchanged.
+- Navigation: hash route table gains three entries (no-trip 行程, `#/split`,
+  `#/members`); existing four routes keep their paths and behavior; join
+  exclusion is presentational (dock hidden), not a join-flow change.
+- CI: unchanged; verification is browser-based (text-only tab walk) plus the
+  existing frontend build job.
+- Ordering: REQ-005 P4 needs the REQ-003/REQ-004 frontend code present — it is
+  on the current branch; REQ-003 PR #30 and REQ-004 PR #31 are both merged
+  (2026-11-15), so the stacking order is satisfied (R18 resolved).
+
+## 27. Artifact impact
+
+- Specs: `openspec/changes/us-064-mobile-app-shell/specs/app-shell/spec.md`
+  (P2).
+- Tests: no backend test change; frontend verified by build plus the story's
+  text-only forward/reverse tab walk and re-run of existing acceptance
+  behavior (S11).
+- Docs: this workdir, `docs/ai4se-plugins/` stage reports, `README.md`.
+- KB: not configured; `scripts/kb-lint.sh` remains a documented `SKIP`.
+
+## 28. Risks & blockers
+
+| id | Risk | Severity | Status |
+|---|---|---|---|
+| R18 | REQ-004 PR #31 was open when P1 started; REQ-005 branches stack on that code | process, resolved | PR #31 merged 2026-11-15T06:23:20Z (gh verified); stacking order satisfied. Owner Dev/IO |
+| R19 | Fixed dock can obscure Home's `.actionbar` or scroll content on short viewports; `100dvh`/safe-area need browser verification | advisory | Layout care at P3 (content bottom padding); verified in browser at P4, not by build alone. Owner Dev |
+| R20 | Placeholder tabs could drift into fabricated demo data (the screenshot shows real-looking members/routes) | accepted risk, guarded | AC5 + reverse case R-2 assert honest text only; design scope in the story excludes the demo content. Owner IO |
+| R21 | `X-User-Id` remains unverified (inherited scaffold) | accepted for a scaffold | Inherited from REQ-003 R6; switcher stays labeled 非登录. Owner Dev/SA |
+| R22 | Four active changes coexist; `app-shell` is disjoint from all three delta sets | process | No spec conflict; archive order independent. Owner Dev |
+
+No critical blocker invalidates REQ-005, so split may proceed.
+
+## 29. Suggested split boundaries
+
+One change: `us-064-mobile-app-shell` (renamed from `req-005-mobile-app-shell`
+on 2026-11-15), new capability `app-shell` with six
+ADDED requirements (shell frame; bottom dock navigation; dashboard placement;
+trips placement + no-trip empty state; placeholder tabs; guest join exclusion).
+The scenario count (11) would normally suggest considering 2–3 changes, but
+every scenario shares the one shell frame: splitting frame from dock or
+placements would produce halves that cannot render independently, violating
+the independently-shippable check. One vertical slice, one gate cycle.
+Effort: small–medium — App.jsx restructure, 1 shell/dock component, 3 new
+pages (empty state + 2 placeholders), CSS additions, 1 back-target edit; no
+backend, no migration, no new dependency. `/sdd:story-split` is Skipped: the
+story already exists as GitHub issue #32.

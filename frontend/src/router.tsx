@@ -1,6 +1,6 @@
 import type { ComponentType } from "react"
 import { createBrowserRouter, Navigate, useParams } from "react-router-dom"
-import App from "./App.jsx"
+import App from "./App.tsx"
 import { useIdentity } from "./features/split/identity"
 import { ScreenStart } from "./features/split/screen-start"
 import { ScreenBoundary } from "./features/split/screen-boundary"

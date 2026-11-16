@@ -161,7 +161,7 @@ Every branch referenced by a scenario has a row above.
 `trips` shares no table, endpoint or identifier with the `greeting` capability.
 `req-002-greeting-json-sqlite` is still active, but it modifies `greeting` only;
 the two delta specs cannot conflict and both can be applied to the Living Spec in
-either order. No conflict row.
+either order. No ✗ row.
 
 ### ⑫ Notification / display contract
 
@@ -178,92 +178,173 @@ No notifications (email, push, queue) are in scope.
 A trip holds a handful of members; no AC states a size limit, retention rule or
 SLA. Recorded as a non-blocking item for Dev, not invented.
 
-## B 拆分主链（REQ-004~007，2026-11-15）
+## REQ-004
 
-Trigger: impact solution direction is **add**（新能力 `splits`，四个 REQ 一个 change）。
-技术基准 = 4 表精简版 tech-stack-plan（用户 2026-11-15 裁决）；身份 = `X-Member-Id`；
-上游夹具自包含；draft_version 任何变更递增；**严格 4 表：不建第 5 表、不加
-plan_node 列，草稿 = trip.split_draft JSON 文档**；分组存草稿 JSON；边界成对保存；
-校验 = 显式快照 body；calculator has no database access, while entry guards may
-read identity/trip/membership. Frontend incrementally adopts the approved stack.
-注：上方 REQ-003 段为遗留草稿（保留不提交，未生效），与本段口径冲突处按本段为准。
+Trigger: impact solution direction is **add** (new `invitations` capability) plus
+one state requirement added to the pending `trips` capability. Three stories, one
+token aggregate, one change.
 
 ### ⑨ Data contract
 
-| 概念 | 粒度 | 字段 | 状态迁移 |
+| Concept | Grain | Fields | State transitions |
 |---|---|---|---|
-| `trip` | 一行一行程；种子 1 行 | tech-stack-plan §5：`id`(UUID TEXT PK)、`title`、`destination`、`start_date`、`end_date`、`invite_code`(UNIQUE)、`plan_version`、`created_at`；**新增可空 `split_draft` TEXT 列（JSON 文档，B 链唯一 schema 扩展，用户裁决）** | 本期无创建/编辑端点；种子 plan_version=1、split_draft=NULL；确认态由成员 ack 谓词表达；草稿创建/变更 = 条件更新该列 |
-| `trip_member` | 一行一（行程,成员）；种子 5 行（含另一行程的 Eve） | §5：`id`(PK)、`trip_id`(FK)、`display_name`、`role`(owner/member)、`plan_ack_version`、`joined_at`；UNIQUE(trip_id, display_name) | 本期无加入/退出端点；ack 值仅夹具构造两态 |
-| `plan_node`（主线） | 一行一 stop；种子主线 v1 两行 | §5 全字段；`branch_id='main'`、`parent_id` 预留；**不加列**（用户裁决） | 本期主线只读 |
-| 拆分草稿（trip.split_draft JSON 文档，非独立表） | 每 trip 至多一份活跃文档 | 文档字段：`initiatorMemberId`、`mainPlanVersion`、`draftVersion`(从 1 起)、`status`(active/cancelled)、`departureStopId`(可空)、`reunionStopId`(可空)、`groups`（`{"A":[memberId…],"B":[memberId…]}`）、`createdAt`、`updatedAt`；活跃唯一 = 每 trip 至多一份文档 + 条件更新（撞车即 409） | active 创建（REQ-004）→ 边界/分组/路线变更使 draftVersion+1（REQ-005/006）→ cancelled 归 US-050（本期不实现，状态值预留） |
-| 分组（草稿文档 groups 字段） | 每草稿一份；成员不跨组、两组齐全 | 组标签 A/B + 成员 id 列表；物理载体 = 草稿 JSON（用户裁决，不建独立表）；约束由服务层校验 | 夹具供给初始值；变更→draftVersion+1 |
-| `plan_node`（分组路线） | 一行一路线节点；每草稿恰两条活动节点（+起终点引用） | 同主线字段，**不加列**；`branch_id='split-a'/'split-b'`，按 trip_id 归属当前活跃草稿；`plan_version`=草稿 mainPlanVersion；活动时长/交通段/buffer 存结构化 JSON 字段（activityMinutes、travelLegsMinutes[]、bufferMinutes，复用 §5 「结构化字段 TEXT 存 JSON」约定） | 成对单事务写入（REQ-006）；失败整对回滚；重生成同事务先删旧对再写新对 |
-| 时间校验快照（wire） | 一次校验一份；恰两条路线 | 入参：`windowMinutes` + `routes[2]{groupLabel, activityMinutes, travelLegsMinutes[], bufferMinutes}`；出参：逐路线 `totalMinutes`、`overrunMinutes`、`missingInputs[]` + 整对 `feasible` | 无持久化（Database: No）；纯计算 |
+| `trip_invitation` | One row per trip (UNIQUE `trip_id`); created by the organizer's first issue call | `id` INTEGER PRIMARY KEY AUTOINCREMENT; `trip_id` INTEGER NOT NULL UNIQUE REFERENCES `trip(id)`; `token` TEXT NOT NULL UNIQUE | Created once per trip (get-or-create). No update, revoke or expiry path is in scope |
+| `trip.main_plan_confirmed` | One boolean state per trip, added by `V3` | INTEGER NOT NULL DEFAULT 0 | 0 → 1 only by the future US-037 flow; in this change only test-only direct database setup may set it. No API transition exists |
+| `trip_member` (read/write via accept) | One row per (trip, user) pair, unchanged grain from REQ-003 | unchanged | Acceptance inserts (trip, caller) once; a repeated acceptance inserts nothing |
 
-所有权：后端独占全部表与迁移（V2 起：四表 + trip.split_draft 列 + 种子；member_preference 本链无需种子）；前端不直读数据库。
-无 `{TBD}` 字段；存储载体类裁决已全部落地（OQ-N2/N5 resolved）。
+Issuance is one transaction: select the trip's invitation; if absent, insert one
+row with a freshly generated opaque token. Acceptance is one transaction: verify
+token, verify joining open, insert the membership row only if absent. A rejected
+acceptance leaves `trip_member` unchanged (this is what J4 asserts).
+
+Wire contract:
+
+| Message | Fields | Notes |
+|---|---|---|
+| Issue response | `token` (string), `joinPath` (string `/join/<token>`), `tripId` (integer), `tripName` (string) | `200` on first and repeated issue. The frontend composes the absolute URL from its own origin; the QR encodes that same URL |
+| Preview response | `tripName`, `destination`, `startDate`, `endDate` (strings), `mainPlanConfirmed` (boolean) | No identity required. No member, itinerary or preference field exists in the shape |
+| Accept response | `joined` (true), `alreadyMember` (boolean), `tripId` (integer), `tripName` (string) | `X-User-Id` required. Idempotent |
+| Error response | `code` (stable string), `message` (human text) | New `code` values: `NOT_ORGANIZER`, `JOINING_CLOSED`, `INVITATION_NOT_FOUND`; reused from `trips`: `USER_REQUIRED`, `TRIP_NOT_FOUND` |
+
+No `{TBD}` field remains.
 
 ### ⑩ Boundary enumeration
 
-| 分支 | In / out | 归属 |
+| Branch | In / out | Attribution |
 |---|---|---|
-| 主线已确认 + 无活跃草稿，成员发起 | in | REQ-004 S1；确认谓词 = 全员 ack = plan_version |
-| 并发发起 | in | REQ-004 S2；每 trip 至多一份草稿文档 + 条件更新，撞车→409 SPLIT_DRAFT_CONFLICT |
-| 主线未确认 | out（拒 409） | REQ-004 S3-N；MAIN_PLAN_NOT_CONFIRMED |
-| 非成员 / 缺失身份 / 未知行程 | out（拒 403/401/404） | REQ-004 S4-N/S5-N/S6-N；链级通用身份契约 |
-| 重复发起（已有活跃草稿） | out（拒 409） | REQ-004 S7 |
-| 主线内 stop 成对选择且窗口为正 | in | REQ-005 S1；出发=end_at、会合=start_at |
-| 非正窗口 | out（拒 400） | REQ-005 S2-N；已存边界与版本不变 |
-| 主线外节点 | out（拒 400） | REQ-005 S3-N；不创建无关会合点 |
-| 非发起人编辑 / 无活跃草稿 / 过期版本 | out（拒 403/409/409） | REQ-005 S4-N/S5-N/S6-N |
-| 半边界（只选其一） | out of scope | OQ-N4 resolved：成对保存，不开放半边界（用户裁决） |
-| 边界/分组齐全，fake 候选生成 | in | REQ-006 S1；单事务成对保存 |
-| 一组生成失败 | out（整对回滚） | REQ-006 S2-N；ROUTE_GENERATION_FAILED，无半成品对 |
-| 生成期间草稿变版 | out（拒 409） | REQ-006 S3-N；条件更新 draft_version，STALE_DRAFT_VERSION |
-| 无边界生成 / 非发起人生成 | out（拒 409/403） | REQ-006 S4-N/S5-N |
-| 分组移动 UI 控件 | out of scope | issue 明示可选；后端变更→版本递增语义仍成立 |
-| 两路线均含全部输入且不超窗 | in | REQ-007 S1；feasible=true |
-| 任一路线超窗 | out（整对不可确认） | REQ-007 S2-N；overrunMinutes 显式给出 |
-| 任一输入缺失 | out（整对不可确认） | REQ-007 S3-N；missingInputs 逐项列出，不得呈现为通过 |
-| 快照非法（空/路线数≠2） | out（拒 400） | REQ-007 S5-N；INVALID_ROUTE_PAIR |
-| 确认/取消拆分 | out of scope | US-049/US-050；本期只输出校验结论与预留 cancelled 状态 |
-| 真实认证/签名校验 | out of scope | DR-05；X-Member-Id 按给定值信任 |
+| Organizer issues, main plan unconfirmed | in | I1; token returned, one row |
+| Organizer issues again | in | I2; same token, no second row |
+| Member but not organizer issues | out (denied `403`) | I3; nothing created |
+| Issue without identity / unknown identity | out (rejected `401`) | I4 |
+| Issue for unknown trip id | out (`404`) | I5 |
+| QR scan path | in | I6; decoded URL equals the composed link, same rules as J1–J4 |
+| Preview of a valid token, joining open | in | J1; public basics only |
+| Preview of a valid token, joining closed | in | J1 shape with `mainPlanConfirmed = true`; the join page shows the closed state instead of an accept action |
+| Accept by a non-member, joining open | in | J2; membership created, member read now allowed |
+| Accept twice, same identity | in | J3; exactly one membership row |
+| Accept by an existing member, joining open or closed | in | J6; `alreadyMember = true`, no new row |
+| Accept by a non-member after main-plan confirmation | out (rejected `403`) | J4; member list unchanged |
+| Accept without identity / unknown identity | out (rejected `401`) | J5 |
+| Accept with missing/unknown identity and unknown token | out (`401`) | J7; `USER_REQUIRED` takes precedence, no membership |
+| Preview or identified accept of an unknown token | out (`404`) | U1/U2; generic unusable surface, no trip values, no membership |
+| Join page with unknown token | in (reverse privacy case) | U3; generic message only |
+| Revocation, expiry, reminder notification | out of scope | No endpoint, no field; R-2 reverse case |
+| Setting main-plan confirmation through an API | out of scope | No endpoint; R-1 reverse case; US-037 owns the flow |
+| Concurrent accepts of the same token by the same user | out of scope for races | The UNIQUE (trip_id, user_id) primary key from REQ-003 makes a duplicate insert impossible; SQLite serializes writers |
+| Concurrent accepts by different users | in | Each inserts an independent membership row; no shared mutable state beyond the table |
 
-每个场景引用的分支均有行。
+Every branch referenced by a scenario has a row above.
 
 ### ⑪ Cross-REQ consistency
 
-| 项 | 涉及 REQ | 收敛 |
-|---|---|---|
-| 身份契约 X-Member-Id | 004~007 | 统一；用户裁决 OQ-2 |
-| draft_version 语义 | 005/006（004 创建从 1 起） | 任何变更递增；条件更新防 stale；用户裁决 OQ-5 |
-| 边界→生成→校验数据流 | 005→006→007 | Saved boundaries in trip.split_draft; routes in plan_node split-a/b; member-only GET returns a consistent snapshot; timing entry guard may read membership, calculator consumes only explicit body without database I/O |
-| 错误码与包封套 | 004~007 | 统一 {data,error}；code 表见夹具 B 链段；无重名冲突 |
-| 与 REQ-003 草稿的 trips 口径 | 004 vs REQ-003（未立项） | ✗→已收敛：用户 2026-11-15 裁决 B 链按 tech-stack-plan（UUID id、invite_code、X-Member-Id）；REQ-003 草稿口径作废待对齐（OQ-N1，owner IO/SA）；REQ-003 非活跃 change，不构成 Living Spec 冲突 |
-| 与 greeting 能力 | 无 | 无共享表/端点；V1 迁移不动，B 链从 V2 起；前端 greeting 页保持 JSX（增量新栈裁决） |
-| 与未来 US-037/049/050 | 004/007 | 确认谓词、校验结论、cancelled 状态均预留契约；对齐事项 OQ-N1/N7（non-blocking，owner 已指） |
+| Item | Other requirement | REQ-004 | Convergence |
+|---|---|---|---|
+| `trip` table ownership | REQ-003 `trips` (pending delta, unimplemented) | Adds one state column via `V3`, reads membership | Additive column with a default; REQ-003's six values and endpoints unchanged. Implementation order REQ-003 P4 → REQ-004 P4 |
+| Identity contract | REQ-003 "Trip caller identity" | Reuses `X-User-Id`, `USER_REQUIRED` | Same contract, no second identity mechanism |
+| Member read after joining | REQ-003 "Trip detail read" | J2 asserts Eve's read flips from `403` to `200` | Integration scenario, no spec change to the read requirement |
+| `greeting` | REQ-001/REQ-002 | No shared table, endpoint or identifier | Independent |
+| Main-plan confirmation flow | US-037 (backlog, issue #16) | State column only, no mutation path | US-037 will later add the flow as a `trips` modification; no conflict now |
 
-无未收敛 ✗。
+No ✗ row remains. The two active changes (`req-002`, `req-003`) and this one touch
+disjoint requirement sets; archive order is independent except that REQ-004's
+`trips` ADDED requirement merges after REQ-003's.
 
 ### ⑫ Notification / display contract
 
-| 表面 | 触发 | 接收者 | 内容 + 展示字段 | 通道 |
+| Surface | Trigger | Recipient | Content + display fields | Channel |
 |---|---|---|---|---|
-| Screen 11 发起拆分 | 成员点击发起 | 行程成员 | 草稿状态（initiator、mainPlanVersion、draftVersion）；冲突/未确认/无权限错误态；loading/empty | POST /api/trips/{tripId}/split-draft |
-| Screen 12 边界选择 | 发起人选择 stop | 拆分发起人 | 出发/会合 stop 名 + 时刻 + 窗口分钟数；非正窗口/主线外错误态；loading/empty/permission | PUT …/split-draft/boundaries + GET /api/trips/{tripId}/split-draft |
-| Screen 13 分组路线 | 发起人点击生成 | 拆分发起人 | 成对路线（组标签、活动名、起终点、时长分解）；失败/过期错误态；loading/empty/permission | POST …/split-draft/routes:generate |
-| Screen 14 窗口校验 | 成员点击校验 | 行程成员 | 逐路线 activity/travel/buffer 分解 + totalMinutes；通过/超窗（overrunMinutes）/缺输入（missingInputs）三态；loading/empty/permission | POST …/split-draft/routes:check-timing |
+| Invitation panel (screen 04) | Organizer opens the trip's invitation surface | Organizer | Invitation link text, copy action, QR encoding the same absolute URL, joining-open hint; loading and error states; denial state for a non-organizer | `POST /api/trips/{id}/invitation` |
+| Join page preview (screen 05) | Opening `/join/<token>` with a valid token | Invited traveler | Trip name, destination, start/end dates, joining-open hint; accept action; loading state; no member/itinerary/preference fields | `GET /api/invitations/{token}` |
+| Join page joined state | Successful acceptance | New member | Joined confirmation with the trip name; repeated open shows the same joined state | `POST /api/invitations/{token}/accept` |
+| Join page closed state | Preview or accept while main plan confirmed | Invited traveler | Joining-closed message; no accept action; no private fields beyond the preview basics | Same endpoints, `JOINING_CLOSED` on accept |
+| Unusable surface (screen 06) | Unknown token on preview or accept | Any visitor | Generic unusable-invitation message, privacy note, back-home action; no trip name, members, destination or dates; no reminder notification workflow | Same endpoints, `INVITATION_NOT_FOUND` |
+| Failure states | Endpoint unreachable or non-JSON response | Viewer | Static failure text plus reason; no trip values | Same request paths |
 
-无通知（email/push/queue）；多人可见性靠轮询刷新（DR-06，P3 细化）。
-All four screens use member-only `GET /api/trips/{tripId}/split-draft` for refresh
-and polling. It returns versions, groups, timestamps, selectable main-plan stops,
-nullable boundary ids/times/window and routes (empty before generation), or
-`200 {data:null,error:null}` without an active draft. Reads never mutate state.
-Shared guard order is identity -> trip -> membership: missing/globally unknown
-id -> 401, known member with unknown trip -> 404, known outsider Eve -> 403;
-rejections return `data=null` without private values (detail D1-D5-N; timing T6-N).
+No notifications (email, push, queue) are in scope.
 
 ### NFR business-policy layer
 
-并发 = SQLite 单写者（池=1），无写 QPS/SLA 要求；草稿/路线无保留期策略（无软删除，
-取消语义归 US-050）。记录为 Dev 的 non-blocking 项，不发明。
+Token entropy, invitation volume and retention are not decidable for a scaffold
+slice and are not required by any AC. Recorded as a non-blocking item for Dev
+(token generation uses a secure random source by design), not invented.
+
+## REQ-005
+
+Trigger: impact solution direction is **add** (new frontend-only `app-shell`
+capability). One story, one shell frame, one change. No backend or database
+concept is introduced; the data contract below covers the frontend navigation
+state, which is the only state this change owns.
+
+### ⑨ Data contract
+
+| Concept | Grain | Fields | State transitions |
+|---|---|---|---|
+| `route` (parsed hash) | One current route per app instance | `page` ∈ {home, trips-empty, details, create, split, members, join}; `tripId` (integer, details only); `token` (string, join only) | `hashchange` → re-parse; default home for `/` and unknown paths (as-is `App.jsx:8-16`); new entries: bare 行程 path (proposed `#/trips`, OQ-4), `#/split`, `#/members` |
+| `userId` (scaffold identity) | One selected id per app instance, App-level state | integer, default 1, from the seeded user list | Switcher change updates it; hash navigation never resets it (App does not remount); every `api()` call sends it as `X-User-Id` (unchanged contract) |
+| Tab model | Four fixed tabs | order 仪表盘 / 行程 / 分队 / 成员; each: icon, label, target route, active rule | Active rule: home→仪表盘; trips-empty/details/create→行程; split→分队; members→成员; join→no dock, no active tab |
+| Trip selection (OQ-5) | Optional last-opened trip id, P3 decision | integer or none | Proposed: route-derived (details iff the hash carries an id); optional last-trip memory is a P3 UX choice, not a contract field |
+
+No backend table, column, endpoint or wire shape is added or changed (reverse
+case R-3). No `{TBD}` field remains: OQ-1/OQ-2/OQ-4/OQ-5 are naming/UX polish
+with concrete proposals above, not undecided data fields.
+
+### ⑩ Boundary enumeration
+
+| Branch | In / out | Attribution |
+|---|---|---|
+| `#/` default | in | S3; home content under shell, 仪表盘 active |
+| Bare 行程 route, no trip selected | in | S5; text empty state, 创建行程 + 按编号打开行程, 行程 active |
+| `#/trips/<id>` member read | in | S4; existing details under shell, 行程 active |
+| `#/trips/<id>` non-member / unknown id / unreachable | in (unchanged states) | S4/S11; existing denied/missing/failed surfaces, no new behavior |
+| `#/create` | in | S6; form + validation unchanged, 行程 active, back → 行程, submit → `#/trips/<id>` |
+| `#/split`, `#/members` | in | S7; honest text placeholder + link back to 行程; no demo data |
+| `#/join/<token>` valid | out of dock | S8; full-screen preview/accept/joined/closed exactly as today |
+| `#/join/<token>` unknown | out of dock | S8; full-screen unusable, no private data, as today |
+| Unknown hash path | in (fallback) | As-is home fallback retained; 仪表盘 active |
+| Non-numeric id in `#/trips/…` | in (fallback) | As-is regex fails → home fallback; no new route contract |
+| Tab switch forward and reverse | in | S2/S10; hash updates without reload, identity kept, unique heading per page |
+| Browser back/forward | in | S10; hashchange drives route; identity survives |
+| Identity switch on any shell route | in | S9; header updates on every request; label stays scaffold |
+| Open-by-id with unknown id | in (existing 404) | OQ-1; reuses details missing state, no list-all call |
+| List-all-trips endpoint or call | out of scope | R-1 reverse case; US-061 owns aggregation |
+| Fabricated members/routes/statuses | out of scope | R-2 reverse case; placeholders are text only |
+| Backend / migration / CI change | out of scope | R-3 reverse case |
+| Dock on join/unusable | out of scope | S8 doubles as the guest-navigation reverse case |
+
+Every branch referenced by a scenario has a row above.
+
+### ⑪ Cross-REQ consistency
+
+| Item | Other requirement | REQ-005 | Convergence |
+|---|---|---|---|
+| Home / greeting surface | REQ-001/REQ-002 `greeting` | Composed under shell at `#/`; fetch and states unchanged | No contract change; placement only |
+| Create / details surfaces | REQ-003 `trips` (pending delta, implemented) | Composed under shell; create back-target moves from `#/` to 行程 per the story table | Placement change only; validation, permission and submit contracts unchanged (S11) |
+| Invitation panel / join flow | REQ-004 `invitations` (pending delta, implemented) | Panel stays inside details; join/unusable excluded from dock, scaffold bar retained | No contract change; AC9 + OQ-6 |
+| Identity contract | REQ-003 "Trip caller identity" | Reuses `X-User-Id` switcher, App-level state | Same contract, no second identity mechanism |
+| Hash router | REQ-004 design D7 | Extends the shared `parseRoute` table, no new router dependency | One routing mechanism |
+| Future tabs | US-013, US-038–062, US-061 (backlog) | Placeholders now; real features later replace placeholder content inside the same shell | Shell is the stable anchor; no conflict now |
+
+No ✗ row remains. `app-shell` is disjoint from the three active changes'
+delta sets (`greeting`, `trips`, `invitations`); archive order is independent.
+
+### ⑫ Notification / display contract
+
+| Surface | Trigger | Recipient | Content + display fields | Channel |
+|---|---|---|---|---|
+| Shell frame | Any in-app route renders | Traveler | Centered ≤430 px column, 100 dvh, scrolling content, fixed dock below, safe-area padding; existing tokens | Client render |
+| Bottom dock | Shell present | Traveler | Four tabs (icon + label) in fixed order; active highlight from brand tokens; hash targets | Client navigation |
+| 仪表盘 page | `#/` | Traveler | Existing home content: greeting status, create entry, identity scaffold; unique heading | `GET /api/greeting` (unchanged) |
+| 行程 empty state | Bare 行程 route, no trip selected | Traveler | Text empty state + exactly two actions: 创建行程, 按编号打开行程; unique heading; no trip data | Client render; open-by-id → `#/trips/<id>` |
+| 行程 details | `#/trips/<id>` | Trip member | Existing hero, information rows, organizer invitation panel; loading/denied/missing states unchanged | `GET /api/trips/{id}` (unchanged) |
+| Create page | `#/create` | Traveler | Existing six inputs + validation; back → 行程; busy/error states unchanged | `POST /api/trips` (unchanged) |
+| 分队 placeholder | `#/split` | Traveler | Honest "not implemented yet" text + link back to 行程; unique heading; no demo data | Client render |
+| 成员 placeholder | `#/members` | Traveler | Honest "not implemented yet" text + link back to 行程; unique heading; no demo data | Client render |
+| Join / unusable | `#/join/<token>` | Invited guest | Full-screen, no dock; preview/accept/joined/closed/unusable exactly as today; scaffold bar retained | Invitation endpoints (unchanged) |
+
+No notifications (email, push, queue) are in scope.
+
+### NFR business-policy layer
+
+No retention, volume or SLA is stated by any AC; the shell adds no data.
+Browser support for `100dvh` and safe-area insets is a verification item at P4
+(R19), not a requirement unknown. Recorded, not invented.
