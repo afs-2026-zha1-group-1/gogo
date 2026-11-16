@@ -261,12 +261,14 @@ Day, users 1-5, window 09:30-11:30 = 120 minutes, routes A=105 / B=110).
 | Case | Call | Expected |
 |---|---|---|
 | CF1 confirm pass | `POST /api/trips/1/split-draft:confirm` `X-User-Id: 1`, `{"draftVersion":2}` | `200`; draft detail with `status = confirmed`; `GET split-draft` returns the same; a later `PUT boundaries` -> `409 SPLIT_DRAFT_NOT_ACTIVE` |
-| CF2-N over window | same call on the infeasible draft | `409 SPLIT_TIMING_INFEASIBLE`; detail `totalMinutes = 125`, `overrunMinutes = 5`; draft stays `active`, `draftVersion` unchanged |
-| CF3-N missing input | same call on the missing-input draft | `409 SPLIT_TIMING_INFEASIBLE`; detail `missingInputs` non-empty; stays `active` |
+| CF2-N over window | same call on the infeasible draft | `409 SPLIT_TIMING_INFEASIBLE`; `error.details.routes[0]` = {`groupLabel: "A"`, `totalMinutes: 125`, `overrunMinutes: 5`, `missingInputs: []`}, `routes[1]` = {`groupLabel: "B"`, `totalMinutes: 110`, `overrunMinutes: 0`, `missingInputs: []`}; draft stays `active`, `draftVersion` unchanged |
+| CF3-N missing input | same call on the missing-input draft | `409 SPLIT_TIMING_INFEASIBLE`; `error.details.routes[0].missingInputs` non-empty (field names, e.g. `activityMinutes`), `routes[1].missingInputs` empty; stays `active` |
+| CF7-N incomplete draft | confirm on a draft with boundaries but no generated routes (or only one boundary) | `409 SPLIT_DRAFT_INCOMPLETE`; `error.details.missing` lists `routes` / `boundaries`; stays `active`; no timing recomputation |
 | CF4-N stale | same call with `{"draftVersion":1}` | `409 STALE_DRAFT_VERSION`; no state change |
 | CF5-N non-organizer | same call `X-User-Id: 2` | `403 NOT_SPLIT_ORGANIZER`; no state change |
 | CF6-N not active | confirm before any draft, after CF1 (confirmed), and after CN1 (cancelled) | `409 SPLIT_DRAFT_NOT_ACTIVE` in all three |
-| CN1 cancel pass | `POST /api/trips/1/split-draft:cancel` `X-User-Id: 2`, `{"draftVersion":2}` | `200`; `status = cancelled`; `plan_node` main rows unchanged, split rows deleted; ensuing `POST split-draft` `X-User-Id: 1` -> `201`, `draftVersion = 1`, `status = active`, `initiatorMemberId = 1` |
+| CN1 cancel pass | `POST /api/trips/1/split-draft:cancel` `X-User-Id: 2`, `{"draftVersion":2}` | `200`; `status = cancelled` and `routes = []`; `plan_node` main rows unchanged, split rows deleted; reading detail again shows `status = cancelled`, `routes = []`; ensuing `POST split-draft` `X-User-Id: 1` -> `201`, `draftVersion = 1`, `status = active`, `initiatorMemberId = 1`, and `split_draft.draft_version` column = 1 |
+| CN6-N stale cancel | cancel a rebuilt draft using the pre-rebuild `draftVersion` | `409 STALE_DRAFT_VERSION`; new draft stays `active` with its initiator/boundaries/routes |
 | CN2-N cancel confirmed | cancel after CF1 | `409 SPLIT_DRAFT_NOT_ACTIVE`; confirmed document and split rows unchanged |
 | CN3-N non-initiator | `X-User-Id: 3` cancel | `403 NOT_SPLIT_INITIATOR`; draft stays `active` |
 | CN4-N no draft | cancel before any draft | `409 SPLIT_DRAFT_NOT_ACTIVE` |
@@ -278,6 +280,7 @@ Day, users 1-5, window 09:30-11:30 = 120 minutes, routes A=105 / B=110).
 Both `:confirm` and `:cancel` return the existing draft-detail projection (`GET /split-draft` shape) with `status` set to `confirmed` / `cancelled`:
 `tripId`, `initiatorMemberId`, `mainPlanVersion`, `draftVersion`, `status`, `departureStopId`, `reunionStopId`, `groups` {`A`, `B`}, `routes` {`A`, `B`} -> {`activityMinutes`, `travelLegsMinutes`, `bufferMinutes`}, `createdAt`, `updatedAt`.
 The `SPLIT_TIMING_INFEASIBLE` error detail adds `totalMinutes`, `overrunMinutes`, `missingInputs` (array of `A|B` + field hints); only `code` is contractual.
+（C7 补丁 2026-11-16）上述明细的标准形状为 `error.details.routes[]`：每项 `{groupLabel, totalMinutes, overrunMinutes, missingInputs}`，固定长度 2、按 A/B 顺序；`SPLIT_DRAFT_INCOMPLETE` 的标准形状为 `error.details.missing: string[]`（`boundaries` / `routes` / `routes.A` / `routes.B`）；`data` 仍为 `null`，`code` 为唯一契约字段。
 
 ### Values deliberately not fixed (US-049-050)
 

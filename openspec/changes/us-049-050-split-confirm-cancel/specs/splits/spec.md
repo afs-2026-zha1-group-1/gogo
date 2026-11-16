@@ -8,7 +8,7 @@
 
 - 身份 = `app_user.id`，请求头 `X-User-Id` 携带；MVP 按给定值信任，不校验签名（DR-05，不得描述为安全控制）。
 - All endpoints SHALL validate identity, then trip existence, then membership: missing or globally unknown id returns `401 MEMBER_REQUIRED`; a known id with an unknown trip returns `404 TRIP_NOT_FOUND`; a known member of another trip returns `403 NOT_A_MEMBER`. Rejections return `data = null` and no private trip, draft or route values. Only authorized calls reach calculation.
-- 响应统一 `{data,error}` 包封套；`error.code` 为稳定机器可读契约，`error.message` 为实现文本非契约；成功时 `error = null`。
+- 响应统一 `{data,error}` 包封套；`error.code` 为稳定机器可读契约，`error.message` 为实现文本非契约；成功时 `error = null`。需要明细的拒绝 SHALL 在 `error.details` 携带对象（本期仅 `SPLIT_TIMING_INFEASIBLE` 与 `SPLIT_DRAFT_INCOMPLETE` 使用）；`details` 缺失不影响 `code` 的判定。
 - 拆分草稿 = `split_draft` 表一行（`trip_id` UNIQUE），业务字段存 `document` JSON 列；主线与拆分路线结构存 `plan_node`（`branch_id` = `main` / `split-a` / `split-b`）。不新增表、不新增迁移（V4 为既有迁移）。
 - 时间一律 TEXT（ISO-8601 UTC）；窗口与时长粒度 = 分钟（整数）。
 - 「主线已确认」谓词 = `trip.main_plan_confirmed`（V3 列，0/1）。
@@ -19,7 +19,7 @@
 
 ### Requirement: Split confirmation
 
-系统 SHALL 提供 `POST /api/trips/{tripId}/split-draft:confirm`（`X-User-Id` 头，body 含 `draftVersion`），仅允许行程组织者确认当前活跃草稿版本。系统 SHALL 依序校验成员资格、组织者身份、活跃草稿、版本一致与草稿完整性（边界与两条路线齐全），并 SHALL 从草稿文档复算两条路线的时间：每条路线时长 = 活动时长 + 全部交通段 + buffer，须 ≤ 会合窗口且无缺失输入；客户端提交的可确认标记 SHALL NOT 参与判定。任一条件不满足 SHALL 拒绝且草稿保持 `active`、`draftVersion` 不变。成功 SHALL 在单一事务内把草稿文档 `status` 置 `confirmed`（`draftVersion` 不变），已保存的路线对、分组与边界即成为成对生效的确认方案；此后边界保存与路线生成 SHALL 被拒绝（`SPLIT_DRAFT_NOT_ACTIVE`）。响应 SHALL 返回草稿详情投影。
+系统 SHALL 提供 `POST /api/trips/{tripId}/split-draft:confirm`（`X-User-Id` 头，body 含 `draftVersion`），仅允许行程组织者确认当前活跃草稿。校验顺序 = 成员资格 → 组织者 → 活跃草稿 → 版本一致 → 草稿完整性（边界已存且两条路线齐备），随后从草稿文档复算两条路线的时长与窗口；客户端声明不参与判定。拒绝时不改变 `status` 与 `draftVersion`，按缺失/不可行返回 `SPLIT_DRAFT_INCOMPLETE` 或 `SPLIT_TIMING_INFEASIBLE`。成功 SHALL 在单一事务内将 `status` 置 `confirmed`（版本不变），路线对、分组与边界成对生效并锁定编辑（写端点 `409 SPLIT_DRAFT_NOT_ACTIVE`），响应返回草稿详情投影。
 
 #### Scenario: 组织者确认成功并锁定（CF1）
 
@@ -34,7 +34,7 @@
 - **GIVEN** 客户端声明可确认，但 A 路线末段交通为 40 分钟（A = 125），窗口 120
 - **WHEN** 组织者调用确认
 - **THEN** 响应 `409` 且 `error.code = SPLIT_TIMING_INFEASIBLE`
-- **AND** 明细给出 `totalMinutes = 125`、`overrunMinutes = 5`
+- **AND** `error.details.routes` 为长度 2 的数组，每项 `{groupLabel, totalMinutes, overrunMinutes, missingInputs}`：A 项 `totalMinutes = 125`、`overrunMinutes = 5`、`missingInputs = []`；B 项 `totalMinutes = 110`、`overrunMinutes = 0`
 - **AND** 草稿仍为 `active`，`draftVersion` 不变
 - **AND** 服务端判定不读取客户端声明
 
@@ -43,8 +43,16 @@
 - **GIVEN** A 路线的活动时长或末段交通估算缺失
 - **WHEN** 组织者调用确认
 - **THEN** 响应 `409` 且 `error.code = SPLIT_TIMING_INFEASIBLE`
-- **AND** 明细 `missingInputs` 逐项列出缺失项
+- **AND** `error.details.routes` 中 A 项的 `missingInputs` 非空（以字段名标识，如 `activityMinutes` / `travelLegsMinutes[1]` / `bufferMinutes`），B 项 `missingInputs = []`
 - **AND** 草稿仍为 `active`
+
+#### Scenario: 草稿不完整无确认（CF7-N）
+
+- **GIVEN** 活跃草稿版本 2，边界已保存但路线未生成（`routes = null`）；或边界只保存一侧（半边界）
+- **WHEN** 组织者调用确认
+- **THEN** 响应 `409` 且 `error.code = SPLIT_DRAFT_INCOMPLETE`
+- **AND** `error.details.missing` 列出缺失项（`boundaries` / `routes` / 某一组路线）
+- **AND** 草稿仍为 `active`，`draftVersion` 不变；不进入时间复算
 
 #### Scenario: 版本过期拒绝（CF4-N）
 
@@ -73,20 +81,21 @@
 - **WHEN** 成员打开拆分复核与确认屏幕
 - **THEN** 页面呈现两条路线卡（组标签、分组、活动/交通/buffer 分解、合计与窗口对比）、边界与窗口、校验结论与草稿状态徽标
 - **AND** 组织者可见确认按钮，非组织者只见只读视图（permission 态）
-- **AND** 超窗 / 缺输入错误态、已确认终态、loading 与 empty（无草稿）态均可观察
+- **AND** 超窗 / 缺输入 / 不完整错误态按 `error.details` 渲染逐路线数值与缺失项，已确认终态、loading 与 empty（无草稿）态均可观察
 - **AND** 前端不自行宣布可确认（判定归后端）
 
 ### Requirement: Split draft cancellation
 
-系统 SHALL 提供 `POST /api/trips/{tripId}/split-draft:cancel`（`X-User-Id` 头，body 含 `draftVersion`），仅允许草稿发起人取消当前活跃草稿。成功 SHALL 在单一事务内把草稿文档 `status` 置 `cancelled`（`draftVersion` 不变）并删除该行程 `branch_id IN ('split-a','split-b')` 的 `plan_node` 行；`branch_id = 'main'` 的主线节点 SHALL 逐行不变。已确认草稿 SHALL 拒绝取消。取消后该行程 SHALL 允许发起替换草稿：`POST /api/trips/{tripId}/split-draft` 在已存在 `cancelled` 行时以调用者为新发起人在同一行重建（`draftVersion = 1`、`status = active`、边界与路线清空）。响应 SHALL 返回草稿详情投影。
+系统 SHALL 提供 `POST /api/trips/{tripId}/split-draft:cancel`（`X-User-Id` 头，body 含 `draftVersion`），仅允许草稿发起人取消当前活跃草稿。成功 SHALL 在单一事务内将 `status` 置 `cancelled`、清空 `document.routes`（版本不变）并删除该行程 `split-a`/`split-b` 的 `plan_node` 行；`main` 节点逐行不变。版本不符 SHALL 以 stale 拒绝；已确认草稿不可取消。取消后 SHALL 允许替换：`POST split-draft` 以调用者为新发起人在同一行重建（`draftVersion = 1`、`status = active`、边界与路线为空，列版本同步为 1）。响应返回草稿详情投影且 `routes = []`。
 
 #### Scenario: 发起人取消并允许替换（CN1）
 
 - **GIVEN** Ben 发起并完成边界与路线生成的活跃草稿（版本 2）
 - **WHEN** Ben（`X-User-Id: 2`）携带 `draftVersion: 2` 调用取消
-- **THEN** 响应 `200`，`data.status = cancelled`
+- **THEN** 响应 `200`，`data.status = cancelled`，`data.routes = []`
 - **AND** 该行程 `branch_id = 'main'` 的 `plan_node` 行逐行不变，`split-a`/`split-b` 行数为 0
-- **AND** 随后 Alice 调用 `POST .../split-draft` 返回 `201`，新草稿 `initiatorMemberId = 1`、`draftVersion = 1`、`status = active`、边界与路线为空
+- **AND** 随后读取草稿详情仍返回 `status = cancelled` 且 `routes = []`（不出现已删节点撑起的幽灵路线）
+- **AND** 随后 Alice 调用 `POST .../split-draft` 返回 `201`，新草稿 `initiatorMemberId = 1`、`draftVersion = 1`、`status = active`、边界与路线为空（`split_draft.draft_version` 列也为 1）
 
 #### Scenario: 已确认草稿不可取消（CN2-N）
 
@@ -108,6 +117,13 @@
 - **WHEN** 成员调用取消
 - **THEN** 响应 `409` 且 `error.code = SPLIT_DRAFT_NOT_ACTIVE`
 - **AND** 无状态变化
+
+#### Scenario: 取消的版本过期拒绝（CN6-N）
+
+- **GIVEN** 草稿被取消后已由他人重建为新草稿（`draftVersion = 1`，`status = active`）
+- **WHEN** 旧的取消请求（携带重建前的 `draftVersion`）到达
+- **THEN** 响应 `409` 且 `error.code = STALE_DRAFT_VERSION`
+- **AND** 新草稿仍为 `active`，`initiatorMemberId` 与边界/路线不变
 
 #### Scenario: 取消的守卫顺序（CN5-N）
 
@@ -182,13 +198,15 @@
 
 - **GIVEN** 该行程已存在 `status = cancelled` 的草稿行，主线仍为已确认
 - **WHEN** 成员 Alice 携带有效 `X-User-Id` 发起
-- **THEN** 响应 `201`，改写同一行的文档：`initiatorMemberId = Alice`、`mainPlanVersion` = 当前主线版本、`draftVersion = 1`、`status = active`、边界与路线为空
-- **AND** `split_draft` 行数仍为 1（未新增行、未新增迁移）
+- **THEN** 响应 `201`，改写同一行的文档：`initiatorMemberId = Alice`、`mainPlanVersion = 1`（本期恒为主线 v1；多版本重建延后 R2）、`draftVersion = 1`、`status = active`、边界与路线为空
+- **AND** `split_draft` 行数仍为 1（未新增行、未新增迁移），`split_draft.draft_version` 列为 1
 
 #### Scenario: 发起屏幕展示契约（Screen 11）
 
-- **WHEN** 成员打开拆分发起屏幕并触发起
-- **THEN** 页面呈现草稿状态（initiator、mainPlanVersion、draftVersion）
+- **GIVEN** 成员打开拆分发起屏幕（该行程可能无草稿、有活跃草稿、或已有终态草稿）
+- **WHEN** 草稿读取返回
+- **THEN** 页面呈现草稿状态（initiator、mainPlanVersion、draftVersion、status）
+- **AND** 动作按 `status` 分支：无草稿或 `cancelled` → 展示「发起（替换）分队草稿」并调用 `POST split-draft`；`active` → 「下一步：选择边界」；`confirmed` → 只读终态（无发起入口）
 - **AND** 冲突 / 主线未确认 / 无权限错误态与 loading / empty 态均可观察
 - **AND** 前端不自行判定唯一性或确认状态（判定归后端）
 
@@ -350,7 +368,7 @@ The system SHALL expose member-only `GET /api/trips/{tripId}/split-draft` using 
 
 - **GIVEN** the draft was confirmed or cancelled by a previous call
 - **WHEN** a member reads the draft detail
-- **THEN** response is 200 with `status` = `confirmed` or `cancelled` and the saved groups/boundaries/routes of that draft state
+- **THEN** response is 200 with `status` = `confirmed` or `cancelled`; a `confirmed` draft returns its saved groups/boundaries/routes, a `cancelled` draft returns `routes = []` (its split nodes were removed and the document routes cleared)
 - **AND** no version or document change is caused by the read
 
 #### Scenario: Existing trip has no active draft (D2)

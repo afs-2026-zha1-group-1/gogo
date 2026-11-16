@@ -3,14 +3,16 @@
 - 日期: 2026-11-16
 - 范围: `openspec/changes/us-049-050-split-confirm-cancel/specs/splits/spec.md`
 - 方法: `/sdd:delta-craft` step=all（生成 + 复核）；`openspec validate --strict` = **valid**
-- 结构: 7 个 requirement（2 ADDED + 5 MODIFIED）/ **49** 个 scenario
+- 结构: 7 个 requirement（2 ADDED + 5 MODIFIED）/ **51** 个 scenario（C7 补丁后：+CF7-N、+CN6-N）
 - 性质: 复核表，非 Gate；不写 G1 结论
+
+> **C7 补丁复核（2026-11-16，P3 首步）**：按 G1 IO review findings 完成 delta 补丁 —— ① D1b/CN1 改为 cancelled 返回 `routes=[]`（取消同事务清空 `document.routes`）；② 新增 CN6-N（取消 stale 版本 → 409，新草稿不变）；③ 新增 CF7-N（草稿不完整 → 409 `SPLIT_DRAFT_INCOMPLETE` + `details.missing`）；④ 定义 `error.details.routes[]` 与 `details.missing` 形状（CF2-N/CF3-N/Screen 15 同步）；⑤ Screen 11 按 `status` 分支（cancelled → 发起替换/confirmed → 只读）；⑥ S8 `mainPlanVersion` 本期恒为 1。`openspec validate --strict` 复跑 = **valid**。AC-1~4 / DoV-1~5 仍全 Pass（新增场景均为可观察结果）。
 
 ## Acceptance criteria
 
 | Item | Result | Evidence | Notes |
 |---|---|---|---|
-| AC-1 每个 requirement 至少一条可测 AC | Pass | ADDED confirm 7 场景 / cancel 6 场景；MODIFIED 沿用既有场景并新增 S8、D1b | 每个场景均为 HTTP 状态 + `error.code` + 文档 `status` + 库行数/数值 |
+| AC-1 每个 requirement 至少一条可测 AC | Pass | ADDED confirm 8 场景（含 CF7-N）/ cancel 7 场景（含 CN6-N）；MODIFIED 沿用既有场景并新增 S8、D1b | 每个场景均为 HTTP 状态 + `error.code` + `error.details` + 文档 `status` + 库行数/数值 |
 | AC-2 AC 可观察（无模糊措辞） | Pass | CF2-N `totalMinutes=125`、`overrunMinutes=5`；CN1 main 行逐行不变且 split 行为 0；S8 `split_draft` 行数=1 | 无 "works well / correctly" 类措辞 |
 | AC-3 高风险负向/边界已点名 | Pass | CF2-N 超窗、CF3-N 缺输入、CF4-N 版本过期、CF5-N 非组织者、CF6-N 非活跃、CN2-N 已确认取消、CN3-N 非发起人、CN4-N 无草稿、CN5-N 三守卫、S7 重复发起 | 与 issue #21 AC2/AC3、#22 AC1/AC2/AC3 一一对应 |
 | AC-4 AC 未退化为实现细节 | Pass | 场景描述契约行为（状态迁移、守卫顺序、响应投影），不指定类/方法 | 仅 `plan_node.branch_id`、`split_draft.trip_id UNIQUE` 作为数据契约出现 |
