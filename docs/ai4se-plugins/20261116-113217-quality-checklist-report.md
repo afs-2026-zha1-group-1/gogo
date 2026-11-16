@@ -7,12 +7,12 @@
 
 ## Summary
 
-### p3 — req-005-frontend-typescript-migration
+### p3 — us-065-frontend-typescript-migration
 
 | Check id | Required? | Status | Evidence |
 |----------|-----------|--------|----------|
-| P3-1 | yes | Pass | `openspec/changes/req-005-frontend-typescript-migration/atdd-design.md` covers API/E2E applicability, build/static gates, pre-code acceptance checks, local/CI gates, fixtures, non-goal reverse verification, and the user's decision to skip NFR tests. |
-| P3-2 | yes | Pass | `design.md`, `tasks.md`, and `atdd-design.md` exist. `openspec status --change req-005-frontend-typescript-migration --json` reports all four OpenSpec artifacts done and `isPlanningComplete: true`; strict validation reports `valid: true`. |
+| P3-1 | yes | Pass | `openspec/changes/us-065-frontend-typescript-migration/atdd-design.md` covers API/E2E applicability, build/static gates, pre-code acceptance checks, local/CI gates, fixtures, non-goal reverse verification, and the user's decision to skip NFR tests. |
+| P3-2 | yes | Pass | `design.md`, `tasks.md`, and `atdd-design.md` exist. `openspec status --change us-065-frontend-typescript-migration --json` reports all four OpenSpec artifacts done and `isPlanningComplete: true`; strict validation reports `valid: true`. |
 | P3-3 | yes | Pass | `tasks.md` §Alignment self-check maps FB-1–FB-6 to design decisions, ATDD evidence, and task IDs; it records no silent scope expansion. |
 | P3-4 | yes | Pass | `tasks.md` contains 15 actionable unchecked tasks, grouped by owner, with verification criteria in every task. `openspec instructions apply` reports 15 total, 0 complete, 15 remaining, as expected before implementation. |
 

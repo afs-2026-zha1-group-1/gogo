@@ -1,4 +1,4 @@
-# G1 decision — req-005-frontend-typescript-migration
+# G1 decision — us-065-frontend-typescript-migration
 
 - Gate: G1 (Align)
 - Inputs:
@@ -6,7 +6,7 @@
   - AC/DoV review: `dov-ac-review.md` — Pass
   - P2 consistency lint: `consistency-lint.md` — Pass (0 blockers, 0 warnings, 2 suggestions)
   - Strict OpenSpec validation — Passed
-  - Approved requirement: `requirement-workspace/requirements/REQ-005.md`
+  - Approved requirement: `requirement-workspace/requirements/US-065.md`
 - Findings:
   - Scope: The proposal now states explicit Non-Goals. Delta requirements FB-1–FB-6 cover the TypeScript source, entry, build, behavior-preservation, development-server, and runtime-dependency boundaries.
   - Ambiguity: No blocking ambiguity remains. Compiler options and development-only type packages are implementation-design choices.

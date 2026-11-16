@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type FocusEvent } from 'react'
 import QRCode from 'qrcode'
-import { api, errorMessage, type IssuedInvitation } from '../api'
+import { api, errorMessage } from '../api'
 import Icon from '../Icons'
+import type { InvitationIssue } from '../types'
 
 interface InvitationPanelProps {
   tripId: number
@@ -14,7 +15,7 @@ type InvitationState =
   | { kind: 'loading' }
   | { kind: 'denied'; message?: string }
   | { kind: 'failed'; message: string | undefined }
-  | { kind: 'ready'; invitation: IssuedInvitation }
+  | { kind: 'ready'; invitation: InvitationIssue }
 
 function invitationUrl(joinPath: string): string {
   return `${window.location.origin}${window.location.pathname}#${joinPath}`
@@ -45,7 +46,7 @@ export default function InvitationPanel({ tripId, userId, isOrganizer, userName 
   const load = useCallback(() => {
     let active = true
     setState({ kind: 'loading' })
-    api<IssuedInvitation>(`/api/trips/${tripId}/invitation`, { userId, method: 'POST' })
+    api<InvitationIssue>(`/api/trips/${tripId}/invitation`, { userId, method: 'POST' })
       .then((result) => {
         if (!active) return
         if (result.ok && result.data) {

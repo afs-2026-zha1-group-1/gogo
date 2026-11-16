@@ -1,51 +1,50 @@
-# DoR light self-check - REQ-005
+# DoR light self-check — REQ-005
 
-- Date: 2026-11-16
+- Date: 2026-11-15
 - Entry: `requirement-workspace/requirements/REQ-005.md`
-- Deep-dive in scope: no. This is a frontend implementation-language/build
-  refactor; it changes no business data contract, app boundary, API, or display
-  behavior. Items ⑨-⑫ are therefore not applicable.
-- This is an entry self-check, not a Gate decision.
+- Deep-dive in scope: yes (`requirement-workspace/deep-dive.md` §REQ-005), so items ⑨–⑫ apply
+- This is an entry self-check, not a Gate. No Pass/Fail gate decision is recorded here.
 
 ## Findings
 
 | # | Item | Severity | Status | Location | Issue / evidence |
 |---|---|---|---|---|---|
-| ① | Intent clear | — | Pass | REQ-005 §Intent | Converts the frontend to TypeScript for consistent type checking while preserving existing behavior. |
-| ② | Actors defined | — | Pass | REQ-005 §Actors and boundaries | Frontend developers and site visitors are identified; the backend/API boundary is unchanged. |
-| ③ | Scope bounded | — | Pass | REQ-005 §In scope / §Out of scope | Lists the ten actual files, entry/import/build updates, preserved behavior, and explicit non-goals. |
-| ④ | Scenarios / AC concrete | — | Pass | REQ-005 §Scenarios and AC hints | Seven observable outcomes cover file inventory, entry/imports, type-checking, build/dev proxy, greeting, routes/identity, and trip/invitation flows. |
-| ⑤ | Exception / boundary | — | Pass | REQ-005 AC5 and AC6 | Covers unavailable/unsuccessful greeting requests and the unchanged application/API boundary. |
-| ⑥ | Results verifiable | — | Pass | REQ-005 §Scenarios and AC hints | File extensions, compiler/build results, proxy destination, JSON contract, and route/request behavior are observable. |
-| ⑦ | Dependencies / app-architecture touchpoints | — | Pass | REQ-005 §Constraints / §Affected capabilities | Frontend only; React/Vite build and browser application. No backend, database, API, or runtime-topology change. |
-| ⑧ | Open-questions gate | — | Pass | REQ-005 §Open questions | No unresolved app-architecture questions. Compiler options and declaration packages are implementation design. |
-| ⑨ | Data contract decided | — | N/A | Deep-dive out of scope | No business data or wire contract is added or changed. |
-| ⑩ | Boundary enumerated | — | N/A | Deep-dive out of scope | No new business-rule branches; existing frontend routes and API boundaries are preserved. |
-| ⑪ | Cross-REQ aligned | — | N/A | Deep-dive out of scope | No cross-requirement business behavior or data ownership changes. |
-| ⑫ | Notification / display contract | — | N/A | Deep-dive out of scope | No notification or display surface is added or changed. |
+| ① | Intent clear | — | Pass | REQ-005 §Intent | One phone frame + persistent dock; placement only; honest placeholders; guest join excluded |
+| ② | Actors defined | — | Pass | REQ-005 §Actors | Traveler via `X-User-Id` scaffold (unchanged); frontend-only ownership; backend/DB untouched |
+| ③ | Scope bounded | — | Pass | REQ-005 §In/Out scope | Out of scope names US-038–062, US-013, US-061, list-all endpoint, backend/DB, auth, demo data, contract changes |
+| ④ | Scenarios / AC concrete | — | Pass | REQ-005 §Scenarios | Eleven scenarios plus four reverse cases, each with an observable route/surface/state outcome |
+| ⑤ | Exception / boundary | — | Pass | deep-dive §REQ-005 ⑩ | Unknown hash, non-numeric id, denied/missing details, unknown token, join exclusion, back/forward all enumerated |
+| ⑥ | Results verifiable | — | Pass | REQ-005 §Scenarios + story text-only table | Unique visible heading per tab, forward/reverse walk, identity persistence, unchanged acceptance behavior — all observable without screenshots |
+| ⑦ | Dependencies / app-arch touchpoints | — | Pass | impact brief §24–26 | Frontend-only; composes REQ-001/003/004 surfaces; hash router extended; no API/data/CI touchpoint; merge-order note R18 |
+| ⑧ | Open-questions gate | — | Pass | REQ-005 §Open questions | Blocking not-resolved = 0. OQ-1/OQ-2 deferred to P3 (2026-11-14 decision); OQ-3/OQ-6/OQ-7 resolved; OQ-4/OQ-5 deferred to P3 (2026-11-15 user decision) |
+| ⑨ | Data contract decided | — | Pass | deep-dive §REQ-005 ⑨ | Route/identity/tab-model grain, fields and transitions concrete; no backend data; OQ naming polish carries proposals, no `{TBD}` |
+| ⑩ | Boundary enumerated | — | Pass | deep-dive §REQ-005 ⑩ | Every scenario branch has an in/out row; fallbacks retained; reverse cases R-1/R-2/R-3 + S8 |
+| ⑪ | Cross-REQ aligned | — | Pass | deep-dive §REQ-005 ⑪ | greeting/trips/invitations composed not modified; create back-target is placement per story table; identity and router reused; future tabs anchored |
+| ⑫ | Notification / display contract | — | Pass | deep-dive §REQ-005 ⑫ | Nine surfaces with trigger/recipient/fields/channel; no notification workflow |
 
-## Baseline discrepancies
+## A0 deep-dive gate
 
-The attachment's three-file inventory, `router.tsx`, existing TypeScript build,
-`@` alias, Tailwind plugin, and B-chain split flow do not match this checkout.
-The user confirmed that the actual checkout is the target and that the alias and
-Tailwind statements are stale. The requirement therefore describes the ten
-actual JavaScript/JSX files and current routes/config.
-
-The existing Living Spec for `greeting` describes a plain-text response, while
-REQ-002 and the current frontend contract use JSON. This is pre-existing spec
-drift and is not changed by this migration; AC5 follows REQ-002 and current
-behavior.
+⑨ Pass, ⑩ Pass, ⑪ Pass, ⑫ Pass → **A0 Pass**. Split permitted.
+`/sdd:story-split` is Skipped: the story already exists as GitHub issue #32
+and the split is fixed at six ADDED `app-shell` requirements.
 
 ## Advisory findings
 
 | Severity | Status | Location | Issue | Fix hint / owner |
 |---|---|---|---|---|
-| SUGGESTION | deferred | `openspec/specs/greeting/spec.md`; `requirement-workspace/requirements/REQ-002.md` | Living Spec response shape differs from REQ-002/current JSON behavior | User deferred correction to a separate change on 2026-11-16; do not widen REQ-005. Owner: spec maintainer. |
+| WARNING | resolved | impact brief R18 | REQ-004 PR #31 was open when P1 started; REQ-005 stacked on that code | Deferred by user 2026-11-15, then resolved the same day: PR #31 merged 06:23:20Z (gh verified). Owner Dev/IO |
+| WARNING | deferred | impact brief R19 | Fixed dock may obscure Home `.actionbar`/content on short viewports; `100dvh`/safe-area need browser verification | 2026-11-15 user decision: record risk, defer. Content bottom padding at P3; browser verification at P4, not build alone. Owner Dev |
+| SUGGESTION | resolved | impact brief R20 | Placeholder tabs could drift into fabricated demo data | Guarded: AC5 + reverse case R-2 assert honest text only; story design scope excludes demo content. Owner IO |
+| SUGGESTION | deferred | REQ-005 OQ-1/OQ-2 | Open-by-id widget and dock icon/token extraction deferred to P3 (2026-11-14 decision) | Decide at P3; behavior already bounded. Owner Dev |
+| SUGGESTION | deferred | REQ-005 OQ-4/OQ-5 | Bare 行程 route naming and trip-selection memory unspecified | 2026-11-15 user decision: defer to P3; concrete proposals recorded. Owner Dev/IO |
+| SUGGESTION | deferred | intent pick signal | Issue #32 assignees empty in today's fetch despite the 2026-11-14 assignment/card move | Re-assign on the board when convenient; no behavior impact. Owner IO |
+
+No BLOCKER is deferred. Blocking open questions not `resolved`: **0**.
 
 ## Exit gate
 
 - BLOCKER count: **0**
 - Blocking open questions not `resolved`: **0**
-- Deep-dive items ⑨-⑫ are N/A because no business contract or display behavior changes.
-- Cleared for impact analysis and proposal split.
+- WARNING / SUGGESTION carry owners; none blocks drafting.
+- Cleared to run `/sdd:proposal-split` for the `app-shell` capability after the
+  advisory round and split-plan confirmation.

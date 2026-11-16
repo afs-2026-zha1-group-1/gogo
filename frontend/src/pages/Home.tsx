@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { api, errorMessage, type GreetingResponse } from '../api'
+import { api, errorMessage } from '../api'
 import Icon from '../Icons'
+import type { GreetingResponse } from '../types'
 
 export default function Home() {
   const [greeting, setGreeting] = useState<string>('')

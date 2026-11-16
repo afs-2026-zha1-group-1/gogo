@@ -1,9 +1,11 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
-import { api, errorMessage, type Trip, type TripCreatePayload } from '../api'
+import { api, errorMessage } from '../api'
 import Icon from '../Icons'
+import type { Trip, TripCreatePayload } from '../types'
 
 interface CreateTripProps {
   userId: number
+  backHref: string
 }
 
 const EMPTY: TripCreatePayload = {
@@ -15,7 +17,7 @@ const EMPTY: TripCreatePayload = {
   endLocation: '',
 }
 
-export default function CreateTrip({ userId }: CreateTripProps) {
+export default function CreateTrip({ userId, backHref }: CreateTripProps) {
   const [form, setForm] = useState<TripCreatePayload>(EMPTY)
   const [busy, setBusy] = useState<boolean>(false)
   const [error, setError] = useState<string>('')
@@ -54,7 +56,7 @@ export default function CreateTrip({ userId }: CreateTripProps) {
   return (
     <div className="screen">
       <header className="appbar">
-        <a className="iconbtn" href="#/" aria-label="Back"><Icon name="left" /></a>
+        <a className="iconbtn" href={backHref} aria-label="Back"><Icon name="left" /></a>
         <div className="grow">
           <div className="title">创建行程</div>
           <div className="sub">US-001 · 建立一个共享空间</div>

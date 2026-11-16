@@ -1,29 +1,29 @@
-# P2 consistency lint — req-005-frontend-typescript-migration
+# P2 consistency lint — us-065-frontend-typescript-migration
 
 - Phase: `p2`
 - Focus: proposal and Delta Spec
 - Date: 2026-11-16
 - Artifact level: 2 (proposal + specs)
-- Validation: `openspec validate req-005-frontend-typescript-migration --strict --json` passed.
+- Validation: `openspec validate us-065-frontend-typescript-migration --strict --json` passed.
 
 ## Verdict
 
 **Pass** — 0 BLOCKER, 0 WARNING, 2 SUGGESTIONS. The proposal now has an
 explicit Non-Goals section. The remaining items are non-blocking: the known
 greeting-spec discrepancy is outside this change and was deferred to a separate
-change; detailed browser-state coverage remains in REQ-005 AC5–AC7.
+change; detailed browser-state coverage remains in US-065 AC5–AC7.
 
 ## Findings
 
 | ID | Severity | Phase | Location | Issue | Suggested fix | Evidence | Authority |
 |---|---|---|---|---|---|---|---|
-| SH-2 | SUGGESTION | P2 | `openspec/specs/greeting/spec.md`; `proposal.md`, Impact | The Living Spec describes a plain-text response, while REQ-002 and the current frontend use the JSON `message` field. This pre-existing discrepancy is outside REQ-005, which preserves existing behavior, and is documented as deferred. | Keep the correction outside REQ-005 and resolve the Living Spec discrepancy in a separate change. | `openspec/specs/greeting/spec.md`; `requirement-workspace/requirements/REQ-002.md`; `frontend/src/pages/Home.jsx`; proposal, Known unrelated spec drift. | proposal + spec + code [fact] |
-| SH-3 | SUGGESTION | P2 | `specs/frontend-build/spec.md`, FB-4 | The migration's preserved-flow scenario names the routes, identity header, and broad trip/invitation states, but does not enumerate every state transition. | Keep REQ-005 AC5–AC7 as the detailed regression oracle; no expansion is needed for this TypeScript migration. | `specs/frontend-build/spec.md`, FB-4; `requirement-workspace/requirements/REQ-005.md`, AC5–AC7. | spec + requirement [inference] |
+| SH-2 | SUGGESTION | P2 | `openspec/specs/greeting/spec.md`; `proposal.md`, Impact | The Living Spec describes a plain-text response, while REQ-002 and the current frontend use the JSON `message` field. This pre-existing discrepancy is outside US-065, which preserves existing behavior, and is documented as deferred. | Keep the correction outside US-065 and resolve the Living Spec discrepancy in a separate change. | `openspec/specs/greeting/spec.md`; `requirement-workspace/requirements/REQ-002.md`; `frontend/src/pages/Home.jsx`; proposal, Known unrelated spec drift. | proposal + spec + code [fact] |
+| SH-3 | SUGGESTION | P2 | `specs/frontend-build/spec.md`, FB-4 | The migration's preserved-flow scenario names the routes, identity header, and broad trip/invitation states, but does not enumerate every state transition. | Keep US-065 AC5–AC7 as the detailed regression oracle; no expansion is needed for this TypeScript migration. | `specs/frontend-build/spec.md`, FB-4; `requirement-workspace/requirements/US-065.md`, AC5–AC7. | spec + requirement [inference] |
 
 ## Resolved since previous review
 
 - P3 BLOCKER: `proposal.md` now has a named, non-empty `## Non-Goals`
-  section grounded in REQ-005's existing Out of scope list.
+  section grounded in US-065's existing Out of scope list.
 
 ## Checks
 
@@ -42,7 +42,7 @@ change; detailed browser-state coverage remains in REQ-005 AC5–AC7.
 - No blocking residual risks remain for P2 alignment.
 - The greeting Living Spec discrepancy remains known and deferred to a separate
   change; it is not changed by this TypeScript migration.
-- REQ-005 AC5–AC7 remain the detailed regression oracle for browser-flow
+- US-065 AC5–AC7 remain the detailed regression oracle for browser-flow
   preservation; no frontend implementation was changed in this P2 work.
 
 ## Reviewer metadata

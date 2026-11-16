@@ -8,7 +8,7 @@ application modules and a JavaScript Vite config. `index.html` loads
 existing GitHub Actions frontend job already runs `npm ci` and `npm run build`
 on Node 24.
 
-REQ-005 and the Delta Spec require a TypeScript migration without changing
+US-065 and the Delta Spec require a TypeScript migration without changing
 visitor behavior, the API boundary, or the development-server contract. The
 binding technology-stack plan already lists React + TypeScript + Vite. Its
 reconciliation is deferred until the change has shipped and is ready to

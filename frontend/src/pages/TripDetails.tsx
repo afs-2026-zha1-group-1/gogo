@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { api, errorMessage, users, type Trip } from '../api'
+import { api, errorMessage, users } from '../api'
 import Icon from '../Icons'
 import InvitationPanel from './InvitationPanel'
+import type { Trip } from '../types'
 
 interface TripDetailsProps {
   userId: number

@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { api, errorMessage, type InvitationPreview, type JoinResult } from '../api'
+import { api, errorMessage } from '../api'
 import Icon from '../Icons'
+import type { AcceptResult, InvitationPreview } from '../types'
 
 interface JoinProps {
   token: string
@@ -65,7 +66,7 @@ export default function Join({ token, userId, userName }: JoinProps) {
     setBusy(true)
     setActionError('')
     try {
-      const result = await api<JoinResult>(
+      const result = await api<AcceptResult>(
         `/api/invitations/${encodeURIComponent(token)}/accept`,
         { userId, method: 'POST' },
       )

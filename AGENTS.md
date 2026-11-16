@@ -13,4 +13,4 @@ This guide applies to coding agents working in this repository. Read the relevan
 Please refer to the [knowledge base](docs/knowledge/_INDEX.md) for additional information.
 
 ## Reference
-UI design please refer to [shadcn/ui](https://ui.shadcn.com/docs)
+UI design please refer to Ant Design 

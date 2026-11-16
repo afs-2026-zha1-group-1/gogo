@@ -1,13 +1,13 @@
-# Impact brief - REQ-005 (2026-11-16)
+# Impact brief - US-065 (2026-11-16)
 
 ## 1. Requirement set
 
 | id | Path |
 |---|---|
-| REQ-005 | `requirement-workspace/requirements/REQ-005.md` |
+| US-065 | `requirement-workspace/requirements/US-065.md` |
 
-Supporting intent: `requirement-workspace/intents/2026-11-16-req-005.md`.
-DoR self-check: `requirement-workspace/analysis/req-005-dor.md`.
+Supporting intent: `requirement-workspace/intents/2026-11-16-us-065.md`.
+DoR self-check: `requirement-workspace/analysis/us-065-dor.md`.
 
 ## 2. As-is asset inventory
 
@@ -17,7 +17,7 @@ DoR self-check: `requirement-workspace/analysis/req-005-dor.md`.
 | Living Spec | `openspec/specs/greeting/spec.md` | Contains the existing greeting capability. Its endpoint response description is plain text, unlike REQ-002 and the current JSON consumer; this is pre-existing drift and is not changed here. |
 | Existing requirement set | `requirement-workspace/requirements/REQ-001.md` through `REQ-004.md` | Defines greeting, trips, and invitations. REQ-002 specifies the JSON greeting contract. No TypeScript migration requirement exists yet. |
 | Post-archive assets | `openspec/changes/archive/2026-11-13-req-001-hello-world/` | REQ-001 is archived; no frontend migration artifact exists. |
-| Active OpenSpec changes | `openspec/changes/req-002-greeting-json-sqlite/`, `req-003-trip-create-and-view/`, `req-004-trip-invitations/` | Existing greeting, trip, and invitation work; no change directory for REQ-005. |
+| Active OpenSpec changes | `openspec/changes/req-002-greeting-json-sqlite/`, `req-003-trip-create-and-view/`, `req-004-trip-invitations/` | Existing greeting, trip, and invitation work; no change directory for US-065. |
 | Frontend source | `frontend/src/` | Nine `.js`/`.jsx` files: `App.jsx`, `main.jsx`, `api.js`, `Icons.jsx`, and five page components (`Home`, `CreateTrip`, `TripDetails`, `Join`, `InvitationPanel`). No `.ts` or `.tsx` source is present. |
 | Frontend entry | `frontend/index.html` | Loads `/src/main.jsx`. |
 | Vite config | `frontend/vite.config.js` | React plugin; port 5173; `/api` proxy to `http://localhost:8080`; no `@` alias or Tailwind plugin. |
@@ -37,7 +37,7 @@ DoR self-check: `requirement-workspace/analysis/req-005-dor.md`.
 | `frontend/package.json` and lockfile | Build runs Vite only; no TypeScript compiler or type declarations. | Add the minimal development-only TypeScript/compiler typings needed and run the TypeScript project check before Vite build. Keep functional runtime dependencies unchanged. |
 | Existing routes and API use | Hash routes are `#/`, `#/create`, `#/trips/<id>`, `#/join/<token>`; greeting uses JSON `data.message`; identity-bound requests use `X-User-Id`. | Preserve routes, response handling, identity headers, trip/invitation behavior, and existing error/denied states. |
 | `.github/workflows/ci.yml` | Frontend CI invokes `npm ci` and `npm run build`. | No workflow-structure change; the existing build command becomes the TypeScript-plus-Vite check. |
-| `openspec/specs/greeting/spec.md` | Describes a plain-text greeting response, conflicting with REQ-002/current JSON behavior. | Checked; no change in REQ-005. Handle the pre-existing spec discrepancy separately. |
+| `openspec/specs/greeting/spec.md` | Describes a plain-text greeting response, conflicting with REQ-002/current JSON behavior. | Checked; no change in US-065. Handle the pre-existing spec discrepancy separately. |
 | Backend and database | Own existing API and SQLite data. | Checked; no impact. No backend, database, API, or migration changes. |
 | Frontend test tooling | No frontend test runner exists. | Do not introduce a new test framework. Verify type-check/build and exercise existing flows with the available runtime checks. |
 
@@ -50,7 +50,7 @@ affected.
 
 ## 5. Artifact impact
 
-- Add REQ-005 intent, structured requirement, DoR self-check, impact brief, and
+- Add US-065 intent, structured requirement, DoR self-check, impact brief, and
   one OpenSpec proposal.
 - At implementation time, change the ten listed source/config files, HTML entry,
   TypeScript configuration, package metadata, and lockfile.
@@ -74,11 +74,11 @@ this P1 proposes one Change rather than creating an unlinked agile-story list.
 | R3 | No frontend test runner exists to automate every screen regression. | Verification | Known, non-blocking | Do not add a framework; pair `tsc -b` and build evidence with runtime checks of the existing routes and requests. Owner: Dev. |
 | R4 | The Living Spec greeting response shape conflicts with REQ-002/current JSON behavior. | Documentation consistency | Deferred by user | Preserve the current JSON consumer per REQ-002; the user deferred correcting the unrelated Living Spec to a separate change on 2026-11-16. Owner: Spec maintainer. |
 
-No critical blocker invalidates REQ-005.
+No critical blocker invalidates US-065.
 
 ## 8. Suggested split boundaries
 
-Propose one Change: `req-005-frontend-typescript-migration`, covering the
+Propose one Change: `us-065-frontend-typescript-migration`, covering the
 TypeScript conversion, compiler/build setup, entry/import updates, and behavior
 preservation checks. There are no dependencies on backend or database changes.
 Do not split by source/config layer: an intermediate change that leaves

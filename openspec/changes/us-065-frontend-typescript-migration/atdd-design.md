@@ -1,4 +1,4 @@
-# ATDD design — req-005-frontend-typescript-migration
+# ATDD design — us-065-frontend-typescript-migration
 
 - Date: 2026-11-16
 - Stage: P3, `/sdd:atdd-design`
