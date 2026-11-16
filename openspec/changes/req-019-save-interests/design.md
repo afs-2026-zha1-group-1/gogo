@@ -54,7 +54,8 @@ CREATE TABLE member_preference (
 
 No seed rows and no trigger: `updated_at` is written only by the service, so a rejected
 or read-only call leaves it byte-identical (SAVE-5, READ-5). `kind` stays a free `TEXT`
-because REQ-020/024 extend the domain; only `interest` is used here.
+because REQ-020/024 extend the domain; only `interest` is used here. `updated_at` holds
+ISO-8601 UTC text, matching `tech-stack-plan.md` §5 ("时间一律 TEXT（ISO-8601 UTC）").
 
 **DD2 — Backend package `com.gogo.preference`.** `PreferenceController` (two routes),
 `PreferenceService` (order of checks, dedupe, replace), `PreferenceRepository`
@@ -132,6 +133,41 @@ autowired `JdbcTemplate`.
 **DD9 — Dependencies and CI.** No new backend or frontend dependency; the two CI jobs and
 their commands are unchanged. Local gate is the full `mvn test` plus `npm run build`; the
 pipeline gate is a fresh CI run on the PR to `main`.
+
+## Deviations from `tech-stack-plan.md`
+
+`openspec/config.yaml` makes `docs/knowledge/architecture/tech-stack-plan.md` binding for
+implementation and requires every deviation from its stack, data model or API list to be
+recorded in the proposal or the design instead of being made silently. The plan predates
+REQ-001, so the merged code already differs from it; this section records that drift as
+it bears on REQ-019 and adds the choices this change makes on top of it.
+
+| # | Plan says | Reality / this change | Reason | Tracked as |
+|---|---|---|---|---|
+| TS-1 | §3, §7: `JdbcClient` + `record` mapping | `JdbcTemplate` | Merged REQ-001…004 code; both are spring-jdbc, still no ORM | Plan reconciliation (below) |
+| TS-2 | §5: `member_preference(..., member_id, ...)` with a plain index `(trip_id, member_id, kind)` | `user_id` referencing `app_user`, and `UNIQUE (trip_id, user_id, kind)` | Identity has been `app_user.id` through `X-User-Id` since `V2`; UNIQUE turns "one row per kind" into a database fact instead of a service promise | DD1; proposal and deep-dive ⑪; plan reconciliation |
+| TS-3 | §6: one `PUT /preferences` carrying all four kinds | Three endpoints across the chain: interests here, `/preferences/must-dos` (REQ-020), `/preferences/budget` (REQ-024) | Each kind has its own validation, save timing and story; this AC only needs interests | Plan reconciliation; REQ-020/024 proposals |
+| TS-4 | §5, DR-12: interests stored as `tag.code` from the 24-code vocabulary | Seven `(label, code)` constants in `InterestCatalogue`; no `tag` table, no `/api/tags` | `tag` ships with M2.5 and US-031; the AC names exactly seven interests and forbids aliases | D2 in the intents file; plan reconciliation |
+| TS-5 | §6: `{data, error}` envelope and `X-Member-Id` | Bare DTO on success, `{code, message}` on failure, `X-User-Id` | Follows the merged trip and invitation code | Proposal "Known deviations"; plan reconciliation |
+| TS-6 | §3, §4: React + **TypeScript**, Ant Design 5, TanStack Query v5, React Router 7 | React 19 + Vite 8 in plain JavaScript (`.jsx`), hand-written hash router, `fetch` wrapper in `api.js`, hand-written CSS | D5; the repo-wide TypeScript move is a separate story (US-065). `AGENTS.md` asks for shadcn/ui, so the plan, `AGENTS.md` and the code are three-way inconsistent | D5; plan reconciliation; team-level docs fix |
+| TS-7 | §3: Vite 7.x | Vite 8.3 | Versions as installed by REQ-003/004 | Plan reconciliation |
+| TS-8 | §4: `com/bettertrips/*` with one `common/GlobalExceptionHandler` | `com.gogo.{hello,trip,invitation,preference}` with one `@RestControllerAdvice` per feature package | The per-package advice already exists twice; D15 follows it instead of widening `TripErrorAdvice` | DD2, D15; plan reconciliation |
+| TS-9 | §5, §7: `./data/bettertrips.db?journal_mode=WAL&busy_timeout=5000&foreign_keys=on` and `hikari.maximum-pool-size=1` | `jdbc:sqlite:./data/gogo.db` with no URL parameters; the pool size of 1 is set **only in the test profile** | Base configuration predates this change | Owner Dev/SA: a harness fix, not a REQ-019 edit |
+| TS-10 | §3: Maven Wrapper | `backend/pom.xml` only, no `mvnw` | Base configuration | Plan reconciliation |
+| TS-11 | §3: no extra frontend dependency | `qrcode` + `jsqr` added by REQ-004 | REQ-004 P3 decision (Apache-2.0) | REQ-004 record; plan reconciliation |
+| TS-12 | §7: `flyway-core` **plus** `flyway-database-nc-sqlite` at one pinned `${flyway.version}`, with an explicit `sqlite-jdbc` version | `flyway-core` only, no SQLite module, no version property; `sqlite-jdbc` is Boot-managed | `V1`–`V4` already migrate through this setup and REQ-002's verification records SQLite migrations succeeding, so the single-artifact form evidently works in the managed Flyway version — but that is inherited evidence, not re-run here. It becomes load-bearing the moment a Flyway upgrade drops SQLite from core | Plan reconciliation; Dev/SA |
+
+Two consequences are worth stating plainly:
+
+- **TS-2 and TS-9 interact.** `V4` declares foreign keys to `trip` and `app_user`, but
+  SQLite enforces them only when `PRAGMA foreign_keys=ON` is set per connection and the
+  datasource URL does not set it. `UNIQUE` is an index and is enforced regardless, so
+  every REQ-019 scenario still holds; the foreign keys are currently declarative. This
+  change records the gap instead of editing base configuration.
+- **TS-9 also leaves the SQLite single-writer rule unenforced in the main profile.** With
+  an unconstrained Hikari pool, concurrent writes can surface `SQLITE_BUSY`. REQ-019
+  issues at most one short write per save and the test profile pins the pool to 1, so
+  this is recorded rather than closed.
 
 ## Risks / Trade-offs
 

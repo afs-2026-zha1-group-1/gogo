@@ -35,6 +35,9 @@
       member-left-join read query (DD5, DD6); `payload` written as `{"codes":[...]}`
 - [ ] 2.3 `InterestCatalogue` constants in AC order, first-occurrence dedupe and
       label→code mapping (DD4); apply-time unit TDD for UT-1, UT-2, UT-3
+- [ ] 2.4 Record the design TS-9 gap in the P4 evidence (foreign keys declared but
+      unenforced without `foreign_keys=on`; pool size pinned to 1 only in tests); **do not**
+      edit `application.yml` in this change — the harness fix belongs to Dev/SA
 
 ## 3. Endpoints and error mapping (owner: Dev)
 
@@ -82,6 +85,14 @@
       bodies that exceed 500 characters and rerun
       `openspec validate req-019-save-interests --strict` on a machine that has the CLI;
       this environment has no `openspec` on `PATH`, so no pass may be claimed from here
+- [ ] 6.5 **Final task before archive (config.yaml `rules.tasks`):** reconcile
+      `docs/knowledge/architecture/tech-stack-plan.md` with what this change actually
+      shipped — the two endpoints (with `interest` only), the `member_preference`
+      columns and `UNIQUE(trip_id,user_id,kind)`, and the deviations TS-1…TS-12 of the
+      design; reconcile only work completed by an archived change, never planned or
+      still-unarchived work; append a row to `docs/knowledge/_LOG.md` when the plan
+      changes; close this task before `/opsx:archive` (config.yaml
+      `operations.archive`)
 
 ## 7. Stage artifacts (owner: Dev)
 
@@ -102,6 +113,7 @@
 | Non-goals (other kinds, US-027, US-026, US-031, auth, `tag`, locking, i18n, CI) | Goals / Non-Goals, DD1, DD3, DD7 | 1.2, 5.3 | ATDD §5 reverse table | Pass |
 | Display contract (deep-dive ⑫: loading/empty/error/saving) | DD7 | 4.2, 5.2 | PAGE-1, PAGE-2, PAGE-7, PAGE-8, PAGE-9 | Pass |
 | G1 condition 4 (strict validation) | Risks: strict validation still failing | 6.4 | — (not an ATDD row; archive gate) | Pass as a registered task, not as a passed check |
+| Tech-stack baseline (`config.yaml` `context`) | Deviations TS-1…TS-12 recorded, none silent | 2.4, 6.5 | — (not an ATDD row; archive gate) | Pass as recorded deviations, not as fixes |
 
 No silent scope creep: every task traces to a spec scenario, a declared non-goal reverse
 check, or a stage artifact. NFR testing is explicitly excluded by the user's decision, so
