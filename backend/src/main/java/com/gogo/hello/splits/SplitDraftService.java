@@ -64,6 +64,7 @@ public class SplitDraftService {
         if (!repository.isMainPlanConfirmed(tripId)) {
             throw new ApiException(ErrorCode.MAIN_PLAN_NOT_CONFIRMED, "the main plan must be confirmed");
         }
+        repository.ensureMainPlanStops(tripId);
         Map<String, List<String>> groups =
                 SplitDraftDocument.partitionGroups(repository.findMemberIdsOrdered(tripId));
         String now = Instant.now().toString();

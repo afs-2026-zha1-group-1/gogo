@@ -166,4 +166,41 @@ public class SplitDraftRepository {
         Integer value = jdbcTemplate.queryForObject(sql, Integer.class, args);
         return value == null ? 0 : value;
     }
+
+    /**
+     * Ensures the trip has main-plan boundary stops for the split flow (REQ-005). Newly created trips have none
+     * (main's trip table stores only free-text start/end locations), so derive two stops from the trip's
+     * start/end location on its start date with a 2-hour window. Idempotent: returns immediately when main
+     * stops already exist (e.g. the seeded fixture trip).
+     */
+    public void ensureMainPlanStops(String tripId) {
+        Integer existing = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM plan_node WHERE trip_id = ? AND branch_id = 'main'", Integer.class, tripId);
+        if (existing != null && existing > 0) {
+            return;
+        }
+        List<Map<String, Object>> trips = jdbcTemplate.queryForList(
+                "SELECT start_location, end_location, start_date FROM trip WHERE id = ?", tripId);
+        if (trips.isEmpty()) {
+            return;
+        }
+        Map<String, Object> trip = trips.get(0);
+        String startLocation = (String) trip.get("start_location");
+        String endLocation = (String) trip.get("end_location");
+        String date = (String) trip.get("start_date");
+        String departure = (startLocation == null || startLocation.isBlank()) ? "出发地" : startLocation;
+        String reunion = (endLocation == null || endLocation.isBlank()) ? "会合点" : endLocation;
+        String now = Instant.now().toString();
+        insertMainStop(departure, tripId, date + "T09:00:00Z", date + "T09:30:00Z", departure, 1, now);
+        insertMainStop(reunion, tripId, date + "T11:30:00Z", date + "T12:00:00Z", reunion, 2, now);
+    }
+
+    private void insertMainStop(String title, String tripId, String startAt, String endAt, String location,
+            int sortOrder, String createdAt) {
+        jdbcTemplate.update(
+                "INSERT INTO plan_node (id, trip_id, plan_version, parent_id, branch_id, node_type, title, "
+                        + "start_at, end_at, location_name, lat, lng, sort_order, created_at) "
+                        + "VALUES (?, ?, 1, NULL, 'main', 'stop', ?, ?, ?, ?, NULL, NULL, ?, ?)",
+                UUID.randomUUID().toString(), tripId, title, startAt, endAt, location, sortOrder, createdAt);
+    }
 }
