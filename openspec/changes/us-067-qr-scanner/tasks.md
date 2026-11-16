@@ -127,20 +127,20 @@ exists.
 
 ## 9. Integration checks (span multiple groups)
 
-- [ ] 9.1 Re-run the full E2E checklist from 1.1 across the fifteen rows,
+- [x] 9.1 Re-run the full E2E checklist from 1.1 across the fifteen rows,
       setting each to Pass / Partial (reason) / Fail; verify no row remains
       FAIL and camera-dependent rows on headless CI are marked Partial with
       the reason recorded in `docs/feedback/e2e-us-067.md`.
-- [ ] 9.2 Run `mvn test` (Maven 3.9.16 wrapper path per known-good baseline)
+- [x] 9.2 Run `mvn test` (Maven 3.9.16 wrapper path per known-good baseline)
       and confirm the full suite (including `InvitationApiTest`) is green,
       proving S-3 "existing contracts unchanged" and the reverse-case
       "no backend change"; verify the run log ends with `BUILD SUCCESS` and
       `Tests run: 90, Failures: 0, Errors: 0`.
-- [ ] 9.3 Run `cd frontend && npm ci && npm run build` and confirm
+- [x] 9.3 Run `cd frontend && npm ci && npm run build` and confirm
       TypeScript compilation + Vite bundle succeed with the jsqr production
       dependency in place; verify `dist/` output is produced and no
       "Cannot find module 'jsqr'" appears.
-- [ ] 9.4 Regression sweep: manually open `#/`, `#/trips`, `#/trips/<id>`,
+- [x] 9.4 Regression sweep: manually open `#/`, `#/trips`, `#/trips/<id>`,
       `#/create`, `#/split`, `#/members`, `#/join/<token>` and confirm the
       shell + dock + identity bar look and behave exactly as before the
       scanner change (S-1, S-2, S-3); screenshot at least one representative
