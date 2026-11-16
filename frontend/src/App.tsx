@@ -114,24 +114,6 @@ export default function App() {
     return <LoginPage />
   }
 
-  if (route.page === 'main-plan') {
-    return (
-      <div className="app">
-        <AccountBar name={account.name} />
-        <MainPlan tripId={route.tripId} />
-      </div>
-    )
-  }
-
-  if (route.page === 'main-plan-inputs') {
-    return (
-      <div className="app">
-        <AccountBar name={account.name} />
-        <MainPlanInputs tripId={route.tripId} />
-      </div>
-    )
-  }
-
   // Scanner is a full-screen flow outside the shell + TabBar (design D1, C2).
   // Task 4.1 fills the UI surface and task 4.2 registers the #/scan hash
   // route in parseRoute. Scaffolding this branch here keeps InAppPage and
@@ -161,6 +143,10 @@ export default function App() {
         {route.page === 'home' && <Home />}
         {route.page === 'create' && <CreateTrip backHref={tripsHref} />}
         {route.page === 'details' && <TripDetails tripId={route.tripId} />}
+        {/* US-031/037: the main plan lives inside the shell so the bottom
+            navigation stays visible when users arrive from the "行程" tab. */}
+        {route.page === 'main-plan' && <MainPlan tripId={route.tripId} />}
+        {route.page === 'main-plan-inputs' && <MainPlanInputs tripId={route.tripId} />}
         {route.page === 'trips-empty' && <TripsEmpty />}
         {route.page === 'split' && (
           <div className="screen">
@@ -199,7 +185,14 @@ export default function App() {
           <Members tripId={lastTripId} tripsHref={tripsHref} />
         )}
       </div>
-      <TabBar active={TAB_FOR_PAGE[route.page]} tripsHref={tripsHref} />
+      <TabBar
+        active={
+          route.page === 'main-plan' || route.page === 'main-plan-inputs'
+            ? 'trips'
+            : TAB_FOR_PAGE[route.page]
+        }
+        tripsHref={tripsHref}
+      />
     </div>
   )
 }
