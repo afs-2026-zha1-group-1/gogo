@@ -46,9 +46,8 @@
   `hello/splits/SplitDraftController` 的
   `GET/POST /api/trips/{tripId}/split-draft`、`PUT …/boundaries`、
   `POST …/routes:generate`、`POST …/routes:check-timing` 全部从 `X-User-Id`
-  取身份；前端 `features/split/*` 通过身份栏发送 `X-User-Id`；5 个 splits HTTP
-  测试类（`SplitDraftStart`/`SplitBoundary`/`SplitRouteGeneration`/
-  `ReunionTiming`/`SplitDraftDetail`，共用 `AbstractSplitApiTest`）也以 header 驱动。
+  取身份；前端 `features/split/*` 通过身份栏发送 `X-User-Id`；4 个 splits 测试基类/用例
+  也以 header 驱动。
 - 影响：本变更声称「`X-User-Id` 不再认证任何请求」「每个非公开端点从 session
   principal 取身份」，但未把 splits 纳入迁移。实现后只有两种结局：
   (a) header 被安全链忽略 → splits 5 个端点恒 401 `MEMBER_REQUIRED`，已合并功能失效；
@@ -105,7 +104,7 @@
 | id | 项 | 说明 | Owner |
 |---|---|---|---|
 | N1 | 迁移编号理由错误 | `V4` 现为 `V4__splits.sql`；`V6` 结论仍成立，但 proposal §What Changes/§Effort、REQ-006 §In scope、deep-dive ⑨、impact R45 的「V4 预留给 travel_preference」须改为「V4=splits，V1–V5 已占用，V6 为下一空号」。若 `feat/travel_preference` 日后仍要用 V4，须重编为 V7 并说明既有库的 Flyway out-of-order 处理 | Dev/SA |
-| N2 | 测试迁移范围低估 | 引入 starter 后默认全局保护 + CSRF：`TripApiTest`、`InvitationApiTest`、`MainPlanApiTest` 的每个 POST 都要 session + token；main 另有 5 个 splits HTTP 测试类需迁移，`MemberGuardTest`/`GlobalExceptionHandlerTest` 受 401 码裁定影响，`GreetingApiTest` 必须保持公开。proposal 只写了「tests move to session login」，未提 CSRF 与 splits | Dev |
+| N2 | 测试迁移范围低估 | 引入 starter 后默认全局保护 + CSRF：`TripApiTest`、`InvitationApiTest`、`MainPlanApiTest` 的每个 POST 都要 session + token，另有 4 个 splits 测试类需一并迁移；`GreetingApiTest` 必须保持公开。proposal 只写了「tests move to session login」，未提 CSRF 与 splits | Dev |
 | N3 | 前端影响清单与 main 不符 | 缺 `router.tsx`、`TabBar.tsx`、`features/split/{identity,api,states}.tsx`、`pages/Home.jsx`、`types.ts`；`App.tsx` 行号引用过期 | Dev/SA |
 | N4 | 401 口径自相矛盾 | deep-dive ⑩「one generic credential failure (400/401)」与 spec 固定的 401 冲突，以 spec 的 401 为准，回改 deep-dive | SA |
 | N5 | app-shell Living Spec 残留漂移 | `openspec/specs/app-shell/spec.md` 的 `Placeholder tabs` 仍称 分队 tab「not implemented yet」，而 main 已有 splits 流程。因本变更已 MODIFY app-shell，建议合并处理或单列同步 | SA |
@@ -113,7 +112,7 @@
 
 ### 已确认无问题（正向核验）
 
-- `auth` 5 条 requirement / 24 场景（实测计数）的措辞是行为可观测的，`INVALID_CREDENTIALS`、
+- `auth` 5 条 requirement / 26 场景的措辞是行为可观测的，`INVALID_CREDENTIALS`、
   `CSRF_INVALID`、30 分钟可配置空闲超时、`#/login` 全屏无 dock 均与 REQ-006 OQ 结论一致。
 - trips/invitations/app-shell 的 MODIFIED requirement 名称与 Living Spec 完全对应
   （`Trip caller identity`、`Invitation issuance`、`Invitation acceptance and joining`、

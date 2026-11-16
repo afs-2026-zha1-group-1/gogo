@@ -11,7 +11,7 @@
 
 | Item | Result | Evidence | Notes |
 |---|---|---|---|
-| AC-1 Each requirement has at least one testable AC | Pass | auth has 5 requirements / 24 scenarios; trips 1/4; invitations 3/14; app-shell 4/15 (counts corrected at the G1 review, 2026-11-16) | Every requirement includes observable scenarios |
+| AC-1 Each requirement has at least one testable AC | Pass | auth has 5 requirements / 26 scenarios; trips 1/4; invitations 3/12; app-shell 4/14 | Every requirement includes observable scenarios |
 | AC-2 ACs are observable | Pass | e.g. auth §Server session §An expired session is unauthenticated; trips §A valid session supplies the caller identity | Status codes, cookies, account fields, membership rows and routes are observable |
 | AC-3 Negative / edge cases called out | Pass | auth: invalid credentials, fixation, expiry, missing header, CSRF, header-only, pending invite; invitations: identity-before-token, closed, unusable; app-shell: no dock, no switcher | Risk areas from REQ-006 are covered |
 | AC-4 ACs are not disguised implementation detail / vague | Pass | auth §Account credential login fixes email normalization and one generic failure; bounds are behavioral, not class-level | `BCrypt` is a security contract (R-5), not a UI/class choice |

@@ -79,6 +79,5 @@ Living or Delta specs.
   this change's scope; `main-itinerary` has no delta here; the branch base is 25
   commits behind main and `V4` is `V4__splits.sql`; two error-envelope/401-code
   conventions coexist.
-- Revised counts for a re-run at p2 after the conditions are met: BLOCKER 4
-  (scope/splits, cross-change main-itinerary contract, stale baseline, error
-  envelope + 401 code), WARNING 0 (L1 closed), SUGGESTION 3 (L2–L4).
+- Revised counts for a re-run at p2 after the conditions are met: BLOCKER 3
+  (scope, baseline, contract), WARNING 0 (L1 closed), SUGGESTION 3 (L2–L4).
