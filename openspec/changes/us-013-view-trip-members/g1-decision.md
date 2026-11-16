@@ -2,10 +2,11 @@
 
 - Change id: `us-013-view-trip-members`
 - Gate: G1 (Align)
-- Status: **PENDING — NOT RECORDED**
-- This file is a **sign-off sheet**, not a gate decision. The agent MUST NOT
-  mark it Pass or fill a human decision. G1 is recorded only after IO Emily and
-  SA Johnson both supply a named decision below.
+- Status: **RECORDED — Pass** (2026-11-16). IO Emily Pass and SA Johnson Pass
+  are both recorded below; the gate is closed.
+- This file began as a sign-off sheet; it is the gate decision only because
+  both named human rows below are filled. The agent recorded the statements; it
+  did not approve the gate itself.
 
 ## Inputs for review
 
@@ -56,16 +57,24 @@ Fill your row in place, then commit this file to the
 | Role | Name | Decision (Pass / Conditional / Fail) | Date | Conditions + owner (required for Conditional) | Evidence |
 |---|---|---|---|---|---|
 | IO | Emily | Pass | 2026-11-16 | None; IO approval only. SA decision remains pending. | Emily explicitly stated "emily approve" in the review conversation on 2026-11-16, following the US-013 G1 scope and concerns review. |
-| SA | Johnson | _(pending)_ | | | |
+| SA | Johnson | Pass | 2026-11-16 | None | Johnson explicitly stated "我也pass了" in the review conversation on 2026-11-16. |
 
-## Recording rules
+## Decision
 
-1. Both rows must carry a **named** decision. One role's Pass does not imply the
-   other's.
-2. A **Pass** is invalid if a blocking ambiguity remains unresolved.
-3. A **Conditional** decision is invalid without remediation items and owners.
-4. After both rows are filled, the agent validates the record, changes the
-   status to **RECORDED — Pass / Conditional / Fail**, and cites the exact
-   evidence for each signer. The agent records the human statements; it does not
-   approve the gate itself.
-5. Until then, G1 is **not closed** and P3/P4 must not start.
+- Decision: **Pass** — recorded 2026-11-16 once both required roles decided.
+- Conditions + owners: none; neither role supplied a condition.
+- Approvers: **IO = Emily**, **SA = Johnson**.
+- IO sign-off: **Emily — Pass**, 2026-11-16, recorded in commit `781dbf0`
+  after reviewing the US-013 G1 scope and concerns.
+- SA sign-off: **Johnson — Pass**, 2026-11-16, from the explicit statement
+  "我也pass了" in the review conversation.
+- Recording history: the PENDING sheet was committed at `7f77676`; Emily filled
+  the IO row at `781dbf0`; this record fills the SA row and closes the gate.
+- The agent records the human statements; it does not approve the gate itself.
+
+## What recording G1 required (satisfied)
+
+1. Both required roles supplied a named Pass: IO Emily and SA Johnson.
+2. No conditions were supplied, so no remediation list is needed.
+3. No unresolved blocking ambiguity remains (DoR BLOCKER = 0; lint 0 BLOCKER).
+4. G1 is closed; P3 (`/sdd:atdd-design`, `/sdd:task-plan`) may start.
