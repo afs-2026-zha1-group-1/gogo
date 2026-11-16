@@ -249,6 +249,14 @@ so it is logged here instead of being absorbed silently.
       client uses main's `api()` + `lib/csrf`, so the obsolete `api/client.ts` was deleted.
       Verified on the merged tree: `mvn -B clean test` 243/243, `npm run typecheck` clean,
       lockfile test 2/2, `npm run build` 500.89 kB JS
+- [x] 8.12 Merge `origin/main` a fifth time (`5b7a1be`, US-013's member roster) and reconcile:
+      three conflicts, all "both sides added" — `README.md` (US-013 paragraph kept beside the
+      preference paragraphs), `docs/knowledge/_LOG.md` (both KB rows kept) and
+      `frontend/src/App.tsx` (`Members` and `PreferencesPage` imports both kept); `app.css`,
+      `types.ts`, `ci.yml` and the `requirement-workspace` ledgers auto-merged. No preference
+      code, migration or test line changed. Verified: `mvn -B clean test` 255/255 (243 plus
+      main's `TripMembersApiTest` 12), `npm run typecheck` clean, lockfile test 2/2,
+      `npm run build` 503.85 kB JS
 
 ## Alignment self-check (Spec ↔ Design ↔ Tasks ↔ ATDD)
 
@@ -261,7 +269,7 @@ so it is logged here instead of being absorbed silently.
 | Preferences page (9) | DD9, DD10 | 4.1–4.7, 5.2, 8.3, 8.4 | PAGE-1…PAGE-10 | Pass |
 | Non-goals (other kinds, US-027, US-026, US-031, auth, `tag`, locking, i18n, page migration) | Goals / Non-Goals, DD1, DD3, DD9 | 1.2, 5.3 | ATDD §5 reverse table | Pass |
 | Display contract (deep-dive ⑫: loading/empty/error/saving) | DD9, DD10 | 4.5, 5.2 | PAGE-1, PAGE-2, PAGE-7, PAGE-8, PAGE-9 | Pass |
-| Revision 2026-11-16 (Chinese catalogue, screen-08 baseline); merges of `origin/main` | DD6, DD9, DD10, TS-13; Revision section | 8.1–8.11 | CAT-1…CAT-4, SAVE-1, PAGE-3, PAGE-7, PAGE-10 | Pass — 8.1–8.11 all closed; 8.6 is the G1 revision re-review, signed Pass 2026-11-16 by IO Emily and SA evelyn.huang; 8.8–8.11 are the four `origin/main` merges |
+| Revision 2026-11-16 (Chinese catalogue, screen-08 baseline); merges of `origin/main` | DD6, DD9, DD10, TS-13; Revision section | 8.1–8.12 | CAT-1…CAT-4, SAVE-1, PAGE-3, PAGE-7, PAGE-10 | Pass — 8.1–8.12 all closed; 8.6 is the G1 revision re-review, signed Pass 2026-11-16 by IO Emily and SA evelyn.huang; 8.8–8.12 are the five `origin/main` merges |
 | G1 condition 4 (strict validation) | Risks: strict validation still failing | 6.5 | — (not an ATDD row; archive gate) | Pass as a registered task, not as a passed check |
 | Tech-stack baseline (`config.yaml` `context`, D17 plan-first) | DD2, DD3, DD4, DD9, DD12; deviations TS-1…TS-13 | 2.1, 2.2, 4.1, 6.1, 6.6 | — (not an ATDD row; archive gate) | Pass as plan-first choices plus recorded deviations (TS-11 still open) |
 

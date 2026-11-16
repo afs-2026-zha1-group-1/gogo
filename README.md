@@ -112,6 +112,14 @@ draft, select boundaries, generate paired routes and check the reunion window.
 The split API keeps its `{data,error}` envelope and `401 MEMBER_REQUIRED`
 contract, now with the caller taken from the session.
 
+US-013 adds the member roster. `GET /api/trips/{id}/members` returns each
+member once with `userId`, `displayName` and an `organizer` flag to an
+authenticated member (401 `USER_REQUIRED` when signed out, 403 `NOT_A_MEMBER`
+for an outsider, 404 `TRIP_NOT_FOUND`; denial bodies carry no member identity).
+The 成员 tab (`#/members`) renders the roster with an organizer badge and
+loading, empty, error, permission-denied and no-trip states; it deliberately
+omits readiness, preference summaries and generation actions.
+
 The database is SQLite at `backend/data/gogo.db`, opened with
 `journal_mode=WAL`, `busy_timeout=5000` and `foreign_keys=on`, and the pool is
 pinned to one connection because SQLite has a single writer. The Flyway

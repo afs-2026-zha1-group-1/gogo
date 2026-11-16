@@ -117,6 +117,9 @@
 4. `80d3dce`（PR #48：归档 US-066/US-065 + US-049/050 follow-up）—— 合并提交 `c1c1f89`，
    四个文本冲突（`README.md`、`backend/pom.xml`、`frontend/src/App.tsx`、`frontend/src/types.ts`）
    与两项由 US-066 引起的适配：迁移 `V6` → `V7`、端点改取会话身份（tasks 8.11，见下 §Update）。
+5. `5b7a1be`（US-013 成员名册：`GET /api/trips/{id}/members` + Screen 7）—— 第五次合并，
+   三个冲突均为“双方各自新增”（`README.md`、`docs/knowledge/_LOG.md`、`frontend/src/App.tsx`），
+   偏好代码/迁移/测试未动（tasks 8.12）。
 
 前三次合并都未触碰任何后端文件；第四次触碰了，所以 203/203 不再沿用，本地按 243/243 重测。
 最后一次合并后本地复跑：`mvn -B clean test` 243/243、`node --test tests/lockfile.test.mjs` 2/2、
@@ -149,6 +152,9 @@ VL 签署时 PR 的 head 是 `0e93804`（base `40381ac`，run `43830251839` 全�
 build 500.89 kB；远端 run `43840919975` 在 `c1c1f89` 双 job 全绿（`243/243` + `BUILD SUCCESS`，
 `Frontend build` 139 modules）。因此本记录上方的 Pass 结论对当前 head 仍然成立；若 VL 认为
 改号与身份模型属于需重新签字的范围，请在 `g2-decision.md` 追加新的签核区，代理不代签。
+
+第五次合并（`5b7a1be`，US-013 成员名册）在收尾时发生：三个冲突均为“双方各自新增”，偏好代码
+零改动，本地 255/255（243 + main 的 `TripMembersApiTest` 12）、build 503.85 kB（tasks 8.12）。
 
 ## §签核区（已由 VL 填写）
 

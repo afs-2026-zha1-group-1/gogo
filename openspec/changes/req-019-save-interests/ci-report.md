@@ -101,3 +101,18 @@ because US-066 retired the `X-User-Id` header. Read through the same authenticat
 Run created 2026-11-16T09:34:16Z, completed 09:34:53Z; head `c1c1f89`, base `80d3dce`.
 Local mirror of the same tree: `mvn -B clean test` 243/243, `node --test tests/lockfile.test.mjs`
 2/2, `npm run typecheck` clean, `npm run build` 500.89 kB JS / 38.87 kB CSS.
+
+## Update — fifth merge (2026-11-16, US-013 member roster)
+
+`origin/main` reached `5b7a1be` (US-013's roster: `GET /api/trips/{id}/members`, Screen 7,
+`V1`–`V6` unchanged) before the fourth merge could be merged, so the branch merged it a fifth
+time. Three conflicts, all "both sides added" rather than behavioural: `README.md` (kept the
+US-013 section next to the preference paragraphs), `docs/knowledge/_LOG.md` (kept both KB rows)
+and `frontend/src/App.tsx` (kept the `Members` and `PreferencesPage` imports); `app.css`,
+`types.ts`, `ci.yml` and the `requirement-workspace` ledgers auto-merged. Nothing in the
+preference feature changed — no migration, endpoint, test or page line was touched.
+
+Local on the merged tree: `mvn -B clean test` **255/255** (the 243 above plus main's
+`TripMembersApiTest` 12), `node --test tests/lockfile.test.mjs` 2/2, `npm run typecheck` clean,
+`npm run build` 503.85 kB JS. The run on this merge head is the PR's own check on the head that
+is merged; the main-side push run is recorded in the change's P5 archive notes.

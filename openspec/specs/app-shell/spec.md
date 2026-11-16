@@ -4,11 +4,10 @@
 Give every in-app route one mobile-scaled shell with a persistent bottom dock
 (仪表盘 / 行程 / 分队 / 成员) so a traveler moves between the main areas without
 losing context or identity, while existing home, create, details and invitation
-behavior is placed under the shell unchanged, future areas stay honest text
-placeholders, and invited guests joining by link never see in-app navigation.
-
+behavior is placed under the shell unchanged, the 分队 tab leads to the shipped
+split entry, the 成员 tab renders the trip roster, and invited guests joining by
+link never see in-app navigation.
 ## Requirements
-
 ### Requirement: Mobile shell frame
 
 The frontend SHALL render every signed-in in-app route inside a centered column
@@ -163,34 +162,6 @@ endpoint or call.
 - **WHEN** the 行程 tab and its empty state are exercised
 - **THEN** no list-all-trips endpoint is called or added
 
-### Requirement: Placeholder tabs
-
-The 分队 tab SHALL target `#/split` and the 成员 tab SHALL target `#/members`.
-Each SHALL render an honest text placeholder stating that the feature is not
-implemented yet, with a link back to 行程, and a unique visible heading. Neither
-SHALL fabricate demo members, routes or statuses.
-
-#### Scenario: 分队 shows an honest placeholder
-
-- **WHEN** the 分队 tab is activated
-- **THEN** `#/split` renders a text placeholder stating the feature is not
-  implemented yet, with a unique visible heading
-- **AND** a link back to 行程 is present
-- **AND** the 分队 tab is active
-
-#### Scenario: 成员 shows an honest placeholder
-
-- **WHEN** the 成员 tab is activated
-- **THEN** `#/members` renders a text placeholder stating the feature is not
-  implemented yet, with a unique visible heading
-- **AND** a link back to 行程 is present
-- **AND** the 成员 tab is active
-
-#### Scenario: No demo data is fabricated
-
-- **WHEN** either placeholder renders
-- **THEN** no demo member, route or status value is displayed
-
 ### Requirement: Guest join exclusion
 
 The shell SHALL render the login page and `#/join/<token>` — preview, accept,
@@ -228,3 +199,37 @@ rendered, and join outcomes SHALL behave exactly as before this change.
 - **WHEN** the login page renders
 - **THEN** it is full-screen without the bottom dock
 - **AND** it exposes no in-app navigation or private trip data
+
+### Requirement: Tab content
+
+The 分队 tab SHALL target `#/split` and render the shipped split entry for the
+selected trip, with a unique heading and guidance back to 行程 when no trip is
+selected. The 成员 tab SHALL target `#/members` and render the roster defined by
+the `trips` requirement "Trip member list read". Neither tab SHALL render a
+not-implemented placeholder or fabricate demo data; the shell frame, dock
+order, active-tab rule and signed-in account bar SHALL remain unchanged.
+
+#### Scenario: 分队 shows the shipped split entry
+
+- **WHEN** the 分队 tab is activated with a resolved trip
+- **THEN** `#/split` renders the shipped split entry for that trip with a unique
+  visible heading
+- **AND** the 分队 tab is active
+- **AND** no not-implemented placeholder is rendered
+
+#### Scenario: 成员 shows the member list
+
+- **WHEN** the 成员 tab is activated with a resolved trip and an authenticated
+  account that is a member of that trip
+- **THEN** `#/members` renders the trip's member roster with the organizer row
+  identified
+- **AND** the 成员 tab is active
+- **AND** the roster comes from `GET /api/trips/{id}/members`
+- **AND** no readiness, preference summary or generate action is rendered
+
+#### Scenario: No demo data is fabricated
+
+- **WHEN** either tab renders
+- **THEN** no demo member, route or status value is displayed
+- **AND** an outsider sees the permission-denied state with no member names
+

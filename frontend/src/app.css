@@ -895,3 +895,70 @@ body {
   flex: 1;
   min-width: 0;
 }
+
+/* US-013 member roster */
+.pill.brand {
+  border-color: #99f6e4;
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+}
+
+.member-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.member-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line-2);
+}
+
+.member-row:last-child {
+  border-bottom: none;
+}
+
+.member-avatar {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+  font-size: 15px;
+  font-weight: 750;
+}
+
+.member-avatar.tone-2 {
+  background: #e6efff;
+  color: #2563eb;
+}
+
+.member-avatar.tone-3 {
+  background: #fff0e2;
+  color: #ea580c;
+}
+
+.member-avatar.tone-4 {
+  background: #fce7f3;
+  color: #db2777;
+}
+
+.member-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.member-name {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.member-meta {
+  font-size: 12px;
+  color: var(--ink-3);
+}
