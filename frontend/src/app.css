@@ -678,6 +678,55 @@ body {
   gap: 8px;
 }
 
+/* US-019 interest picker: the clickable counterpart of the static .chip below */
+.pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: 0.16s;
+}
+
+.pick:hover {
+  border-color: var(--ink-3);
+}
+
+.pick.on {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #fff;
+}
+
+.pick:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Inline feedback on the preferences page (formerly antd Alert; keeps the dependency list flat) */
+.notice {
+  border: 1px solid #f0c0bd;
+  background: #fdf3f2;
+  color: #9a2723;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.notice strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+
 .chip {
   display: inline-flex;
   align-items: center;

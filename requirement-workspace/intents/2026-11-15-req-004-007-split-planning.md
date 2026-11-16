@@ -112,7 +112,7 @@
 
 - OQ-N1 口径对齐 → **维持现状**（用户明确），仅留 OQ-N1 待未来处理，owner IO/SA。
 - OQ-N2 基准扩展 → **严格按照 tech-stack-plan**：不建第 5 表、不加 plan_node 列；草稿 = `trip.split_draft` JSON 文档（唯一 schema 扩展 = trip 加一个可空 TEXT 列）；路线用 branch_id 编码关联。
-- OQ-N3 前端共存 → **增量引入新栈**：B 链新页面 TS+AntD+TanStack Query+Router，greeting 页保持 JSX 不动。
+- OQ-N3 前端共存 → **增量引入新栈**：B 链新页面 TS+AntD+TanStack Query+Router，greeting 页保持 JSX 不动。（同日 G1 C4 已由 Leo 改判为 **shadcn/ui + Tailwind**，以 `openspec/changes/archive/2026-11-16-req-004-split-planning-chain/design.md` D15 为准；本行保留为当时的裁决记录）
 - OQ-N4 半边界 → **确认成对保存**，不开放半边界。
 - OQ-N5 分组载体 → **草稿内 JSON**，不建独立表；成员不跨组/两组齐全由服务层校验。
 - OQ-N6 校验入参 → **显式快照 body**，纯计算零读库；前端从草稿详情组装快照。

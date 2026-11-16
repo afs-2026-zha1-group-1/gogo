@@ -39,5 +39,7 @@ jobs:
         run: node --test tests/lockfile.test.mjs
       - name: Install from the lockfile
         run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
       - name: Build
         run: npm run build

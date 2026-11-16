@@ -1,0 +1,181 @@
+# G2 decision — req-019-save-interests（G2 Pass，VL Sammi Ng）
+
+> **状态：已记录（RECORDED）。** `Decision` = **Pass**，由 VL **Sammi Ng** 于
+> 2026-11-16 17:19 (+0800) 签署（签署提交 `3b2d42d docs(g2): signed by Sammi Ng`）。
+> 本文件的输入、维度结果、缺陷分级与未闭合项由实现方（代理）整理，代理不代签也不改判；
+> `Timestamp` 取自该签署提交的提交时间（VL 未在签核区内自行填写）。
+
+- **Change id:** `req-019-save-interests`（REQ-019 / US-019 成员兴趣保存）
+- **Gate:** G2 (Verify)
+- **Decision:** **Pass**（VL Sammi Ng，2026-11-16 17:19 (+0800)；签署提交 `3b2d42d`）
+- **Approvers:** VL = **Sammi Ng**（2026-11-16）；G3 的 SA 属另一道门禁，不在本记录内
+- **Timestamp:** 2026-11-16 17:19 (+0800)
+- **Target:** PR #44 `REQ-019: save member interests on main's shadcn baseline`，base `main`，
+  head = `feat/travel_preference` 的当前 tip（整理时为 `6828754`；其后三次并入 main：`02fa201`
+  并入 US-065 前端 TS 化、`f16d009` 并入 `40381ac`、`c1c1f89` 并入 `80d3dce`）。本记录定稿时的
+  head 为 `0e93804`（`f16d009` 之后仅本文档改动），base `40381ac`，`mergeStateStatus` = `CLEAN`，
+  该 head 上 run `43830251839` 双 job 全绿；签署后的第四次并入（`c1c1f89`，base `80d3dce`）已由
+  run `43840919975` 验证全绿，见 §"Update — 第四次并入 main"。签署前后请以 `gh pr view 44` 的实时
+  `headRefOid` 与 check 结果为准（其后若还有提交，CI 会在新 head 上重跑）
+
+## Inputs
+
+| 输入 | 位置 | 状态 |
+|---|---|---|
+| local-verify（P4 证据包） | `docs/ai4se-plugins/20261116-1333-local-verify-report.md` | Overall **Partial** — 剩余驱动项为 G2/G3 与 strict validate（该报告已追加更新节，说明 E1 已闭合） |
+| pipeline ci | `docs/ai4se-plugins/20261116-153521-pipeline-report.md`；E1 slot：`openspec/changes/req-019-save-interests/ci-report.md` | **E1 全绿，机器读取**（非人工确认） |
+| pipeline cd | n/a | 合并前无部署（design Non-Goals） |
+| 验证矩阵 | `docs/feedback/verification-matrix.md` §REQ-019 | 逐行证据，含 remote-CI 机器证据行 |
+| G1 | `openspec/changes/req-019-save-interests/g1-decision.md`（含 "Revision re-review" 段） | IO Emily + SA evelyn.huang 均 Pass（2026-11-16） |
+| Delta Spec | `openspec/changes/req-019-save-interests/specs/preferences/spec.md` | 5 requirements / 31 scenarios |
+| ATDD / 设计 / 任务 | `atdd-design.md`、`design.md`、`tasks.md` | 对齐自检 Pass；任务 42 `[x]` / 3 `[ ]`（45） |
+
+### 引用的 CI run（均为机器读取）
+
+| run | head | 结论 | 说明 |
+|---|---|---|---|
+| [43840919975](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43840919975) | `c1c1f89` | success | **第四次并入 main 的合并提交**（base `80d3dce`）：`Backend tests` 35 s（`Tests run: 243, Failures: 0, Errors: 0, Skipped: 0` + `BUILD SUCCESS`）、`Frontend build` 20 s（`Check lockfile portability` 2/2 → `npm ci` → `typecheck` → `build`，`139 modules`） |
+| [43824457379](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43824457379) | `e7333f0` | success | `Backend tests` 43 s（`Tests run: 203, Failures: 0, Errors: 0` + `BUILD SUCCESS`）、`Frontend build` 17 s（`npm ci` → `typecheck` → `build`） |
+| [43830251839](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43830251839) | `0e93804` | success | **本记录定稿 head**（`f16d009` + 仅文档改动）：`Backend tests` 36 s（`Tests run: 203, Failures: 0, Errors: 0, Skipped: 0` + `BUILD SUCCESS`）、`Frontend build` 20 s（`136 modules transformed`） |
+| [43829662798](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43829662798) | `f16d009` | success | 第三次并入 main 的合并提交：`Backend tests` 33 s（`Tests run: 203, Failures: 0, Errors: 0, Skipped: 0` + `BUILD SUCCESS`）、`Frontend build` 20 s（`Check lockfile portability` 2/2 → `npm ci` → `typecheck` → `build`，`136 modules` / `488.36 kB`） |
+| [43825093537](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43825093537) | `6828754` | success | 上者之后仅文档提交，双 job 仍全绿；其后被 main 的 US-065 合并推离 head |
+| [43822010878](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43822010878) | `ec299b7` | success | 更早 head，同一份代码 |
+
+## 本次交付内容（供 VL 对齐范围）
+
+在 `main` 已落地的 shadcn/ui 基线上，新增成员兴趣保存能力：`PUT /api/trips/{tripId}/preferences`
+整体替换某成员的 `interest` 集合（去重保留首个、`[]` 清空但保留行、未知标签整体拒绝 400
+`INTEREST_NOT_ALLOWED`），`GET` 返回全部成员的 `{userId, interests}`；目录为 10 项中文标签
+（`水上运动`/`潜水`/`摄影`/`美食`/`咖啡`/`历史人文`/`手作`/`自然风景`/`冒险`/`慢游`，英文 code 落库）；
+页面 `#/trips/<id>/preferences` 按 `screen-08-preferences.png` 重构。存储为 `V7` 的
+`member_preference(kind, payload)`（四次合并后改号，详见 §Update）。
+
+## Dimension results
+
+| 维度 | 状态 | 证据 |
+|---|---|---|
+| Build | **Pass** | 第四次合并后本地 `mvn -B clean test` **243/243**（`40381ac..80d3dce` 带来的 `AuthApiTest`/`SessionExpiryApiTest` 已含在内；前三次合并均未触碰后端，当时为 203/203）；`node --test tests/lockfile.test.mjs` 2/2；`npm run typecheck`（`tsc --noEmit`）干净；`npm run build` 500.89 kB JS / 38.87 kB CSS（CI 上 139 modules，此前为 488.36 kB / 136 modules） |
+| Tests | **Pass** | `PreferenceApiTest` 29/29（红先绿：改中文目录时先 15 失败 + 1 错误；第四次合并后 29 个用例改走 `TestAuth.asUser`/`csrfOnly`，数量不变）、`MainPlanApiTest` 34/34、其余既有套件同样通过；全体 243/243 |
+| Static scan / SAST | Skipped | 本仓库基线无 lint/SAST 任务，改用反向核对与 matrix 行 |
+| Code review | **Pass** | 由 VL Sammi Ng 于 2026-11-16 复核并签署 Pass（§签核区；签署提交 `3b2d42d`） |
+| Evidence (OpenSpec) | **Pass** | V2–V8 Pass；V1 由 30/35 提升为 39/43（6.2 已闭合），余项均属归档泳道 |
+| CI (phase=ci) | **Pass** | E1 全绿，见上表五个 run（最新一跑 `43840919975` 在 `c1c1f89`） |
+| CD (phase=cd) | n/a | 合并前无部署 |
+| **代理的汇总建议** | **可支持 Pass** | 0 CRITICAL；未闭合项均不阻塞合并、只阻塞归档（见 §未闭合项） |
+
+## Defect grades
+
+- **CRITICAL:** 无（0 项）。
+- **WARNING（8 项，逐条现状）：**
+  1. `flyway-database-nc-sqlite` 无已发布版本，plan §7 的两模块方案未达成（design TS-11）— **仍开放**，由归档前计划对齐（6.6）或上游发布闭合。
+  2. 远端 CI 未跑 — **已闭合**：run 43824457379 / 43825093537 / 43829662798 / 43830251839 / 43840919975 双 job 全绿（最新一跑在 `c1c1f89`）
+  3. G2/G3 未记录 — **G2 已由 VL Sammi Ng 于 2026-11-16 记录 Pass**；G3 另起。
+  4. 身份选择器不持久，刷新回落 Alice — **已闭合**：`main` 的 US-066 换成登录会话（账号凭据 + cookie + CSRF），第四次合并后身份由会话决定，页面用 `useAuth()` 取 `account`。
+  5. 保存成功无 toast — **接受**，delta 只要求选区跟随响应、错误清除。
+  6. dev 模式 StrictMode 双请求 — **接受**，服务端幂等（SAVE-2）。
+  7. 打包体积与 chunk 警告 — **接受**；并入 main 后已从 660 kB 降至 488.36 kB，第四次合并后为 500.89 kB（仍低于 660 kB，chunk 警告照旧）。
+  8. 占用 8080 的旧后端进程 — **已闭合**（owner 授权停止，新构建接管）。
+- **SUGGESTION（3 项）：** 浏览器回归误建的 trip 已删除；PAGE-4/6 的加载态本地不可观测（~20 ms 往返）已记 Partial；Mockito self-attach 警告待 JDK 禁止动态 attach 时处理。
+
+## 偏差与已接受后果（VL 需知情）
+
+| 项 | 内容 | 依据 |
+|---|---|---|
+| TS-11 | Flyway SQLite 官方模块未采用，靠自动探测迁移（`V1`–`V7` 正常应用） | design TS-11；`pom.xml` |
+| TS-12 | 路由沿用 main 的 app shell（`parseRoute` + `router.tsx`），不新引路由库 | design TS-12 |
+| TS-13 | UI 用主线的 `shadcn/ui` + Tailwind，未引入 Ant Design；两处失败态用 `.notice`（`role="alert"`） | design TS-13；`AGENTS.md` §Reference |
+| 迁移改号 | `V4` → `V6`（`main` 的 splits 占 `V4`，且 `V5__create_main_plan.sql` 已以 `IF NOT EXISTS` 声明同一张表），再 `V6` → `V7`（`main` 的 US-066 占了 `V6__create_account_credential.sql`）；三次都是纯改号，表结构/列/唯一键不变 | design DD1 两段 Merge note；tasks 8.8 / 8.11 |
+| 身份模型 | 两个端点改用会话身份（`Authentication`→`AccountPrincipal.id()`），`X-User-Id` 头不再是身份来源（仅保留两个反向用例钉住它被忽略）；`PUT` 需 CSRF；前端改用 `api()` + `useAuth()` | design TS-2 / DD11；tasks 8.11 |
+| REFERENCES 缺失 | `member_preference` 实际由 `V5` 的替身先建，生效表上无 `REFERENCES` 子句（`V7` 变空操作） | 同上，已接受 |
+| 旧英文码种子 | `V5` 以 food/culture/art/nature/shopping 播种 fixture 的 interest/must_do，`MainPlanApiTest` 断言原始 code，故不改种子、不重映射；读取端对未知 code 静默跳过，不会 500 | 同上，已接受 |
+| PAGE-4/6/7 | 页面场景 Partial：~20 ms 往返使 pending 态不可观测、页面无法提交非法标签 | local-verify §E2E |
+| typecheck 脚本 | 8.8 曾定 `tsc -b`；main 的 US-065 合并后改取 `tsc --noEmit`（`tsconfig.app.json` 已删除、`tsconfig.json` 自带 `noEmit`），`build` = `npm run typecheck && vite build` | tasks 8.9；design DD9 |
+
+## 未闭合项（不阻塞合并，阻塞归档）
+
+| # | 项 | 影响 | Owner |
+|---|---|---|---|
+| 1 | `openspec validate --strict` 仍 exit 1（五个 ADDED requirement 正文超 500 字符；本机无 CLI） | 阻塞 `/opsx:archive` | Dev / SA |
+| 2 | 计划对齐（tasks 6.6）：tech-stack-plan 与实际交付对齐 | 阻塞归档 | Dev |
+| 3 | G3（Merge & Archive）未记录 | 阻塞归档 | 具名 SA |
+| 4 | `cd` 从未执行 | 无（合并前无部署） | — |
+| 5 | 任务 7.3 可选 checklist 未跑 | 无（显式跳过） | — |
+| 6 | ~~main 的 lockfile 使 Windows 无法 `npm ci`（rolldown 绑定被标 `libc: glibc`）~~ — **已闭合**：main 的 `171ec00` 去掉非 Linux 包的 `libc` 约束，并新增 `frontend/tests/lockfile.test.mjs` 作为 CI 第一步 | 无；Linux CI 与 Windows 本地均可 `npm ci`（81 包，绑定就位） | main 侧已修（`171ec00`），本变更未改 lockfile |
+
+## Baseline note（签署前请复核一次）
+
+本分支四次并入 `main`，每次的基线都已核对：
+
+1. `bac8095`（splits、`V5__create_main_plan` 以 `IF NOT EXISTS` 声明 `member_preference`、shadcn/ui 搬家）—— 偏好迁移由 `V4` 改号为 `V6`（tasks 8.8）。
+2. `f11d395`（PR #46，US-065 前端全面 TS 化；`bac8095..f11d395` 共 15 个提交）—— 合并提交 `02fa201`：`frontend/package.json` 与 `frontend/src/main.tsx` 冲突已解决，`main.jsx`
+   删除、入口改为 `main.tsx`，`App.tsx` 仍路由到 `#/trips/<id>/preferences`，`TripDetails.tsx`
+   仍链接过去，`typecheck` 取 main 的 `tsc --noEmit`（tasks 8.9）。
+3. `40381ac`（`171ec00 fix(main): fixing frontend build error` + US-049/050 的 G1 记录）——
+   合并提交 `f16d009`，唯一冲突 `README.md`：保留 main 的「缺原生绑定」说明，并把本分支那句
+   `tsc -b --noEmit` 改为实际脚本的 `tsc --noEmit`；`ci.yml` 自动合并后前端 job 为
+   `Check lockfile portability` → `npm ci` → `typecheck` → `build`（tasks 8.10）。
+4. `80d3dce`（PR #48：归档 US-066/US-065 + US-049/050 follow-up）—— 合并提交 `c1c1f89`，
+   四个文本冲突（`README.md`、`backend/pom.xml`、`frontend/src/App.tsx`、`frontend/src/types.ts`）
+   与两项由 US-066 引起的适配：迁移 `V6` → `V7`、端点改取会话身份（tasks 8.11，见下 §Update）。
+5. `5b7a1be`（US-013 成员名册：`GET /api/trips/{id}/members` + Screen 7）—— 第五次合并，
+   三个冲突均为“双方各自新增”（`README.md`、`docs/knowledge/_LOG.md`、`frontend/src/App.tsx`），
+   偏好代码/迁移/测试未动（tasks 8.12）。
+
+前三次合并都未触碰任何后端文件；第四次触碰了，所以 203/203 不再沿用，本地按 243/243 重测。
+最后一次合并后本地复跑：`mvn -B clean test` 243/243、`node --test tests/lockfile.test.mjs` 2/2、
+`npm run typecheck`（`tsc --noEmit`）干净、`npm run build` 500.89 kB JS / 38.87 kB CSS，`npm ci`
+装 81 个包。
+
+**签署前请自己再确认一次**：`gh pr view 44` 的 head check 全绿、`mergeStateStatus` = `CLEAN`；
+若 main 又前进，按同一方法复核（见 `docs/knowledge/` 的基线校验约定）。
+
+原记录在此的 Windows 环境缺陷（main 的 lockfile 把 `@rolldown/binding-win32-x64-msvc` 标为
+`libc: glibc`，Windows 上 `npm ci` 会跳过它）已由 main 的 `171ec00` 闭合：该提交去掉非 Linux 包的
+`libc` 约束并新增 `frontend/tests/lockfile.test.mjs`（CI 第一步即跑它）。本分支此前
+`npm i --no-save` 的临时补装随之作废，lockfile 依旧归 main 所有、本变更未改。
+
+## Update — 第四次并入 main（2026-11-16，签署后）
+
+VL 签署时 PR 的 head 是 `0e93804`（base `40381ac`，run `43830251839` 全绿）。此后 `origin/main`
+前进到 `80d3dce`（PR #48 归档 US-066/US-065），PR #44 变为 `dirty`，于是本分支做了第四次合并，
+合并提交 `c1c1f89`。两件事需要 VL 知情，都属于“基线刷新导致的适配”，不改变本变更的契约：
+
+1. **迁移改号 `V6` → `V7`**：`main` 新增了 `V6__create_account_credential.sql`，同号会让 Flyway
+   启动失败。表结构、列、唯一键与 `IF NOT EXISTS` 语义均未变（design DD1 第二段）。
+2. **身份模型换成登录会话**：US-066 把 `/api/**` 改为需认证、`PUT` 需 CSRF，`X-User-Id` 头
+   不再产生身份。两个端点改为取 `AccountPrincipal.id()`，未登录为 `401 USER_REQUIRED`；
+   `PreferenceApiTest` 由发头改为 `TestAuth.asUser`，29 个用例数量未减，并新增两个反向场景
+   （匿名带旧头仍 401；会话为 2 而头写 5 时以会话为准）。前端改用 main 的 `api()` + `useAuth()`，
+   `api/client.ts` 删除（design TS-2 / DD11）。
+
+验证：本地 `mvn -B clean test` 243/243（含 main 新增的安全套件）、lockfile 2/2、typecheck 干净、
+build 500.89 kB；远端 run `43840919975` 在 `c1c1f89` 双 job 全绿（`243/243` + `BUILD SUCCESS`，
+`Frontend build` 139 modules）。因此本记录上方的 Pass 结论对当前 head 仍然成立；若 VL 认为
+改号与身份模型属于需重新签字的范围，请在 `g2-decision.md` 追加新的签核区，代理不代签。
+
+第五次合并（`5b7a1be`，US-013 成员名册）在收尾时发生：三个冲突均为“双方各自新增”，偏好代码
+零改动，本地 255/255（243 + main 的 `TripMembersApiTest` 12）、build 503.85 kB（tasks 8.12）。
+
+## §签核区（已由 VL 填写）
+
+```
+Decision:      [X] Pass        [ ] Fail        [ ] Conditional
+VL name:       Sammi Ng
+Timestamp:     2026-11-16 17:19 (+0800)   # 取自签署提交 3b2d42d 的提交时间；VL 未自行填写
+```
+
+- Conditional 必须逐条写出待整改项 + owner（无整改项的 Conditional 无效，不算 Verified）。
+- Pass 的前提是签署人已实际打开并复核：local-verify 报告、pipeline ci 报告（含 E1 slot）、
+  `verification-matrix.md` §REQ-019，以及 PR #44 的 check 结果。
+- 若判 Fail：请写明回到 apply 泳道要修的具体项。
+
+**签署留痕**：VL 的签署以提交 `3b2d42d docs(g2): signed by Sammi Ng`（2026-11-16 17:19 +0800）
+落在 `feat/travel_preference` 上；代理只把该签署转写进上面的门禁字段（Decision / Approvers /
+Timestamp）与维度表，不修改 Pass 结论，也不补写 VL 未写的整改项。
+
+## Next
+
+- **G2 Pass 已记录（VL Sammi Ng）** → 合并 PR #44 → P5：`/sdd:living-merge` →
+  `/sdd:change-summary` → `/sdd:g3-decision-record`（具名 SA）→ `/sdd:evolve`
+- Conditional → 按整改项回到 apply 泳道；整改后重新验证并请 VL 复核
+- Fail → 记录具体缺陷，回到 `/sdd:atdd-apply`

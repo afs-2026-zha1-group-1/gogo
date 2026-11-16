@@ -8,6 +8,7 @@ import TripsEmpty from './pages/TripsEmpty'
 import Join from './pages/Join'
 import MainPlan from './pages/MainPlan'
 import MainPlanInputs from './pages/MainPlanInputs'
+import PreferencesPage from './pages/PreferencesPage'
 import Members from './pages/Members'
 import LoginPage from './features/auth/LoginPage'
 import { useAuth } from './features/auth/AuthProvider'
@@ -21,6 +22,8 @@ function parseRoute(hash: string): Route {
   if (mainPlanInputsMatch) return { page: 'main-plan-inputs', tripId: Number(mainPlanInputsMatch[1]) }
   const mainPlanMatch = path.match(/^\/trips\/(\d+)\/main-plan$/)
   if (mainPlanMatch) return { page: 'main-plan', tripId: Number(mainPlanMatch[1]) }
+  const preferencesMatch = path.match(/^\/trips\/(\d+)\/preferences$/)
+  if (preferencesMatch) return { page: 'preferences', tripId: Number(preferencesMatch[1]) }
   const tripMatch = path.match(/^\/trips\/(\d+)$/)
   if (tripMatch) return { page: 'details', tripId: Number(tripMatch[1]) }
   if (path === '/trips') return { page: 'trips-empty' }
@@ -100,6 +103,15 @@ export default function App() {
       <div className="app">
         <AccountBar name={account.name} />
         <MainPlanInputs tripId={route.tripId} />
+      </div>
+    )
+  }
+
+  if (route.page === 'preferences') {
+    return (
+      <div className="app">
+        <AccountBar name={account.name} />
+        <PreferencesPage tripId={route.tripId} />
       </div>
     )
   }
