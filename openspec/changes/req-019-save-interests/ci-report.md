@@ -129,3 +129,19 @@ Push run 43842757828 and pull-request run 43842769894 were both created 09:46:2x
 (base `5b7a1be`) and both concluded `success`; `pulls/44` reported `mergeable=true`,
 `mergeable_state=clean` at merge time. The main-side push run that follows the merge belongs to the
 merge commit, not to this change, and is recorded in the change's P5 archive notes.
+
+## Update — sixth merge (2026-11-16, after PR #44 was merged)
+
+`origin/main` reached `81af3d1` (US-067's QR scanner and US-071's P1/P2 documents) 24 commits after
+the merge base, so the branch merged `main` a sixth time in `58d5cd9`. The merge was **conflict-free**:
+both sides were kept automatically for `README.md`, `docs/knowledge/_LOG.md`, `frontend/src/App.tsx`,
+`app.css`, `types.ts` and `package.json`/`package-lock.json`, and none of this change's files were
+touched — the branch side carried only `specs/preferences/spec.md`, `tasks.md` and `g3-decision.md`.
+
+Local on the merged tree: `mvn -B clean test` **255/255** across 28 suites (main's new work is
+frontend and docs), `node --test tests/lockfile.test.mjs` 2/2, `npm run typecheck` clean,
+`npm run build` 645.74 kB JS / 44.41 kB CSS / 142 modules (up from 503.85 kB / 139 modules because
+of `Scanner.tsx` and `scan.ts`; the >500 kB chunk warning predates this change),
+`openspec validate req-019-save-interests --strict` → `is valid`. No new remote run is claimed here:
+this merge only re-bases the branch on main, and the change's CI evidence above stays attached to the
+head that was actually merged (`9f24fa9`, runs 43842757828 / 43842769894).
