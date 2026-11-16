@@ -117,6 +117,10 @@ npm install
 npm run dev
 ```
 
+If Vite reports a missing native binding after updating the lockfile, run
+`npm install --include=optional` in `frontend/` and start it again. Native
+bindings are platform-specific optional dependencies.
+
 Open http://localhost:5173/. Log in with a seeded demo account; the dashboard is
 the landing page. Check the public API directly with
 `curl -i http://localhost:8080/api/greeting`, which returns
