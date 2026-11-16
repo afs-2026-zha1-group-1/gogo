@@ -85,3 +85,7 @@ visible as residual concerns. This review is not a Gate decision.
 
 Gate status remains **Conditional** until IO + SA confirm the conversion to Pass
 using `g1-addendum-c1-c4.md`.
+
+**Update 2026-11-16:** SA Elian Jiang directed the conversion; `g1-decision-pass.md`
+now records **Pass** under the original Conditional's closure rule. The original
+`g1-decision.md` remains unchanged and no new IO signature is claimed.

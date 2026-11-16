@@ -55,3 +55,7 @@ SA 另案残余，不改写历史。
 
 如 IO/SA 同意，请在 `g1-decision.md` 追加“转为 Pass”的签署行（或另写
 `g1-decision-pass.md`）；在收到明确签署前，Gate 仍按 **Conditional** 记录。
+
+**转换记录（2026-11-16）**：SA Elian Jiang 指示“先转成 pass”；已另写
+`g1-decision-pass.md` 记录 **Pass**。转换依据是原 Conditional 的“C1–C4 关闭后转
+Pass”规则；未声称 IO 有新的单独签署，原 `g1-decision.md` 保持不变。

@@ -13,16 +13,16 @@
 |----------|-----------|--------|----------|
 | P2-1 | yes | Pass | `openspec/changes/us-066-log-in/specs/{auth,trips,invitations,app-shell}/spec.md`; `openspec validate us-066-log-in` → valid |
 | P2-2 | yes | Pass | `openspec/changes/us-066-log-in/dov-ac-review.md` (AC-1…4 Pass, DoV-1…5 Pass, residual R1–R5) |
-| P2-3 | yes* | Partial | G1 recorded **Conditional** (IO Johnson / SA Elian Jiang, `g1-decision.md`); C1–C4 remediated, conversion to Pass pending (`g1-addendum-c1-c4.md`) |
+| P2-3 | yes* | Pass | G1 **Pass** converted 2026-11-16 (`g1-decision-pass.md`); original Conditional + C1–C4 closure in `g1-decision.md` / `g1-addendum-c1-c4.md` |
 | P2-4 | no | Partial | `openspec/changes/us-066-log-in/consistency-lint.md` — re-run after C1–C4: no BLOCKER; one pre-existing splits Purpose WARNING (L5) + SUGGESTIONs |
 
-| **Stage Overall** | — | Partial | required-only aggregation (P2-3 Partial: Gate is not Pass; P2-1/P2-2 Pass; P2-4 optional) |
+| **Stage Overall** | — | Pass | required-only aggregation (P2-1/P2-2/P2-3 Pass; P2-4 optional Partial) |
 
 ### Roll-up
 
 | Scope | Overall | Notes |
 |-------|---------|-------|
-| selected stages | Partial | G1 is Conditional; C1–C4 closed, Pass conversion pending IO+SA |
+| selected stages | Pass | G1 converted to Pass; C1–C4 closed |
 
 ## Gaps
 
@@ -30,7 +30,7 @@
 |----------|-----|------------------|----------------|
 | P2-4 / L1 | L1 (main-itinerary in-flight delta) is **closed**; baseline merged to `f6419a5`; splits included | SA/Dev | Closed 2026-11-16 |
 | P2-4 / L5 | splits Living Spec Purpose still says `X-Member-Id` (pre-existing prose drift; code/delta use session) | SA | Fix at archive/living-merge |
-| P2-3 | G1 is Conditional; C1–C4 remediated | IO + SA | Confirm Conditional → Pass via `g1-addendum-c1-c4.md` |
+| P2-3 | G1 converted to Pass on SA instruction 2026-11-16 | IO + SA | Closed via `g1-decision-pass.md` |
 
 ## Notes
 

@@ -123,3 +123,6 @@ archive/living-merge and does not change the identity contract in the delta.
 IO + SA confirm the Conditional → Pass conversion using
 `g1-addendum-c1-c4.md`; then `/sdd:p3`. This re-run does not edit the Living or
 Delta specs and is not a Gate decision.
+
+**Update 2026-11-16:** converted to **Pass** in `g1-decision-pass.md` on SA
+Elian Jiang's instruction; C1–C4 closed. L5 remains the only residual warning.
