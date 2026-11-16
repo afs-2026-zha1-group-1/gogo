@@ -1,0 +1,22 @@
+# G1 decision — us-065-frontend-typescript-migration
+
+- Gate: G1 (Align)
+- Inputs:
+  - Delta Spec: `specs/frontend-build/spec.md`
+  - AC/DoV review: `dov-ac-review.md` — Pass
+  - P2 consistency lint: `consistency-lint.md` — Pass (0 blockers, 0 warnings, 2 suggestions)
+  - Strict OpenSpec validation — Passed
+  - Approved requirement: `requirement-workspace/requirements/US-065.md`
+- Findings:
+  - Scope: The proposal now states explicit Non-Goals. Delta requirements FB-1–FB-6 cover the TypeScript source, entry, build, behavior-preservation, development-server, and runtime-dependency boundaries.
+  - Ambiguity: No blocking ambiguity remains. Compiler options and development-only type packages are implementation-design choices.
+  - Conflict: The existing greeting Living Spec describes a plain-text response, while REQ-002 and the current frontend use JSON. This pre-existing discrepancy is documented and deferred outside this change; the TypeScript migration preserves the current JSON behavior.
+  - Verification scope: P2 artifact alignment only. No frontend implementation is claimed as complete.
+- Decision: Pass
+- Conditions + owners: None
+- Approvers: IO=Emily Li; SA=Sammi Ng
+- Sign-off status: Pending; this draft is not an approved G1 decision until both approvers sign.
+- Signatures:
+  - IO (Emily Li): Emily Li
+  - SA (Sammi Ng): Sammi Ng
+- Timestamp: 2026-11-16T11:07:04+08:00

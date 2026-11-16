@@ -14,11 +14,11 @@ export function users(): User[] {
 
 export interface ApiOptions {
   userId?: number
-  method?: string
+  method?: RequestInit['method']
   body?: unknown
 }
 
-export async function api<T = Record<string, never>>(
+export async function api<T = unknown>(
   path: string,
   { userId, method = 'GET', body }: ApiOptions = {},
 ): Promise<ApiResult<T>> {
@@ -36,9 +36,19 @@ export async function api<T = Record<string, never>>(
   } catch {
     data = null
   }
+  if (response.ok) {
+    return { status: response.status, ok: true, data: data as T | null }
+  }
   return {
     status: response.status,
-    ok: response.ok,
-    data: data as (T & ApiError) | null,
+    ok: false,
+    data: data as (ApiError & Partial<T>) | null,
   }
+}
+
+export function errorMessage(cause: unknown): string | undefined {
+  if (typeof cause === 'object' && cause !== null && 'message' in cause) {
+    return cause.message === undefined ? undefined : String(cause.message)
+  }
+  return undefined
 }
