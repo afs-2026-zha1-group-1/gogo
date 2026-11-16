@@ -16,8 +16,8 @@
 ## Probe
 
 - stages: p4
-- summary: local-verify report `20261116-154649` found; no g2-decision for us-066; active changes req-002, us-049-050, us-066
-- notable_missing: `us-066-log-in/g2-decision.md` (expected; human gate not reached); no CI pipeline report yet
+- summary: local verify + pipeline report found; PR #47 CI run 43826922671 green; no g2-decision for us-066
+- notable_missing: `us-066-log-in/g2-decision.md` (expected; human gate not reached)
 
 ## Report
 
@@ -25,7 +25,7 @@
 - report_path: `docs/ai4se-plugins/20261116-154727-quality-checklist-report.md`
 - overall: Pass
 - required_failed: none
-- skipped_optional: P4-3 (no PR/CI yet), P4-4 (not deployed), P4-5 (G2 human)
+- skipped_optional: P4-4 (not deployed), P4-5 (G2 human)
 
 ## Next
 
