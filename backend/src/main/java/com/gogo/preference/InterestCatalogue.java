@@ -5,16 +5,17 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * The seven predefined interests. The wire value is the label, the stored value is the
- * code; matching is literal (no case folding, trimming, aliases or substrings).
+ * The ten predefined interests. The wire value is the Chinese label, the stored value is the
+ * code; matching is literal on the label (no case folding, trimming, aliases or substrings).
  */
 public final class InterestCatalogue {
 
     private static final List<String> LABELS = List.of(
-            "Art", "Nature", "Culture", "History", "Food", "Shopping", "Adventure");
+            "水上运动", "潜水", "摄影", "美食", "咖啡", "历史人文", "手作", "自然风景", "冒险", "慢游");
 
     private static final List<String> CODES = List.of(
-            "art", "nature", "culture", "history", "food", "shopping", "adventure");
+            "water", "diving", "photo", "food", "coffee", "heritage", "craft", "nature",
+            "adventure", "slow");
 
     private InterestCatalogue() {
     }

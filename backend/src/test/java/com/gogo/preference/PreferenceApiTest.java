@@ -38,8 +38,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @AutoConfigureMockMvc
 class PreferenceApiTest {
 
-    private static final String ALL_SEVEN =
-            "{\"interests\":[\"Art\",\"Nature\",\"Culture\",\"History\",\"Food\",\"Shopping\",\"Adventure\"]}";
+    private static final String ALL_TEN =
+            "{\"interests\":[\"水上运动\",\"潜水\",\"摄影\",\"美食\",\"咖啡\",\"历史人文\",\"手作\",\"自然风景\",\"冒险\",\"慢游\"]}";
 
     @Autowired
     private MockMvc mockMvc;
@@ -156,7 +156,7 @@ class PreferenceApiTest {
     @Test
     void rejectsMissingIdentityWithoutReadingOrWriting() throws Exception {
         assertRejected(read(null), 401, "USER_REQUIRED");
-        assertRejected(save("{\"interests\":[\"Art\"]}", null), 401, "USER_REQUIRED");
+        assertRejected(save("{\"interests\":[\"摄影\"]}", null), 401, "USER_REQUIRED");
         assertEquals(0, rowCount(2));
     }
 
@@ -164,13 +164,13 @@ class PreferenceApiTest {
     void rejectsUnusableIdentity() throws Exception {
         assertRejected(read("99"), 401, "USER_REQUIRED");
         assertRejected(read("abc"), 401, "USER_REQUIRED");
-        assertRejected(save("{\"interests\":[\"Art\"]}", "99"), 401, "USER_REQUIRED");
+        assertRejected(save("{\"interests\":[\"摄影\"]}", "99"), 401, "USER_REQUIRED");
         assertTrue(body(read("abc")).get("members") == null);
     }
 
     @Test
     void toleratesWhitespaceAroundIdentity() throws Exception {
-        assertEquals(200, save("{\"interests\":[\"Art\"]}", " 2 ").getResponse().getStatus());
+        assertEquals(200, save("{\"interests\":[\"摄影\"]}", " 2 ").getResponse().getStatus());
         String padded = read(" 2 ").getResponse().getContentAsString();
         String plain = read("2").getResponse().getContentAsString();
         assertEquals(plain, padded);
@@ -178,14 +178,14 @@ class PreferenceApiTest {
 
     @Test
     void deniesNonMemberWithoutLeakingInterests() throws Exception {
-        assertEquals(200, save("{\"interests\":[\"Art\"]}", "2").getResponse().getStatus());
+        assertEquals(200, save("{\"interests\":[\"摄影\"]}", "2").getResponse().getStatus());
         String before = storedPayload(2);
 
         MvcResult readResult = read("5");
         assertRejected(readResult, 403, "NOT_A_MEMBER");
         assertNull(body(readResult).get("members"));
 
-        MvcResult saveResult = save("{\"interests\":[\"Art\"]}", "5");
+        MvcResult saveResult = save("{\"interests\":[\"摄影\"]}", "5");
         assertRejected(saveResult, 403, "NOT_A_MEMBER");
         assertEquals(0, rowCount(5));
         assertEquals(before, storedPayload(2));
@@ -200,7 +200,7 @@ class PreferenceApiTest {
         }
         MvcResult write = mockMvc.perform(put("/api/trips/999999/preferences")
                         .header("X-User-Id", "2").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"interests\":[\"Art\"]}"))
+                        .content("{\"interests\":[\"摄影\"]}"))
                 .andReturn();
         assertRejected(write, 404, "TRIP_NOT_FOUND");
     }
@@ -208,31 +208,32 @@ class PreferenceApiTest {
     // --- catalogue (CAT-1..CAT-4) -----------------------------------------
 
     @Test
-    void acceptsAllSevenInterestsInSubmittedOrder() throws Exception {
-        MvcResult result = save(ALL_SEVEN, "2");
+    void acceptsAllTenInterestsInSubmittedOrder() throws Exception {
+        MvcResult result = save(ALL_TEN, "2");
         assertEquals(200, result.getResponse().getStatus());
-        assertEquals(List.of("Art", "Nature", "Culture", "History", "Food", "Shopping", "Adventure"),
-                responseInterests(body(result)));
-        assertEquals(List.of("art", "nature", "culture", "history", "food", "shopping", "adventure"),
-                storedCodes(2));
+        assertEquals(List.of("水上运动", "潜水", "摄影", "美食", "咖啡", "历史人文", "手作",
+                "自然风景", "冒险", "慢游"), responseInterests(body(result)));
+        assertEquals(List.of("water", "diving", "photo", "food", "coffee", "heritage", "craft",
+                "nature", "adventure", "slow"), storedCodes(2));
     }
 
     @Test
-    void rejectsWrongCase() throws Exception {
-        assertRejected(save("{\"interests\":[\"art\"]}", "2"), 400, "INTEREST_NOT_ALLOWED");
-        assertRejected(save("{\"interests\":[\"ART\"]}", "2"), 400, "INTEREST_NOT_ALLOWED");
+    void rejectsEnglishLabelsAndCaseVariants() throws Exception {
+        for (String value : List.of("\"Art\"", "\"art\"", "\"ART\"", "\"Food\"", "\"Water\"")) {
+            assertRejected(save("{\"interests\":[" + value + "]}", "2"), 400, "INTEREST_NOT_ALLOWED");
+        }
         assertEquals(0, rowCount(2));
     }
 
     @Test
     void rejectsSurroundingWhitespace() throws Exception {
-        assertRejected(save("{\"interests\":[\" Art \"]}", "2"), 400, "INTEREST_NOT_ALLOWED");
-        assertRejected(save("{\"interests\":[\"Art \"]}", "2"), 400, "INTEREST_NOT_ALLOWED");
+        assertRejected(save("{\"interests\":[\" 潜水 \"]}", "2"), 400, "INTEREST_NOT_ALLOWED");
+        assertRejected(save("{\"interests\":[\"潜水 \"]}", "2"), 400, "INTEREST_NOT_ALLOWED");
     }
 
     @Test
     void rejectsEmptyStringsAndNearMatches() throws Exception {
-        for (String value : List.of("\"\"", "\" \"", "\"teleport\"", "\"foodie\"")) {
+        for (String value : List.of("\"\"", "\" \"", "\"浮潜\"", "\"美食家\"")) {
             assertRejected(save("{\"interests\":[" + value + "]}", "2"), 400, "INTEREST_NOT_ALLOWED");
         }
         assertEquals(0, rowCount(2));
@@ -242,35 +243,35 @@ class PreferenceApiTest {
 
     @Test
     void collapsesDuplicatesKeepingFirstOccurrence() throws Exception {
-        MvcResult result = save("{\"interests\":[\"Art\",\"Nature\",\"Art\"]}", "2");
+        MvcResult result = save("{\"interests\":[\"摄影\",\"自然风景\",\"摄影\"]}", "2");
         assertEquals(200, result.getResponse().getStatus());
-        assertEquals(List.of("Art", "Nature"), responseInterests(body(result)));
-        assertEquals(List.of("art", "nature"), storedCodes(2));
+        assertEquals(List.of("摄影", "自然风景"), responseInterests(body(result)));
+        assertEquals(List.of("photo", "nature"), storedCodes(2));
         assertEquals(1, rowCount(2));
     }
 
     @Test
     void repeatingTheSameSetIsIdempotent() throws Exception {
-        save("{\"interests\":[\"Art\",\"Nature\"]}", "2");
+        save("{\"interests\":[\"摄影\",\"自然风景\"]}", "2");
         String payload = storedPayload(2);
-        MvcResult again = save("{\"interests\":[\"Art\",\"Nature\"]}", "2");
+        MvcResult again = save("{\"interests\":[\"摄影\",\"自然风景\"]}", "2");
         assertEquals(200, again.getResponse().getStatus());
-        assertEquals(List.of("Art", "Nature"), responseInterests(body(again)));
+        assertEquals(List.of("摄影", "自然风景"), responseInterests(body(again)));
         assertEquals(payload, storedPayload(2));
         assertEquals(1, rowCount(2));
     }
 
     @Test
     void saveReplacesInsteadOfMerging() throws Exception {
-        save("{\"interests\":[\"Art\",\"Nature\"]}", "2");
-        MvcResult result = save("{\"interests\":[\"Food\"]}", "2");
-        assertEquals(List.of("Food"), responseInterests(body(result)));
+        save("{\"interests\":[\"摄影\",\"自然风景\"]}", "2");
+        MvcResult result = save("{\"interests\":[\"美食\"]}", "2");
+        assertEquals(List.of("美食"), responseInterests(body(result)));
         assertEquals(List.of("food"), storedCodes(2));
     }
 
     @Test
     void emptyArrayClearsButKeepsRow() throws Exception {
-        save("{\"interests\":[\"Art\",\"Nature\"]}", "2");
+        save("{\"interests\":[\"摄影\",\"自然风景\"]}", "2");
         MvcResult result = save("{\"interests\":[]}", "2");
         assertEquals(200, result.getResponse().getStatus());
         assertEquals(List.of(), responseInterests(body(result)));
@@ -280,40 +281,40 @@ class PreferenceApiTest {
 
     @Test
     void rejectsUnknownValueWithoutWriting() throws Exception {
-        save("{\"interests\":[\"Art\",\"Nature\"]}", "2");
+        save("{\"interests\":[\"摄影\",\"自然风景\"]}", "2");
         String payload = storedPayload(2);
         String updatedAt = storedUpdatedAt(2);
 
-        assertRejected(save("{\"interests\":[\"teleportation\"]}", "2"), 400, "INTEREST_NOT_ALLOWED");
+        assertRejected(save("{\"interests\":[\"蹦极\"]}", "2"), 400, "INTEREST_NOT_ALLOWED");
         assertEquals(payload, storedPayload(2));
         assertEquals(updatedAt, storedUpdatedAt(2));
     }
 
     @Test
     void rejectsMixedRequestAsWhole() throws Exception {
-        save("{\"interests\":[\"Art\",\"Nature\"]}", "2");
-        assertRejected(save("{\"interests\":[\"Art\",\"teleportation\"]}", "2"), 400,
+        save("{\"interests\":[\"摄影\",\"自然风景\"]}", "2");
+        assertRejected(save("{\"interests\":[\"摄影\",\"蹦极\"]}", "2"), 400,
                 "INTEREST_NOT_ALLOWED");
-        assertEquals(List.of("art", "nature"), storedCodes(2));
+        assertEquals(List.of("photo", "nature"), storedCodes(2));
     }
 
     @Test
     void firstSaveCreatesExactlyOneRow() throws Exception {
         assertEquals(0, rowCount(2));
-        assertEquals(200, save("{\"interests\":[\"Art\"]}", "2").getResponse().getStatus());
+        assertEquals(200, save("{\"interests\":[\"摄影\"]}", "2").getResponse().getStatus());
         assertEquals(1, rowCount(2));
         assertEquals(1, rowsOfKind("interest"));
     }
 
     @Test
     void rejectsMalformedBodies() throws Exception {
-        assertEquals(200, save("{\"interests\":[\"Art\"]}", "2").getResponse().getStatus());
+        assertEquals(200, save("{\"interests\":[\"摄影\"]}", "2").getResponse().getStatus());
         String payload = storedPayload(2);
 
         List<String> bodies = List.of(
-                "[\"Art\"]",
-                "{\"interest\":[\"Art\"]}",
-                "{\"interests\":\"Art\"}",
+                "[\"摄影\"]",
+                "{\"interest\":[\"摄影\"]}",
+                "{\"interests\":\"摄影\"}",
                 "{\"interests\":[null]}",
                 "{\"interests\":[42]}",
                 "{}");
@@ -327,10 +328,10 @@ class PreferenceApiTest {
 
     @Test
     void memberReadsBackSavedSet() throws Exception {
-        assertEquals(200, save("{\"interests\":[\"Art\",\"Nature\"]}", "2").getResponse().getStatus());
+        assertEquals(200, save("{\"interests\":[\"摄影\",\"自然风景\"]}", "2").getResponse().getStatus());
         MvcResult result = read("2");
         assertEquals(200, result.getResponse().getStatus());
-        assertEquals(List.of("Art", "Nature"), responseInterests(memberOf(body(result), 2)));
+        assertEquals(List.of("摄影", "自然风景"), responseInterests(memberOf(body(result), 2)));
     }
 
     @Test
@@ -343,11 +344,11 @@ class PreferenceApiTest {
 
     @Test
     void membersDoNotOverwriteEachOther() throws Exception {
-        save("{\"interests\":[\"Art\"]}", "2");
-        save("{\"interests\":[\"Food\"]}", "3");
+        save("{\"interests\":[\"摄影\"]}", "2");
+        save("{\"interests\":[\"美食\"]}", "3");
         JsonNode response = body(read("2"));
-        assertEquals(List.of("Art"), responseInterests(memberOf(response, 2)));
-        assertEquals(List.of("Food"), responseInterests(memberOf(response, 3)));
+        assertEquals(List.of("摄影"), responseInterests(memberOf(response, 2)));
+        assertEquals(List.of("美食"), responseInterests(memberOf(response, 3)));
     }
 
     @Test
@@ -366,7 +367,7 @@ class PreferenceApiTest {
 
     @Test
     void readingChangesNothing() throws Exception {
-        save("{\"interests\":[\"Art\"]}", "2");
+        save("{\"interests\":[\"摄影\"]}", "2");
         String payload = storedPayload(2);
         String updatedAt = storedUpdatedAt(2);
         String first = read("2").getResponse().getContentAsString();
@@ -380,7 +381,7 @@ class PreferenceApiTest {
 
     @Test
     void extraBodyFieldsAreIgnoredAndOnlyInterestKindIsWritten() throws Exception {
-        MvcResult result = save("{\"interests\":[\"Art\"],\"kind\":\"budget\",\"userId\":3}", "2");
+        MvcResult result = save("{\"interests\":[\"摄影\"],\"kind\":\"budget\",\"userId\":3}", "2");
         assertEquals(200, result.getResponse().getStatus());
         assertEquals(1, rowsOfKind("interest"));
         assertEquals(0, rowsOfKind("budget"));
@@ -392,11 +393,11 @@ class PreferenceApiTest {
 
     @Test
     void savesOnlyTheCallersOwnRow() throws Exception {
-        save("{\"interests\":[\"Food\"]}", "3");
+        save("{\"interests\":[\"美食\"]}", "3");
         String chloePayload = storedPayload(3);
-        save("{\"interests\":[\"Art\"]}", "2");
+        save("{\"interests\":[\"摄影\"]}", "2");
         assertEquals(chloePayload, storedPayload(3));
-        assertEquals(List.of("art"), storedCodes(2));
+        assertEquals(List.of("photo"), storedCodes(2));
     }
 
     @Test
@@ -413,9 +414,9 @@ class PreferenceApiTest {
     void savingStillWorksAfterMainPlanConfirmed() throws Exception {
         jdbcClient.sql("UPDATE trip SET main_plan_confirmed = 1 WHERE id = ?")
                 .param(seededTripId()).update();
-        MvcResult result = save("{\"interests\":[\"Art\"]}", "2");
+        MvcResult result = save("{\"interests\":[\"摄影\"]}", "2");
         assertEquals(200, result.getResponse().getStatus());
-        assertEquals(List.of("art"), storedCodes(2));
+        assertEquals(List.of("photo"), storedCodes(2));
     }
 
     @Test
@@ -437,10 +438,10 @@ class PreferenceApiTest {
 
     @Test
     void savedSetSurvivesAReloadOfTheReader() throws Exception {
-        save("{\"interests\":[\"Art\",\"Nature\"]}", "2");
+        save("{\"interests\":[\"摄影\",\"自然风景\"]}", "2");
         String first = read("2").getResponse().getContentAsString();
         String second = read("2").getResponse().getContentAsString();
-        assertEquals(List.of("Art", "Nature"), responseInterests(memberOf(objectMapper.readTree(first), 2)));
+        assertEquals(List.of("摄影", "自然风景"), responseInterests(memberOf(objectMapper.readTree(first), 2)));
         assertEquals(first, second);
         assertFalse(first.isEmpty());
         assertNotEquals(0, storedCodes(2).size());

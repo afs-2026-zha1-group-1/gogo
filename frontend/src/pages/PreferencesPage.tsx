@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
-import { Alert, Button, Skeleton, Space, Tag, Typography } from 'antd'
+import { Alert } from 'antd'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
+import Icon from '../Icons'
 import { ApiError } from '../api/client'
 import { fetchPreferences, savePreferences } from '../api/preferences'
-import { INTEREST_LABELS } from '../types/preferences'
+import { INTEREST_OPTIONS } from '../types/preferences'
 import type { PreferencesResponse } from '../types/preferences'
 
 interface PreferencesPageProps {
   tripId: number
   userId: number
+  userName?: string
 }
 
 interface Rejection {
@@ -36,7 +38,7 @@ function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : '请求失败，请重试'
 }
 
-export default function PreferencesPage({ tripId, userId }: PreferencesPageProps) {
+export default function PreferencesPage({ tripId, userId, userName }: PreferencesPageProps) {
   const queryClient = useQueryClient()
   const queryKey = ['preferences', tripId, userId]
   const [selected, setSelected] = useState<string[]>([])
@@ -88,14 +90,30 @@ export default function PreferencesPage({ tripId, userId }: PreferencesPageProps
 
   const busy = query.isLoading || mutation.isPending
   const rejection = query.isError ? rejectionOf(query.error) : null
+  const dirty =
+    selected.length !== acknowledged.length ||
+    selected.some((label) => !acknowledged.includes(label))
+
+  const statusLabel = query.isLoading
+    ? '加载中'
+    : mutation.isPending
+      ? '保存中'
+      : dirty
+        ? '未保存'
+        : '已保存'
+  const statusTone = !busy && !dirty ? 'pill ok' : 'pill'
 
   const appbar = (
-    <header className="appbar">
+    <div className="appbar">
+      <a className="iconbtn" href={`#/trips/${tripId}`} aria-label="返回行程">
+        <Icon name="left" />
+      </a>
       <div className="grow">
-        <div className="title">旅行偏好</div>
-        <div className="sub">US-019 · 兴趣</div>
+        <div className="title">我的偏好</div>
+        <div className="sub">{userName ? `${userName} · US-019` : 'US-019 · 兴趣'}</div>
       </div>
-    </header>
+      {!query.isError && <span className={statusTone}>{statusLabel}</span>}
+    </div>
   )
 
   if (query.isError) {
@@ -103,18 +121,28 @@ export default function PreferencesPage({ tripId, userId }: PreferencesPageProps
       <div className="screen">
         {appbar}
         <div className="body">
-          <section className="card pad">
+          <div className="card pad">
             <Alert
               type="error"
               showIcon
               message={rejection ? rejection.heading : '无法加载兴趣设置'}
               description={rejection ? rejection.explanation : messageOf(query.error)}
             />
-            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-              {!rejection && <Button onClick={() => query.refetch()}>重试</Button>}
-              <a className="btn btn-ghost" href={`#/trips/${tripId}`}>返回行程</a>
+            <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+              {!rejection && (
+                <button
+                  type="button"
+                  className="btn btn-ghost sm"
+                  onClick={() => query.refetch()}
+                >
+                  重试
+                </button>
+              )}
+              <a className="btn btn-ghost sm" href={`#/trips/${tripId}`}>
+                返回行程
+              </a>
             </div>
-          </section>
+          </div>
         </div>
       </div>
     )
@@ -132,55 +160,50 @@ export default function PreferencesPage({ tripId, userId }: PreferencesPageProps
     <div className="screen">
       {appbar}
       <div className="body">
-        <section className="card pad">
-          <Typography.Title level={4} style={{ marginTop: 0 }}>你的兴趣</Typography.Title>
-          <Typography.Paragraph type="secondary">
-            选择你在这趟旅程中喜欢的主题，保存后行程成员都能看到。
-          </Typography.Paragraph>
+        <div className="sec-title">
+          <Icon name="star" className="sm" /> 兴趣（US-019 · 预设列表、不重复）
+        </div>
 
-          {query.isLoading && (
-            <Typography.Paragraph type="secondary">正在加载你的选择…</Typography.Paragraph>
-          )}
-
-          {failure && (
-            <Alert
-              type="error"
-              showIcon
-              message={failure}
-              style={{ marginBottom: 12 }}
-            />
-          )}
-
-          <Space size={[8, 8]} wrap aria-busy={busy}>
-            {INTEREST_LABELS.map((label) => (
-              <Tag.CheckableTag
-                key={label}
-                checked={selected.includes(label)}
-                onChange={() => toggle(label)}
-                style={{
-                  pointerEvents: busy ? 'none' : undefined,
-                  opacity: busy ? 0.5 : 1,
-                }}
-              >
-                {label}
-              </Tag.CheckableTag>
-            ))}
-          </Space>
-
-          <div style={{ alignItems: 'center', display: 'flex', gap: 12, marginTop: 20 }}>
-            <Button
-              type="primary"
-              loading={mutation.isPending}
-              disabled={busy}
-              onClick={() => mutation.mutate(selected)}
-            >
-              保存
-            </Button>
-            <a className="btn btn-ghost" href={`#/trips/${tripId}`}>返回行程</a>
+        {query.isLoading ? (
+          <p className="hint">正在加载你的选择…</p>
+        ) : (
+          <div className="chips">
+            {INTEREST_OPTIONS.map(({ label, emoji }) => {
+              const on = selected.includes(label)
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  className={on ? 'pick on' : 'pick'}
+                  aria-pressed={on}
+                  disabled={busy}
+                  onClick={() => toggle(label)}
+                >
+                  <span aria-hidden="true">{emoji}</span>
+                  {label}
+                </button>
+              )
+            })}
           </div>
+        )}
 
-          {query.isLoading && <Skeleton active title={false} paragraph={{ rows: 1 }} style={{ marginTop: 16 }} />}
-        </section>
+        <p className="hint" style={{ marginTop: 10 }}>
+          选中你在这趟旅程中喜欢的主题；保存后行程成员都能看到。
+        </p>
+
+        {failure && <Alert type="error" showIcon message={failure} style={{ marginTop: 14 }} />}
+      </div>
+
+      <div className="actionbar">
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={busy}
+          onClick={() => mutation.mutate(selected)}
+        >
+          <Icon name="check" className="sm" />
+          {mutation.isPending ? '正在保存…' : '保存偏好'}
+        </button>
       </div>
     </div>
   )

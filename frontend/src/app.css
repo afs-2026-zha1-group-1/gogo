@@ -673,6 +673,38 @@ body {
   gap: 8px;
 }
 
+/* US-019 interest picker: the clickable counterpart of the static .chip below */
+.pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: 0.16s;
+}
+
+.pick:hover {
+  border-color: var(--ink-3);
+}
+
+.pick.on {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #fff;
+}
+
+.pick:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .chip {
   display: inline-flex;
   align-items: center;

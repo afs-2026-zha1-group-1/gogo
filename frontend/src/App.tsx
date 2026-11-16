@@ -106,7 +106,7 @@ export default function App() {
     return (
       <div className="app">
         <ScaffoldBar userId={userId} onChange={setUserId} />
-        <PreferencesPage userId={userId} tripId={route.tripId} />
+        <PreferencesPage userId={userId} userName={user?.name} tripId={route.tripId} />
       </div>
     )
   }

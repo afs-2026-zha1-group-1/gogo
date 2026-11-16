@@ -70,6 +70,9 @@ const PATHS: Record<string, ReactElement> = {
   ),
   left: <path d="M15 5l-7 7 7 7" />,
   right: <path d="M9 5l7 7-7 7" />,
+  star: (
+    <path d="M12 3.6l2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 9.9l6.1-.7L12 3.6z" />
+  ),
   plus: <path d="M12 5.5v13M5.5 12h13" />,
   arrow: (
     <>
