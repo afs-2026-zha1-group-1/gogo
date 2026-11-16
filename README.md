@@ -62,11 +62,27 @@ public fields and accept once (`/api/invitations/{token}` and
 confirmed, and unknown links render a generic unusable page. `main_plan_confirmed`
 has no product mutation path until US-037, so tests set it directly in SQLite.
 
+US-031-037 adds main itinerary planning. `GET /api/trips/{id}/main-plan/inputs`
+aggregates ready members, common interests, the deduplicated must-do union, hard
+budgets and the six fixed generation rules for any member. The organizer
+generates a timed draft with `POST /api/trips/{id}/main-plan` (201; 409
+`MEMBERS_NOT_READY` while members are pending, 409 `ALREADY_CONFIRMED` after
+confirmation); any member reads it with `GET /api/trips/{id}/main-plan` (404
+`NO_DRAFT` before the first generation, computed `stale` against preference
+revisions). `POST /api/trips/{id}/main-plan/confirm` (200) validates the schedule
+and hard budgets first (422 `VALIDATION_FAILED` with both error lists, 409
+`STALE_DRAFT`), then freezes the draft and closes joining. The frontend adds
+`#/trips/<id>/main-plan/inputs` (Screen 9) and `#/trips/<id>/main-plan`
+(Screen 10), each with loading, empty, failure and permission states. The plan
+provider is a fixture-backed fake (`FakeMainPlanProvider`); preference rows are
+a read-only stand-in until REQ-019 lands.
+
 The database is SQLite at `backend/data/gogo.db`. The Flyway migrations create the
 schema and seed data on first start (`V1` greeting, `V2` users/trips/members,
-`V3` invitations and the main-plan column); the application creates the `data/`
-directory itself, because the SQLite driver creates the file but not its parent.
-Delete `backend/data/` to rebuild it.
+`V3` invitations and the main-plan column, `V5` main-plan drafts/stops plus
+readiness and preference seeds; `V4` is reserved for REQ-019); the application
+creates the `data/` directory itself, because the SQLite driver creates the file
+but not its parent. Delete `backend/data/` to rebuild it.
 
 Backend on port 8080:
 
@@ -95,8 +111,8 @@ curl -i -X POST http://localhost:8080/api/trips \
 ```
 
 Run the backend tests with `cd backend && mvn test` (`GreetingApiTest`,
-`TripApiTest`, `InvitationApiTest`); they use the same SQLite engine and the same
-migrations as production.
+`TripApiTest`, `InvitationApiTest`, `MainPlanApiTest` plus the main-plan unit
+suites); they use the same SQLite engine and the same migrations as production.
 
 Inspect the stored row without stopping the app (Python 3 ships `sqlite3`; no
 separate CLI is needed):

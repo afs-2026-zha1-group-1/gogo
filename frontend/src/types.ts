@@ -57,5 +57,8 @@ export type Route =
   | { page: 'members' }
   | { page: 'details'; tripId: number }
   | { page: 'join'; token: string }
+  | { page: 'main-plan'; tripId: number }
+  | { page: 'main-plan-inputs'; tripId: number }
 
-export type InAppPage = Exclude<Route['page'], 'join'>
+// main-plan screens are full-page flows (like join) without the bottom TabBar.
+export type InAppPage = Exclude<Route['page'], 'join' | 'main-plan' | 'main-plan-inputs'>
