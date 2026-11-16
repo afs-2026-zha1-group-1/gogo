@@ -64,3 +64,24 @@
 ## Next（非 Gate）
 
 - `/sdd:g1-decision-record`（建议路径）；或继续 `/sdd:p2` 处理 WARNING/SUGGESTION。
+
+## C7 补丁后复核（2026-11-16，P3 首步）
+
+触发：G1 IO review findings（IO-1/3/4/5/6/8）要求 P3 定稿前落 delta 补丁。
+
+| # | 补丁内容 | 位置 | 结果 |
+|---|---|---|---|
+| C7-1 | cancelled 草稿投影：取消同事务清空 `document.routes`，详情 `routes=[]`；CN1/D1b 同步 | ADDED cancel 语句、CN1、D1b | Pass |
+| C7-2 | 新增 CN6-N（过期版本取消 → `409 STALE_DRAFT_VERSION`，新草稿不变） | ADDED cancel | Pass |
+| C7-3 | 新增 CF7-N（草稿不完整 → `409 SPLIT_DRAFT_INCOMPLETE` + `details.missing`），确认语句明确“完整性先于时间复算” | ADDED confirm | Pass |
+| C7-4 | 定义明细容器：`error.details.routes[]`（`groupLabel/totalMinutes/overrunMinutes/missingInputs`，固定 A/B 两项）与 `error.details.missing[]`；Purpose 链级约定补充 | Purpose、CF2-N、CF3-N、Screen 15 | Pass |
+| C7-5 | Screen 11 按 `status` 分支（无草稿/cancelled → 发起替换；active → 下一步；confirmed → 只读） | MODIFIED start / Screen 11 | Pass |
+| C7-6 | S8 `mainPlanVersion = 1`（本期恒为 v1，多版本延后 R2） | MODIFIED start / S8 | Pass |
+
+复验：`openspec validate --strict` = **valid**（51 场景）；CF/CN 与 fixtures §US-049-050 矩阵同步（新增 CF7-N、CN6-N；CF2-N/CF3-N/CN1 的 `error.details` 与 `routes=[]` 断言）。
+
+**C7 补丁后 Verdict（p2 口径）**：仍为 **Pass** —— 0 BLOCKER / 0 WARNING；原 4 条 SUGGESTION 不变（F1 旧场景名、F2 残留 change、F3 proposal 卫生已修、F4 归档 Purpose 覆盖）。
+
+## Next（C7 后）
+
+- G1=Pass 已记（含 C7 阻塞项）→ 本补丁使 C7 可标 closed（见 g1-decision.md 更新）；下一步 `/sdd:p3` 产 design/tasks。
