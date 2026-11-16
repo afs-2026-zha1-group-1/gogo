@@ -142,6 +142,23 @@ conventions and `docs/knowledge/architecture/tech-stack-plan.md` (TS 5.x).
   `vite.config.js`, `pages/Home.jsx`, `pages/TripDetails.jsx`,
   `pages/Join.jsx`, `pages/InvitationPanel.jsx`.
 
+## CI failure addendum (2026-11-16)
+
+After the direct main merge, the push-triggered CI runs on cb7faa0 / 9410efd /
+8cac644 failed at the frontend `npm ci` step: `ENOTFOUND artifact.oocl.com`.
+Root cause: the local `npm install` of the TS toolchain went through the
+corporate mirror, so the four new lockfile entries (typescript, @types/react,
+@types/react-dom, transitive @types) carried corporate `resolved` URLs that
+GitHub-hosted runners cannot resolve — a recurrence of REQ-001 risk R1. The
+other 81 entries had been public since REQ-001.
+
+Fix (user-approved 2026-11-16): rewrite the four entries to
+`https://registry.npmjs.org/`, restoring the established baseline; commit
+98f524b pushed to main. Verified in a clean temp directory: `npm ci` from the
+public registry + `tsc -b && vite build` green (bundle hash unchanged). Local
+node_modules restored via the default mirror with the lockfile kept public.
+CI run 43798399162 on 98f524b: **success**, both jobs green.
+
 ## Conclusion
 
 All 20 delta-spec scenarios and reverse checks R-1/R-2/R-3 verified green in
