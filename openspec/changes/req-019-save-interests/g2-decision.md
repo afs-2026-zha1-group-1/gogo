@@ -128,8 +128,8 @@ modules / 488.36 kB JS / 38.39 kB CSS，`npm ci` 装 81 个包。
 ## §签核区（由 VL 手工填写后提交）
 
 ```
-Decision:      [ ] Pass        [ ] Fail        [ ] Conditional
-VL name:       
+Decision:      [X] Pass        [ ] Fail        [ ] Conditional
+VL name:       Sammi Ng
 Timestamp:     ____-__-__ __:__ (+0800)
 ```
 
