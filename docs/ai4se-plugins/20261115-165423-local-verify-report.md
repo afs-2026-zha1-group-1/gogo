@@ -12,13 +12,11 @@
 | Build | Pass |
 | Static scan | Pass |
 | Code review | Pass |
-| Evidence (OpenSpec) | Partial |
-| **Overall** | Partial |
+| Evidence (OpenSpec) | Pass |
+| **Overall** | Pass |
 
-**PR gate:** Overall is Partial (E1 remote CI and E3 human review pending —
-both close after PR/G2, house pattern of REQ-002/003/004). Partial does not
-block `/sdd:pr-submit`; only Fail without a complete Waiver blocks. No CRITICAL
-finding. Agents must not self-approve Waiver.
+**PR gate:** Overall Pass (E3 closed by G2 Pass, VL lumi, 2026-11-16). Merged
+to main cb7faa0 per user instruction; no waiver needed.
 
 ## Local commands
 
@@ -69,7 +67,7 @@ Runner log: `docs/ai4se-plugins/20261115-164941-local-verify-run.log`.
 |------|--------|--------|
 | E1 Machine | Pass | local command table green (mvn 31/31, build, whitelist 5/5) **and** fresh remote CI run 43697575941 success on PR head 976620d (ci-report.md, 2026-11-15T17:07+0800) |
 | E2 AI | Pass | this report + verification-req-005.md per-scenario evidence |
-| E3 Human | Pending | VL review at G2 — never agent-signed |
+| E3 Human | Signed | G2 Pass, VL lumi, 2026-11-16 (`openspec/changes/us-064-mobile-app-shell/g2-decision.md`) |
 
 ## Five-question map
 

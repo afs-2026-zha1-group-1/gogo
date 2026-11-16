@@ -80,8 +80,9 @@
   authorization; read a fresh CI run with `gh` for G2 (never inherited green)
   — PR #34 opened 2026-11-15 with typed authorization; run 43697575941
   success on 976620d (ci-report.md)
-- [ ] 6.2 G2 decision record by named humans (VL); G3/archive lane per user
-  routing
+- [x] 6.2 G2 decision record by named humans (VL) — **G2 Pass recorded
+  2026-11-16, VL lumi**; merge to main executed directly per user instruction
+  (cb7faa0, PR #34 MERGED); G3/archive lane pending
 - [ ] 6.3 Update `README.md` run instructions and registry/handoff rows
 
 ## 7. Stage artifacts (owner: Dev)
