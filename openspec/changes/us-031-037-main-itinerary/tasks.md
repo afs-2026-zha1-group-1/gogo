@@ -158,9 +158,13 @@
       CLEAN; run 43799584379 green on both jobs after 2 transient-checkout
       re-runs; `docs/ai4se-plugins/20261116-114859-pipeline-report.md` +
       `ci-report.md` E1 slot recorded (E1 全绿)
-- [ ] 7.2 G2 decision record by named VL; then P5 change summary, G3, archive
-      via `/sdd:living-merge` — merge order REQ-019 V4 first; execute F1
-      write-sync alignment before/at that merge (g1-decision.md)
+- [x] 7.2a G2 decision record by named VL — done 2026-11-16: **Pass** recorded
+      by VL **Elian Jiang** (verbal sign-off conveyed by the user; not agent
+      self-approval) in `g2-decision.md`, citing local-verify `20261116-004329`
+      + pipeline ci `20261116-114859` (E1 全绿 on merged head `ed0a487`)
+- [ ] 7.2b P5 change summary, G3, archive via `/sdd:living-merge` — gated on the
+      human merge of PR #37; merge order REQ-019 V4 first; execute F1 write-sync
+      alignment before/at that merge (g1-decision.md); not started
 - [x] 7.3 Update `README.md` run instructions and the registry/handoff rows —
       observed 2026-11-16: README US-031-037 paragraph + V5 migration note +
       test-suite list; registry status/notes and handoff note record P4
