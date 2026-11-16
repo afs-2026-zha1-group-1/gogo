@@ -450,3 +450,140 @@ after the G1 C2 amendment; no `trip` ALTER), 2 write + 2 read endpoints (3 wire 
 acceptance tests (M1–M14 / V1–V7 + reverses). Ordering: backend contract and
 seeds first, frontend screens second; G1 to rule data model/API contract as a
 named decision item (capability-pack convention).
+
+---
+
+# Impact brief — US-067
+
+- Date: 2026-11-16
+- Workdir: `requirement-workspace/`
+- Mode: embedded at the end of `/sdd:pre-spec-req` (blocking OQs = 0, DoR BLOCKERs = 0)
+- Change id: *(to be created in P2)*
+
+## 1. Requirement set
+
+| id | Path |
+|---|---|
+| US-067 | `requirement-workspace/requirements/US-067.md` |
+
+## 2. As-is asset inventory (evidence paths)
+
+| Asset | Path | Status |
+|---|---|---|
+| Living Spec – invitations | `openspec/specs/invitations/spec.md` | 4 requirements (issuance, preview, accept, unusable) |
+| Living Spec – trips | `openspec/specs/trips/spec.md` | 4 requirements (identity, create, detail, main-plan state) |
+| Living Spec – app-shell | `openspec/specs/app-shell/spec.md` | 6 requirements (shell, tabs) |
+| Living Spec – main-itinerary | `openspec/specs/main-itinerary/spec.md` | 7 requirements |
+| Living Spec – greeting | `openspec/specs/greeting/spec.md` | 1 requirement |
+| Archived REQ-004 change | `openspec/changes/archive/2026-11-15-req-004-trip-invitations/` | invitation API + frontend Join/InvitationPanel |
+| Frontend Join page | `frontend/src/pages/Join.jsx` | token-based preview + accept + joined/unusable/closed states |
+| Frontend InvitationPanel | `frontend/src/pages/InvitationPanel.jsx` | organizer link + QR display |
+| Frontend App router | `frontend/src/App.tsx` | hash router, `/join/<token>` route exists |
+| Frontend Icons | `frontend/src/Icons.tsx` | icon registry; no scan/camera icon yet |
+| Frontend api | `frontend/src/api.ts` | `api()` helper, `users()` scaffold |
+| Backend invitation package | `backend/src/main/java/com/gogo/invitation/` | controller, repository, DTOs |
+| Knowledge base | `docs/knowledge/_INDEX.md` | architecture, domain, rules slots |
+| UI prototype | `ui-design-reference/gogo-mvp-prototype.html` | Screen 1 dashboard with "i" button; Screen 4 invitation QR; no scanner screen in prototype HTML |
+| Acceptance fixtures | `requirement-workspace/acceptance-test-fixtures.md` §REQ-004 | token opaque, joinPath `/join/<token>`, I/J/U matrix |
+
+## 3. As-is → proposed delta
+
+### 3.1 `invitations` capability
+
+**As-is** (`openspec/specs/invitations/spec.md`): 4 backend requirements —
+issuance, preview, accept/join, unusable. No scanner surface.
+
+**Proposed delta**: 1 ADDED requirement "QR-code invitation scanner" — frontend
+scanner screen with camera lifecycle, URL pattern validation (`/join/<token>`),
+handoff to existing Join page, error recovery with link fallback. No backend
+requirement changes.
+
+### 3.2 Frontend – new Scanner page
+
+**As-is**: no scanner page exists. `App.tsx` routes `/join/<token>` → `Join.jsx`.
+No camera/scan icon in `Icons.tsx`.
+
+**Proposed delta**: new `Scanner.tsx` page component. Hash route (e.g. `#/scan`)
+to be wired in `App.tsx` parseRoute. Scanner owns camera lifecycle, QR decode,
+URL validation, and link fallback input. On valid token extraction, navigates to
+`#/join/<token>` (existing Join page). New icons: scan, camera.
+
+### 3.3 Frontend – existing Join page
+
+**As-is** (`frontend/src/pages/Join.jsx`): receives `token` prop, calls preview
+API, renders ready/joined/unusable/closed/failed states.
+
+**Proposed delta**: **none**. The scanner hands off by navigating to the existing
+Join route. Join page behavior unchanged.
+
+### 3.4 Frontend – App router
+
+**As-is** (`frontend/src/App.tsx`): parseRoute handles `/join/<token>`,
+`/trips/<id>`, `/trips/<id>/main-plan[/inputs]`, `/create`, `/trips`, `/split`,
+`/members`, default `home`.
+
+**Proposed delta**: add `/scan` route → `Scanner` page. Placement before generic
+trips regex (existing convention).
+
+### 3.5 Backend
+
+**As-is**: `InvitationController`, `InvitationRepository`, 4 endpoints.
+
+**Proposed delta**: **none**. US-067 is frontend-only.
+
+### 3.6 Other specs – checked, no impact
+
+`greeting`, `trips`, `app-shell`, `main-itinerary`: no requirements touched.
+
+## 4. Blast radius
+
+| System / capability | Impact |
+|---|---|
+| Frontend app | New Scanner page component, 1 new hash route, 2 new icons |
+| `invitations` capability | 1 ADDED frontend requirement (spec-level); no backend change |
+| Browser APIs | `navigator.mediaDevices.getUserMedia`, `jsqr` (or `BarcodeDetector`) |
+| Backend | none |
+| Database | none |
+
+## 5. Artifact impact
+
+| Artifact | Change |
+|---|---|
+| `openspec/specs/invitations/spec.md` | +1 ADDED requirement (scanner) |
+| `frontend/src/pages/Scanner.tsx` | new file |
+| `frontend/src/App.tsx` | +1 route entry |
+| `frontend/src/Icons.tsx` | +2 icon symbols (scan, camera) |
+| `frontend/src/types/` | possible scanner state types |
+| `frontend/package.json` | possible `jsqr` move from devDependency to dependency |
+| `openspec/changes/<us-067-change>/` | new change directory (P2) |
+| `requirement-workspace/analysis/us-067-dor.md` | written this session |
+| `docs/feedback/e2e-us-067*.md` | new E2E checklist (P4) |
+
+## 6. Dual-track notes
+
+- **OpenSpec track**: single change, 1 ADDED requirement in `invitations`.
+  Frontend-only; no backend delta. Spec must describe the scanner surface
+  contract (camera lifecycle, URL validation pattern, handoff, error recovery).
+- **Agile track**: US-067 is a single user story. AC scenarios 1–2 (entry point)
+  and 9 (login) deferred; 8 scenarios remain testable. E2E tests exercise the
+  scanner page directly (navigate to `#/scan`).
+
+## 7. Risks & blockers
+
+| id | Risk / blocker | Severity | Disposition |
+|---|---|---|---|
+| R1 | `BarcodeDetector` browser support is limited (Chrome/Edge only, not Firefox/Safari). `jsqr` is the reliable fallback but is currently a devDependency. | low | Move `jsqr` to production dependency in P3 design. Non-blocking. |
+| R2 | Camera API requires HTTPS or localhost. Dev environment on localhost is fine; production deploy must serve HTTPS. | low | Existing constraint; no new risk introduced by this change. |
+| R3 | Scan-icon entry point (AC S1–S2) deferred — no user-facing way to reach the scanner except direct URL. | medium | Accepted by user ruling 2026-11-16. E2E tests navigate directly to `#/scan`. Entry point to be added in a follow-up story. |
+| R4 | US-066 login flow (AC S9) deferred — signed-out scenario not exercised. | low | Accepted by user ruling. US-067 tests assume a signed-in (scaffold) user. |
+
+No critical blocker invalidates US-067; split may proceed.
+
+## 8. Suggested split boundaries
+
+One change `us-067-qr-scanner`, one ADDED requirement in the existing
+`invitations` capability. Effort: small — frontend-only, 1 new page component,
+1 new route, camera lifecycle + QR decode + URL validation + error states.
+No backend, no migration. ~8–10 acceptance test scenarios (S3–S8, S10–S11,
+R-1–R-3). Ordering: scanner component → route wiring → E2E verification.
+G1 focus: URL validation pattern and handoff contract (scanner → Join page).
