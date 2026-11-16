@@ -7,46 +7,46 @@ exists.
 
 ## 1. Fail-first E2E checklist + fixture prep
 
-- [ ] 1.1 Author `docs/feedback/e2e-us-067.md` with 15 rows (I-1..I-10 +
+- [x] 1.1 Author `docs/feedback/e2e-us-067.md` with 15 rows (I-1..I-10 +
       S-1..S-5), each listing browser steps, expected observable, screenshot
       filename slot, and initial status `FAIL`; verify the file exists and
       enumerates exactly 15 rows (open the file and count).
-- [ ] 1.2 Add a `## §US-067 scanner payloads` section to
+- [x] 1.2 Add a `## §US-067 scanner payloads` section to
       `requirement-workspace/acceptance-test-fixtures.md` with the six new
       fixture payloads (unrelated plain URL, cross-origin `#/join/<hex>`,
       absolute same-origin `#/join/<hex>`, hash-only `#/join/<hex>`, wrong
       length token, uppercase/non-hex token) alongside the reused REQ-004
       open/revoked/closed/already-joined invitation tokens; verify each of the
       six new payloads appears verbatim.
-- [ ] 1.3 Confirm `InvitationApiTest` is green on the current `main`-based
+- [x] 1.3 Confirm `InvitationApiTest` is green on the current `main`-based
       branch as the pre-change baseline, so any regression in group 9 is
       attributable to this change; verify `mvn test` (wrapper 3.9.16 path)
       reports BUILD SUCCESS before touching frontend code.
 
 ## 2. Dependency + type/route scaffolding
 
-- [ ] 2.1 Move `jsqr` from `devDependencies` to `dependencies` in
+- [x] 2.1 Move `jsqr` from `devDependencies` to `dependencies` in
       `frontend/package.json` (no version change); verify `npm ci && npm
       run build` (tsc) succeeds on the branch.
-- [ ] 2.2 Extend the `Route` union in `frontend/src/types.ts` with
+- [x] 2.2 Extend the `Route` union in `frontend/src/types.ts` with
       `{ page: 'scan'; from: string | null }` and update the `InAppPage`
       `Exclude<…>` list to also drop `'scan'`; verify `tsc --noEmit` reports
       no error on the `TAB_FOR_PAGE` Record (scan does not need a TabId).
-- [ ] 2.3 Add `scan` and `camera` icon components to `frontend/src/Icons.tsx`
+- [x] 2.3 Add `scan` and `camera` icon components to `frontend/src/Icons.tsx`
       following the existing `Icon` switch pattern; verify a temporary render
       (`<Icon name="scan" /> <Icon name="camera" />`) shows two distinct SVGs
       and the file typechecks.
 
 ## 3. Matcher module (single source of truth for G1 C3)
 
-- [ ] 3.1 Implement `parseJoinHash(text, appOrigin)` in
+- [x] 3.1 Implement `parseJoinHash(text, appOrigin)` in
       `frontend/src/scan.ts` with the 5-step algorithm from design D3,
       returning `{ok:true, token}` or `{ok:false, reason}`; verify the module
       compiles and a small `node --experimental-vm-modules` script executed
       against the 6 fixture payloads from 1.2 yields the expected
       accept/reject outcomes (open-invitation absolute, open-invitation
       hash-only, unrelated, cross-origin, wrong-length, uppercase).
-- [ ] 3.2 Document the matcher's contract at the top of `scan.ts` (32-char
+- [x] 3.2 Document the matcher's contract at the top of `scan.ts` (32-char
       lowercase hex, same-origin rule) so future readers know it is the
       C3-signed authority; verify by reading the file header.
 

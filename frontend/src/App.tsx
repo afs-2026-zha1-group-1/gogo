@@ -99,6 +99,19 @@ export default function App() {
     )
   }
 
+  // Scanner is a full-screen flow outside the shell + TabBar (design D1, C2).
+  // Task 4.1 fills the UI surface and task 4.2 registers the #/scan hash
+  // route in parseRoute. Scaffolding this branch here keeps InAppPage and
+  // TAB_FOR_PAGE in sync so the union narrowing at line 117 stays sound.
+  if (route.page === 'scan') {
+    return (
+      <div className="app">
+        <ScaffoldBar userId={userId} onChange={setUserId} />
+        <div className="scanner-placeholder">Scanner (placeholder — see task 4.1)</div>
+      </div>
+    )
+  }
+
   return (
     <div className="app">
       <ScaffoldBar userId={userId} onChange={setUserId} />
