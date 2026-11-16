@@ -14,7 +14,7 @@
 
 | Item | Result | Evidence | Notes |
 |---|---|---|---|
-| AC-1 every requirement has at least one testable AC | Pass | 3 requirement blocks with 18, 6 and 29 scenarios, 53 total | Page revision 3 includes delete/clear confirmation, cancellation and clear failure; human re-review pending |
+| AC-1 every requirement has at least one testable AC | Pass | 3 requirement blocks with 18, 6 and 29 scenarios, 53 total | Page revision 3 includes delete/clear confirmation, cancellation and clear failure; SA evelyn.huang re-review passed 2026-11-16 |
 | AC-2 ACs are observable | Pass | Assertions anchor on HTTP status, `code`, the returned `budget` object, whether `budget` is `null`, the presence of the `amount` key in `payload`, the `budget` row count, byte comparison of `updated_at` across members, and the rendered amount and label | "not set" versus `0` is asserted twice: on the wire and on screen |
 | AC-3 negative and edge cases are called out where risk is high | Pass | 9 rejection scenarios on save, 9 edge scenarios on save, 6 on read, 5 failure/rollback scenarios on the page | See §4 |
 | AC-4 no disguised implementation detail, no vague words | Pass | No "correctly", "properly", "quickly", "gracefully", "as expected" or "etc." (searched); every assertion names a status, a `code`, a field or a rendered value | "rendered as `40.00` with `SGD`" is an observation point, not a formatting implementation |
@@ -85,7 +85,7 @@
 |---|---|---|
 | IO | User accepted 2026-11-15: unset and zero are distinct; exact copy belongs to UI implementation | No; distinction remains contractual |
 | IO | User accepted 2026-11-15: clearly labelled currency and major-unit entry, currency-specific minor-unit storage (40 SGD -> 4000) | No; explicit page obligation |
-| IO | User rejected immediate clearing 2026-11-15: both budget clear and must-do delete require confirmation | C8 and confirm/cancel/failure scenarios updated; Emily IO Pass recorded 2026-11-15 for 53 scenarios by separate explicit instruction; revised SA review pending |
+| IO | User rejected immediate clearing 2026-11-15: both budget clear and must-do delete require confirmation | C8 and confirm/cancel/failure scenarios updated; Emily IO Pass recorded 2026-11-15 for 53 scenarios by separate explicit instruction; revised SA review passed 2026-11-16 (evelyn.huang) |
 | SA | Two ordered prerequisites: REQ-019's `V4` plus page revision 1, then REQ-020's page revision 2, which revision 3 reproduces | No for the delta, yes for P4/merge; conditions 1 and 2 of the G1 draft |
 | SA | The eight-step validation order (C1) decides which `code` a multi-violation request returns. Confirm it before P4, since tests encode it | No, but it should be confirmed at G1 |
 | SA | `TripErrorAdvice` covers `com.gogo.trip` only, so the `BUDGET_*` codes need a preference-owned advice or a widened scope | No, decided in P3 |

@@ -15,9 +15,33 @@ that the CLI is unavailable; strict validation has not passed.
 
 - Change id: `req-019-save-interests`
 - Gate: G1 (Align)
-- Status: **RECORDED — Conditional; gate NOT closed** (2026-11-15). SA evelyn.huang
-  has signed Pass; IO Emily approved the current package on 2026-11-15 per explicit
-  user instruction. Batch-readiness and validation follow-up remain open.
+- Status: **RECORDED — Pass; gate closed 2026-11-16**. SA evelyn.huang and IO Emily
+  have both signed. The SA's 2026-11-16 re-review of the REQ-020/024 revised
+  contracts released condition 1, and no findings came with it. `openspec validate
+  --strict` still exits 1 and is carried as a follow-up, not as a passed check.
+
+## Push verification update (2026-11-16)
+
+`origin/feat/travel_preference` is at `27b09e6`, thirteen commits ahead of
+`origin/main` `7d939b0`, so the revision that carries this record and Emily's
+approval is published and reviewable. Statements below that describe the push as
+outstanding are superseded: `eca9abe` was the tip quoted before the three
+follow-up commits `658ba42`, `3c120ac` and `27b09e6`. The IO approval recorded in
+this file stands as written; no new claim is made here.
+
+## G1 closure (2026-11-16)
+
+Both required roles have signed, so this file now records the gate as closed and
+supersedes the Conditional statements above; the 2026-11-15 sections are kept as
+history. SA evelyn.huang re-reviewed the revised contracts of
+`req-020-manage-must-do` and `req-024-set-trip-budget` and passed them on
+2026-11-16, relayed by the change author. That released condition 1 below, whose
+only blocker was the sibling changes; no new findings came with the re-review.
+
+Recorded limitation, deliberately not presented as a pass: `openspec validate
+--strict` still exits 1 because five ADDED requirement bodies exceed 500
+characters. The gate owners closed G1 with this item outstanding, so it is carried
+as a follow-up that blocks archive, not P4 start.
 
 ## Correction notice
 
@@ -51,6 +75,7 @@ instruction and does not retroactively validate the withdrawn statement.
   `V3__create_invitation.sql` and the new `trip.main_plan_confirmed` column. Neither
   object collides with `member_preference`, and D4 keeps "main plan unconfirmed" as
   test context only, with no locking branch in this capability.
+  Current pushed tip: `27b09e6` (2026-11-16 update above).
 - Structural check: `spec.md` follows `# Spec Delta` → `## ADDED Requirements` with
   5 `### Requirement:` blocks and 31 `#### Scenario:` blocks. Current strict
   validation exited 1 due to five overlong ADDED requirement bodies; remediation
@@ -90,24 +115,29 @@ instruction and does not retroactively validate the withdrawn statement.
 
 ## Decision
 
-- Decision: **Conditional** — recorded 2026-11-15.
-- Why not Pass: both role approvals are recorded, but the existing batch-readiness
-  condition is not certified complete and strict validation still exits 1.
-  Emily's approval does not certify those checks or waive the remaining conditions.
-- Why not Fail: the delta itself cleared AC 4/4 and DoV 5/5 with zero blocking
-  ambiguity, and no reviewer has asked for rework.
+- Decision: **Pass** — G1 closed 2026-11-16.
+- Why Pass: both required roles have signed with no findings relayed (IO Emily
+  2026-11-15; SA evelyn.huang 2026-11-15 plus the 2026-11-16 sibling re-review),
+  AC 4/4 and DoV 5/5 still stand, blocking ambiguities are 0, and the package is
+  published at `27b09e6`.
+- Why no longer Conditional: the batch-readiness condition waited only on the
+  sibling changes; both hold their signatures now, so it is closed rather than
+  waived.
 - Conditions + owners:
 
 | # | Condition | Owner | State |
 |---|---|---|---|
-| 1 | Finish the SA's four requirements to G1 on `feat/travel_preference`, then push the branch for review | evelyn.huang (SA) | open |
+| 1 | Finish the SA's four requirements to G1 on `feat/travel_preference`, then push the branch for review | evelyn.huang (SA) | closed 2026-11-16 — pushed at `27b09e6`; REQ-020/024 hold both signatures after the SA re-review; REQ-026 stays P1 by the user's earlier ruling and is out of scope here |
 | 2 | IO approval of current five-requirement / 31-scenario package | Emily (IO) | closed 2026-11-15; explicit user instruction; approval recorded without certifying condition 1 |
 | 3 | Fold IO product decisions into requirements and review records | evelyn.huang / Dev | closed 2026-11-15; no Clear All action and English-only labels accepted, no delta behavior change |
-| 4 | Resolve overlong requirement bodies and rerun strict validation | Dev | open; current strict exit 1, five length warnings |
+| 4 | Resolve overlong requirement bodies and rerun strict validation | Dev | carried open past G1 closure: strict exit 1 at closure time; blocks archive, not P4 start |
 
 - Approvers: **IO = Emily — Pass (2026-11-15)**, **SA = evelyn.huang — Pass**.
 - SA sign-off: **evelyn.huang — Pass**, recorded 2026-11-15 from the SA's statement
   that the SA has already signed and agreed to pass. No SA conditions were supplied.
+- SA re-review of the sibling revised contracts: **evelyn.huang — Pass**, 2026-11-16,
+  relayed by the change author. Recorded only because it released condition 1; it is
+  not a second signature on this delta.
 - IO sign-off: **Emily — Pass**, 2026-11-15; current five-requirement / 31-scenario
   package, recorded from the user's separate explicit signing instruction.
 - The agent records human statements only. It does not verify identities, does not sign
@@ -116,19 +146,21 @@ instruction and does not retroactively validate the withdrawn statement.
 
 ## What this record does and does not allow
 
-- Allowed: P3 design work (`/sdd:atdd-design`, `/sdd:task-plan`) on the SA-signed
-  delta, because the delta itself is stable and A0/DoV clean.
-- Not allowed: claiming G1 is closed; presenting `preferences` as aligned in the
-  registry; starting P4 implementation while recorded blocking conditions remain open.
-- IO approval is recorded; close the remaining conditions explicitly before
-  changing the overall gate to Pass. No automatic gate closure is implied.
+- Allowed: P4 implementation of this change, provided `V4` lands in order after `V3`;
+  P3 design; and presenting `preferences` as G1-aligned in the registry.
+- Not allowed: reporting strict validation as passed, or archiving the change before
+  the five overlong requirement bodies are fixed and the CLI rerun succeeds.
 
 ## Next
 
-1. Complete the remaining SA-owned requirements to G1.
-2. Push the revised documents and Emily approval record on `feat/travel_preference`.
-3. Resolve strict validation warnings and explicitly close remaining gate conditions.
-4. P3 can start in parallel: settle the error-advice package scope (own advice for
+1. Run P3 (`/sdd:atdd-design`, `/sdd:task-plan`), then P4:
+   `V4__create_member_preference.sql`, the `com.gogo.preference` package and the
+   preferences page.
+2. The revised documents and Emily approval record are pushed at `27b09e6`; no
+   further push is outstanding for review.
+3. Before archive, fix the five overlong requirement bodies and rerun
+   `openspec validate req-019-save-interests --strict`.
+4. P3 detail still open: settle the error-advice package scope (own advice for
    `com.gogo.preference` versus widening `TripErrorAdvice` to `com.gogo`). The
    migration order is settled: `V3` is on `main`, so `V4` lands next and must stay
    after any later rebase of `main`.

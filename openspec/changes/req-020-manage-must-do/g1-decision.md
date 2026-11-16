@@ -2,14 +2,38 @@
 
 - Change id: `req-020-manage-must-do`
 - Gate: G1 (Align)
-- Status: **RECORDED — Conditional; gate NOT closed** (2026-11-15). The user accepts
-  location and time together, but requires a confirmation dialog for deletion.
-  SA evelyn.huang's relayed Pass covers the previous contract only; revised-contract
-  re-review is pending. IO Emily approved the revised three-requirement /
-  42-scenario package on 2026-11-15 per explicit user instruction.
+- Status: **RECORDED — Pass; gate closed 2026-11-16**. SA evelyn.huang re-reviewed the
+  revised confirmation contract and signed Pass, relayed by the change author on
+  2026-11-16; IO Emily approved the revised three-requirement / 42-scenario package
+  on 2026-11-15 per explicit user instruction. `openspec validate --strict` still
+  exits 1 and is carried as a follow-up, not as a passed check.
 - Provenance: the SA's Pass is **relayed**, not documented. No SA-authored review text, finding
   or condition is on file for this change, so anything the SA said that was not relayed is not
   recorded here and must be supplied before this file is treated as final.
+
+## Push verification update (2026-11-16)
+
+`origin/feat/travel_preference` is at `27b09e6`, thirteen commits ahead of
+`origin/main` `7d939b0`, so the revised delta and Emily's approval record are
+published and reviewable. Condition 2's "pending requested commit/push" is
+therefore closed; `eca9abe` was the tip quoted before the later commits
+`658ba42`, `3c120ac` and `27b09e6`. The SA re-review and the validation follow-up
+are settled in the closure section below.
+
+## G1 closure (2026-11-16)
+
+SA evelyn.huang re-reviewed the revised contract, including the confirmation and
+cancellation behavior that replaced immediate delete, and passed it on 2026-11-16.
+The Pass is relayed by the change author and carries no findings. With the IO
+approval already recorded on 2026-11-15, both required roles have signed and G1 is
+closed.
+
+Recorded limitation, deliberately not presented as a pass: `openspec validate
+--strict` still exits 1 on two overlong ADDED bodies, so the gate was closed with
+that item outstanding; it blocks archive, not P4 start. Condition 1 is an
+implementation prerequisite rather than an alignment condition: REQ-019's G1 is
+closed too, but its `V4` migration and preferences page are still absent from the
+tree, so this change remains unbuildable and unmergeable until they land.
 
 ## Inputs
 
@@ -81,55 +105,57 @@
   architecture/tech-stack-plan.md` §5/§6 still describes envelopes, `X-Member-Id`,
   `JdbcClient` and Ant Design 5 while the merged code uses bare DTOs, `X-User-Id`,
   `JdbcTemplate` and hand-written CSS (REQ-020 OQ-14, team-owned).
-- **Current review outcome:** Emily's IO approval covers this revised package,
-  including confirmation/cancellation behavior. SA revised-contract review remains
-  pending; it is not inferred from approval of REQ-019 or the previous version.
+- **Current review outcome:** both roles have signed the revised package. Emily's IO
+  approval (2026-11-15) covers confirmation/cancellation behavior; the SA re-reviewed
+  the revised contract and passed it on 2026-11-16, relayed by the change author, so
+  the earlier reservation about the historical Pass no longer applies.
 
 ## Decision
 
-- Decision: **Conditional** — drafted 2026-11-15, not recorded as a gate.
-- Why not Pass: G1 requires a named IO signature and a named SA signature for this change.
-  IO Emily has approved; the relayed SA Pass for this change is historical after
-  the confirmation-contract revision. Revised SA review is required, not inferred.
-- Why not Fail: the delta cleared A0 (⑨–⑫ Pass) and P1 closed with blocking open 0, no reviewer
-  has asked for rework, and no conflict with a merged capability was found.
+- Decision: **Pass** — G1 closed 2026-11-16.
+- Why Pass: both required roles have signed this version with no findings relayed —
+  IO Emily 2026-11-15, SA evelyn.huang 2026-11-16 on the revised confirmation
+  contract — and A0 (⑨–⑫ Pass) plus P1 with blocking open 0 still stand.
+- Why no longer Conditional: the only missing signature was the SA's re-review of the
+  revised contract; it is now on record, so the gate closes rather than staying
+  provisional.
 - Conditions + owners:
 
 | # | Condition | Owner | State |
 |---|---|---|---|
-| 1 | `req-019-save-interests` reaches a closed G1 and lands `V4__create_member_preference.sql` plus the preferences page on the branch; until then this change cannot be implemented, verified or merged | evelyn.huang (SA) / Dev | open; entry condition, REQ-019 is Conditional today |
-| 2 | Push current revised delta and approval record on `feat/travel_preference` | Dev | pending requested commit/push; Emily approved the local revised package |
+| 1 | `req-019-save-interests` reaches a closed G1 and lands `V4__create_member_preference.sql` plus the preferences page on the branch; until then this change cannot be implemented, verified or merged | evelyn.huang (SA) / Dev | open as an implementation prerequisite, not a G1 condition — REQ-019's G1 closed 2026-11-16, but `V4` and the page are still absent |
+| 2 | Push current revised delta and approval record on `feat/travel_preference` | Dev | closed 2026-11-16; `origin/feat/travel_preference` at `27b09e6` |
 | 3 | IO approval of revised three-requirement / 42-scenario package | Emily (IO) | closed 2026-11-15; explicit user instruction |
-| 4 | Re-review the revised confirmation contract and sign G1 for this version | evelyn.huang (SA) | open; historical Pass was relayed 2026-11-15 for the previous contract |
-| 5 | Fold any IO/SA finding into `specs/preferences/spec.md` (and `proposal.md` if a ruling changes) before P4 implementation | author of this change | open; triggered by 3 and 4 |
-| 6 | Resolve strict warnings and rerun `openspec validate req-020-manage-must-do --strict` | Dev | open; executed 2026-11-15, exit 1; warnings recorded under Inputs |
+| 4 | Re-review the revised confirmation contract and sign G1 for this version | evelyn.huang (SA) | closed 2026-11-16 — Pass on the revised confirmation contract, relayed by the change author; no findings |
+| 5 | Fold any IO/SA finding into `specs/preferences/spec.md` (and `proposal.md` if a ruling changes) before P4 implementation | author of this change | closed 2026-11-16 — no IO/SA findings relayed with either signature |
+| 6 | Resolve strict warnings and rerun `openspec validate req-020-manage-must-do --strict` | Dev | carried open past G1 closure: exit 1 at closure time; blocks archive, not P4 start |
 | 7 | Confirm the C1 id-reuse ruling, or record the opposite ruling and amend the payload shape before P4 | evelyn.huang (SA) | closed with the SA's Pass — C1 is written in the delta the SA approved; no separate minute exists, so an opposing ruling must still be recorded before P4 |
 
-- Approvers: **IO = Emily — Pass (2026-11-15)**, **SA = evelyn.huang — revised review pending**.
+- Approvers: **IO = Emily — Pass (2026-11-15)**, **SA = evelyn.huang — Pass (2026-11-16,
+  revised contract)**.
 - IO sign-off: **Emily — Pass**, 2026-11-15; revised three-requirement / 42-scenario
   package including confirmation dialogs and cancellation, per explicit user instruction.
-- Historical SA sign-off: **evelyn.huang — Pass**, relayed by the change author on 2026-11-15. The SA's
-  earlier Pass on `req-019-save-interests` is scoped to that change and is not counted again
-  here; this row records the old version's Pass only, not the revised confirmation contract.
+- SA sign-off: **evelyn.huang — Pass**. The Pass on the previous contract was relayed
+  2026-11-15; the Pass on the revised confirmation contract was relayed by the change
+  author on 2026-11-16. Neither statement carried a condition. The SA's earlier Pass
+  on `req-019-save-interests` is scoped to that change and is not counted again here.
 - Timestamp: 2026-11-15 (draft, authored by the agent). The agent records human statements
   only; it does not verify identities and does not sign on behalf of either role.
 
 ## What this draft does and does not allow
 
-- Allowed: refine the delta and submit the confirmation revision for SA/IO review.
-  The historical permission to design against the SA-signed version does not
-  approve the revised contract; no new P3/P4 authorization is recorded here.
-- Not allowed: claiming G1 is closed, presenting `preferences` as aligned in the registry,
-  starting P4 implementation, or citing this file as a signature.
-- If both roles sign without findings, this file is amended to Pass with both signature rows
-  filled in and no conditions. If either raises findings, they are appended as conditions here
-  and the delta is revised before P4.
+- Allowed: P3 design, and P4 implementation of this change once REQ-019's `V4` and the
+  preferences page exist; presenting `preferences` as G1-aligned in the registry.
+- Not allowed: building, verifying or merging this change before `V4` and the page
+  land, reporting strict validation as passed, or archiving before that rerun succeeds.
 
 ## Next
 
-1. Close REQ-019's G1 (its own conditions 1–3), because condition 1 above cannot be met earlier.
-2. Push the revised delta and Emily approval record on `feat/travel_preference`.
-3. SA re-reviews the revised confirmation contract; Emily's IO approval is recorded,
-  but does not close the SA condition or waive validation/dependency conditions.
-4. Resolve validation conditions and record the remaining dependency/merge work
-  separately from product alignment; no implementation completion is implied.
+1. Wait for REQ-019's `V4__create_member_preference.sql` and the preferences page; this
+   change cannot be built, verified or merged before they land.
+2. The revised delta and approval records are pushed at `27b09e6`; no further push is
+   outstanding for review.
+3. Start P3 while waiting: settle how the must-do section reuses the page shell and the
+   preference error-advice package scope.
+4. Before archive, fix the two overlong ADDED bodies and rerun
+   `openspec validate req-020-manage-must-do --strict`.

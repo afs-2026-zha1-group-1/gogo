@@ -8,7 +8,8 @@ preserves the list, while Confirm sends one existing must-do PUT. This supersede
 any earlier immediate-delete/no-dialog ruling; add/edit timings and API payloads
 are unchanged. Emily IO approval of the revised 42-scenario package is recorded
 2026-11-15 per the user's separate explicit signing instruction. The prior SA Pass
-covers the previous contract; revised-contract review is pending. G1 is Conditional.
+covers the previous contract. SA evelyn.huang re-reviewed the revised contract and
+passed it on 2026-11-16, relayed by the change author; G1 closed 2026-11-16.
 
 ## Why
 

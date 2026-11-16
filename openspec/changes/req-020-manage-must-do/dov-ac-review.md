@@ -13,7 +13,7 @@
 
 | Item | Result | Evidence | Notes |
 |---|---|---|---|
-| AC-1 every requirement has at least one testable AC | Pass | 3 requirement blocks with 18, 5 and 19 scenarios, 42 total | Page revision 2 includes confirmation and cancellation; human re-review pending |
+| AC-1 every requirement has at least one testable AC | Pass | 3 requirement blocks with 18, 5 and 19 scenarios, 42 total | Page revision 2 includes confirmation and cancellation; SA evelyn.huang re-review passed 2026-11-16 |
 | AC-2 ACs are observable | Pass | Assertions anchor on HTTP status, `code`, the returned item fields, the `must_do` row count, the parsed `payload` (item count, id set, stored order, `null` fields), byte comparison of `updated_at` across members, and the rendered section state | No dependency on logs or internal state |
 | AC-3 negative and edge cases are called out where risk is high | Pass | 7 rejection scenarios on save, 8 edge scenarios on save, 5 on read, 6 failure/rollback scenarios on the page | See §4 |
 | AC-4 no disguised implementation detail, no vague words | Pass | No "correctly", "properly", "quickly", "gracefully", "as expected" or "etc." (searched); every assertion names a status, a `code`, a field or a rendered state | "inline add form" and "delete action" are observation points of the UI, not internal structure |
@@ -84,7 +84,7 @@
 | Role | Concern | Blocks G1? |
 |---|---|---|
 | IO | User accepted 2026-11-15: location and time may both be supplied, overriding reference wording | C5 confirmed; Emily subsequently approved revised package by separate explicit instruction |
-| IO | User rejected immediate delete 2026-11-15: confirmation dialog required | C6 and page scenarios updated; Emily IO Pass recorded 2026-11-15 for 42 scenarios; revised SA review pending |
+| IO | User rejected immediate delete 2026-11-15: confirmation dialog required | C6 and page scenarios updated; Emily IO Pass recorded 2026-11-15 for 42 scenarios; revised SA review passed 2026-11-16 (evelyn.huang) |
 | SA | The change is zero-migration but hard-depends on REQ-019's `V4__create_member_preference.sql` and on the preferences page, neither of which is on disk yet | No for the delta, yes for P4/merge; recorded as condition 1 of the G1 draft |
 | SA | `TripErrorAdvice` covers `com.gogo.trip` only, so `INVALID_REQUEST` and the `MUST_DO_*` codes need a preference-owned advice or a widened scope | No, decided in P3 |
 | SA | C1 (ids may be reused after the list is emptied) narrows the proposal's earlier wording. Confirm it, or switch to a durable counter before P4, because the payload shape changes | No, but it should be confirmed at G1 |

@@ -10,7 +10,8 @@ must clearly label currency/major units with currency-specific minor-unit storag
 No conversion or cross-currency comparison is added; US-031 owns that follow-up.
 Emily IO approval of the revised 53-scenario package is recorded 2026-11-15 per
 the user's separate explicit signing instruction. Previous SA approval covers the
-old contract; revised-contract review is pending. G1 remains Conditional.
+old contract; SA evelyn.huang re-reviewed the revised contract and passed it 2026-11-16, relayed
+by the change author; G1 closed 2026-11-16.
 
 ## Why
 
