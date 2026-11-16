@@ -841,3 +841,105 @@ body {
   flex: 1;
   min-width: 0;
 }
+
+/* --- US-067 Scanner ---------------------------------------------------
+ * Full-screen flow outside the shell + TabBar (design D1, G1 C2).
+ * Reuses existing tokens (.screen column, .appbar, .card, .btn, .pill,
+ * .field, .hint) and Ant Design semantics (primary action + secondary
+ * action on the same row, error panel with a retry affordance).
+ * No new colors or spacing values are introduced. */
+
+.scanner .body {
+  gap: 14px;
+}
+
+.scanner-preview {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  overflow: hidden;
+  background: var(--surface-2);
+  border-style: dashed;
+}
+
+.scanner-preview.live {
+  border-style: solid;
+  border-color: var(--brand);
+}
+
+.scanner-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.scanner-idle-hint {
+  text-align: center;
+  color: var(--ink-2);
+  padding: 24px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.scanner-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.scanner-actions .btn {
+  flex: 1;
+}
+
+.scanner-link {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.scanner-link .field input {
+  width: 100%;
+}
+
+.scanner-chip {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--warn-soft);
+  color: var(--warn-ink);
+  font-size: 12.5px;
+  font-weight: 650;
+}
+
+.scanner-error {
+  text-align: center;
+  padding: 24px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink-2);
+}
+
+.scanner-error-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--err);
+  background: var(--err-soft);
+}
+
+.scanner-error-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}

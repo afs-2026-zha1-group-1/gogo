@@ -70,7 +70,7 @@ exists.
 
 ## 5. Camera lifecycle + rAF decode loop
 
-- [ ] 5.1 Implement `useCamera(active: boolean)` hook inside `Scanner.tsx`
+- [x] 5.1 Implement `useCamera(active: boolean)` hook inside `Scanner.tsx`
       (or a co-located module) that only calls `getUserMedia` when
       `active` flips true and stops all tracks in the effect cleanup; wire
       the 开始扫描 button to flip it. Verify I-1 (permission still not
@@ -78,7 +78,7 @@ exists.
       indicator disappears after closing) with screenshots
       `s5-1-camera-idle.png`, `s5-1-camera-active.png`,
       `s5-1-camera-released.png`.
-- [ ] 5.2 Add a `requestAnimationFrame` loop that draws the video into a
+- [x] 5.2 Add a `requestAnimationFrame` loop that draws the video into a
       downscaled canvas, calls `jsQR`, pipes `code.data` through
       `parseJoinHash`, and on `{ok:true}` navigates to `#/join/<token>`.
       Verify I-3 (valid fixture QR routes to Join page and no `POST
@@ -89,7 +89,7 @@ exists.
 
 ## 6. Image-file decode path
 
-- [ ] 6.1 Add `<input type="file" accept="image/*">` behind the 从相册选择
+- [x] 6.1 Add `<input type="file" accept="image/*">` behind the 从相册选择
       action; on change, read via `FileReader` → `createImageBitmap` →
       off-screen canvas → `jsQR` → same `parseJoinHash`. Release the bitmap
       and revoke the object URL after decode. Verify I-7 by loading the
@@ -98,18 +98,18 @@ exists.
 
 ## 7. Manual link fallback + camera-error recovery
 
-- [ ] 7.1 Wire the 预览邀请 button to call `parseJoinHash(inputValue,
+- [x] 7.1 Wire the 预览邀请 button to call `parseJoinHash(inputValue,
       window.location.origin)` and, on `{ok:true}`, set `location.hash` to
       `#/join/<token>`; on reject, show the "unrecognized" chip. Verify I-8
       accept path (hash-only payload from 1.2) and reject path (both
       malformed-token payloads from 1.2) via three browser inputs, capturing
       screenshots `s7-1-link-accept.png`, `s7-1-link-reject-length.png`,
       `s7-1-link-reject-hex.png`.
-- [ ] 7.2 Wire the cross-origin fixture payload from 1.2 through the same
+- [x] 7.2 Wire the cross-origin fixture payload from 1.2 through the same
       matcher and verify I-9: pasting `https://another-host.example/#/join/
       <valid-hex>` is rejected and no navigation to the foreign origin
       occurs; screenshot `s7-2-cross-origin.png`.
-- [ ] 7.3 Add a `kind:'camera-error'` state with a retry action shown when
+- [x] 7.3 Add a `kind:'camera-error'` state with a retry action shown when
       `getUserMedia` throws (permission denied, NotFoundError, NotReadableError,
       or a decode failure path). Verify I-6 by denying camera in Chrome
       site settings and confirming the error panel + link input are both
@@ -117,7 +117,7 @@ exists.
 
 ## 8. Style tokens + design-basis layout (G1 C5)
 
-- [ ] 8.1 Add `.scanner-preview`, `.scanner-link`, `.scanner-error` classes
+- [x] 8.1 Add `.scanner-preview`, `.scanner-link`, `.scanner-error` classes
       to `frontend/src/app.css` reusing existing `.screen`, `.appbar`,
       `.card`, `.btn .primary/.secondary`, `.pill.warn`; no new color or
       spacing tokens. Verify by inspecting the rendered `#/scan` at 390×844
