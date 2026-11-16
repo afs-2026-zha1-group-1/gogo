@@ -25,6 +25,7 @@ export interface Trip {
   startLocation: string | null
   endLocation: string | null
   organizerId: number
+  mainPlanConfirmed?: boolean
 }
 
 export interface InvitationPreview {

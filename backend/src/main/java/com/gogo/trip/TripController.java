@@ -60,6 +60,21 @@ public class TripController {
         return trip;
     }
 
+    @PostMapping("/{id}/main-plan:confirm")
+    public TripResponse confirmMainPlan(
+            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
+            @PathVariable long id) {
+        long userId = caller(userIdHeader);
+        repository.findById(id)
+                .orElseThrow(() -> new TripApiException(404, "TRIP_NOT_FOUND", "No trip with id " + id));
+        if (!repository.isMember(id, userId)) {
+            throw new TripApiException(403, "NOT_A_MEMBER", "Caller is not a member of this trip");
+        }
+        repository.confirmMainPlan(id);
+        return repository.findById(id)
+                .orElseThrow(() -> new TripApiException(404, "TRIP_NOT_FOUND", "No trip with id " + id));
+    }
+
     private long caller(String headerValue) {
         if (headerValue == null) {
             throw new TripApiException(401, "USER_REQUIRED", "X-User-Id header is required");

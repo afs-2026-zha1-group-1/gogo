@@ -31,6 +31,10 @@ dist/
 data/
 logs/
 
+# Local verification command logs (stage evidence, kept out of source)
+backend/*.log
+frontend/*.log
+
 # Coverage and end-to-end test reports
 coverage/
 .nyc_output/
