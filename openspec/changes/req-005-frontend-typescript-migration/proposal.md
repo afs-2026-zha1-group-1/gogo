@@ -20,24 +20,30 @@ unchanged.
 - Preserve the current greeting, hash routes, trip/invitation flows, identity
   scaffold, React plugin, dev port, and `/api` proxy to
   `http://localhost:8080`.
-- Do not add an `@` alias or Tailwind plugin; neither exists in the current
-  checkout.
-- Introduce no functional runtime dependency and no user-visible behavior
-  change.
+- Introduce no user-visible behavior change.
+
+## Non-Goals
+
+- Change the backend, database, API contract, or persistence.
+- Add product features, routes, visual redesign, or refactoring unrelated to
+  TypeScript.
+- Add a frontend test framework or lint tool.
+- Add an `@` alias or Tailwind plugin.
+- Implement a B-chain split flow or introduce `router.tsx`.
+- Change current greeting, trip, invitation, or identity behavior.
+- Add a functional runtime dependency.
 
 ## Capabilities
 
 ### New Capabilities
 
-None. This is a pure frontend source-language and build-tooling refactor.
+- `frontend-build`: Defines the developer-facing TypeScript source and build-check contract.
 
 ### Modified Capabilities
 
-None. No product-level requirement changes. Existing greeting, trip, and
-invitation behavior remains unchanged; no delta specs are appropriate.
-
-This change sets `skip_specs: true` in `.openspec.yaml` because it has no
-spec-level behavior delta.
+None. Existing greeting, trip, invitation, and identity behavior remains
+unchanged; the new capability documents the TypeScript and build-check contract
+only.
 
 ## Impact
 
