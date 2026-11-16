@@ -235,6 +235,47 @@ follow-up F1 in g1-decision.md).
 | Per-stop `interests` tags | provider-supplied; the fake provider may return none, so the array may be empty. No AC fixes tag content |
 | Error message wording | Only the `code` is contractual |
 
+## US-067 — QR scanner payloads
+
+Same users and same sample trip as REQ-004 / US-031-037, and the same
+invitation-token shape: **32-character lowercase hexadecimal** (backend
+`InvitationTokens.next()` = `HexFormat.of().formatHex(new byte[16])`).
+US-067 is frontend-only; the scanner never calls a new endpoint. The E2E
+fixtures below are **decoded text values** the scanner must accept or reject.
+The `<app-origin>` placeholder is `http://localhost:5173` on a dev machine
+(vite proxy forwards `/api` to `:8080`).
+
+### Reused invitation state inputs (from REQ-004)
+
+| Case | Scanner behavior | Backed by REQ-004 outcome |
+|---|---|---|
+| Open invitation token (J1 preview) | QR decodes to same-origin `#/join/<hex>` → navigate to Join page → existing preview shown | J1 |
+| Already-joined member (J6) | Scanner navigates; Join page renders `alreadyMember = true` | J3 / J6 |
+| Closed / confirmed trip (J4) | Scanner navigates; Join page shows joining-closed rejection, no private trip data | J4 |
+| Invalid / revoked token (U1/U2) | Scanner navigates; Join page shows `INVITATION_NOT_FOUND` | U1 / U2 |
+
+### New scanner-only text payloads
+
+| Id | Text payload | Expected matcher result | Scenario |
+|---|---|---|---|
+| SC-P1 absolute same-origin | `http://localhost:5173/#/join/0123456789abcdef0123456789abcdef` | `{ok:true, token:'0123456789abcdef0123456789abcdef'}` | I-3 camera, I-7 image |
+| SC-P2 hash-only | `#/join/fedcba9876543210fedcba9876543210` | `{ok:true, token:'fedcba9876543210fedcba9876543210'}` | I-3 variant, I-8 manual link accept |
+| SC-P3 unrelated plain URL | `https://example.com/foo` | `{ok:false, reason:'no-hash-form'}` | I-5 |
+| SC-P4 unrelated text | `hello world` | `{ok:false, reason:'no-hash-form'}` | I-5 |
+| SC-P5 cross-origin invitation-form URL | `https://another-host.example/#/join/0123456789abcdef0123456789abcdef` | `{ok:false, reason:'cross-origin'}` | I-9 |
+| SC-P6 wrong-length token | `#/join/0123456789abcdef0123456789abcde` (31 hex chars) | `{ok:false, reason:'bad-token'}` | I-5 / I-8 reject |
+| SC-P7 uppercase hex token | `#/join/0123456789ABCDEF0123456789ABCDEF` | `{ok:false, reason:'bad-token'}` | I-5 / I-8 reject |
+| SC-P8 non-hex token | `#/join/zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz` | `{ok:false, reason:'bad-token'}` | I-5 / I-8 reject |
+
+### Values deliberately not fixed (US-067)
+
+| Item | Why no value is set |
+|---|---|
+| Real invitation token used in E2E | Random per issuance; scanner tests either use a fixture issued during the same E2E run (via REQ-004 I1 case) or use the synthetic hex values above for matcher-only checks |
+| Camera permission denial path (I-6) | Deterministic per browser (Chrome DevTools → Site settings → Camera → Block); no fixed fixture needed |
+| Screenshot file names | The E2E checklist in `docs/feedback/e2e-us-067.md` fixes the naming convention (`s<group>-<index>-<slug>.png`) but the exact moment of capture is a human run-time choice |
+| Error chip wording / timeout constants | Non-AC; design leaves canvas downscale ratio, error-chip cool-down, retry-count cap to implementation |
+
 ## US-049-050 - split confirm and cancel (2026-11-16)
 
 Appended 2026-11-16 from issues #21/#22 and the P1 rulings (BQ-1..BQ-8). Reuses

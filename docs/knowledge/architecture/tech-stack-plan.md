@@ -349,3 +349,64 @@ US-013 在 US-066 会话认证基线上新增成员名册读取；不新增迁�
   本 change 不改 split 代码。
 
 本 change 未修改技术栈、其他数据模型或其他 API。
+## 16. Landed reconciliation — US-067 QR scanner (P4 apply, not yet archived)
+
+> Scope discipline: this addendum records what the `us-067-qr-scanner` change
+> actually shipped on the frontend. It is a **pre-archive** note; living-merge
+> at G3 will fold it into §7 (关键实现约定) and the §3 stack table once the
+> change lands on `main`.
+
+**Scanner capability (US-067), as shipped:**
+
+- **Frontend stack alignment with the shell's shipped conventions.** US-067
+  keeps the existing shell conventions rather than the aspirational plan:
+  - The scanner routes on the **hash** `#/scan` (no router). `App.tsx
+    parseRoute` matches `/scan` BEFORE the generic `/trips/<id>` regex so
+    the scanner top-level hash cannot be swallowed by the details route
+    (design D1, G1 C2). `react-router-dom` in the merged tree belongs to
+    US-065/US-066 (splits + login), not to US-067.
+  - The three scan entry points (camera rAF loop, image picker, manual link)
+    call **no** `/api/*` endpoint; they hand off to the existing Join page,
+    which reuses REQ-004 `GET /api/invitations/{token}` / `POST …/accept`.
+    The added **demo-only** “模拟扫描” mode (for camera-less desktops) is the
+    one exception: it issues a single `POST /api/trips/1/invitation` as the
+    signed-in organizer to obtain a real token, then pipes the resulting link
+    through the same matcher — a UI aid, not part of the AC scan paths.
+  - **Dashboard scan entry (AC S1–S2, landed).** A `.iconbtn` button (`scan`
+    icon, `aria-label` "扫码加入行程") sits to the right of the `我的行程`
+    title in the Home appbar and links to `#/scan`. It is a plain hash link:
+    no new backend call, permission gate, or router (design D1).
+  - Styling stays CSS tokens in `frontend/src/app.css` (`.screen`, `.appbar`,
+    `.card`, `.btn`, `.field`, `--brand / --warn-soft / --err-soft`). No
+    `antd` import; Ant Design is a **semantic** reference (primary + secondary
+    action row, error panel with retry) per G1 C5.
+- **QR decode library.** `jsqr ^1.4.0` is a production `dependency` in
+  `frontend/package.json`. Decoding uses two paths behind a single matcher:
+  - Camera: `navigator.mediaDevices.getUserMedia({video:{facingMode:
+    'environment'}})` → `requestAnimationFrame` loop drawing video into a
+    480×360 canvas → `jsQR(...)`.
+  - Image file: hidden `<input type="file" accept="image/*">` →
+    `createImageBitmap(file)` → offscreen canvas → `jsQR(..., {
+    inversionAttempts: 'attemptBoth'})`. `bitmap.close?.()` releases the decoder.
+- **Invitation-link matcher (single source of truth, G1 C3).** New
+  `frontend/src/scan.ts` exports `parseJoinHash(text, appOrigin)`. Contract
+  locked at the module header: token form is exactly `#/join/<32-char
+  lowercase-hex>` (backend `InvitationTokens.next()` = `HexFormat.of().
+  formatHex(new byte[16])`), absolute URLs are same-origin only, and
+  cross-origin inputs are rejected before the token regex is even reached.
+  All Scanner entry points (camera, image, manual link, demo mode) call this
+  one function so behavior cannot drift.
+- **Route / type surface.** `frontend/src/types.ts` extends `Route` with
+  `{ page: 'scan'; from: string | null }`; `InAppPage` is
+  `Exclude<Route['page'], 'join' | 'login' | 'main-plan' | 'main-plan-inputs' |
+  'scan'>`, so `TAB_FOR_PAGE: Record<InAppPage, TabId>` stays total and
+  the scanner is guaranteed not to receive a dock tab. Closing the scanner
+  restores the last non-scanner hash tracked by `App.tsx`, or falls back
+  to `#/` (spec S-5).
+- **Backend impact.** None from US-067. The scanner adds no `backend/**`
+  change and no `V*.sql` migration; its demo mode rides on the US-066 session
+  model for the organizer-scoped `POST /api/trips/1/invitation`.
+
+No other section of this plan is modified by US-067. Sections §5 (data
+model) and §6 (API) remain accurate because the scanner introduces
+neither tables nor endpoints.

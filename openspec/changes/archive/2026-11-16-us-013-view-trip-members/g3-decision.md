@@ -1,16 +1,17 @@
 # G3 decision — us-013-view-trip-members
 
 - **Gate:** G3 (Merge & Archive)
-- **Status:** **PENDING — NOT RECORDED**
+- **Status:** **RECORDED — Pass** (2026-11-16)
 - **Change id:** `us-013-view-trip-members`
 - **Archive path:** `openspec/changes/archive/2026-11-16-us-013-view-trip-members/`
-- This is a sign-off sheet; G3 is recorded only after the named SA supplies a
-  decision below. The agent records the human statement and does not self-approve.
+- Decision owner: SA **Johnson**. The agent recorded the named SA's statement;
+  it did not approve the gate itself.
 
 ## Inputs
 
 - **Merge outcome:** merged into `main` as `364a52d`; main CI run `43841187214`
   both jobs success.
+- **Archive commit:** `5b7a1be`; main CI run `43841698251` both jobs success.
 - **G2:** Pass (VL **Leo**, `g2-decision.md`, re-recorded on `47a8e3f` after
   C1–C5 closure).
 - **Living Spec:** `trips` gained the member-roster requirement; `app-shell`
@@ -36,18 +37,20 @@
 
 | Role | Name | Decision (Pass / Conditional / Fail) | Date | Conditions + owner (required for Conditional) | Evidence |
 |---|---|---|---|---|---|
-| SA | Johnson | _(pending)_ | | | |
+| SA | Johnson | **Pass** | 2026-11-16 | None — no conditions | Explicit typed statement `G3 Pass` in the review conversation on 2026-11-16 |
 
 ## Decision
 
-- Decision: _(pending)_
-- Conditions + owners: _(none yet)_
-- Approver: SA **Johnson** (pending)
+- Decision: **Pass** — merge and archive complete, Living Spec updated, all
+  validation and CI evidence cited above.
+- Conditions + owners: none.
+- Approver: SA **Johnson**, 2026-11-16, from the typed statement `G3 Pass`.
+- Residual follow-ups (non-gating): F2 split `MEMBER_REQUIRED` divergence; OQ-2
+  no durable trip memory; optional 404 `code` hardening.
 
 ## Recording rules
 
-1. G3 requires a named SA decision; G1/G2 signatures are not inherited.
-2. A Conditional decision is invalid without remediation items and owners.
-3. After the row is filled, the agent changes the status to **RECORDED — Pass /
-   Conditional / Fail** and cites the evidence.
-4. Until then G3 is not closed; issue #9 closure and board Done wait.
+1. G3 required a named SA decision; G1/G2 signatures were not inherited.
+2. The decision is Pass with no conditions; no remediation list is required.
+3. The agent recorded the human statement; it did not approve the gate itself.
+4. G3 is closed; issue #9 closure and board Done may proceed.

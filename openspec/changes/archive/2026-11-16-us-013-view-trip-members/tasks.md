@@ -129,8 +129,10 @@
       REMOVED `Placeholder tabs` + ADDED `Tab content` pair, reconcile the
       app-shell Purpose prose — archived as
       `2026-11-16-us-013-view-trip-members`; `openspec validate --all` passes
-- [ ] 8.4 G3 **Pass** recorded by named SA (Johnson)
-- [ ] 8.5 Close issue #9 and move the board card to Done after archive
+- [x] 8.4 G3 **Pass** recorded by named SA (Johnson) — explicit `G3 Pass`,
+      2026-11-16; `g3-decision.md`
+- [x] 8.5 Close issue #9 and move the board card to Done after archive — issue
+      closed 2026-11-16; Project #2 status Done
 
 ## Alignment self-check (Spec ↔ Design ↔ Tasks ↔ ATDD)
 
