@@ -39,8 +39,6 @@ deviate silently" rule.
 
 **Non-Goals:**
 - No backend, DB, migration, or API endpoint change.
-- No new scan-icon UI in Home or "i" info button (deferred to a follow-up UI
-  integration story per G1 C4 / proposal Deferred section).
 - No US-066 login or session handling; scanner does not know whether the user
   is signed in.
 - No unit-test harness introduction (Vitest/Playwright). The URL matcher is
@@ -63,8 +61,9 @@ visible per S-4 (identity scaffold requirement).
   bar visible".
 - Reuses the existing full-page pattern (Join, MainPlan) → same structural
   code shape, no new component tree.
-- Deep-linkable (E2E and follow-up integration story can open it directly, per
-  G1 residual note "entry point deferred").
+- Deep-linkable (E2E can open it directly). Reachable from the dashboard via a
+  `#/scan` entry button in the Home `我的行程` appbar (AC S1–S2, landed in this
+  change).
 
 **Alternatives**:
 - Modal over Home → contradicts S-4 (no dock tab highlighted) and S-5 (close

@@ -37,10 +37,13 @@ matches the mobile-first UX direction.
   associated with it, and closing it restores the originating route.
 - New icons: `scan`, `camera` in `Icons.tsx`.
 - `jsqr` promoted from devDependency to production dependency.
-- **Deferred** (not in this change): scan-icon entry-point placement beside the
-  "i" control (AC S1–S2), owned by a follow-up UI integration story; US-066
-  login retention (AC S9), owned by the in-flight `US-066-log-in` change
-  (scanner hands off to `#/join/<token>` and does not implement login resume).
+- Dashboard scan entry (AC S1–S2, now in this change instead of a follow-up
+  story): an `.iconbtn` icon button (`scan` icon, `aria-label`
+  "扫码加入行程") in the Home `我的行程` appbar, to the right of the title,
+  linking to `#/scan`.
+- **Deferred** (not in this change): US-066 login retention (AC S9), owned by
+  the in-flight `US-066-log-in` change (scanner hands off to `#/join/<token>`
+  and does not implement login resume).
 
 ## Capabilities
 
@@ -55,13 +58,14 @@ matches the mobile-first UX direction.
   preview/accept flow, error recovery with link fallback).
 - `app-shell`: 1 MODIFIED requirement — "Mobile shell frame" classifies
   `#/scan` as a full-screen flow (no dock, identity scaffold bar retained, not
-  associated with any dock tab, close returns to the originating route).
+  associated with any dock tab, close returns to the originating route) and
+  exposes a `#/scan` entry button in the Home dashboard appbar (AC S1–S2).
 
 ## Impact
 
 | Area | Effect |
 |---|---|
-| Frontend | New `Scanner.tsx` page, 1 route entry in `App.tsx`, 2 icons, scanner state types |
+| Frontend | New `Scanner.tsx` page, 1 route entry in `App.tsx`, 2 icons, scanner state types, Home appbar `#/scan` entry button |
 | Dependencies | `jsqr` moves from devDependency → dependency |
 | Backend | None — existing `GET /api/invitations/{token}` and `POST /api/invitations/{token}/accept` (REQ-004) are called by the unchanged Join page |
 | Database | None |

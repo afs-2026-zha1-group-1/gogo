@@ -109,7 +109,7 @@ read-only against the seed DB.
 | Non-goal | Reverse E2E assertion |
 |---|---|
 | US-067 does **not** implement US-066 login retention | Sign in with a scaffold user before scanning, verify no session-persistence change; AC S9 is explicitly out of scope in `proposal.md`. |
-| US-067 does **not** add a scan icon to the "i" control or Home dock | Inspect `#/` and `#/trips` DOM: no new scan button rendered; AC S1–S2 are explicitly out of scope. |
+| US-067's Home scan entry is a plain hash link only (no new backend/permission logic) | Inspect `#/` DOM: the `我的行程` appbar renders a `#/scan` entry button and navigates to the scanner; the button itself issues no API call and adds no permission gate. |
 | US-067 does **not** modify any backend endpoint | `git diff` on `backend/` = empty; `InvitationApiTest` remains green (S-3). |
 | US-067 does **not** auto-create membership from scanning alone | Scan a valid open-invitation QR, then check `trip_member` table via backend response: no new row until accept POST completes (I-3 second clause). |
 | US-067 does **not** navigate to arbitrary URLs on unrelated QR | Attempt to scan an `https://evil.example/` QR; assert address bar remains on the app and no network request to `evil.example` in DevTools (I-5). |

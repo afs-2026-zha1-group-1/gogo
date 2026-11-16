@@ -57,3 +57,10 @@ or join flow behavior.
 - **THEN** the app returns to `#/trips/<id>` with the 行程 tab active
 - **AND** opening `#/scan` with no in-app history falls back to `#/` with the
   仪表盘 tab active
+
+#### Scenario: The dashboard exposes the scanner entry
+
+- **WHEN** the traveler is on the Home `我的行程` dashboard
+- **THEN** the app bar shows a scan entry button to the right of the title
+- **AND** activating it opens the full-screen `#/scan` flow without adding any
+  backend call or permission gate of its own
