@@ -55,7 +55,7 @@ Fill your row in place, then commit this file to the
 
 | Role | Name | Decision (Pass / Conditional / Fail) | Date | Conditions + owner (required for Conditional) | Evidence |
 |---|---|---|---|---|---|
-| IO | Emily | _(pending)_ | | | |
+| IO | Emily | Pass | 2026-11-16 | None; IO approval only. SA decision remains pending. | Emily explicitly stated "emily approve" in the review conversation on 2026-11-16, following the US-013 G1 scope and concerns review. |
 | SA | Johnson | _(pending)_ | | | |
 
 ## Recording rules
