@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import jsQR from 'jsqr'
 import Icon from '../Icons'
+import { api } from '../api'
 import { parseJoinHash } from '../scan'
 
 // Scanner.tsx is the full-screen flow opened by the `#/scan` hash route.
@@ -8,19 +9,32 @@ import { parseJoinHash } from '../scan'
 // TabBar; the identity ScaffoldBar stays visible so the join hand-off can
 // inherit the currently-selected user id. Per design D7 the UI has four
 // mutually exclusive kinds: `idle`, `scanning`, `camera-error`, and
-// `decode-error`. Tasks 5–7 grow this file from the idle surface authored
-// in task 4.1.
+// `decode-error`. A fifth `simulating` kind is a demo-only affordance for
+// camera-less desktops: it replays the camera execution timeline (open →
+// focus → decode → hand-off) against a freshly issued invitation so the
+// full scan→join flow is observable without real hardware. It reuses the
+// same `parseJoinHash` matcher, so it cannot drift from the C3 contract.
 
 type ScannerState =
   | { kind: 'idle' }
   | { kind: 'scanning' }
+  | { kind: 'simulating' }
   | { kind: 'camera-error'; message: string }
   | { kind: 'decode-error' }
+
+interface IssuedInvitation {
+  token: string
+  joinPath: string
+  tripId: number
+  tripName: string
+}
 
 export default function Scanner({ from }: { from: string | null }) {
   const [state, setState] = useState<ScannerState>({ kind: 'idle' })
   const [manualLink, setManualLink] = useState('')
   const [chip, setChip] = useState<string | null>(null)
+  const [simStatus, setSimStatus] = useState('')
+  const [pickedName, setPickedName] = useState<string | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const rafRef = useRef<number | null>(null)
@@ -57,6 +71,9 @@ export default function Scanner({ from }: { from: string | null }) {
     }
   }
 
+  // Release any live camera and return to the idle surface. Also used to
+  // abort the simulation timeline (the simulating effect cleans up on the
+  // state change below).
   function stopScanning() {
     if (rafRef.current != null) cancelAnimationFrame(rafRef.current)
     rafRef.current = null
@@ -75,6 +92,15 @@ export default function Scanner({ from }: { from: string | null }) {
     setState({ kind: 'scanning' })
   }
 
+  // Demo-only: enter the simulated-camera timeline. The effect keyed on
+  // `simulating` issues a fresh invitation and drives the animation, so
+  // this handler only flips the state.
+  function startSimulation() {
+    lastChipReasonRef.current = null
+    setSimStatus('开启模拟相机…')
+    setState({ kind: 'simulating' })
+  }
+
   // Task 6.1: same C3 matcher as the camera and manual-link paths.
   // The image path decodes one frame from a File: FileReader is not
   // needed because createImageBitmap accepts a Blob directly. We still
@@ -82,6 +108,7 @@ export default function Scanner({ from }: { from: string | null }) {
   // draw so the decoder resources release promptly (spec I-7).
   async function handleFilePicked(file: File | undefined) {
     if (!file) return
+    setPickedName(file.name)
     let bitmap: ImageBitmap | null = null
     try {
       bitmap = await createImageBitmap(file)
@@ -137,7 +164,7 @@ export default function Scanner({ from }: { from: string | null }) {
     let cancelled = false
     const md = navigator.mediaDevices
     if (!md?.getUserMedia) {
-      setState({ kind: 'camera-error', message: '此浏览器不支持摄像头扫码，请使用邀请链接。' })
+      setState({ kind: 'camera-error', message: '此浏览器不支持摄像头扫码，请使用邀请链接或「模拟扫描」演示。' })
       return
     }
     md.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
@@ -192,10 +219,10 @@ export default function Scanner({ from }: { from: string | null }) {
         if (cancelled) return
         const message =
           err.name === 'NotAllowedError'
-            ? '未获得相机权限，请在浏览器设置里允许后重试。'
+            ? '未获得相机权限，请在浏览器设置里允许后重试，或改用「模拟扫描」演示。'
             : err.name === 'NotFoundError'
-              ? '未检测到可用相机，请连接设备后重试。'
-              : `无法开启相机（${err.name}），请使用邀请链接。`
+              ? '未检测到可用相机，请连接设备后重试，或改用「模拟扫描」演示。'
+              : `无法开启相机（${err.name}），请使用邀请链接或「模拟扫描」演示。`
         setState({ kind: 'camera-error', message })
       })
     return () => {
@@ -210,6 +237,63 @@ export default function Scanner({ from }: { from: string | null }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.kind])
 
+  // Demo-only timeline for camera-less desktops. Issues a fresh trip-1
+  // invitation as the organizer (Alice, id 1 — the seeded organizer), then
+  // replays the camera steps and pipes the resulting link through the
+  // SAME parseJoinHash matcher before handing off to Join. Every timer is
+  // cleared on cleanup so leaving the screen (or tapping 停止) aborts the
+  // simulation cleanly.
+  useEffect(() => {
+    if (state.kind !== 'simulating') return
+    let cancelled = false
+    const timers: number[] = []
+    const step = (ms: number, fn: () => void) => {
+      timers.push(window.setTimeout(() => {
+        if (!cancelled) fn()
+      }, ms))
+    }
+    ;(async () => {
+      let token = ''
+      try {
+        const result = await api<IssuedInvitation>('/api/trips/1/invitation', {
+          userId: 1,
+          method: 'POST',
+        })
+        if (result.ok && result.data && 'token' in result.data) token = result.data.token
+      } catch {
+        token = ''
+      }
+      if (cancelled) return
+      if (!token) {
+        setState({
+          kind: 'camera-error',
+          message: '模拟失败：后端未返回演示邀请，请确认服务已在 8080 启动。',
+        })
+        return
+      }
+      step(700, () => setSimStatus('正在对焦…'))
+      step(1500, () => setSimStatus('识别二维码…'))
+      step(2400, () => {
+        const payload = `${window.location.origin}/#/join/${token}`
+        const result = parseJoinHash(payload, window.location.origin)
+        if (result.ok) {
+          setSimStatus('识别成功，正在跳转…')
+          step(3000, () => {
+            window.location.hash = `#/join/${result.token}`
+          })
+        } else {
+          setState({ kind: 'decode-error' })
+        }
+      })
+    })()
+    return () => {
+      cancelled = true
+      timers.forEach((t) => window.clearTimeout(t))
+    }
+  }, [state.kind])
+
+  const busy = state.kind === 'scanning' || state.kind === 'simulating'
+
   return (
     <div className="screen scanner">
       <header className="appbar">
@@ -222,7 +306,7 @@ export default function Scanner({ from }: { from: string | null }) {
           type="button"
           className="icon-btn"
           aria-label="关闭扫码"
-          onClick={state.kind === 'scanning' ? stopScanning : close}
+          onClick={busy ? stopScanning : close}
         >
           <Icon name="x" />
         </button>
@@ -230,7 +314,7 @@ export default function Scanner({ from }: { from: string | null }) {
 
       <div className="body">
         <section
-          className={`card scanner-preview${state.kind === 'scanning' ? ' live' : ''}`}
+          className={`scanner-viewfinder${state.kind === 'scanning' ? ' live' : ''}${state.kind === 'simulating' ? ' sim' : ''}`}
           aria-live="polite"
         >
           {state.kind === 'camera-error' ? (
@@ -238,27 +322,56 @@ export default function Scanner({ from }: { from: string | null }) {
               <div className="scanner-error-icon"><Icon name="alert" className="lg" /></div>
               <div className="scanner-error-title">无法开启相机</div>
               <p className="hint">{state.message}</p>
+              <div className="scanner-error-actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setState({ kind: 'idle' })}
+                >
+                  <Icon name="camera" className="sm" /> 重试相机
+                </button>
+                <button type="button" className="btn btn-primary" onClick={startSimulation}>
+                  <Icon name="scan" className="sm" /> 模拟扫描演示
+                </button>
+              </div>
+            </div>
+          ) : state.kind === 'decode-error' ? (
+            <div className="scanner-error">
+              <div className="scanner-error-icon"><Icon name="alert" className="lg" /></div>
+              <div className="scanner-error-title">未能识别邀请</div>
+              <p className="hint">二维码内容不是有效的加入链接，请重新扫描或直接粘贴邀请链接。</p>
               <button
                 type="button"
                 className="btn btn-secondary"
                 onClick={() => setState({ kind: 'idle' })}
               >
-                <Icon name="camera" className="sm" /> 重试
+                返回重试
               </button>
             </div>
-          ) : state.kind === 'scanning' ? (
-            <video
-              ref={videoRef}
-              className="scanner-video"
-              muted
-              playsInline
-              autoPlay
-            />
           ) : (
-            <div className="scanner-idle-hint">
-              <Icon name="camera" className="lg" />
-              <p className="hint">点击下方「开始扫描」开启相机；也可以直接从相册选择二维码图片。</p>
-            </div>
+            <>
+              {state.kind === 'scanning' && (
+                <video ref={videoRef} className="scanner-video" muted playsInline autoPlay />
+              )}
+              {state.kind === 'simulating' && <div className="scanner-sim-feed" aria-hidden />}
+              {state.kind === 'idle' && (
+                <div className="scanner-idle-hint">
+                  <Icon name="camera" className="lg" />
+                  <p className="hint">点击下方「开始扫描」开启相机；也可以从相册选择二维码，或直接粘贴邀请链接。</p>
+                  <p className="scanner-idle-sub">电脑没有摄像头？点「模拟扫描」观看扫码加入的完整演示。</p>
+                </div>
+              )}
+              <div className="scanner-brackets" aria-hidden>
+                <span className="corner tl" />
+                <span className="corner tr" />
+                <span className="corner bl" />
+                <span className="corner br" />
+              </div>
+              {busy && <div className="scanner-scanline" aria-hidden />}
+              {state.kind === 'simulating' && (
+                <div className="scanner-sim-status">{simStatus}</div>
+              )}
+            </>
           )}
         </section>
 
@@ -267,6 +380,7 @@ export default function Scanner({ from }: { from: string | null }) {
             type="button"
             className="btn btn-primary"
             onClick={state.kind === 'scanning' ? stopScanning : startScanning}
+            disabled={state.kind === 'simulating'}
           >
             <Icon name="camera" className="sm" />
             {state.kind === 'scanning' ? '停止扫描' : '开始扫描'}
@@ -275,6 +389,7 @@ export default function Scanner({ from }: { from: string | null }) {
             type="button"
             className="btn btn-secondary"
             onClick={() => fileInputRef.current?.click()}
+            disabled={state.kind === 'simulating'}
           >
             从相册选择
           </button>
@@ -290,26 +405,42 @@ export default function Scanner({ from }: { from: string | null }) {
             }}
           />
         </div>
+        {pickedName && (
+          <p className="scanner-picked">已选择图片：{pickedName}</p>
+        )}
+
+        <button
+          type="button"
+          className="btn scanner-demo"
+          onClick={state.kind === 'simulating' ? stopScanning : startSimulation}
+          disabled={state.kind === 'scanning'}
+        >
+          <Icon name="scan" className="sm" />
+          {state.kind === 'simulating' ? '停止模拟' : '模拟扫描（无摄像头演示）'}
+        </button>
 
         <section className="card scanner-link">
-          <label className="field">
+          <div className="scanner-link-head">
+            <Icon name="info" className="sm" />
             <span className="label">或直接粘贴邀请链接</span>
+          </div>
+          <div className="scanner-link-row">
             <input
               type="text"
               inputMode="url"
               value={manualLink}
               onChange={(e) => setManualLink(e.target.value)}
-              placeholder="例如 #/join/<32-hex-token>"
+              placeholder="例如 #/join/<32-hex-token> 或完整邀请链接"
             />
-          </label>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={previewManualLink}
-            disabled={manualLink.trim() === ''}
-          >
-            预览邀请
-          </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={previewManualLink}
+              disabled={manualLink.trim() === ''}
+            >
+              预览邀请
+            </button>
+          </div>
           {chip && (
             <div className="scanner-chip" role="status">
               <Icon name="alert" className="sm" /> 无法识别 ({chip})
