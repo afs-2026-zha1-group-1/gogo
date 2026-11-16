@@ -28,6 +28,14 @@ home content rather than member-trip aggregation.
   real data. A failed completion read must not silently classify a trip as
   active.
 
+## Non-Goals
+
+- Implement completion, archive, invitation issuance, or other destination-page
+  actions; those remain owned by their respective capabilities.
+- Persist dashboard progress or recommend a next action.
+- Change destination permissions or reconcile the original tracker issue as
+  part of this change.
+
 ## Capabilities
 
 ### New Capabilities
@@ -43,6 +51,14 @@ home content rather than member-trip aggregation.
 
 ## Impact
 
+- **Self:** this change delivers the member-trip list, overview, progress
+  projection and safe dashboard navigation described above.
+- **Upstream:** authentication, membership, readiness, main-plan and split
+  reads, plus the separately delivered US-058 completion read and
+  trip-details fix, supply or constrain dashboard behavior.
+- **Downstream:** authenticated trip members and the shell consume the
+  dashboard views; completed-trip access remains with the separately delivered
+  archive.
 - **Frontend:** `frontend/src/App.tsx`, dashboard/home content, navigation and
   related tests. Existing destination operations and permissions remain owned
   by their respective pages.
