@@ -6,9 +6,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The split draft JSON document persisted in {@code trip.split_draft} (design D5/D6). A record so Jackson maps
- * component names directly to the document fields. {@code routes} carries the per-group duration breakdown only
- * after generation (null before); boundary stop ids are null before selection. Pure domain model, no HTTP/DB.
+ * The split draft JSON document persisted in the {@code split_draft.document} column (design D5/D6). A record so
+ * Jackson maps component names directly to the document fields. {@code routes} carries the per-group duration
+ * breakdown only after generation (null before); boundary stop ids are null before selection. Pure domain model,
+ * no HTTP/DB.
  */
 public record SplitDraftDocument(
         String initiatorMemberId,
@@ -22,8 +23,12 @@ public record SplitDraftDocument(
         String createdAt,
         String updatedAt) {
 
-    /** Per-group duration breakdown (design D6): activity + every travel leg + buffer, in whole minutes. */
-    public record RouteDurations(int activityMinutes, List<Integer> travelLegsMinutes, int bufferMinutes) {
+    /**
+     * Per-group duration breakdown (design D6/D8): activity + every travel leg + buffer, in whole minutes. The three
+     * duration components are nullable so a missing estimate stays expressible (Jackson maps JSON null to null
+     * rather than zero), letting confirmation report missing inputs instead of silently treating them as 0.
+     */
+    public record RouteDurations(Integer activityMinutes, List<Integer> travelLegsMinutes, Integer bufferMinutes) {
     }
 
     /**
@@ -66,5 +71,36 @@ public record SplitDraftDocument(
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion + 1, status,
                 departureStopId, reunionStopId, groups, routes, createdAt, now);
+    }
+
+    /**
+     * Returns the confirmed document (design D4/D5): status becomes {@code confirmed}, the document version and every
+     * saved field (routes, groups, boundaries) are preserved so the confirmed pair stays the effective agreement.
+     */
+    public SplitDraftDocument confirmed(String now) {
+        return new SplitDraftDocument(
+                initiatorMemberId, mainPlanVersion, draftVersion, "confirmed",
+                departureStopId, reunionStopId, groups, routes, createdAt, now);
+    }
+
+    /**
+     * Returns the cancelled document (design D4/D6/D9): status becomes {@code cancelled}, the document version is
+     * preserved and the route breakdown is cleared in the same write, so a cancelled detail can never show ghost
+     * routes after the split nodes are deleted.
+     */
+    public SplitDraftDocument cancelled(String now) {
+        return new SplitDraftDocument(
+                initiatorMemberId, mainPlanVersion, draftVersion, "cancelled",
+                departureStopId, reunionStopId, groups, null, createdAt, now);
+    }
+
+    /**
+     * Builds the replacement draft that overwrites a cancelled row (design D7): a fresh caller becomes the initiator
+     * with version 1, no boundaries and no routes; the stored column version is reset separately by the repository.
+     */
+    public static SplitDraftDocument initialRebuilt(
+            String initiatorMemberId, int mainPlanVersion, Map<String, List<String>> groups, String now) {
+        return new SplitDraftDocument(
+                initiatorMemberId, mainPlanVersion, 1, "active", null, null, groups, null, now, now);
     }
 }

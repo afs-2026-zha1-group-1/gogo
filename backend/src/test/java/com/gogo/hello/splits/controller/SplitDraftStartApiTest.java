@@ -140,15 +140,82 @@ class SplitDraftStartApiTest extends AbstractSplitApiTest {
     }
 
     @Test
-    @DisplayName("startDraft_confirmAndCancelEndpoints_notImplemented")
-    void startDraft_confirmAndCancelEndpoints_notImplemented() throws Exception {
-        String ben = memberId("Ben");
-        int confirm = mockMvc.perform(post("/api/trips/{tripId}/split-draft:confirm", sgfTripId())
-                .with(TestAuth.asUser(ben))).andReturn().getResponse().getStatus();
-        int cancel = mockMvc.perform(post("/api/trips/{tripId}/split-draft:cancel", sgfTripId())
-                .with(TestAuth.asUser(ben))).andReturn().getResponse().getStatus();
-        assertThat(confirm).isIn(404, 405);
-        assertThat(cancel).isIn(404, 405);
-        assertThat(activeDraftCount()).isZero();
+    @DisplayName("startDraft_afterCancel_rebuildsSameRowAsNewInitiator")
+    void startDraft_afterCancel_rebuildsSameRowAsNewInitiator() throws Exception {
+        int version = prepareConfirmableDraftAs("Ben");
+        mockMvc.perform(post("/api/trips/{tripId}/split-draft:cancel", sgfTripId())
+                        .with(TestAuth.asUser(memberId("Ben")))
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(java.util.Map.of("draftVersion", version))))
+                .andExpect(status().isOk());
+
+        String alice = memberId("Alice");
+        mockMvc.perform(post("/api/trips/{tripId}/split-draft", sgfTripId())
+                        .with(TestAuth.asUser(alice)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.initiatorMemberId").value(alice))
+                .andExpect(jsonPath("$.data.mainPlanVersion").value(1))
+                .andExpect(jsonPath("$.data.draftVersion").value(1))
+                .andExpect(jsonPath("$.data.status").value("active"))
+                .andExpect(jsonPath("$.data.departureStopId").doesNotExist())
+                .andExpect(jsonPath("$.data.routes").doesNotExist());
+        assertThat(activeDraftCount()).isEqualTo(1);
+        assertThat(draftVersionColumn()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("startDraft_concurrentRebuildAfterCancel_atMostOneSucceeds")
+    void startDraft_concurrentRebuildAfterCancel_atMostOneSucceeds() throws Exception {
+        int version = prepareConfirmableDraftAs("Ben");
+        mockMvc.perform(post("/api/trips/{tripId}/split-draft:cancel", sgfTripId())
+                        .with(TestAuth.asUser(memberId("Ben")))
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(java.util.Map.of("draftVersion", version))))
+                .andExpect(status().isOk());
+
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch go = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            List<Future<MvcResult>> futures = new ArrayList<>();
+            for (String member : List.of(memberId("Alice"), memberId("Ben"))) {
+                futures.add(executor.submit(() -> {
+                    ready.countDown();
+                    go.await();
+                    return mockMvc.perform(post("/api/trips/{tripId}/split-draft", sgfTripId())
+                            .with(TestAuth.asUser(member))).andReturn();
+                }));
+            }
+            assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
+            go.countDown();
+            List<Integer> statuses = new ArrayList<>();
+            for (Future<MvcResult> future : futures) {
+                statuses.add(future.get(10, TimeUnit.SECONDS).getResponse().getStatus());
+            }
+            assertThat(statuses).containsExactlyInAnyOrder(201, 409);
+            assertThat(activeDraftCount()).isEqualTo(1);
+            assertThat(draftVersionColumn()).isEqualTo(1);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    @DisplayName("startDraft_confirmedDraft_returns409ConflictAndKeepsConfirmedDocument")
+    void startDraft_confirmedDraft_returns409ConflictAndKeepsConfirmedDocument() throws Exception {
+        int version = prepareConfirmableDraftAs("Ben");
+        mockMvc.perform(post("/api/trips/{tripId}/split-draft:confirm", sgfTripId())
+                        .with(TestAuth.asUser(memberId("Alice")))
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(java.util.Map.of("draftVersion", version))))
+                .andExpect(status().isOk());
+        String confirmed = draftJson();
+
+        mockMvc.perform(post("/api/trips/{tripId}/split-draft", sgfTripId())
+                        .with(TestAuth.asUser(memberId("Alice"))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("SPLIT_DRAFT_CONFLICT"));
+        assertThat(draftJson()).isEqualTo(confirmed);
+        assertThat(activeDraftCount()).isEqualTo(1);
     }
 }

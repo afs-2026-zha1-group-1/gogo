@@ -4,11 +4,29 @@
  * Times are ISO-8601 UTC strings; minutes are whole numbers. `error.code` is the stable contract.
  */
 
+/** One route's machine-readable rejection detail (backend error.details.routes[]). */
+export interface RouteErrorDetail {
+  groupLabel: string
+  totalMinutes: number | null
+  overrunMinutes: number | null
+  missingInputs: string[]
+}
+
+/** Machine-readable rejection details (backend ApiResponse.ApiError.details). */
+export interface SplitErrorDetails {
+  routes?: RouteErrorDetail[]
+  missing?: string[]
+}
+
 /** Rejection detail (backend ApiResponse.ApiError). */
 export interface ApiErrorPayload {
   code: string
   message: string
+  details?: SplitErrorDetails | null
 }
+
+/** Draft lifecycle status (US-049/050): only `active` accepts edits/confirm/cancel. */
+export type SplitDraftStatus = "active" | "confirmed" | "cancelled"
 
 /** Unified {data,error} envelope (backend ApiResponse<T>). */
 export interface Envelope<T> {
@@ -24,11 +42,11 @@ export interface PlanStop {
   endAt: string | null
 }
 
-/** Per-group duration breakdown (backend SplitDraftDocument.RouteDurations). */
+/** Per-group duration breakdown (backend SplitDraftDocument.RouteDurations); nullable estimates. */
 export interface RouteDurations {
-  activityMinutes: number
+  activityMinutes: number | null
   travelLegsMinutes: number[]
-  bufferMinutes: number
+  bufferMinutes: number | null
 }
 
 /** One group's route view (backend GroupRoute), shared by generation response and detail snapshot. */
@@ -37,9 +55,9 @@ export interface GroupRoute {
   activityName: string | null
   departureStopId: string | null
   reunionStopId: string | null
-  activityMinutes: number
+  activityMinutes: number | null
   travelLegsMinutes: number[]
-  bufferMinutes: number
+  bufferMinutes: number | null
 }
 
 /** Draft document returned by POST start (backend SplitDraftDocument). */
@@ -47,7 +65,7 @@ export interface SplitDraftDocument {
   initiatorMemberId: string
   mainPlanVersion: number
   draftVersion: number
-  status: string
+  status: SplitDraftStatus
   departureStopId: string | null
   reunionStopId: string | null
   groups: Record<string, string[]>
@@ -61,7 +79,7 @@ export interface SplitDraftDetail {
   initiatorMemberId: string
   mainPlanVersion: number
   draftVersion: number
-  status: string
+  status: SplitDraftStatus
   groups: Record<string, string[]>
   createdAt: string
   updatedAt: string
@@ -118,6 +136,11 @@ export interface TimingResult {
   windowMinutes: number
   feasible: boolean
   routes: RouteTimingResult[]
+}
+
+/** POST :confirm / :cancel body (backend DraftVersionRequest). */
+export interface DraftVersionRequest {
+  draftVersion: number
 }
 
 /** PUT boundaries body (backend SaveBoundariesRequest). */

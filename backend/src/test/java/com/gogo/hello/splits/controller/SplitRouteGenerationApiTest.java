@@ -176,17 +176,4 @@ class SplitRouteGenerationApiTest extends AbstractSplitApiTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"draftVersion\":" + draftVersion + "}"));
     }
-
-    private int splitRouteCount() {
-        Integer count = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM plan_node WHERE trip_id = ? AND branch_id IN ('split-a', 'split-b')",
-                Integer.class, sgfTripId());
-        return count == null ? 0 : count;
-    }
-
-    private int mainStopCount() {
-        Integer count = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM plan_node WHERE trip_id = ? AND branch_id = 'main'", Integer.class, sgfTripId());
-        return count == null ? 0 : count;
-    }
 }

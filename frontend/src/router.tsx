@@ -7,6 +7,7 @@ import { ScreenStart } from "./features/split/screen-start"
 import { ScreenBoundary } from "./features/split/screen-boundary"
 import { ScreenRoutes } from "./features/split/screen-routes"
 import { ScreenTiming } from "./features/split/screen-timing"
+import { ScreenConfirm } from "./features/split/screen-confirm"
 
 /**
  * Remount a split screen whenever the trip changes so a previous trip's mutation errors and
@@ -19,8 +20,8 @@ function SplitKeyed({ Screen }: { Screen: ComponentType }) {
 
 /**
  * App routes. "/" renders the hash-based shell App. Split routes require an authenticated session;
- * signed-out visitors are sent to /login. The flow ends at timing (confirm/cancel belong to
- * US-049/050).
+ * signed-out visitors are sent to /login. The flow runs Screen 11 start -> 12 boundaries -> 13 routes
+ * -> 14 timing -> 15 review/confirm (US-049) with the initiator's cancel action (US-050) on Screen 15.
  */
 export const router = createBrowserRouter([
   { path: "/", element: <App /> },
@@ -40,6 +41,10 @@ export const router = createBrowserRouter([
   {
     path: "/trips/:tripId/split/timing",
     element: <RequireAuth><SplitKeyed Screen={ScreenTiming} /></RequireAuth>,
+  },
+  {
+    path: "/trips/:tripId/split/confirm",
+    element: <RequireAuth><SplitKeyed Screen={ScreenConfirm} /></RequireAuth>,
   },
   { path: "*", element: <Navigate to="/" replace /> },
 ])

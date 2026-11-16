@@ -7,55 +7,55 @@
 
 ## 1. 地基：错误契约 + 可空模型（D2/D3/D8）
 
-- [ ] 1.1 **红**：`ErrorEnvelopeDetailsTest`（common）断言 `ApiError` 含 `details` 可空字段、成功响应 `error=null`、失败 `data=null`；`SplitDraftDocumentTest` 断言 `RouteDurations`/`GroupRoute` 接受 null 并回读为 null → 当前编译/断言失败
-- [ ] 1.2 **绿**：`ApiResponse.ApiError` 增 `Map<String,Object> details`；`ApiException` 增可选 details 构造；`GlobalExceptionHandler` 透传（D2）
-- [ ] 1.3 **绿**：`ErrorCode` +3（`NOT_SPLIT_ORGANIZER` 403、`SPLIT_TIMING_INFEASIBLE` 409、`SPLIT_DRAFT_INCOMPLETE` 409）（D3）
-- [ ] 1.4 **绿**：`SplitDraftDocument.RouteDurations` 三处时长与 `GroupRoute` 三处时长改 `Integer`；既有调用点与 `SplitRouteGenerationApiTest` 断言放宽（值不变、允许 null）（D8）
-- [ ] 1.5 **绿**：`SplitDraftDocument` 增纯方法 `confirmed(now)` / `cancelled(now)`（置 status、取消清 routes、版本不变）与 `initialRebuilt(initiator, now)`（v1/active/无边界无路线）（D4/D7）
-- [ ] 1.6 验证：`cd backend && mvn -B test` 全绿（既有 90+ 测试不回归）
+- [x] 1.1 **红**：`SplitDraftDocumentStatusTest`（状态迁移 + 可空时长 JSON 往返）；`details` 字段由 `SplitConfirmApiTest`/`SplitCancelApiTest` 的 `$.error.details` 断言覆盖（未另建 ErrorEnvelopeDetailsTest，避免重复）
+- [x] 1.2 **绿**：`ApiResponse.ApiError` 增 `Map<String,Object> details`；`ApiException` 增可选 details 构造；`GlobalExceptionHandler` 透传（D2）
+- [x] 1.3 **绿**：`ErrorCode` +3（`NOT_SPLIT_ORGANIZER` 403、`SPLIT_TIMING_INFEASIBLE` 409、`SPLIT_DRAFT_INCOMPLETE` 409）（D3）
+- [x] 1.4 **绿**：`SplitDraftDocument.RouteDurations` 三处时长与 `GroupRoute` 三处时长改 `Integer`；既有调用点与 `SplitRouteGenerationApiTest` 断言放宽（值不变、允许 null）（D8）
+- [x] 1.5 **绿**：`SplitDraftDocument` 增纯方法 `confirmed(now)` / `cancelled(now)`（置 status、取消清 routes、版本不变）与 `initialRebuilt(initiator, now)`（v1/active/无边界无路线）（D4/D7）
+- [x] 1.6 验证：`cd backend && mvn -B test` 全绿（既有 90+ 测试不回归）
 
 ## 2. 确认 API（D5/D10/D11）
 
-- [ ] 2.1 **红**：`SplitConfirmApiTest`（MockMvc + JdbcTemplate，`AbstractSplitApiTest` 基类）覆盖 CF1、CF2-N、CF3-N、CF7-N、CF4-N、CF5-N、CF6-N、R-N、守卫复用；`@BeforeEach` 重置 `split_draft` / `plan_node(split-*)` / `trip.main_plan_confirmed`；当前树 → 404 全红
-- [ ] 2.2 **绿**：`SplitDraftController` 增 `POST .../split-draft:confirm`（`X-User-Id` 可缺省以落到 401）；DTO `ConfirmDraftRequest(draftVersion)`
-- [ ] 2.3 **绿**：`SplitDraftRepository` 增 `findOrganizerId(tripId)`、`confirmDraftIfActive(tripId, expectedVersion, newDocument, now)`（CAS：`json_extract(document,'$.status')='active'`，`draft_version` 不变）
-- [ ] 2.4 **绿**：`SplitDraftService.confirmDraft` 按 D5 顺序实现：守卫 → 组织者 → 草稿存在/active → 版本 → 完整性（`SPLIT_DRAFT_INCOMPLETE` + `details.missing`）→ 复算（`ReunionTimingCalculator`，可空映射）→ 不可行（`SPLIT_TIMING_INFEASIBLE` + `details.routes[]`）→ CAS 更新 → 返回 `getDraftDetail` 投影
-- [ ] 2.5 验证：2.1 转绿；确认路径无额外写库（仅 1 次 UPDATE）；CF1 后续写端点 409 断言通过
+- [x] 2.1 **红**：`SplitConfirmApiTest`（MockMvc + JdbcTemplate，`AbstractSplitApiTest` 基类）覆盖 CF1、CF2-N、CF3-N、CF7-N、CF4-N、CF5-N、CF6-N、R-N、守卫复用；`@BeforeEach` 重置 `split_draft` / `plan_node(split-*)` / `trip.main_plan_confirmed`；当前树 → 404 全红
+- [x] 2.2 **绿**：`SplitDraftController` 增 `POST .../split-draft:confirm`（`X-User-Id` 可缺省以落到 401）；DTO `DraftVersionRequest(draftVersion)`（与 cancel 共用；类级映射改为 `/api/trips/{tripId}` + 方法级 `/split-draft*`，URL 不变）
+- [x] 2.3 **绿**：`SplitDraftRepository` 增 `findOrganizerId(tripId)`、`confirmDraftIfActive(tripId, expectedVersion, newDocument, now)`（CAS：`json_extract(document,'$.status')='active'`，`draft_version` 不变）
+- [x] 2.4 **绿**：`SplitDraftService.confirmDraft` 按 D5 顺序实现：守卫 → 组织者 → 草稿存在/active → 版本 → 完整性（`SPLIT_DRAFT_INCOMPLETE` + `details.missing`）→ 复算（`ReunionTimingCalculator`，可空映射）→ 不可行（`SPLIT_TIMING_INFEASIBLE` + `details.routes[]`）→ CAS 更新 → 返回 `getDraftDetail` 投影
+- [x] 2.5 验证：2.1 转绿；确认路径无额外写库（仅 1 次 UPDATE）；CF1 后续写端点 409 断言通过
 
 ## 3. 取消 API（D6/D10/D11）
 
-- [ ] 3.1 **红**：`SplitCancelApiTest` 覆盖 CN1、CN2-N、CN3-N、CN4-N、CN5-N、CN6-N；CN1 含主线 `plan_node(branch_id='main')` **全列逐行快照**、split 行数=0、`routes=[]`、列 `draft_version` 回 1（重建后）
-- [ ] 3.2 **绿**：`SplitDraftController` 增 `POST .../split-draft:cancel`；DTO 复用 `{draftVersion}`
-- [ ] 3.3 **绿**：`SplitDraftRepository.cancelDraftIfActive(tripId, expectedVersion, newDocument, now)`（CAS + 返回行数）
-- [ ] 3.4 **绿**：`SplitDraftService.cancelDraft`：守卫 → 草稿存在/active → 发起人（`NOT_SPLIT_INITIATOR`）→ 版本（`STALE_DRAFT_VERSION`）→ 事务内：CAS 更新（status=cancelled、routes=null）+ `deleteSplitRoutes` → 返回投影（`routes=[]`）
-- [ ] 3.5 验证：3.1 转绿；取消后 `plan_node` 仅剩 `main` 行；重复取消 → `SPLIT_DRAFT_NOT_ACTIVE`
+- [x] 3.1 **红**：`SplitCancelApiTest` 覆盖 CN1、CN2-N、CN3-N、CN4-N、CN5-N、CN6-N；CN1 含主线 `plan_node(branch_id='main')` **全列逐行快照**、split 行数=0、`routes=[]`、列 `draft_version` 回 1（重建后）
+- [x] 3.2 **绿**：`SplitDraftController` 增 `POST .../split-draft:cancel`；DTO 复用 `{draftVersion}`
+- [x] 3.3 **绿**：`SplitDraftRepository.cancelDraftIfActive(tripId, expectedVersion, newDocument, now)`（CAS + 返回行数）
+- [x] 3.4 **绿**：`SplitDraftService.cancelDraft`：守卫 → 草稿存在/active → 发起人（`NOT_SPLIT_INITIATOR`）→ 版本（`STALE_DRAFT_VERSION`）→ 事务内：CAS 更新（status=cancelled、routes=null）+ `deleteSplitRoutes` → 返回投影（`routes=[]`）
+- [x] 3.5 验证：3.1 转绿；取消后 `plan_node` 仅剩 `main` 行；重复取消 → `SPLIT_DRAFT_NOT_ACTIVE`
 
 ## 4. 发起端点的重建语义（D7）
 
-- [ ] 4.1 **红**：`SplitDraftStartApiTest` 扩展 S8（cancelled 行重建、`mainPlanVersion=1`、列版本回 1、行数=1）、S9-N（并发重建至多一个 201）、S7′（active/confirmed → `SPLIT_DRAFT_CONFLICT`）
-- [ ] 4.2 **绿**：`SplitDraftRepository.rebuildIfCancelled(tripId, newDocument, now)`（CAS `json_extract(...)='cancelled'` + `SET draft_version=1`）；`SplitDraftService.startDraft` 改为「无行→插入 / cancelled→重建 / active|confirmed→冲突」三分支
-- [ ] 4.3 验证：4.1 转绿；既有 S1/S2/S3-N…S7 不回归
+- [x] 4.1 **红**：`SplitDraftStartApiTest` 扩展 S8（cancelled 行重建、`mainPlanVersion=1`、列版本回 1、行数=1）、S9-N（并发重建至多一个 201）、S7′（active/confirmed → `SPLIT_DRAFT_CONFLICT`）
+- [x] 4.2 **绿**：`SplitDraftRepository.rebuildIfCancelled(tripId, newDocument, now)`（CAS `json_extract(...)='cancelled'` + `SET draft_version=1`）；`SplitDraftService.startDraft` 改为「无行→插入 / cancelled→重建 / active|confirmed→冲突」三分支
+- [x] 4.3 验证：4.1 转绿；既有 S1/S2/S3-N…S7 不回归
 
 ## 5. 详情投影终态（D9）
 
-- [ ] 5.1 **红**：`SplitDraftDetailApiTest` 扩展 D1b（cancelled → `routes=[]` 且无幽灵 `activityName`；confirmed → 保留 routes）、确认/取消后投影与 GET 同形
-- [ ] 5.2 **绿**：`getDraftDetail` 在 `routes == null` 时返回空数组；`activityName` 缺失时允许 null（不抛错）；读取不改版本
-- [ ] 5.3 验证：5.1 转绿；D2（无草稿 200 data=null）不回归
+- [x] 5.1 **红**：`SplitDraftDetailApiTest` 扩展 D1b（cancelled → `routes=[]` 且无幽灵 `activityName`；confirmed → 保留 routes）、确认/取消后投影与 GET 同形
+- [x] 5.2 **绿**：`getDraftDetail` 在 `routes == null` 时返回空数组；`activityName` 缺失时允许 null（不抛错）；读取不改版本
+- [x] 5.3 验证：5.1 转绿；D2（无草稿 200 data=null）不回归
 
 ## 6. 前端 Screen 15 + Screen 11 分支（D12）
 
-- [ ] 6.1 **绿**：`api.ts` 增 `confirmSplitDraft` / `cancelSplitDraft`（`POST :confirm` / `:cancel`，body `{draftVersion}`）；`types.ts` 增 `SplitDraftStatus`、`SplitErrorDetails`（`routes[]` / `missing[]`）
-- [ ] 6.2 **绿**：`hooks.ts` 增 `useConfirmDraft` / `useCancelDraft`（成功后 `invalidateQueries` 草稿查询）
-- [ ] 6.3 **绿**：新增 `features/split/screen-confirm.tsx`（路线卡 + 分组 + 分解 + 窗口对比 + 状态徽标 + 组织者确认 + 发起人取消 + `error.details` 渲染 + 四态）；`router.tsx` 注册 `/trips/:tripId/split/confirm`
-- [ ] 6.4 **绿**：`screen-timing.tsx` 底部动作改为「复核并确认」跳 Screen 15；confirmed/cancelled 时只读提示（C10 的 status 门禁）
-- [ ] 6.5 **绿**：`screen-start.tsx` 按 `status` 分支：无草稿/cancelled → 「发起（替换）分队草稿」；active → 「下一步」；confirmed → 只读终态（S11）
-- [ ] 6.6 验证：`cd frontend && npm run build`（tsc 零错误）；浏览器走查 S15 / S15-err / S11 / S14-gate / 四态
+- [x] 6.1 **绿**：`api.ts` 增 `confirmSplitDraft` / `cancelSplitDraft`（`POST :confirm` / `:cancel`，body `{draftVersion}`）；`types.ts` 增 `SplitDraftStatus`、`SplitErrorDetails`（`routes[]` / `missing[]`）
+- [x] 6.2 **绿**：`hooks.ts` 增 `useConfirmDraft` / `useCancelDraft`（成功后 `invalidateQueries` 草稿查询）
+- [x] 6.3 **绿**：新增 `features/split/screen-confirm.tsx`（路线卡 + 分组 + 分解 + 窗口对比 + 状态徽标 + 组织者确认 + 发起人取消 + `error.details` 渲染 + 四态）；`router.tsx` 注册 `/trips/:tripId/split/confirm`
+- [x] 6.4 **绿**：`screen-timing.tsx` 底部动作改为「复核并确认」跳 Screen 15；confirmed/cancelled 时只读提示（C10 的 status 门禁）
+- [x] 6.5 **绿**：`screen-start.tsx` 按 `status` 分支：无草稿/cancelled → 「发起（替换）分队草稿」；active → 「下一步」；confirmed → 只读终态（S11）
+- [x] 6.6 验证：`cd frontend && npm run build`（tsc 零错误）；浏览器走查 S15 / S15-err / S11 / S14-gate / 四态
 
 ## 7. 验证与证据
 
-- [ ] 7.1 E2E 步骤清单 `docs/feedback/e2e-us-049-050.md`（P4 执行并回填观察结果）
-- [ ] 7.2 `mvn -B test` 全量 + `npm run build`；schema 断言（迁移计数 `V1–V5`、`split_draft` 列集不变）（D15）
-- [ ] 7.3 `openspec validate us-049-050-split-confirm-cancel --strict` 复跑；fixtures §US-049-050 与实现逐项核对
+- [x] 7.1 E2E 步骤清单 `docs/feedback/e2e-us-049-050.md`（P4 执行并回填观察结果）
+- [x] 7.2 `mvn -B test` 全量 + `npm run build`；schema 断言（迁移计数 `V1–V5`、`split_draft` 列集不变）（D15）
+- [x] 7.3 `openspec validate us-049-050-split-confirm-cancel --strict` 复跑；fixtures §US-049-050 与实现逐项核对
 - [ ] 7.4 `/sdd:local-verify-report`（P4 末）→ G2 前必备
 
 ## 8. 文档与收尾（P5 承接）
