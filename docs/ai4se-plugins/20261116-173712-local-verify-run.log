@@ -1,0 +1,46 @@
+===== CMD: ! grep -rn "Hello World" frontend/src =====
+cwd: /d/study/gogo
+started: 2026-11-16T17:37:12+0800
+exit: 0
+ended: 2026-11-16T17:37:14+0800
+
+===== CMD: ! grep -inE "jpa|hibernate" backend/pom.xml =====
+cwd: /d/study/gogo
+started: 2026-11-16T17:37:15+0800
+exit: 0
+ended: 2026-11-16T17:37:16+0800
+
+===== CMD: ! grep -rinE "h2database|org\.h2|jdbc:h2" backend/pom.xml backend/src =====
+cwd: /d/study/gogo
+started: 2026-11-16T17:37:17+0800
+exit: 0
+ended: 2026-11-16T17:37:19+0800
+
+===== CMD: ! grep -q "artifact.oocl.com" frontend/package-lock.json =====
+cwd: /d/study/gogo
+started: 2026-11-16T17:37:20+0800
+exit: 0
+ended: 2026-11-16T17:37:21+0800
+
+===== CMD: python -c "import yaml; d=yaml.safe_load(open('.github/workflows/ci.yml')); j=sorted(d['jobs']); assert j==['backend','frontend'], j; print('ci jobs:', j)" =====
+cwd: /d/study/gogo
+started: 2026-11-16T17:37:22+0800
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import yaml; d=yaml.safe_load(open('.github/workflows/ci.yml')); j=sorted(d['jobs']); assert j==['backend','frontend'], j; print('ci jobs:', j)
+    ^^^^^^^^^^^
+ModuleNotFoundError: No module named 'yaml'
+exit: 1
+ended: 2026-11-16T17:37:24+0800
+
+===== CMD: python -c "import yaml; d=yaml.load(open('.github/workflows/ci.yml'), Loader=yaml.BaseLoader); assert 'main' in d['on']['push']['branches']; assert 'main' in d['on']['pull_request']['branches']; print('ci triggers: main push and pull request')" =====
+cwd: /d/study/gogo
+started: 2026-11-16T17:37:24+0800
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import yaml; d=yaml.load(open('.github/workflows/ci.yml'), Loader=yaml.BaseLoader); assert 'main' in d['on']['push']['branches']; assert 'main' in d['on']['pull_request']['branches']; print('ci triggers: main push and pull request')
+    ^^^^^^^^^^^
+ModuleNotFoundError: No module named 'yaml'
+exit: 1
+ended: 2026-11-16T17:37:26+0800
+
