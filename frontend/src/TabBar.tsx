@@ -1,10 +1,11 @@
 import Icon from './Icons'
+import type { IconName } from './Icons'
 import type { TabId } from './types'
 
 interface Tab {
   id: TabId
   label: string
-  icon: string
+  icon: IconName
   href?: string
 }
 

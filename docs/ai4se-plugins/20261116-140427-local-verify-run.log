@@ -1,0 +1,31 @@
+===== CMD: ! grep -rn "Hello World" frontend/src =====
+cwd: /d/NGSA5/OneDrive - Orient Overseas Container Line Ltd/Documents/TATP/Bootcamp/Group Project/gogo_prod
+started: 2026-11-16T14:04:27+0800
+exit: 0
+ended: 2026-11-16T14:04:29+0800
+
+===== CMD: ! grep -inE "jpa|hibernate" backend/pom.xml =====
+cwd: /d/NGSA5/OneDrive - Orient Overseas Container Line Ltd/Documents/TATP/Bootcamp/Group Project/gogo_prod
+started: 2026-11-16T14:04:30+0800
+exit: 0
+ended: 2026-11-16T14:04:32+0800
+
+===== CMD: ! grep -rinE "h2database|org\.h2|jdbc:h2" backend/pom.xml backend/src =====
+cwd: /d/NGSA5/OneDrive - Orient Overseas Container Line Ltd/Documents/TATP/Bootcamp/Group Project/gogo_prod
+started: 2026-11-16T14:04:33+0800
+exit: 0
+ended: 2026-11-16T14:04:35+0800
+
+===== CMD: ! grep -q "artifact.oocl.com" frontend/package-lock.json =====
+cwd: /d/NGSA5/OneDrive - Orient Overseas Container Line Ltd/Documents/TATP/Bootcamp/Group Project/gogo_prod
+started: 2026-11-16T14:04:35+0800
+exit: 1
+ended: 2026-11-16T14:04:37+0800
+
+===== CMD: python -c "import yaml; d=yaml.safe_load(open('.github/workflows/ci.yml')); j=sorted(d['jobs']); assert j==['backend','frontend'], j; print('ci jobs:', j)" =====
+cwd: /d/NGSA5/OneDrive - Orient Overseas Container Line Ltd/Documents/TATP/Bootcamp/Group Project/gogo_prod
+started: 2026-11-16T14:04:38+0800
+ci jobs: ['backend', 'frontend']
+exit: 0
+ended: 2026-11-16T14:04:40+0800
+

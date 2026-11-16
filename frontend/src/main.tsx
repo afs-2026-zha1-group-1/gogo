@@ -7,13 +7,16 @@ import { router } from './router'
 import './index.css'
 import './app.css'
 
-// Errors surface immediately (no retry backoff) so the permission/rejection states are observable
-// during the local walkthrough; screens expose an explicit retry. Polling is set per split query.
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
 })
 
-createRoot(document.getElementById('root')).render(
+const rootElement = document.getElementById('root')
+if (!rootElement) {
+  throw new Error('Missing required #root element')
+}
+
+createRoot(rootElement).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <IdentityProvider>
