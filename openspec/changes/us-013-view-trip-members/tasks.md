@@ -75,7 +75,8 @@
       `gh`; never inherit a green. The workflow trigger was broadened to all
       branch pushes by user instruction 2026-11-16 (job contents unchanged), so
       this branch produces its own run without a main PR. Observed: run
-      `43818961221` on head `077e762`, both jobs success.
+      `43818961221` on head `077e762` (code), both jobs success; re-run
+      `43819461209` on docs head `5dd3d6f`, both jobs success.
 - [x] 6.2 Write the P4 pipeline report under `docs/ai4se-plugins/` —
       `20261116-144618-pipeline-report.md`; E1 slot `ci-report.md`.
 - [x] 6.3 Prepare the G2 decision record for VL Elian Jiang; do not self-sign —

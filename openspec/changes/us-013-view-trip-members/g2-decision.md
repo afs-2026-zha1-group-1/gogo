@@ -16,7 +16,7 @@
 | Local verify | `docs/ai4se-plugins/20261116-144729-local-verify-report.md` — Build Pass, Static Pass, Code review Pass, Evidence Partial (gate/archive tasks open by design); Overall **Partial**, no Waiver |
 | Verification evidence | `docs/feedback/verification-us-013.md` — `mvn test` 101/101 (new 11/11), `npm run build` green, API matrix M1–M10, browser U1–U3 + loading/error/retry |
 | E2E checklist | `docs/feedback/e2e-us-013.md` |
-| CI | run `43818961221`, head `077e762`, event `push`, **both jobs success**; `ci-report.md` and `docs/ai4se-plugins/20261116-144618-pipeline-report.md` |
+| CI | run `43818961221`, head `077e762`, event `push`, **both jobs success**; re-run `43819461209` on the docs head `5dd3d6f` also both success; `ci-report.md` and `docs/ai4se-plugins/20261116-144618-pipeline-report.md` |
 | Tasks | `tasks.md` — implementation and CI tasks 0–6.2 checked; 6.3 G2, 7.x archive reconciliation, 8.x human gates open |
 | Story | GitHub issue #9 |
 

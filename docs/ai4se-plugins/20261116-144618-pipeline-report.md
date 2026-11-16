@@ -27,6 +27,11 @@
 pushed branch head. The trigger was broadened to all branch pushes by user
 instruction on 2026-11-16 (R37); job contents are unchanged and no PR exists.
 
+**Re-run on the current head (docs-only):** after the P4 evidence commit, run
+43819461209 on head `5dd3d6f` also succeeded — Backend tests 25 s, Frontend
+build 14 s; both jobs success. The docs-only commit does not change the tested
+code.
+
 ## Jobs / checks
 
 | Phase | Job/Stage | Status | Duration | URL | Failure reason |
