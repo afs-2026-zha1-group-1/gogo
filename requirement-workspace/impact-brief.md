@@ -531,9 +531,19 @@ trips regex (existing convention).
 
 **Proposed delta**: **none**. US-067 is frontend-only.
 
-### 3.6 Other specs – checked, no impact
+### 3.6 `app-shell` capability
 
-`greeting`, `trips`, `app-shell`, `main-itinerary`: no requirements touched.
+**As-is** (`openspec/specs/app-shell/spec.md`): 6 requirements. The shell frame
+applies to every in-app route and the bottom dock maps four tabs; only
+`#/join/<token>` is excluded from the dock.
+
+**Proposed delta**: 1 MODIFIED requirement "Mobile shell frame" — `#/scan` is
+a full-screen flow: no dock, identity scaffold bar retained, not associated
+with any dock tab, close restores the originating route (fallback `#/`).
+
+### 3.7 Other specs – checked, no impact
+
+`greeting`, `trips`, `main-itinerary`: no requirements touched.
 
 ## 4. Blast radius
 
@@ -550,6 +560,7 @@ trips regex (existing convention).
 | Artifact | Change |
 |---|---|
 | `openspec/specs/invitations/spec.md` | +1 ADDED requirement (scanner) |
+| `openspec/specs/app-shell/spec.md` | +1 MODIFIED requirement (scanner full-screen flow) |
 | `frontend/src/pages/Scanner.tsx` | new file |
 | `frontend/src/App.tsx` | +1 route entry |
 | `frontend/src/Icons.tsx` | +2 icon symbols (scan, camera) |
@@ -575,7 +586,8 @@ trips regex (existing convention).
 | R1 | `BarcodeDetector` browser support is limited (Chrome/Edge only, not Firefox/Safari). `jsqr` is the reliable fallback but is currently a devDependency. | low | Move `jsqr` to production dependency in P3 design. Non-blocking. |
 | R2 | Camera API requires HTTPS or localhost. Dev environment on localhost is fine; production deploy must serve HTTPS. | low | Existing constraint; no new risk introduced by this change. |
 | R3 | Scan-icon entry point (AC S1–S2) deferred — no user-facing way to reach the scanner except direct URL. | medium | Accepted by user ruling 2026-11-16. E2E tests navigate directly to `#/scan`. Entry point to be added in a follow-up story. |
-| R4 | US-066 login flow (AC S9) deferred — signed-out scenario not exercised. | low | Accepted by user ruling. US-067 tests assume a signed-in (scaffold) user. |
+| R4 | US-066 login flow (AC S9) deferred — signed-out scenario not exercised. | low | Owned by the in-flight `US-066-log-in` change; its join-level "signed-out → login → resume preview" rule covers S9, and the scanner only hands off to `#/join/<token>`. |
+| R5 | Merge order against US-066: auth replaces the identity scaffold and the `X-User-Id` Join acceptance path. | medium | US-066 archives first; US-067 rebases and re-runs its E2E against the session-based Join page. Non-blocking, recorded in G1. |
 
 No critical blocker invalidates US-067; split may proceed.
 
