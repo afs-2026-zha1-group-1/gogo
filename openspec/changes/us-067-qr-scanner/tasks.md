@@ -52,14 +52,14 @@ exists.
 
 ## 4. Scanner UI surface (idle state, no camera yet)
 
-- [ ] 4.1 Create `frontend/src/pages/Scanner.tsx` skeleton showing the five
+- [x] 4.1 Create `frontend/src/pages/Scanner.tsx` skeleton showing the five
       named surfaces from I-10: app bar with 扫码加入行程 title + close
       control, camera preview placeholder, 开始扫描 primary, 从相册选择
       secondary, invitation-link input + 预览邀请 action; render in
       `idle` state without any `getUserMedia` call. Verify opening
       `#/scan` in the browser shows all five surfaces and no permission
       dialog appears (screenshot `s4-1-scanner-idle.png`).
-- [ ] 4.2 Register `#/scan` in `frontend/src/App.tsx parseRoute` **before**
+- [x] 4.2 Register `#/scan` in `frontend/src/App.tsx parseRoute` **before**
       the generic `/trips/<id>` regex, returning `{page:'scan', from:
       previousHash}`; add a `route.page === 'scan'` rendering branch outside
       the shell column and TabBar, keeping ScaffoldBar visible. Verify S-4

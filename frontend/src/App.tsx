@@ -10,9 +10,14 @@ import Placeholder from './pages/Placeholder'
 import Join from './pages/Join.jsx'
 import MainPlan from './pages/MainPlan'
 import MainPlanInputs from './pages/MainPlanInputs'
+import Scanner from './pages/Scanner'
 
 function parseRoute(hash: string): Route {
   const path = hash.replace(/^#/, '') || '/'
+  // Scanner owns its top-level hash and must be matched before the
+  // generic `/trips/<id>` regex (design D1); `from` is filled in by the
+  // App state tracker below, so parseRoute only signals the shape here.
+  if (path === '/scan') return { page: 'scan', from: null }
   const joinMatch = path.match(/^\/join\/([^/]+)$/)
   if (joinMatch) return { page: 'join', token: decodeURIComponent(joinMatch[1]) }
   const mainPlanInputsMatch = path.match(/^\/trips\/(\d+)\/main-plan\/inputs$/)
@@ -58,13 +63,29 @@ export default function App() {
   const [route, setRoute] = useState<Route>(() => parseRoute(window.location.hash))
   const [userId, setUserId] = useState<number>(1)
   const [lastTripId, setLastTripId] = useState<number | null>(null)
+  // Tracks the last non-scanner hash so closing the scanner can restore
+  // the originating route (spec S-5 / design D2). Falls back to `#/` via
+  // the Scanner close handler when this is null (user typed `#/scan`).
+  const [lastNonScanHash, setLastNonScanHash] = useState<string | null>(() => {
+    const initial = window.location.hash
+    return initial && initial.replace(/^#/, '') !== '/scan' ? initial : null
+  })
   const user = users().find((candidate) => candidate.id === userId)
 
   useEffect(() => {
-    const onHash = () => setRoute(parseRoute(window.location.hash))
+    const onHash = () => {
+      const next = window.location.hash
+      const parsed = parseRoute(next)
+      if (parsed.page === 'scan') {
+        setRoute({ ...parsed, from: lastNonScanHash })
+      } else {
+        setLastNonScanHash(next || '#/')
+        setRoute(parsed)
+      }
+    }
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
-  }, [])
+  }, [lastNonScanHash])
 
   useEffect(() => {
     if (route.page === 'details') setLastTripId(route.tripId)
@@ -107,7 +128,7 @@ export default function App() {
     return (
       <div className="app">
         <ScaffoldBar userId={userId} onChange={setUserId} />
-        <div className="scanner-placeholder">Scanner (placeholder — see task 4.1)</div>
+        <Scanner from={route.from} />
       </div>
     )
   }
