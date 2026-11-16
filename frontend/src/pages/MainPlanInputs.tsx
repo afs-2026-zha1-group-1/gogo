@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import { api, generateMainPlan, getMainPlanInputs } from '../api.js'
-import Icon from '../Icons.jsx'
-import type { MainPlan, MainPlanInputs, TripSummary } from '../types/mainPlan'
-import { typed } from '../types/apiResult'
+import { api } from '../api'
+import Icon from '../Icons'
+import type { MainPlan, MainPlanError, MainPlanInputs, TripSummary } from '../types/mainPlan'
 
 // Screen 9 (US-031, design D11): generation inputs summary. Members read,
 // only the organizer sees the generate action. Display wording is free per
@@ -46,19 +45,17 @@ export default function MainPlanInputs({ userId, tripId }: MainPlanInputsProps) 
     setState({ kind: 'loading' })
     setActionError(null)
     Promise.all([
-      api(`/api/trips/${tripId}`, { userId }),
-      getMainPlanInputs(tripId, userId),
+      api<TripSummary>(`/api/trips/${tripId}`, { userId }),
+      api<MainPlanInputs & MainPlanError>(`/api/trips/${tripId}/main-plan/inputs`, { userId }),
     ])
-      .then(([tripEnvelope, inputsEnvelope]) => {
+      .then(([tripResult, inputsResult]) => {
         if (!active) return
-        const tripResult = typed<TripSummary>(tripEnvelope)
-        const inputsResult = typed<MainPlanInputs>(inputsEnvelope)
         if (tripResult.status === 403 || inputsResult.status === 403) {
           setState({ kind: 'denied', message: inputsResult.data?.message ?? tripResult.data?.message })
         } else if (tripResult.status === 404) {
           setState({ kind: 'missing', message: tripResult.data?.message })
-        } else if (tripResult.ok) {
-          if (inputsResult.ok) {
+        } else if (tripResult.ok && tripResult.data) {
+          if (inputsResult.ok && inputsResult.data) {
             setState({ kind: 'ready', trip: tripResult.data, inputs: inputsResult.data })
           } else {
             setState({ kind: 'failed', message: inputsResult.data?.message ?? `HTTP ${inputsResult.status}` })
@@ -81,7 +78,7 @@ export default function MainPlanInputs({ userId, tripId }: MainPlanInputsProps) 
     setGenerating(true)
     setActionError(null)
     try {
-      const { status, ok, data } = typed<MainPlan>(await generateMainPlan(tripId, userId))
+      const { status, ok, data } = await api<MainPlan & MainPlanError>(`/api/trips/${tripId}/main-plan`, { userId, method: 'POST' })
       if (ok) {
         window.location.hash = `#/trips/${tripId}/main-plan`
         return

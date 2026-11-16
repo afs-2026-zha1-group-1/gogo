@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { api } from '../api.js'
-import Icon from '../Icons.jsx'
+import { api } from '../api'
+import Icon from '../Icons'
 
 export default function Home() {
   const [greeting, setGreeting] = useState('')

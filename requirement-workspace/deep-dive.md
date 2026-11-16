@@ -268,6 +268,25 @@ Token entropy, invitation volume and retention are not decidable for a scaffold
 slice and are not required by any AC. Recorded as a non-blocking item for Dev
 (token generation uses a secure random source by design), not invented.
 
+## REQ-005
+
+Trigger: impact solution direction is **add** (new frontend-only `app-shell`
+capability). One story, one shell frame, one change. No backend or database
+concept is introduced; the data contract below covers the frontend navigation
+state, which is the only state this change owns.
+
+### ⑨ Data contract
+
+| Concept | Grain | Fields | State transitions |
+|---|---|---|---|
+| `route` (parsed hash) | One current route per app instance | `page` ∈ {home, trips-empty, details, create, split, members, join}; `tripId` (integer, details only); `token` (string, join only) | `hashchange` → re-parse; default home for `/` and unknown paths (as-is `App.jsx:8-16`); new entries: bare 行程 path (proposed `#/trips`, OQ-4), `#/split`, `#/members` |
+| `userId` (scaffold identity) | One selected id per app instance, App-level state | integer, default 1, from the seeded user list | Switcher change updates it; hash navigation never resets it (App does not remount); every `api()` call sends it as `X-User-Id` (unchanged contract) |
+| Tab model | Four fixed tabs | order 仪表盘 / 行程 / 分队 / 成员; each: icon, label, target route, active rule | Active rule: home→仪表盘; trips-empty/details/create→行程; split→分队; members→成员; join→no dock, no active tab |
+| Trip selection (OQ-5) | Optional last-opened trip id, P3 decision | integer or none | Proposed: route-derived (details iff the hash carries an id); optional last-trip memory is a P3 UX choice, not a contract field |
+
+No backend table, column, endpoint or wire shape is added or changed (reverse
+case R-3). No `{TBD}` field remains: OQ-1/OQ-2/OQ-4/OQ-5 are naming/UX polish
+with concrete proposals above, not undecided data fields.
 ## US-031-037
 
 Trigger: impact solution direction is **add** (new `main-itinerary` capability).
@@ -313,6 +332,40 @@ contractual at P2 (fixtures §US-031-037 "Wire projections").
 
 | Branch | In / out | Attribution |
 |---|---|---|
+| `#/` default | in | S3; home content under shell, 仪表盘 active |
+| Bare 行程 route, no trip selected | in | S5; text empty state, 创建行程 + 按编号打开行程, 行程 active |
+| `#/trips/<id>` member read | in | S4; existing details under shell, 行程 active |
+| `#/trips/<id>` non-member / unknown id / unreachable | in (unchanged states) | S4/S11; existing denied/missing/failed surfaces, no new behavior |
+| `#/create` | in | S6; form + validation unchanged, 行程 active, back → 行程, submit → `#/trips/<id>` |
+| `#/split`, `#/members` | in | S7; honest text placeholder + link back to 行程; no demo data |
+| `#/join/<token>` valid | out of dock | S8; full-screen preview/accept/joined/closed exactly as today |
+| `#/join/<token>` unknown | out of dock | S8; full-screen unusable, no private data, as today |
+| Unknown hash path | in (fallback) | As-is home fallback retained; 仪表盘 active |
+| Non-numeric id in `#/trips/…` | in (fallback) | As-is regex fails → home fallback; no new route contract |
+| Tab switch forward and reverse | in | S2/S10; hash updates without reload, identity kept, unique heading per page |
+| Browser back/forward | in | S10; hashchange drives route; identity survives |
+| Identity switch on any shell route | in | S9; header updates on every request; label stays scaffold |
+| Open-by-id with unknown id | in (existing 404) | OQ-1; reuses details missing state, no list-all call |
+| List-all-trips endpoint or call | out of scope | R-1 reverse case; US-061 owns aggregation |
+| Fabricated members/routes/statuses | out of scope | R-2 reverse case; placeholders are text only |
+| Backend / migration / CI change | out of scope | R-3 reverse case |
+| Dock on join/unusable | out of scope | S8 doubles as the guest-navigation reverse case |
+
+Every branch referenced by a scenario has a row above.
+
+### ⑪ Cross-REQ consistency
+
+| Item | Other requirement | REQ-005 | Convergence |
+|---|---|---|---|
+| Home / greeting surface | REQ-001/REQ-002 `greeting` | Composed under shell at `#/`; fetch and states unchanged | No contract change; placement only |
+| Create / details surfaces | REQ-003 `trips` (pending delta, implemented) | Composed under shell; create back-target moves from `#/` to 行程 per the story table | Placement change only; validation, permission and submit contracts unchanged (S11) |
+| Invitation panel / join flow | REQ-004 `invitations` (pending delta, implemented) | Panel stays inside details; join/unusable excluded from dock, scaffold bar retained | No contract change; AC9 + OQ-6 |
+| Identity contract | REQ-003 "Trip caller identity" | Reuses `X-User-Id` switcher, App-level state | Same contract, no second identity mechanism |
+| Hash router | REQ-004 design D7 | Extends the shared `parseRoute` table, no new router dependency | One routing mechanism |
+| Future tabs | US-013, US-038–062, US-061 (backlog) | Placeholders now; real features later replace placeholder content inside the same shell | Shell is the stable anchor; no conflict now |
+
+No ✗ row remains. `app-shell` is disjoint from the three active changes'
+delta sets (`greeting`, `trips`, `invitations`); archive order is independent.
 | All members ready | in (G1) | readiness gate reads trip_member; generation proceeds |
 | Any member pending | in (G2) | blocked; pending members named; no draft row |
 | Provider supplies fixture stops | in | fake MainPlanProvider = MVP production (ruled); port seam |
@@ -351,6 +404,23 @@ contractual at P2 (fixtures §US-031-037 "Wire projections").
 
 | Surface | Trigger | Recipient | Content + display fields | Channel |
 |---|---|---|---|---|
+| Shell frame | Any in-app route renders | Traveler | Centered ≤430 px column, 100 dvh, scrolling content, fixed dock below, safe-area padding; existing tokens | Client render |
+| Bottom dock | Shell present | Traveler | Four tabs (icon + label) in fixed order; active highlight from brand tokens; hash targets | Client navigation |
+| 仪表盘 page | `#/` | Traveler | Existing home content: greeting status, create entry, identity scaffold; unique heading | `GET /api/greeting` (unchanged) |
+| 行程 empty state | Bare 行程 route, no trip selected | Traveler | Text empty state + exactly two actions: 创建行程, 按编号打开行程; unique heading; no trip data | Client render; open-by-id → `#/trips/<id>` |
+| 行程 details | `#/trips/<id>` | Trip member | Existing hero, information rows, organizer invitation panel; loading/denied/missing states unchanged | `GET /api/trips/{id}` (unchanged) |
+| Create page | `#/create` | Traveler | Existing six inputs + validation; back → 行程; busy/error states unchanged | `POST /api/trips` (unchanged) |
+| 分队 placeholder | `#/split` | Traveler | Honest "not implemented yet" text + link back to 行程; unique heading; no demo data | Client render |
+| 成员 placeholder | `#/members` | Traveler | Honest "not implemented yet" text + link back to 行程; unique heading; no demo data | Client render |
+| Join / unusable | `#/join/<token>` | Invited guest | Full-screen, no dock; preview/accept/joined/closed/unusable exactly as today; scaffold bar retained | Invitation endpoints (unchanged) |
+
+No notifications (email, push, queue) are in scope.
+
+### NFR business-policy layer
+
+No retention, volume or SLA is stated by any AC; the shell adds no data.
+Browser support for `100dvh` and safe-area insets is a verification item at P4
+(R19), not a requirement unknown. Recorded, not invented.
 | Screen 9 generate summary | page load | members (P2 ruling 2026-11-15; write actions stay organizer-only) | ready count (4/4) + member names; common interests chips; must-do summary; constraints/budget lines; generation rules list | generation inputs projection (`GET /api/trips/{id}/main-plan/inputs`, P2 ruled; members may read) |
 | Screen 10 draft timeline | draft read | members | per stop: name, time range, interest tags (provider-supplied, may be empty), cost per person; version badge; stale banner when stale | plan projection |
 | Screen 10 validation status / blocked errors | confirm attempt | organizer | scheduleErrors list; per-member overrun amount (10 SGD case); stale message | confirm validation projection |

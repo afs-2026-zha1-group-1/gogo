@@ -92,9 +92,6 @@ export interface MainPlanError {
   overruns?: BudgetOverrun[]
 }
 
-// Shape returned by the shared api.js fetch helper, discriminated on ok:
-// a 2xx body is the success projection, a non-2xx body is {code, message}
-// plus detail. The single boundary cast lives in typed() (apiResult.ts).
-export type ApiResult<T> =
-  | { status: number; ok: true; data: T }
-  | { status: number; ok: false; data: MainPlanError | null }
+// ApiResult/ApiError envelopes come from the shared src/types.ts (api.ts).
+// The screens call api<MainPlan & MainPlanError>() so the detail fields
+// (pendingMembers/scheduleErrors/overruns) are readable without a cast.

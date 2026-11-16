@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
-import { api, confirmMainPlan, generateMainPlan, getMainPlan } from '../api.js'
-import Icon from '../Icons.jsx'
+import { api } from '../api'
+import Icon from '../Icons'
 import type {
   BudgetOverrun,
   MainPlan,
+  MainPlanError,
   ScheduleError,
   TripSummary,
 } from '../types/mainPlan'
-import { typed } from '../types/apiResult'
 
 // Screen 10 (US-037, design D11): draft review and validation-gated confirm.
 // Members read the shared timeline; only the organizer regenerates/confirms.
@@ -58,19 +58,17 @@ export default function MainPlan({ userId, tripId }: MainPlanProps) {
     setActionError(null)
     setBlocked(null)
     Promise.all([
-      api(`/api/trips/${tripId}`, { userId }),
-      getMainPlan(tripId, userId),
+      api<TripSummary>(`/api/trips/${tripId}`, { userId }),
+      api<MainPlan & MainPlanError>(`/api/trips/${tripId}/main-plan`, { userId }),
     ])
-      .then(([tripEnvelope, planEnvelope]) => {
+      .then(([tripResult, planResult]) => {
         if (!active) return
-        const tripResult = typed<TripSummary>(tripEnvelope)
-        const planResult = typed<MainPlan>(planEnvelope)
         if (tripResult.status === 403 || planResult.status === 403) {
           setState({ kind: 'denied', message: planResult.data?.message ?? tripResult.data?.message })
         } else if (tripResult.status === 404) {
           setState({ kind: 'missing', message: tripResult.data?.message })
-        } else if (tripResult.ok) {
-          if (planResult.ok) {
+        } else if (tripResult.ok && tripResult.data) {
+          if (planResult.ok && planResult.data) {
             setState({ kind: 'ready', trip: tripResult.data, plan: planResult.data })
           } else if (planResult.status === 404 && planResult.data?.code === 'NO_DRAFT') {
             setState({ kind: 'empty', trip: tripResult.data })
@@ -92,8 +90,8 @@ export default function MainPlan({ userId, tripId }: MainPlanProps) {
   useEffect(() => load(), [load])
 
   async function refreshPlan() {
-    const { ok, data } = typed<MainPlan>(await getMainPlan(tripId, userId))
-    if (ok) {
+    const { ok, data } = await api<MainPlan>(`/api/trips/${tripId}/main-plan`, { userId })
+    if (ok && data) {
       setState((current) => current.kind === 'ready' ? { ...current, plan: data } : current)
     }
   }
@@ -103,8 +101,8 @@ export default function MainPlan({ userId, tripId }: MainPlanProps) {
     setActionError(null)
     setBlocked(null)
     try {
-      const { status, ok, data } = typed<MainPlan>(await generateMainPlan(tripId, userId))
-      if (ok) {
+      const { status, ok, data } = await api<MainPlan & MainPlanError>(`/api/trips/${tripId}/main-plan`, { userId, method: 'POST' })
+      if (ok && data) {
         setState((current) => current.kind === 'ready' ? { ...current, plan: data } : current)
       } else if (status === 409 && data?.code === 'MEMBERS_NOT_READY') {
         const names = (data.pendingMembers ?? []).map((member) => member.displayName).join('、')
@@ -124,8 +122,8 @@ export default function MainPlan({ userId, tripId }: MainPlanProps) {
     setActionError(null)
     setBlocked(null)
     try {
-      const { status, ok, data } = typed<MainPlan>(await confirmMainPlan(tripId, userId))
-      if (ok) {
+      const { status, ok, data } = await api<MainPlan & MainPlanError>(`/api/trips/${tripId}/main-plan/confirm`, { userId, method: 'POST' })
+      if (ok && data) {
         setState((current) => current.kind === 'ready' ? { ...current, plan: data } : current)
       } else if (status === 422 && data?.code === 'VALIDATION_FAILED') {
         setBlocked({
