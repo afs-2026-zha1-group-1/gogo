@@ -148,12 +148,12 @@ exists.
 
 ## 10. Reconcile architecture baseline (pre-archive)
 
-- [ ] 10.1 Update `docs/knowledge/architecture/tech-stack-plan.md` §5/§7 to
+- [x] 10.1 Update `docs/knowledge/architecture/tech-stack-plan.md` §5/§7 to
       reflect what actually shipped for US-067: hash routing (no React
       Router), custom fetch (no TanStack Query), CSS-token styling (no Ant
       Design import), jsqr promoted to production dependency. Only sync
       facts already archived, not planned work.
-- [ ] 10.2 Append a one-row entry to `docs/knowledge/_LOG.md` for the
+- [x] 10.2 Append a one-row entry to `docs/knowledge/_LOG.md` for the
       US-067 stack-plan reconciliation with the date and change id.
 
 ## Workflow follow-up

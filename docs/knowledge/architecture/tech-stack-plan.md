@@ -314,3 +314,63 @@ PostgreSQL/PostGIS 替换 SQLite（Repository 层已隔离 SQL 与方言）→ F
   sketch of `client.ts` was not adopted; the shell already provides `api.ts`).
 
 No other section of this plan was modified by this change.
+
+## 14. Landed reconciliation — US-067 QR scanner (P4 apply, not yet archived)
+
+> Scope discipline: this addendum records what the `us-067-qr-scanner` change
+> actually shipped on the frontend. It is a **pre-archive** note; living-merge
+> at G3 will fold it into §7 (关键实现约定) and the §3 stack table once the
+> change lands on `main`.
+
+**Scanner capability (US-067), as shipped:**
+
+- **Frontend stack alignment with §3 / §7 aspirational plan.** The plan sketch
+  implied React Router / TanStack Query / Ant Design imports for future
+  features. US-067 keeps the actual shipped conventions:
+  - Routing stays **hash-based** — no `react-router-dom` is added. `App.tsx
+    parseRoute` matches `/scan` BEFORE the generic `/trips/<id>` regex so
+    the scanner top-level hash cannot be swallowed by the details route
+    (design D1, G1 C2).
+  - Data fetching stays the custom `api<T>()` fetch wrapper in
+    `frontend/src/api.ts`. The scanner performs **no** new `/api/*` call
+    (frontend-only change reusing REQ-004 `GET /api/invitations/{token}` /
+    `POST …/accept` through the existing Join page hand-off).
+  - Styling stays CSS tokens in `frontend/src/app.css`. The scanner reuses
+    `.screen`, `.appbar`, `.card`, `.btn btn-primary/.btn-secondary`,
+    `.field` and the existing `--surface-2 / --brand / --warn-soft /
+    --err-soft` variables. No `antd` package import was added; Ant Design
+    is followed as **semantic** reference (primary + secondary action row,
+    error panel with retry affordance) per G1 C5.
+- **QR decode library.** `jsqr ^1.4.0` was promoted from `devDependencies`
+  to `dependencies` in `frontend/package.json` (bundle grew ~293 KB → 425
+  KB). Decoding uses two paths behind a single matcher:
+  - Camera: `navigator.mediaDevices.getUserMedia({video:{facingMode:
+    'environment'}})` → `requestAnimationFrame` loop drawing video into a
+    480×360 canvas → `jsQR(...)`.
+  - Image file: hidden `<input type="file" accept="image/*">` →
+    `createImageBitmap(file)` → offscreen canvas → `jsQR(..., {
+    inversionAttempts: 'attemptBoth'})`. No `URL.createObjectURL` is used,
+    so there is nothing to revoke; `bitmap.close?.()` releases the decoder.
+- **Invitation-link matcher (single source of truth, G1 C3).** New
+  `frontend/src/scan.ts` exports `parseJoinHash(text, appOrigin)`. Contract
+  locked at the module header: token form is exactly `#/join/<32-char
+  lowercase-hex>` (backend `InvitationTokens.next()` = `HexFormat.of().
+  formatHex(new byte[16])`), absolute URLs are same-origin only, and
+  cross-origin inputs are rejected before the token regex is even reached.
+  All three Scanner entry points (camera rAF loop, image picker, manual
+  link 预览邀请) call this one function so behavior cannot drift.
+- **Route / type surface.** `frontend/src/types.ts` extends `Route` with
+  `{ page: 'scan'; from: string | null }`; `InAppPage` is now
+  `Exclude<Route['page'], 'join' | 'main-plan' | 'main-plan-inputs' |
+  'scan'>`, so `TAB_FOR_PAGE: Record<InAppPage, TabId>` stays total and
+  the scanner is guaranteed not to receive a dock tab. Closing the scanner
+  restores the last non-scanner hash tracked by `App.tsx`, or falls back
+  to `#/` (spec S-5).
+- **Backend impact.** None. `git diff origin/main...HEAD` after P4 shows
+  no `backend/**` change and no new `V*.sql` migration; `mvn test` stays
+  at 90 / 90 (MainPlanApiTest 34, ScheduleValidatorTest 11, TripApiTest
+  13, GreetingApiTest 3, InvitationApiTest 15, plus existing suites).
+
+No other section of this plan is modified by US-067. Sections §5 (data
+model) and §6 (API) remain accurate because the scanner introduces
+neither tables nor endpoints.
