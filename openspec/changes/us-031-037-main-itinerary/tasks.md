@@ -152,8 +152,12 @@
 
 ## 7. CI and gates (owner: Dev drafts; IO/SA/VL decide)
 
-- [ ] 7.1 Push + open the PR only with separate typed authorization; read the
+- [x] 7.1 Push + open the PR only with separate typed authorization; read the
       fresh CI run with `gh` and write the pipeline report (G2 evidence)
+      — done 2026-11-16: branch pushed (2bc8ed1), PR #37 OPEN · MERGEABLE ·
+      CLEAN; run 43799584379 green on both jobs after 2 transient-checkout
+      re-runs; `docs/ai4se-plugins/20261116-114859-pipeline-report.md` +
+      `ci-report.md` E1 slot recorded (E1 全绿)
 - [ ] 7.2 G2 decision record by named VL; then P5 change summary, G3, archive
       via `/sdd:living-merge` — merge order REQ-019 V4 first; execute F1
       write-sync alignment before/at that merge (g1-decision.md)
