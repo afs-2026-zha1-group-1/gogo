@@ -132,7 +132,7 @@ export default function MainPlan({ tripId }: MainPlanProps) {
           overruns: data.overruns ?? [],
         })
       } else if (status === 409 && data?.code === 'STALE_DRAFT') {
-        setActionError(data.message)
+        setActionError(data.message ?? 'The draft is stale and the latest version was refreshed.')
         await refreshPlan()
       } else if (status === 409 && data?.code === 'ALREADY_CONFIRMED') {
         await refreshPlan()

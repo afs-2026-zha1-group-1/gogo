@@ -19,10 +19,14 @@ export default function LoginPage() {
     setError('')
     try {
       const result = await login(email, password)
-      if (!result.ok || !result.data) {
+      if (!result.ok) {
         setError(result.data?.code === 'INVALID_CREDENTIALS'
           ? '邮箱或密码不正确。'
           : '登录失败，请稍后重试。')
+        return
+      }
+      if (!result.data) {
+        setError('登录失败，请稍后重试。')
         return
       }
       if (pendingInvite) {

@@ -1,14 +1,26 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type FocusEvent } from 'react'
 import QRCode from 'qrcode'
-import { api } from '../api'
+import { api, errorMessage } from '../api'
 import Icon from '../Icons'
+import type { InvitationIssue } from '../types'
 import { useAuth } from '../features/auth/AuthProvider'
 
-function invitationUrl(joinPath) {
+interface InvitationPanelProps {
+  tripId: number
+  isOrganizer: boolean
+}
+
+type InvitationState =
+  | { kind: 'loading' }
+  | { kind: 'denied'; message?: string }
+  | { kind: 'failed'; message: string | undefined }
+  | { kind: 'ready'; invitation: InvitationIssue }
+
+function invitationUrl(joinPath: string): string {
   return `${window.location.origin}${window.location.pathname}#${joinPath}`
 }
 
-async function copyText(text, fallbackField) {
+async function copyText(text: string, fallbackField: HTMLInputElement | null): Promise<void> {
   if (navigator.clipboard?.writeText) {
     try {
       await navigator.clipboard.writeText(text)
@@ -23,30 +35,31 @@ async function copyText(text, fallbackField) {
   }
 }
 
-export default function InvitationPanel({ tripId, isOrganizer }) {
+export default function InvitationPanel({ tripId, isOrganizer }: InvitationPanelProps) {
   const { account } = useAuth()
-  const [state, setState] = useState({ kind: isOrganizer ? 'loading' : 'denied' })
-  const [copied, setCopied] = useState(false)
-  const [qrFailed, setQrFailed] = useState(false)
-  const canvasRef = useRef(null)
-  const urlRef = useRef(null)
+  const [state, setState] = useState<InvitationState>({ kind: isOrganizer ? 'loading' : 'denied' })
+  const [copied, setCopied] = useState<boolean>(false)
+  const [qrFailed, setQrFailed] = useState<boolean>(false)
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const urlRef = useRef<HTMLInputElement | null>(null)
 
   const load = useCallback(() => {
     let active = true
     setState({ kind: 'loading' })
-    api(`/api/trips/${tripId}/invitation`, { method: 'POST' })
-      .then(({ status, ok, data }) => {
+    api<InvitationIssue>(`/api/trips/${tripId}/invitation`, { method: 'POST' })
+      .then((result) => {
         if (!active) return
-        if (ok && data) {
-          setState({ kind: 'ready', invitation: data })
-        } else if (status === 403) {
-          setState({ kind: 'denied', message: data?.message })
+        if (result.ok && result.data) {
+          setState({ kind: 'ready', invitation: result.data })
+        } else if (!result.ok && result.status === 403) {
+          setState({ kind: 'denied', message: result.data?.message })
         } else {
-          setState({ kind: 'failed', message: data?.message ?? `HTTP ${status}` })
+          const message = result.ok ? undefined : result.data?.message
+          setState({ kind: 'failed', message: message ?? `HTTP ${result.status}` })
         }
       })
-      .catch((cause) => {
-        if (active) setState({ kind: 'failed', message: cause.message })
+      .catch((cause: unknown) => {
+        if (active) setState({ kind: 'failed', message: errorMessage(cause) })
       })
     return () => {
       active = false
@@ -71,7 +84,7 @@ export default function InvitationPanel({ tripId, isOrganizer }) {
     }).catch(() => setQrFailed(true))
   }, [state])
 
-  async function copy() {
+  async function copy(): Promise<void> {
     if (state.kind !== 'ready') return
     try {
       await copyText(invitationUrl(state.invitation.joinPath), urlRef.current)
@@ -135,7 +148,7 @@ export default function InvitationPanel({ tripId, isOrganizer }) {
               className="url"
               readOnly
               value={invitationUrl(state.invitation.joinPath)}
-              onFocus={(event) => event.target.select()}
+              onFocus={(event: FocusEvent<HTMLInputElement>) => event.currentTarget.select()}
               aria-label="Invitation URL"
             />
             <button className="iconbtn" type="button" onClick={copy} aria-label="Copy invitation link">

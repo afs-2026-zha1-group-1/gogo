@@ -1,3 +1,16 @@
+export interface GreetingResponse {
+  message: string
+}
+
+export interface TripCreatePayload {
+  name: string
+  destination: string
+  startDate: string
+  endDate: string
+  startLocation: string
+  endLocation: string
+}
+
 export interface Trip {
   id: number
   name: string
@@ -37,11 +50,17 @@ export interface ApiError {
   message?: string
 }
 
-export interface ApiResult<T> {
-  status: number
-  ok: boolean
-  data: (T & ApiError) | null
-}
+export type ApiResult<T> =
+  | {
+      status: number
+      ok: true
+      data: T | null
+    }
+  | {
+      status: number
+      ok: false
+      data: (ApiError & Partial<T>) | null
+    }
 
 export type TabId = 'dashboard' | 'trips' | 'split' | 'members'
 

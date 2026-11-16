@@ -1,29 +1,45 @@
 import { useEffect, useState } from 'react'
-import { api } from '../api'
+import { api, errorMessage } from '../api'
 import Icon from '../Icons'
-import InvitationPanel from './InvitationPanel.jsx'
+import InvitationPanel from './InvitationPanel'
+import type { Trip } from '../types'
 import { useAuth } from '../features/auth/AuthProvider'
 
-export default function TripDetails({ tripId }) {
-  const { account } = useAuth()
-  const [state, setState] = useState({ kind: 'loading' })
+interface TripDetailsProps {
+  tripId: number
+}
 
-  const organizerName = (organizerId) =>
-    organizerId === account?.id ? account.name : '组织者'
+type TripState =
+  | { kind: 'loading' }
+  | { kind: 'ready'; trip: Trip }
+  | { kind: 'denied'; message?: string }
+  | { kind: 'missing'; message?: string }
+  | { kind: 'failed'; message: string | undefined }
+
+export default function TripDetails({ tripId }: TripDetailsProps) {
+  const { account } = useAuth()
+  const organizerName = (organizerId: number) => organizerId === account?.id ? account.name : '组织者'
+  const [state, setState] = useState<TripState>({ kind: 'loading' })
 
   useEffect(() => {
     let active = true
     setState({ kind: 'loading' })
-    api(`/api/trips/${tripId}`)
-      .then(({ status, ok, data }) => {
+    api<Trip>(`/api/trips/${tripId}`)
+      .then((result) => {
         if (!active) return
-        if (ok && data) setState({ kind: 'ready', trip: data })
-        else if (status === 403) setState({ kind: 'denied', message: data?.message })
-        else if (status === 404) setState({ kind: 'missing', message: data?.message })
-        else setState({ kind: 'failed', message: data?.message ?? `HTTP ${status}` })
+        if (result.ok && result.data) {
+          setState({ kind: 'ready', trip: result.data })
+        } else if (!result.ok && result.status === 403) {
+          setState({ kind: 'denied', message: result.data?.message })
+        } else if (!result.ok && result.status === 404) {
+          setState({ kind: 'missing', message: result.data?.message })
+        } else {
+          const message = result.ok ? undefined : result.data?.message
+          setState({ kind: 'failed', message: message ?? `HTTP ${result.status}` })
+        }
       })
-      .catch((cause) => {
-        if (active) setState({ kind: 'failed', message: cause.message })
+      .catch((cause: unknown) => {
+        if (active) setState({ kind: 'failed', message: errorMessage(cause) })
       })
     return () => {
       active = false
@@ -35,7 +51,7 @@ export default function TripDetails({ tripId }) {
   async function confirmMain() {
     setConfirming(true)
     try {
-      const { ok, data } = await api(`/api/trips/${tripId}/main-plan:confirm`, { method: 'POST' })
+      const { ok, data } = await api<Trip>(`/api/trips/${tripId}/main-plan:confirm`, { method: 'POST' })
       if (ok && data) setState({ kind: 'ready', trip: data })
     } finally {
       setConfirming(false)

@@ -1,18 +1,19 @@
 import { useEffect, useState } from 'react'
-import { api } from '../api'
+import { api, errorMessage } from '../api'
 import Icon from '../Icons'
+import type { GreetingResponse } from '../types'
 
 export default function Home() {
-  const [greeting, setGreeting] = useState('')
-  const [error, setError] = useState('')
+  const [greeting, setGreeting] = useState<string>('')
+  const [error, setError] = useState<string>('')
 
   useEffect(() => {
-    api('/api/greeting')
-      .then(({ ok, data }) => {
-        if (!ok || !data) throw new Error('request failed')
-        setGreeting(data.message)
+    api<GreetingResponse>('/api/greeting')
+      .then((result) => {
+        if (!result.ok || !result.data) throw new Error('request failed')
+        setGreeting(result.data.message)
       })
-      .catch((cause) => setError(`Failed to load the greeting: ${cause.message}`))
+      .catch((cause: unknown) => setError(`Failed to load the greeting: ${errorMessage(cause)}`))
   }, [])
 
   return (
