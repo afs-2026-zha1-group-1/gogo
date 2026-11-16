@@ -32,7 +32,7 @@ function Screen({ children }: { children: ReactNode }) {
 }
 
 export default function Join({ token }: JoinProps) {
-  const { status, account, setPendingInvite } = useAuth()
+  const { status, account, setPendingInvite, clearPendingInvite } = useAuth()
   const [state, setState] = useState<JoinState>({ kind: 'loading' })
   const [busy, setBusy] = useState<boolean>(false)
   const [actionError, setActionError] = useState<string>('')
@@ -59,6 +59,10 @@ export default function Join({ token }: JoinProps) {
       active = false
     }
   }, [token])
+
+  useEffect(() => {
+    if (state.kind !== 'loading') clearPendingInvite()
+  }, [state.kind, clearPendingInvite])
 
   async function accept() {
     if (state.kind !== 'ready') return

@@ -21,6 +21,7 @@
 | E12 | Alice 访问 `/trips/1/split` | split 页面加载，只读“已登录 · Alice”，无身份栏 | snapshot `url=.../trips/1/split` |
 | E13 | split 发起草稿 | 返回业务错误 `MAIN_PLAN_NOT_CONFIRMED`（非 CSRF 403），证明 session+CSRF 生效 | snapshot “操作被拒绝 / MAIN_PLAN_NOT_CONFIRMED” |
 | E14 | 后端重启后访问受保护路由 | session 失效 → 登录页；重新登录可用 | 重启后 snapshot `#/login` |
+| E15 | 未登录登录页布局 | 与仪表盘同款移动壳：`.app` 430px 居中、appbar + “一起出发” hero + 卡片表单；非全宽大屏 | `getBoundingClientRect().width = 430`（viewport 876） |
 
 说明：Tomcat 的 session 超时粒度为分钟，短超时 profile 在 API 层以“失效 session
 → 401”等价验证；浏览器用后端重启模拟过期。G1 C5 的 CSRF/公开面/短超时设计见
