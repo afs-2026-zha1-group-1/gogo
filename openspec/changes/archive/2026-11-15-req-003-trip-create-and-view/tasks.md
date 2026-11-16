@@ -66,9 +66,11 @@
       VL Elian Jiang (explicit in-session choice; the earlier Johnson verdict
       was withdrawn before recording)
 - [x] 6.3 Update `README.md` run instructions and registry/handoff rows
-- [ ] 6.4 P5 change summary, G3 draft and archive via `/sdd:living-merge` —
-      routed to teammates by the user on 2026-11-15; G3 needs a named SA
-- [ ] 6.5 Follow-up (post-G2, VL-directed): align frontend with
+- [x] 6.4 P5 change summary, G3 draft and archive via `/sdd:living-merge` —
+      change summary written; archived 2026-11-15 as
+      `openspec/changes/archive/2026-11-15-req-003-trip-create-and-view/`;
+      G3 decision tracked in 7.3
+- [x] 6.5 Follow-up (post-G2, VL-directed): align frontend with
       `ui-design-reference/` screens 02/03 component language — header bar with
       back + subtitle, icon labels, two-column date/location rows, info note,
       bottom gradient CTA, teal hero card and icon row list on details; keep
@@ -80,8 +82,9 @@
 - [x] 7.1 P0–P2 artifacts and G1 Pass record (IO Emily + SA Johnson)
 - [x] 7.2 P3 `atdd-design.md`, `design.md`, this `tasks.md`, alignment self-check
       below; P3 quality report persisted
-- [ ] 7.3 Record G2/G3 only from named human statements; the agent never
-      self-signs a gate
+- [x] 7.3 Record G2/G3 only from named human statements; the agent never
+      self-signs a gate (G2 recorded 2026-11-15, VL Elian Jiang; G3 Pass
+      recorded 2026-11-15, SA Johnson)
 
 ## Alignment self-check (Spec ↔ Design ↔ Tasks ↔ ATDD)
 
