@@ -3,12 +3,13 @@
 ## Context
 
 US-013 adds a member-only roster read to the existing `trips` capability and
-places Screen 7 inside the merged app shell. The baseline (`group1/main`
-`729a889`) already contains `app_user`, `trip`, `trip_member` (`V2`), the
-`X-User-Id` scaffold, the `trips` error vocabulary, the `app-shell` dock and
-the 成员 placeholder. G1 is **Pass** (2026-11-16, IO Emily + SA Johnson); the
-delta fixes 2 requirements / 8 + 3 scenarios and the fixtures fix the wire
-contract.
+places Screen 7 inside the merged app shell. The baseline is the merged
+`group1/main` (`135d3df`): `app_user`, `trip`, `trip_member` (`V2`), US-066
+account/session auth (`AccountPrincipal`, `V6` credentials), the `trips` error
+vocabulary, `V4` splits, the shipped `#/split` entry and the 成员 placeholder.
+G1 is **Pass** (2026-11-16, IO Emily + SA Johnson); the delta was amended under
+G2 conditions C1/C4 for the merged auth/session baseline and the VL re-records
+G2.
 
 Links: [ATDD design](atdd-design.md) · [trips delta](specs/trips/spec.md) ·
 [app-shell delta](specs/app-shell/spec.md) · [tasks](tasks.md) ·
@@ -17,13 +18,13 @@ Links: [ATDD design](atdd-design.md) · [trips delta](specs/trips/spec.md) ·
 
 ## Goals / Non-Goals
 
-**Goals:** one member-gated roster endpoint with a deterministic projection;
-Screen 7 with organizer identification and the mandatory states; the 成员 tab
-renders the real list instead of a placeholder; no migration and no write path.
+**Goals:** one authenticated member roster endpoint with a deterministic
+projection; Screen 7 with organizer identification and the mandatory states; the
+成员 tab renders the real list; no migration and no write path.
 
 **Non-Goals:** readiness/preferences/budgets/generation; invite/remove/role
-changes; authentication; list-all; durable trip selection across reloads; new
-frontend dependencies or CI jobs. Each has a reverse check in the
+changes; changing the US-066 auth flow; list-all; durable trip selection across
+reloads; new frontend dependencies or CI jobs. Each has a reverse check in the
 [ATDD design](atdd-design.md).
 
 ## Decisions
@@ -42,12 +43,14 @@ Records: `TripMemberListResponse(long tripId, List<TripMember> members)` and
 *Alternatives rejected:* a bare array (loses the trip context and is harder to
 extend) and a separate `organizerId` field (redundant with the per-row flag).
 
-**D3 — Access control: identity → trip existence → membership.**
-Reuse `caller()` (401 `USER_REQUIRED`), `findById` (404 `TRIP_NOT_FOUND`) and
-`isMember` (403 `NOT_A_MEMBER`), matching `TripController.read`. The denial body
-is the existing `{code, message}` with a generic message, so no member identity
-leaks. *Alternative rejected:* checking membership before trip existence, which
-would turn an unknown trip into a 403 and break the `trips` precedent.
+**D3 — Access control: authentication → trip existence → membership.**
+Use the `@AuthenticationPrincipal AccountPrincipal` supplied by US-066;
+`SecurityConfig` returns 401 `USER_REQUIRED` for an anonymous request, then
+`findById` returns 404 `TRIP_NOT_FOUND` and `isMember` returns 403
+`NOT_A_MEMBER`, matching `TripController.read`. The denial body is the existing
+`{code, message}` with a generic message, so no member identity leaks.
+*Alternative rejected:* checking membership before trip existence, which would
+turn an unknown trip into a 403 and break the `trips` precedent.
 
 **D4 — Read-only query, no migration.**
 `TripRepository.findMembers(tripId)` joins `trip_member` to `app_user` and
@@ -67,11 +70,12 @@ ORDER BY u.id
 ```
 
 **D5 — Frontend route and trip selection: keep `#/members`, use the app-level
-last-opened trip.**
+last-opened trip and the signed-in session.**
 The app-shell contract fixes `#/members` as the 成员 tab target. The page
-receives the last trip id set when the details route opened; with no trip it
-shows a guidance state linking back to 行程. No durable storage is added in
-this change (OQ-2 deferred). *Alternative rejected:* `/trips/<id>/members`,
+receives the last trip id set when the details route opened; the shared
+`api()` helper sends the session cookies and CSRF token, so no `userId` prop is
+passed. With no trip it shows a guidance state linking back to 行程. No durable
+storage is added (OQ-2 deferred). *Alternative rejected:* `/trips/<id>/members`,
 which changes the shell contract and the dock target.
 
 **D6 — Screen 7 scope and states.**
@@ -84,25 +88,25 @@ members only. *Alternative rejected:* copying Screen 7 wholesale, which would
 add US-026/US-027/US-031 behavior without an AC.
 
 **D7 — app-shell integration: replace only the 成员 placeholder.**
-`App.tsx` renders `Members` for `route.page === 'members'` and keeps
-`Placeholder` for `#/split`. The dock order, active-tab mapping and identity
-scaffold are untouched. The MODIFIED `Placeholder tabs` requirement records the
-supersession; the Purpose prose is reconciled at P5.
+`App.tsx` renders `Members` for `route.page === 'members'`; `#/split` keeps the
+shipped split entry shipped by main. The dock order, active-tab mapping and
+signed-in account bar are untouched. The MODIFIED `Placeholder tabs` requirement
+records both real destinations; the Purpose prose is reconciled at P5.
 
 **D8 — Testing: MockMvc API tests plus a manual browser checklist.**
 `TripMembersApiTest` uses its own in-memory SQLite database, the merged
-migrations and the V2 seed. The browser checklist lives in
+migrations V1–V6 and the V2/V6 seeds; identity is driven with `TestAuth.asUser`
+(the merged test convention), not `X-User-Id`. The browser checklist lives in
 `docs/feedback/e2e-us-013.md`; no Playwright/POM generator and no new frontend
-test framework is introduced (`package.json` has none today).
+test framework is introduced.
 *Alternative rejected:* adding Vitest/RTL for one screen, which expands scope
 and dependencies.
 
-**D9 — Follow the merged frontend baseline, not the planned AntD/TanStack
-stack.**
-The stack plan names Ant Design 5 + TanStack Query v5, but the merged frontend
-uses token CSS and a plain `api()` helper; US-031 follows the same pattern. This
-read screen does too. Adopting the planned stack is US-065/US-066, not this
-story. Recorded as a known deviation in the proposal (R35).
+**D9 — Follow the merged frontend baseline.**
+The merged frontend combines its shell/token CSS with shared UI primitives and
+the session-aware `api()` helper. This read screen uses those conventions and
+adds no dependency; the design-system migration remains a separate track.
+Recorded as R35 in the proposal.
 
 **D10 — Error bodies stay `{code, message}`; only `code` is contractual.**
 The generic message is "Caller is not a member of this trip" (or the existing
@@ -112,9 +116,11 @@ identity values.
 ## Risks
 
 - Screen 7 scope creep (R30) — guarded by S10/U1 and the hint copy.
-- Placeholder contract (R31) — MODIFIED requirement; P5 purpose reconciliation.
-- Split-branch `MEMBER_REQUIRED` divergence (R32) — follow merged
-  `USER_REQUIRED`, flag at split merge.
+- Placeholder contract (R31/C3) — MODIFIED requirement covers both real tabs;
+  P5 purpose reconciliation.
+- `USER_REQUIRED` vs `MEMBER_REQUIRED` (R32/C4) — accepted divergence, follow-up
+  F2; no split code change.
 - No durable trip selection (R33) — no-trip guidance state is contractual.
-- Stack deviation (R35) — recorded, separate migration.
+- Design-system migration (R35) — separate track.
 - Denial-body leakage (R36) — generic message + S3 absence assertion.
+- Auth arrived after G1 (R38) — delta amended under G2 C1/C4; VL re-records G2.

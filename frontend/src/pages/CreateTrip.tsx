@@ -1,19 +1,13 @@
-import { useState } from 'react'
-import type { ChangeEvent, FormEvent } from 'react'
-import { api } from '../api'
+import { useState, type ChangeEvent, type FormEvent } from 'react'
+import { api, errorMessage } from '../api'
 import Icon from '../Icons'
-import type { Trip } from '../types'
+import type { Trip, TripCreatePayload } from '../types'
 
-interface TripForm {
-  name: string
-  destination: string
-  startDate: string
-  endDate: string
-  startLocation: string
-  endLocation: string
+interface CreateTripProps {
+  backHref: string
 }
 
-const EMPTY: TripForm = {
+const EMPTY: TripCreatePayload = {
   name: '',
   destination: '',
   startDate: '',
@@ -22,13 +16,13 @@ const EMPTY: TripForm = {
   endLocation: '',
 }
 
-export default function CreateTrip({ userId, backHref }: { userId: number; backHref: string }) {
-  const [form, setForm] = useState<TripForm>(EMPTY)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-  const [dateError, setDateError] = useState(false)
+export default function CreateTrip({ backHref }: CreateTripProps) {
+  const [form, setForm] = useState<TripCreatePayload>(EMPTY)
+  const [busy, setBusy] = useState<boolean>(false)
+  const [error, setError] = useState<string>('')
+  const [dateError, setDateError] = useState<boolean>(false)
 
-  const set = (field: keyof TripForm) => (event: ChangeEvent<HTMLInputElement>) => {
+  const set = (field: keyof TripCreatePayload) => (event: ChangeEvent<HTMLInputElement>) => {
     const next = { ...form, [field]: event.target.value }
     setForm(next)
     if (next.startDate && next.endDate) {
@@ -44,14 +38,15 @@ export default function CreateTrip({ userId, backHref }: { userId: number; backH
     setBusy(true)
     setError('')
     try {
-      const { status, ok, data } = await api<Trip>('/api/trips', { userId, method: 'POST', body: form })
-      if (ok && data) {
-        window.location.hash = `#/trips/${data.id}`
+      const result = await api<Trip>('/api/trips', { method: 'POST', body: form })
+      if (result.ok && result.data) {
+        window.location.hash = `#/trips/${result.data.id}`
         return
       }
-      setError(data?.message ? `${data.code}: ${data.message}` : `Request failed (HTTP ${status})`)
-    } catch (cause) {
-      setError(`Failed to reach the server: ${(cause as Error).message}`)
+      const data = result.ok ? null : result.data
+      setError(data?.message ? `${data.code}: ${data.message}` : `Request failed (HTTP ${result.status})`)
+    } catch (cause: unknown) {
+      setError(`Failed to reach the server: ${errorMessage(cause)}`)
     } finally {
       setBusy(false)
     }

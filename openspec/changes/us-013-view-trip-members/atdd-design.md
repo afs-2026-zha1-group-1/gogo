@@ -24,8 +24,8 @@ to apply-time unit TDD.
 | S1 | Ben reads the roster (M1) | API | consistency | single endpoint; four rows, ascending ids, organizer flag |
 | S2 | Organizer reads the same roster (M2) | API | — | same projection; organizer is not privileged |
 | S3 | Eve is denied without identities (M3) | API | security (advisory) | 403 `NOT_A_MEMBER`; body has no `userId` / `displayName` |
-| S4-N | Missing identity (M4) | API | security (advisory) | 401 `USER_REQUIRED`; no member data |
-| S5-N | Unknown identity (M5) | API | security (advisory) | 401 `USER_REQUIRED`; no member data |
+| S4-N | No authenticated session (M4) | API | security (advisory) | 401 `USER_REQUIRED`; no member data |
+| S5-N | Retired `X-User-Id` header only (M5) | API | security (advisory) | 401 `USER_REQUIRED`; the header does not authenticate |
 | S6-N | Unknown trip, member caller (M6) | API | — | 404 `TRIP_NOT_FOUND` |
 | S7-N | Unknown trip, outsider caller (M7) | API | — | 404 before 403 (precedence) |
 | S8 | Joined member appears once (M8) | API | consistency | test-only `trip_member` insert; five rows, Eve once |
@@ -71,14 +71,14 @@ every contractual behavior is observable at the API layer.
   Users 1–5 and the fixture trip come from the merged `V2` seed.
 - Each test class runs against its own isolated SQLite database
   (`jdbc:sqlite:file:trip-members-test?mode=memory&cache=shared`,
-  `maximum-pool-size=1`) migrated by Flyway V1–V3/V5. The roster read is
-  side-effect free; the joined-member case inserts `trip_member (trip, 5)` and
-  deletes it in `finally`.
+  `maximum-pool-size=1`) migrated by Flyway V1–V6. Identity is driven with the
+  merged `TestAuth.asUser` helper; `X-User-Id` no longer authenticates. The
+  roster read is side-effect free; the joined-member case inserts
+  `trip_member (trip, 5)` and deletes it in `finally`.
 - No migration, no seed change. Trip ids and row ids are read from the seed
   lookup / response, never hard-coded.
-- E2E uses the dev database seeded by V2; the no-trip state is reached by
-  opening `#/members` before any trip; the denied state by switching the
-  scaffold identity to Eve.
+- E2E uses the dev database seeded by V2/V6; sign in as Eve for the denied
+  state and as Ben for the roster.
 
 ## 5. Non-goals
 

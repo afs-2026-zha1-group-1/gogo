@@ -51,16 +51,17 @@ public class TripRepository {
         long tripId = keyHolder.getKey().longValue();
         jdbc.update("INSERT INTO trip_member (trip_id, user_id) VALUES (?, ?)", tripId, organizerId);
         return new TripResponse(tripId, request.name(), request.destination(), request.startDate(),
-                request.endDate(), request.startLocation(), request.endLocation(), organizerId);
+                request.endDate(), request.startLocation(), request.endLocation(), organizerId, false);
     }
 
     public Optional<TripResponse> findById(long tripId) {
         List<TripResponse> rows = jdbc.query(
-                "SELECT id, name, destination, start_date, end_date, start_location, end_location, organizer_id "
+                "SELECT id, name, destination, start_date, end_date, start_location, end_location, organizer_id, main_plan_confirmed "
                         + "FROM trip WHERE id = ?",
                 (rs, rowNum) -> new TripResponse(rs.getLong("id"), rs.getString("name"),
                         rs.getString("destination"), rs.getString("start_date"), rs.getString("end_date"),
-                        rs.getString("start_location"), rs.getString("end_location"), rs.getLong("organizer_id")),
+                        rs.getString("start_location"), rs.getString("end_location"), rs.getLong("organizer_id"),
+                        rs.getInt("main_plan_confirmed") != 0),
                 tripId);
         return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }
@@ -83,5 +84,10 @@ public class TripRepository {
                         rs.getInt("organizer") != 0),
                 tripId);
         return new TripMemberListResponse(tripId, members);
+    }
+
+    /** Confirms the trip's main plan so the split flow (REQ-004 precondition) can start. */
+    public int confirmMainPlan(long tripId) {
+        return jdbc.update("UPDATE trip SET main_plan_confirmed = 1 WHERE id = ?", tripId);
     }
 }

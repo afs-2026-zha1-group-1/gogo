@@ -43,7 +43,7 @@
 | 迁移 | Flyway（core + SQLite 社区模块） | 11.x | 两模块版本严格一致 |
 | 连接池 | HikariCP | 随 Boot | `maximum-pool-size=1`（硬约束） |
 | 前端 | React + TypeScript + Vite | 19 / 5.x / 7.x | SPA |
-| UI | Ant Design | 5.x | 表单、列表、日期选择直接用 |
+| UI | shadcn/ui（`components.json`，new-york 风格）+ Tailwind CSS | Tailwind 4.3.x | 组件源码在 `frontend/src/components/ui/`，主题令牌在 `src/index.css` 的 `@theme`；不引入第二个 UI 库（Ant Design 5 为旧口径，2026-11-15 由 G1 C4 / Leo 裁定取代） |
 | 数据请求 | TanStack Query | v5 | 缓存 + 轮询（`refetchInterval`） |
 | 路由 | React Router | 7.x | 5 个页面足够 |
 | 全局状态 | 不引入 | — | Query 缓存 + Context 已够；Zustand 留到 R2 |
@@ -65,7 +65,6 @@ user journey/
 │       │   ├── trip/              # Trip/TripMember：Controller·Service·Repository·dto
 │       │   ├── preference/        # 偏好录入与对比
 │       │   ├── plan/              # PlanNode + PlanGenerator（Llm / Template 两实现）
-│       │   ├── catalog/           # 景点与标签：只读种子数据 + 候选打分
 │       │   └── common/            # ApiResponse、GlobalExceptionHandler、WebConfig
 │       └── resources/
 │           ├── application.yml
@@ -80,10 +79,9 @@ user journey/
 
 分层原则：Controller 只做参数校验与 DTO 转换，Service 承载用例，Repository 只放 SQL。**领域逻辑不跨包直接调 Repository**，为 R2 拆 Modulith 留缝。
 
-## 5. 数据模型（7 张表）
+## 5. 数据模型（4 张表）
 
-> 完整 ER 图、逐列含义、外键与索引清单见 `data-model.md`。
-> 4 张业务主表（`trip` / `trip_member` / `member_preference` / `plan_node`）+ 3 张景点库表（`attraction` / `tag` / `attraction_tag`）。
+> 完整 ER 图、逐字段明细、外键与索引清单见 `data-model.md`。
 
 SQLite 类型约定：时间一律 `TEXT`（ISO-8601 UTC，如 `2026-11-13T10:00:00Z`）；金额用 `INTEGER` 分；坐标用 `REAL`；结构化字段用 `TEXT` 存 JSON。
 
@@ -92,10 +90,7 @@ SQLite 类型约定：时间一律 `TEXT`（ISO-8601 UTC，如 `2026-11-13T10:00
 | `trip` | `id`(PK, UUID TEXT), `title`, `destination`, `start_date`, `end_date`, `invite_code`(UNIQUE), `plan_version`(INTEGER, 当前方案版本), `created_at` | 一个行程一行 |
 | `trip_member` | `id`(PK), `trip_id`(FK), `display_name`, `role`(`owner`/`member`), `plan_ack_version`(INTEGER, 已确认的方案版本), `joined_at` | 轻量身份：不带密码 |
 | `member_preference` | `id`(PK), `trip_id`, `member_id`, `kind`(`interest`/`must_do`/`constraint`/`budget`), `payload`(TEXT JSON), `updated_at` | 一张表装四类偏好，避免四张宽表 |
-| `plan_node` | `id`(PK), `trip_id`, `plan_version`, `parent_id`(自引用), `branch_id`(默认 `main`), `node_type`(`day`/`activity`), `title`, `attraction_id`(FK, 可空), `start_at`, `end_at`, `location_name`, `lat`, `lng`, `sort_order`, `created_at` | 方案是树不是列表 |
-| `attraction` | `id`(PK, 业务 ID 如 `hz_xihu`), `city`(与 `trip.destination` 同词表), `name`, `summary`, `stay_minutes`, `price_cny`, `open_time`, `close_time`, `lat`, `lng`, `cover_url` | 只读种子数据：10 城 × 8~10 个景点 |
-| `tag` | `code`(PK), `name`, `dimension`(`interest`/`constraint`), `aliases`(JSON), `sort_order` | 受控词表，用户偏好与景点共用同一套码 |
-| `attraction_tag` | `attraction_id`(PK,FK), `tag_code`(PK,FK), `weight`(1~5) | 景点打标；`weight` 是匹配打分的权重 |
+| `plan_node` | `id`(PK), `trip_id`, `plan_version`, `parent_id`(自引用), `branch_id`(默认 `main`), `node_type`(`day`/`activity`), `title`, `start_at`, `end_at`, `location_name`, `lat`, `lng`, `sort_order`, `created_at` | 方案是树不是列表 |
 
 要点：
 
@@ -103,7 +98,6 @@ SQLite 类型约定：时间一律 `TEXT`（ISO-8601 UTC，如 `2026-11-13T10:00
 - `parent_id` + `branch_id` **建表时就留好**（SQLite 改表能力弱，R2 的 Fork 直接复用，不用迁移结构）。
 - 方案重新生成时 `trip.plan_version + 1`，旧版本行不删（天然可回溯、可对比）。
 - 不做软删除、不做审计字段堆叠，只留 `created_at`/`updated_at`。
-- 用户偏好的 `interest.tags` 只存 `tag.code`（不存自由文本）；景点池仅 80~100 行，启动后全量载入内存打分，匹配不落 SQL（打分规则见 `data-model.md` 第 6 章）。
 
 ## 6. API 清单（MVP）
 
@@ -121,9 +115,6 @@ SQLite 类型约定：时间一律 `TEXT`（ISO-8601 UTC，如 `2026-11-13T10:00
 | POST | `/api/trips/{tripId}/plan:generate` | 生成主线方案（同步，前端 30s 超时） |
 | GET | `/api/trips/{tripId}/plan` | 当前版本 `plan_node` 树 |
 | POST | `/api/trips/{tripId}/plan:ack` | 当前成员确认当前方案版本 |
-| GET | `/api/tags` | 兴趣/约束标签字典（前端选择器数据源） |
-| GET | `/api/attractions/cities` | 可选目的地城市（`DISTINCT city`） |
-| GET | `/api/attractions?city=&tags=` | 候选景点（必做项搜索/调试用，方案生成内部复用） |
 
 ## 7. 关键实现约定
 
@@ -186,7 +177,6 @@ spring:
 - 契约先行：LLM 只输出受约束的 JSON（按天/按活动，含 `start_at`/`end_at`/`title`）；后端用 Jackson 反序列化 + Jakarta Validation 校验，不合法即丢弃。
 - 必须可降级：`PlanGenerator` 接口两实现——`LlmPlanGenerator`、`TemplatePlanGenerator`（按偏好模板拼装）。LLM 超时/报错/校验失败自动落模板，保证演示永远有结果。
 - 一次生成 = 一次调用，不做多轮反思、不做函数调用、不做 agent 编排（R2 再谈求解器）。
-- 候选池先行：生成前由 `catalog` 按「目的地 + 成员标签打分」产出 Top 12 景点，作为**唯一允许引用**的景点集合；LLM 只做排序与串联，不得自创景点。
 
 **前后端联调**
 
@@ -221,15 +211,14 @@ cd frontend; npm install; npm run dev
 
 M0 通过后，后续每个 Activity 只追加 Flyway 迁移与业务包，不回改脚手架配置。
 
-## 9. 里程碑（约 10 人日，2 人并行）
+## 9. 里程碑（约 8.5 人日，2 人并行）
 
 | 阶段 | 交付 | 人日 |
 | --- | --- | --- |
 | M0 | 脚手架 Hello World 全链路（含 Flyway/SQLite/Vite 代理） | 0.5 |
 | M1 | Activity 1：建行程、邀请码加入、成员列表 | 2 |
-| M2 | Activity 2：偏好录入（标签选择器）+ 共同/差异对比 | 2 |
-| M2.5 | 景点库种子数据：10 城 80~100 景点 + 24 个标签（`V5`/`V6` 迁移） | 1 |
-| M3 | Activity 3：景点候选打分 + 方案生成（LLM + 模板降级）+ 方案页 + 确认 | 3.5 |
+| M2 | Activity 2：偏好录入 + 共同/差异对比 | 2 |
+| M3 | Activity 3：方案生成（LLM + 模板降级）+ 方案页 + 确认 | 3 |
 | M4 | 联调、错误态打磨、单机部署与备份脚本 | 1 |
 
 ## 10. 风险与对策
@@ -241,7 +230,6 @@ M0 通过后，后续每个 Activity 只追加 Flyway 迁移与业务包，不�
 | LLM 输出不可用 | 模板降级 + 30s 超时 + 生成结果落库后可人工微调（R2 再做编辑能力） |
 | 轻量身份被猜中 | 邀请码用 6 位大写字母数字且一码一行程；MVP 接受该风险，R2 换 JWT |
 | 多人同时确认方案 | `plan_ack_version` 与 `trip.plan_version` 条件更新，版本不一致返回 409 |
-| 景点/标签种子数据质量参差 | 景点 ID 用可读业务 ID 便于人工核对；每景点至少 1 个 `weight>=4` 标签；种子数据同样走迁移文件，改数据留版本 |
 
 ## 11. 已定决策（DR）
 
@@ -258,8 +246,6 @@ M0 通过后，后续每个 Activity 只追加 Flyway 迁移与业务包，不�
 | DR-09 | schema 变更由 Flyway 独占；"非目标：数据库迁移工具"仅指不引入第二套迁移工具/平台 | 双轨（Flyway + 手工 DDL/schema.sql）必然漂移；代价是必须显式对齐社区模块版本 |
 | DR-10 | `/api/greeting` 返回 JSON 包封套，不用 `text/plain` | M0 要验证的是统一契约与错误分支，纯文本会让前端 `client.ts` 之后返工；只有 `/api/health` 这类探针才用 `text/plain` |
 | DR-11 | 旧 `TODO.md` 归档为历史记录，不重写为 H2 口径 | H2 是已被 DR-03 替换的过渡选型，重写会把废弃选型拉回主线；任务权威源只保留本方案的里程碑与 DR |
-| DR-12 | 景点与偏好标签共用 `tag` 受控词表，景点侧用 `attraction_tag.weight`(1~5) 表达代表性 | 自由文本对不上；受控词代价是新增主题要同时补字典与打标，MVP 固定 24 个码 |
-| DR-13 | 景点库只读、随迁移种子化，全量内存打分，不建城市维表/搜索索引服务 | 80~100 行数据不值得优化；代价是景点规模上千后必须换成分页查询 + 缓存 |
 
 ## 12. R2 预留（本期不实现）
 
@@ -289,7 +275,9 @@ PostgreSQL/PostGIS 替换 SQLite（Repository 层已隔离 SQL 与方言）→ F
   - a read-only `member_preference` stand-in table is created `IF NOT EXISTS` so
     the migration is self-contained until REQ-019 lands its authoritative
     kind/payload `member_preference` at `V4` (this change renumbers to `V5` per
-    G1 C2).
+    G1 C2; REQ-019 renumbered again to `V6` when the two branches met, so on a
+    merged database this stand-in is the first and only declaration and the
+    preference migration is a no-op).
 - API (§6 listed `POST /plan:generate`, `GET /plan`, `POST /plan:ack`). The main
   plan instead ships four endpoints under the trip resource:
   - `POST /api/trips/{id}/main-plan` → 201 draft projection (readiness-gated;
@@ -314,3 +302,27 @@ PostgreSQL/PostGIS 替换 SQLite（Repository 层已隔离 SQL 与方言）→ F
   sketch of `client.ts` was not adopted; the shell already provides `api.ts`).
 
 No other section of this plan was modified by this change.
+
+## 14. US-066 登录与会话（2026-11-16，偏差记录）
+
+US-066 按 IO/SA 决策把 `X-User-Id` scaffold 替换为已验证登录；这是对 §2
+“MVP 不做账号体系 / 权限 / 注册登录”的明确偏差。
+
+- **技术栈新增**：Spring Security 6（`spring-boot-starter-security`）+ 服务端
+  HTTP Session（JSESSIONID，30 分钟空闲超时）+ BCrypt；不引入 JWT/Spring Session。
+- **数据模型新增**：`V6__create_account_credential.sql` 增加
+  `account_credential(user_id PK/FK, email UNIQUE, password_hash)`，只存 BCrypt
+  哈希；五个夹具账号（Alice…Eve）共享演示密码 `gogo-demo-2026`，不做注册。
+- **API 新增**：`POST /api/auth/login`、`GET /api/auth/me`、
+  `GET /api/auth/csrf`；CSRF cookie `XSRF-TOKEN` + `X-XSRF-TOKEN` 头。
+- **身份**：所有受保护 trip/invitation/main-plan/splits 端点从 session principal
+  取 `app_user.id`；`X-User-Id` 不再认证。公开面仍为 `/api/greeting`、
+  `GET /api/invitations/{token}`、登录/CSRF。
+- **错误契约**：auth/trip/invitation/main-plan + Security handler 用扁平
+  `{code,message}`；splits 保留 `{data,error}` 与 `401 MEMBER_REQUIRED` 作为唯一例外。
+- **前端**：`#/login` 与 React Router `/login` 共用登录页；hash shell 与 split
+  router 共用 AuthProvider；移除 scaffold 切换器与 split 身份栏；待邀请 token
+  存 sessionStorage，登录后恢复 preview，不自动 join。
+- **测试**：`AuthApiTest`、`SessionExpiryApiTest` 及全部既有 trip/invitation/
+  main-plan/splits API 测试改为 session/principal；C5 覆盖 CSRF、短超时（以失效
+  session 等价验证，Tomcat 超时粒度为分钟）与 greeting/preview 公开 matcher。

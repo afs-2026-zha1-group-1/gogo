@@ -3,8 +3,10 @@ package com.gogo.trip;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -17,7 +19,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
-// US-013: fixtures M1-M10; API layer per ATDD design.
+import com.gogo.auth.TestAuth;
+
+// US-013: fixtures M1-M10; API layer per ATDD design. Identity is the merged
+// account/session principal (US-066), not the retired X-User-Id scaffold.
 @SpringBootTest(classes = com.gogo.hello.HelloApplication.class, properties = {
         "spring.datasource.url=jdbc:sqlite:file:trip-members-test?mode=memory&cache=shared",
         "spring.datasource.hikari.maximum-pool-size=1"
@@ -50,7 +55,7 @@ class TripMembersApiTest {
     void memberReadsRoster() throws Exception {
         long tripId = seededTripId();
         long before = memberRows(tripId);
-        mockMvc.perform(get("/api/trips/{id}/members", tripId).header("X-User-Id", "2"))
+        mockMvc.perform(get("/api/trips/{id}/members", tripId).with(TestAuth.asUser("2")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.tripId").value(tripId))
                 .andExpect(jsonPath("$.members.length()").value(4))
@@ -65,7 +70,7 @@ class TripMembersApiTest {
     @Test
     void organizerReadsSameRoster() throws Exception {
         long tripId = seededTripId();
-        mockMvc.perform(get("/api/trips/{id}/members", tripId).header("X-User-Id", "1"))
+        mockMvc.perform(get("/api/trips/{id}/members", tripId).with(TestAuth.asUser("1")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.members.length()").value(4))
                 .andExpect(jsonPath("$.members[0].displayName").value("Alice"))
@@ -76,7 +81,7 @@ class TripMembersApiTest {
     @Test
     void outsiderDeniedWithoutIdentities() throws Exception {
         long tripId = seededTripId();
-        mockMvc.perform(get("/api/trips/{id}/members", tripId).header("X-User-Id", "5"))
+        mockMvc.perform(get("/api/trips/{id}/members", tripId).with(TestAuth.asUser("5")))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("NOT_A_MEMBER"))
                 .andExpect(jsonPath("$.members").doesNotExist())
@@ -86,7 +91,7 @@ class TripMembersApiTest {
     }
 
     @Test
-    void missingIdentityRejected() throws Exception {
+    void unauthenticatedRequestRejected() throws Exception {
         long tripId = seededTripId();
         mockMvc.perform(get("/api/trips/{id}/members", tripId))
                 .andExpect(status().isUnauthorized())
@@ -95,16 +100,26 @@ class TripMembersApiTest {
     }
 
     @Test
-    void unknownIdentityRejected() throws Exception {
+    void unknownPrincipalRejected() throws Exception {
         long tripId = seededTripId();
-        mockMvc.perform(get("/api/trips/{id}/members", tripId).header("X-User-Id", "999999"))
+        mockMvc.perform(get("/api/trips/{id}/members", tripId).with(TestAuth.asUser("999999")))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("USER_REQUIRED"));
     }
 
     @Test
+    void legacyIdentityHeadersDoNotAuthenticate() throws Exception {
+        long tripId = seededTripId();
+        for (String legacy : new String[] {" ", "abc", "2"}) {
+            mockMvc.perform(get("/api/trips/{id}/members", tripId).header("X-User-Id", legacy))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("USER_REQUIRED"));
+        }
+    }
+
+    @Test
     void unknownTripReported() throws Exception {
-        mockMvc.perform(get("/api/trips/999999/members").header("X-User-Id", "2"))
+        mockMvc.perform(get("/api/trips/999999/members").with(TestAuth.asUser("2")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("TRIP_NOT_FOUND"))
                 .andExpect(jsonPath("$.members").doesNotExist());
@@ -112,17 +127,17 @@ class TripMembersApiTest {
 
     @Test
     void outsiderUnknownTripReported() throws Exception {
-        mockMvc.perform(get("/api/trips/999999/members").header("X-User-Id", "5"))
+        mockMvc.perform(get("/api/trips/999999/members").with(TestAuth.asUser("5")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("TRIP_NOT_FOUND"));
     }
 
     @Test
-    void joinedMemberAppearsOnce() throws Exception {
+    void directMembershipInsertAppearsOnce() throws Exception {
         long tripId = seededTripId();
         jdbcTemplate.update("INSERT OR IGNORE INTO trip_member (trip_id, user_id) VALUES (?, 5)", tripId);
         try {
-            mockMvc.perform(get("/api/trips/{id}/members", tripId).header("X-User-Id", "5"))
+            mockMvc.perform(get("/api/trips/{id}/members", tripId).with(TestAuth.asUser("5")))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.members.length()").value(5))
                     .andExpect(jsonPath("$.members[4].userId").value(5))
@@ -134,12 +149,12 @@ class TripMembersApiTest {
     }
 
     @Test
-    void repeatedAcceptDoesNotDuplicateRow() throws Exception {
+    void repeatedDirectInsertDoesNotDuplicateRow() throws Exception {
         long tripId = seededTripId();
         jdbcTemplate.update("INSERT OR IGNORE INTO trip_member (trip_id, user_id) VALUES (?, 5)", tripId);
         jdbcTemplate.update("INSERT OR IGNORE INTO trip_member (trip_id, user_id) VALUES (?, 5)", tripId);
         try {
-            mockMvc.perform(get("/api/trips/{id}/members", tripId).header("X-User-Id", "2"))
+            mockMvc.perform(get("/api/trips/{id}/members", tripId).with(TestAuth.asUser("2")))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.members.length()").value(5))
                     .andExpect(jsonPath("$.members[4].displayName").value("Eve"));
@@ -151,7 +166,7 @@ class TripMembersApiTest {
     @Test
     void personalPlanningFieldsAreAbsent() throws Exception {
         long tripId = seededTripId();
-        mockMvc.perform(get("/api/trips/{id}/members", tripId).header("X-User-Id", "2"))
+        mockMvc.perform(get("/api/trips/{id}/members", tripId).with(TestAuth.asUser("2")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.members[0].ready").doesNotExist())
                 .andExpect(jsonPath("$.members[0].preferenceRevision").doesNotExist())
@@ -161,9 +176,13 @@ class TripMembersApiTest {
     }
 
     @Test
-    void writeVerbNotAllowed() throws Exception {
+    void nonReadVerbsNotAllowed() throws Exception {
         long tripId = seededTripId();
-        mockMvc.perform(post("/api/trips/{id}/members", tripId).header("X-User-Id", "1"))
+        mockMvc.perform(post("/api/trips/{id}/members", tripId).with(TestAuth.asUser("1")))
+                .andExpect(status().isMethodNotAllowed());
+        mockMvc.perform(put("/api/trips/{id}/members", tripId).with(TestAuth.asUser("1")))
+                .andExpect(status().isMethodNotAllowed());
+        mockMvc.perform(delete("/api/trips/{id}/members", tripId).with(TestAuth.asUser("1")))
                 .andExpect(status().isMethodNotAllowed());
     }
 }

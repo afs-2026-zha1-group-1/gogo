@@ -9,20 +9,22 @@ while the roster data already exists in `trip_member` and `trip.organizer_id`
 (REQ-003 `V2`). Without this read, a member cannot tell who is traveling with
 them or who owns organizer actions, and Screen 7 cannot leave its placeholder.
 
-The change is one small, read-only vertical slice: a member-gated roster read
+The change is one small, read-only vertical slice: an authenticated roster read
 in the existing `trips` capability and the Screen 7 content inside the existing
 app shell. It adds no table, no column, no write path and no new dependency.
-The baseline already contains REQ-003/004, US-031-037 and US-064, so this change
-composes them instead of rebuilding membership or the shell.
+The baseline now includes REQ-003/004, US-031-037, US-064, US-066 login/session
+and the split flow, so this change composes them instead of rebuilding
+membership, identity or the shell.
 
 ## What Changes
 
 - **ADDED** `trips` requirement "Trip member list read":
   - `GET /api/trips/{id}/members`, member-only, read-only.
-  - Identity is the scaffold `X-User-Id` header over seeded users. Missing or
-    unknown identity → `401 USER_REQUIRED`; unknown trip → `404 TRIP_NOT_FOUND`;
-    known outsider → `403 NOT_A_MEMBER`. The denial body carries no
-    `userId`, `displayName` or organizer value.
+  - Identity is the authenticated account/session principal from US-066; no
+    session → `401 USER_REQUIRED`; unknown trip → `404 TRIP_NOT_FOUND`; known
+    outsider → `403 NOT_A_MEMBER`. The retired `X-User-Id` header does not
+    authenticate. The denial body carries no `userId`, `displayName` or
+    organizer value.
   - Success is `200` with
     `{ "tripId": <id>, "members": [{"userId", "displayName", "organizer"}] }`
     ordered by ascending `userId`. Every member appears exactly once.
@@ -33,8 +35,9 @@ composes them instead of rebuilding membership or the shell.
 - **MODIFIED** `app-shell` requirement "Placeholder tabs":
   - The 成员 tab keeps `#/members` and its active-tab rule, but renders the real
     trip roster instead of a not-implemented placeholder.
-  - The 分队 tab remains an honest placeholder.
-  - The shell frame, dock order, active-tab rule and identity scaffold stay
+  - The 分队 tab renders main's shipped split entry (the trip-scoped split
+    flow) and is no longer a not-implemented placeholder.
+  - The shell frame, dock order, active-tab rule and signed-in account bar stay
     unchanged. The member-list data is a `trips` read rendered inside the tab;
     the shell frame itself still adds no backend endpoint.
 - **Frontend Screen 7** (US-013) inside the shell:
@@ -42,8 +45,8 @@ composes them instead of rebuilding membership or the shell.
     organizer row and a member count.
   - Mandatory loading, empty, error, permission-denied and no-trip guidance
     states.
-  - Identity switches re-read the roster for the new caller; an outsider sees
-    the denied state with no names.
+  - The signed-in account drives the read; an authenticated outsider sees the
+    denied state with no names.
   - No readiness ring, readiness pills, preference summaries or
     "生成主线方案" action (the screenshot shows them; the issue's design scope
     excludes them).
@@ -55,8 +58,8 @@ composes them instead of rebuilding membership or the shell.
 
 Unchanged: trip creation/detail read, invitation preview/accept/closed
 behavior, main-plan readiness and preference reads, the app shell frame/dock,
-the split placeholder, the `X-User-Id` scaffold, SQLite datasource and the two
-CI jobs. The CI **job contents** are unchanged; by user instruction on
+the shipped split flow, the US-066 login/session flow, SQLite datasource and the
+two CI jobs. The CI **job contents** are unchanged; by user instruction on
 2026-11-16 the workflow trigger was broadened from `main`-only pushes to every
 branch push so this feature branch can produce its own run. No breaking change
 to any published contract.
@@ -98,17 +101,18 @@ None.
   deliberately not exposed; `app-shell` placeholder requirement is modified,
   not silently contradicted.
 - **Upstream**: REQ-003/004 membership schema and invitation accept, US-064
-  shell/dock/成员 tab, and the US-031-037 fixtures are all merged on
-  `group1/main` (`729a889`); this change composes them without changing their
-  contracts.
+  shell/dock, US-031-037 fixtures, US-066 login/session and the split flow are
+  all merged on `group1/main` (`135d3df`); this change composes them without
+  changing their contracts.
 - **Downstream**: US-026/US-027 readiness and US-031 generation may later
-  extend the same screen; the unmerged split branch is unaffected because this
-  change starts from the merged baseline and does not touch split code.
+  extend the same screen; split endpoints keep their separate anonymous error
+  code until follow-up F2.
 - **Risks**: R30 Screen 7 scope creep (guarded by S10/U1); R31 placeholder
-  contract (MODIFIED requirement); R32 unmerged split branch uses a different
-  missing-identity code (follow-up at split merge); R33 no durable trip
-  selection on `#/members` (P3 choice); R34 deterministic ordering; R35
-  stack-plan AntD/TanStack gap; R36 denial-body leakage (generic message).
+  contract (MODIFIED requirement); R32 `USER_REQUIRED` vs `MEMBER_REQUIRED`
+  live divergence (accepted, follow-up F2); R33 no durable trip selection on
+  `#/members` (P3 choice); R34 deterministic ordering; R35 design-system
+  migration gap; R36 denial-body leakage; R37 all-branch CI trigger
+  (user-approved); R38 auth arrived after G1 (delta amended under G2 C1/C4).
 
 ## Non-Goals / Out of scope
 
@@ -116,7 +120,9 @@ None.
   generate-main-plan action (US-026 / US-027 / US-031).
 - Inviting, removing or changing member roles; transferring organizer; member
   profiles or accounts.
-- Authentication, sessions or credential verification.
+- Changing the merged US-066 authentication/session flow; US-013 consumes the
+  authenticated principal. Split endpoints retain their separate
+  `MEMBER_REQUIRED` anonymous code (follow-up F2).
 - List-all-trips, search, sorting, pagination or a new schema.
 - Avatar uploads or a new design system; avatar treatment is a local visual
   choice using existing tokens.
@@ -144,15 +150,18 @@ states). All four Pass → **A0 Pass**, split permitted.
 
 ## Known deviations carried into later stages
 
-- **Stack plan vs merged frontend (R35):** `tech-stack-plan.md` names Ant Design
-  5 + TanStack Query v5, but the merged frontend uses its existing token CSS and
-  a plain `api()` helper (the US-031 screens follow the same pattern). This
-  read-only screen follows the actual baseline; adopting the planned stack is a
-  separate migration (US-065/US-066) and is not required for US-013.
-- **Placeholder supersession (R31):** US-064's `Placeholder tabs` requirement
-  is explicitly a pre-US-013 state. This change records a MODIFIED requirement;
-  the Living Spec purpose sentence should be reconciled at archive.
-- **Split-branch vocabulary (R32):** the unmerged split branch uses
-  `MEMBER_REQUIRED` for a missing `X-User-Id`. US-013 follows the merged
-  `trips`/`main-itinerary` `USER_REQUIRED` precedent; the divergence is flagged
-  for split-merge review, not fixed here.
+- **Design-system migration (R35):** the component-library/design-system track
+  is separate; this read-only screen follows the merged frontend's shell, token
+  CSS and shared `api()` helper.
+- **Placeholder supersession (R31/C3):** US-064's `Placeholder tabs` requirement
+  is explicitly a pre-US-013 state. The MODIFIED requirement records the
+  shipped split entry for 分队 and the roster for 成员; the Living Spec purpose
+  is reconciled at archive.
+- **Identity divergence (R32/C4):** trips/members use the US-066 session
+  principal and `USER_REQUIRED`; split endpoints are also session-based but
+  return `MEMBER_REQUIRED` for anonymous callers. Accepted for this slice with
+  follow-up **F2**; no split code is changed here.
+- **G2 remediation (C1–C5):** main was merged (`135d3df`), the auth/session and
+  app-shell deltas were applied, and the evidence matrix was expanded
+  (retired-header 401, PUT/DELETE 405, direct-insert wording). The VL
+  re-records G2 on the merged head.

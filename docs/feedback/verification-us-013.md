@@ -72,3 +72,26 @@ Screenshots (local, not committed): `logs/us-013-u1-members.png`,
 - G2 by VL Elian Jiang; G3 after human merge and archive.
 - The existing dev database was not migrated or modified; the verification
   backend used `gogo-us013.db`.
+
+## Merged-head re-verification (2026-11-16)
+
+After merging `group1/main` `135d3df` (US-066 login/session, V4 splits, V6
+credentials), the branch was re-verified:
+
+- `cd backend && mvn -B test` → **198/198**, including `TripMembersApiTest`
+  12/12 and the split/login suites; Flyway applied V1–V6.
+- `cd frontend && npm ci && npm run build` → green (typecheck + Vite).
+- Browser on an isolated stack (backend 8082, Vite 5174, fresh
+  `gogo-us013-merge.db`):
+  - Login as Ben → `#/trips/1` → 成员: 4 rows (Alice, Ben, Chloe, Daniel),
+    Alice is the only organizer, 0 readiness pills, 0 generate actions.
+  - Full reload on `#/members`: no-trip guidance, 0 rows, no fabricated names.
+  - Login as Eve → 成员: denied card, 0 rows, no names inside the shell content.
+  - `#/split` with a trip selected: the shipped split entry card + button, no
+    placeholder.
+- The previous 101/101 and X-User-Id matrix is superseded by this merged-head
+  run. API negatives now cover unauthenticated 401, retired-header 401 and
+  POST/PUT/DELETE 405.
+
+Fresh CI on the merged head is still pending at the time of writing; the G2
+sheet records the Conditional and requires a VL re-record.

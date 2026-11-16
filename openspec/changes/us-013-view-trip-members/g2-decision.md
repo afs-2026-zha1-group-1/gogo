@@ -99,3 +99,19 @@
    milestone; an incomplete list invalidates the record.
 4. This record is **not Verified**. G2 closes only when the VL records Pass
    after the conditions close; merge and archive must not start before that.
+
+## Condition remediation evidence (2026-11-16, merged head)
+
+Status remains **Conditional**; this section records closure evidence only. The
+VL re-records G2 (Pass/Fail) on the merged head; merge and archive stay blocked
+until then.
+
+| # | Evidence |
+|---|---|
+| C1 | Merged `group1/main` `135d3df` into the branch. `TripController` keeps US-066 `@AuthenticationPrincipal` + `main-plan:confirm` and adds `GET /{id}/members`; `TripRepository` keeps `findById`/`isMember`/`confirmMainPlan` and adds `findMembers`; `App.tsx` keeps the login gate and shipped `#/split` entry and renders `Members`; README and five requirement-workspace conflicts resolved without dropping main rows |
+| C2 | `mvn -B test` **198/198** (new `TripMembersApiTest` 12/12, 6 migrations); `npm run build` green; browser on the merged head: Ben roster 4 rows + Alice organizer only, full reload on `#/members` shows no-trip guidance, Eve login shows denied with no names, `#/split` with a trip shows the shipped entry (button) and no placeholder |
+| C3 | `specs/app-shell/spec.md` MODIFIED requirement now says 分队 = shipped split entry, 成员 = roster; Purpose/proposal/US-013 statements updated; no "分队 stays a placeholder" wording remains |
+| C4 | Decision recorded: trips/members use US-066 session auth + `USER_REQUIRED`; splits are session-based but return `MEMBER_REQUIRED` for anonymous callers. Accepted divergence; follow-up **F2**; R32/registry/handoff updated |
+| C5 | Tasks 7.1/7.2 checked; V1 wording corrected (evidence open only for G2/archive/gates); M8/M9 renamed to direct insert; retired-header 401 (blank/non-numeric/seeded) and POST/PUT/DELETE 405 tests added; unreachable empty/missing UI states documented; `openspec validate` cited; all-branch CI trigger recorded as user-approved infra R37 |
+
+Fresh CI on the merged head and the VL's re-record remain the only open items.

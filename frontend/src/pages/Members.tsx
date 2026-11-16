@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { api } from '../api'
+import { api, errorMessage as apiErrorMessage } from '../api'
 import Icon from '../Icons'
 import type { TripMemberList } from '../types'
 
@@ -15,17 +15,16 @@ function initial(name: string) {
   return name.trim().charAt(0).toUpperCase() || '?'
 }
 
-function errorMessage(cause: unknown) {
+function causeMessage(cause: unknown) {
   return cause instanceof Error ? cause.message : String(cause)
 }
 
 interface MembersProps {
-  userId: number
   tripId: number | null
   tripsHref: string
 }
 
-export default function Members({ userId, tripId, tripsHref }: MembersProps) {
+export default function Members({ tripId, tripsHref }: MembersProps) {
   const [state, setState] = useState<MembersState>(
     tripId == null ? { kind: 'no-trip' } : { kind: 'loading' },
   )
@@ -37,21 +36,21 @@ export default function Members({ userId, tripId, tripsHref }: MembersProps) {
     }
     let active = true
     setState({ kind: 'loading' })
-    api<TripMemberList>(`/api/trips/${tripId}/members`, { userId })
+    api<TripMemberList>(`/api/trips/${tripId}/members`)
       .then(({ status, ok, data }) => {
         if (!active) return
         if (ok && data) setState({ kind: 'ready', members: data.members })
-        else if (status === 401 || status === 403) setState({ kind: 'denied', message: data?.message })
-        else if (status === 404) setState({ kind: 'missing', message: data?.message })
-        else setState({ kind: 'failed', message: data?.message ?? `HTTP ${status}` })
+        else if (status === 401 || status === 403) setState({ kind: 'denied', message: apiErrorMessage(data) })
+        else if (status === 404) setState({ kind: 'missing', message: apiErrorMessage(data) })
+        else setState({ kind: 'failed', message: apiErrorMessage(data) ?? `HTTP ${status}` })
       })
       .catch((cause: unknown) => {
-        if (active) setState({ kind: 'failed', message: errorMessage(cause) })
+        if (active) setState({ kind: 'failed', message: causeMessage(cause) })
       })
     return () => {
       active = false
     }
-  }, [tripId, userId])
+  }, [tripId])
 
   useEffect(() => load(), [load])
 
