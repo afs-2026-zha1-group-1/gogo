@@ -1,8 +1,22 @@
-import { useEffect, useState } from 'react'
-import { api } from '../api.js'
-import Icon from '../Icons.jsx'
+import { useEffect, useState, type ReactNode } from 'react'
+import { api, errorMessage, type InvitationPreview, type JoinResult } from '../api'
+import Icon from '../Icons'
 
-function Screen({ children }) {
+interface JoinProps {
+  token: string
+  userId: number
+  userName: string | undefined
+}
+
+type JoinState =
+  | { kind: 'loading' }
+  | { kind: 'unusable' }
+  | { kind: 'failed'; message: string | undefined }
+  | { kind: 'ready'; preview: InvitationPreview }
+  | { kind: 'closed'; preview: InvitationPreview }
+  | { kind: 'joined'; preview: InvitationPreview; alreadyMember: boolean }
+
+function Screen({ children }: { children: ReactNode }) {
   return (
     <div className="screen">
       <header className="appbar">
@@ -17,23 +31,28 @@ function Screen({ children }) {
   )
 }
 
-export default function Join({ token, userId, userName }) {
-  const [state, setState] = useState({ kind: 'loading' })
-  const [busy, setBusy] = useState(false)
-  const [actionError, setActionError] = useState('')
+export default function Join({ token, userId, userName }: JoinProps) {
+  const [state, setState] = useState<JoinState>({ kind: 'loading' })
+  const [busy, setBusy] = useState<boolean>(false)
+  const [actionError, setActionError] = useState<string>('')
 
   useEffect(() => {
     let active = true
     setState({ kind: 'loading' })
-    api(`/api/invitations/${encodeURIComponent(token)}`)
-      .then(({ status, ok, data }) => {
+    api<InvitationPreview>(`/api/invitations/${encodeURIComponent(token)}`)
+      .then((result) => {
         if (!active) return
-        if (ok && data) setState({ kind: 'ready', preview: data })
-        else if (status === 404) setState({ kind: 'unusable' })
-        else setState({ kind: 'failed', message: data?.message ?? `HTTP ${status}` })
+        if (result.ok && result.data) {
+          setState({ kind: 'ready', preview: result.data })
+        } else if (result.status === 404) {
+          setState({ kind: 'unusable' })
+        } else {
+          const message = result.ok ? undefined : result.data?.message
+          setState({ kind: 'failed', message: message ?? `HTTP ${result.status}` })
+        }
       })
-      .catch((cause) => {
-        if (active) setState({ kind: 'failed', message: cause.message })
+      .catch((cause: unknown) => {
+        if (active) setState({ kind: 'failed', message: errorMessage(cause) })
       })
     return () => {
       active = false
@@ -41,24 +60,27 @@ export default function Join({ token, userId, userName }) {
   }, [token])
 
   async function accept() {
+    if (state.kind !== 'ready') return
+    const preview = state.preview
     setBusy(true)
     setActionError('')
     try {
-      const { status, ok, data } = await api(
+      const result = await api<JoinResult>(
         `/api/invitations/${encodeURIComponent(token)}/accept`,
         { userId, method: 'POST' },
       )
-      if (ok && data) {
-        setState({ kind: 'joined', preview: state.preview, alreadyMember: data.alreadyMember })
-      } else if (status === 404) {
+      if (result.ok && result.data) {
+        setState({ kind: 'joined', preview, alreadyMember: result.data.alreadyMember })
+      } else if (result.status === 404) {
         setState({ kind: 'unusable' })
-      } else if (status === 403 && data?.code === 'JOINING_CLOSED') {
-        setState({ kind: 'closed', preview: state.preview })
+      } else if (!result.ok && result.status === 403 && result.data?.code === 'JOINING_CLOSED') {
+        setState({ kind: 'closed', preview })
       } else {
-        setActionError(data?.message ? `${data.code}: ${data.message}` : `请求失败（HTTP ${status}）`)
+        const data = result.ok ? null : result.data
+        setActionError(data?.message ? `${data.code}: ${data.message}` : `请求失败（HTTP ${result.status}）`)
       }
-    } catch (cause) {
-      setActionError(`无法连接服务器：${cause.message}`)
+    } catch (cause: unknown) {
+      setActionError(`无法连接服务器：${errorMessage(cause)}`)
     } finally {
       setBusy(false)
     }
@@ -168,7 +190,7 @@ export default function Join({ token, userId, userName }) {
 
       <section className="card pad" style={{ marginTop: 14, background: 'var(--surface-2)' }}>
         <p className="hint">
-          <Icon name="shield" className="sm" style={{ verticalAlign: -3, color: closed ? 'var(--err)' : 'var(--brand)' }} />{' '}
+          <Icon name="shield" className="sm" />{' '}
           {closed
             ? '主线方案已确认，新的成员不能再加入。'
             : '接受邀请后才会看到完整行程与成员。当前主线尚未确认，你可以加入。'}

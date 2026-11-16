@@ -1,8 +1,12 @@
-import { useState } from 'react'
-import { api } from '../api.js'
-import Icon from '../Icons.jsx'
+import { useState, type ChangeEvent, type FormEvent } from 'react'
+import { api, errorMessage, type Trip, type TripCreatePayload } from '../api'
+import Icon from '../Icons'
 
-const EMPTY = {
+interface CreateTripProps {
+  userId: number
+}
+
+const EMPTY: TripCreatePayload = {
   name: '',
   destination: '',
   startDate: '',
@@ -11,13 +15,13 @@ const EMPTY = {
   endLocation: '',
 }
 
-export default function CreateTrip({ userId }) {
-  const [form, setForm] = useState(EMPTY)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-  const [dateError, setDateError] = useState(false)
+export default function CreateTrip({ userId }: CreateTripProps) {
+  const [form, setForm] = useState<TripCreatePayload>(EMPTY)
+  const [busy, setBusy] = useState<boolean>(false)
+  const [error, setError] = useState<string>('')
+  const [dateError, setDateError] = useState<boolean>(false)
 
-  const set = (field) => (event) => {
+  const set = (field: keyof TripCreatePayload) => (event: ChangeEvent<HTMLInputElement>) => {
     const next = { ...form, [field]: event.target.value }
     setForm(next)
     if (next.startDate && next.endDate) {
@@ -27,20 +31,21 @@ export default function CreateTrip({ userId }) {
     }
   }
 
-  async function submit(event) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (dateError) return
     setBusy(true)
     setError('')
     try {
-      const { status, ok, data } = await api('/api/trips', { userId, method: 'POST', body: form })
-      if (ok && data) {
-        window.location.hash = `#/trips/${data.id}`
+      const result = await api<Trip>('/api/trips', { userId, method: 'POST', body: form })
+      if (result.ok && result.data) {
+        window.location.hash = `#/trips/${result.data.id}`
         return
       }
-      setError(data?.message ? `${data.code}: ${data.message}` : `Request failed (HTTP ${status})`)
-    } catch (cause) {
-      setError(`Failed to reach the server: ${cause.message}`)
+      const data = result.ok ? null : result.data
+      setError(data?.message ? `${data.code}: ${data.message}` : `Request failed (HTTP ${result.status})`)
+    } catch (cause: unknown) {
+      setError(`Failed to reach the server: ${errorMessage(cause)}`)
     } finally {
       setBusy(false)
     }

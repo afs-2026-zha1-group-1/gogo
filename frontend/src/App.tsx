@@ -1,11 +1,17 @@
-import { useEffect, useState } from 'react'
-import { users } from './api.js'
-import Home from './pages/Home.jsx'
-import CreateTrip from './pages/CreateTrip.jsx'
-import TripDetails from './pages/TripDetails.jsx'
-import Join from './pages/Join.jsx'
+import { useEffect, useState, type ChangeEvent } from 'react'
+import { users } from './api'
+import Home from './pages/Home'
+import CreateTrip from './pages/CreateTrip'
+import TripDetails from './pages/TripDetails'
+import Join from './pages/Join'
 
-function parseRoute(hash) {
+type Route =
+  | { page: 'home' }
+  | { page: 'create' }
+  | { page: 'details'; tripId: number }
+  | { page: 'join'; token: string }
+
+function parseRoute(hash: string): Route {
   const path = hash.replace(/^#/, '') || '/'
   const joinMatch = path.match(/^\/join\/([^/]+)$/)
   if (joinMatch) return { page: 'join', token: decodeURIComponent(joinMatch[1]) }
@@ -16,8 +22,8 @@ function parseRoute(hash) {
 }
 
 export default function App() {
-  const [route, setRoute] = useState(() => parseRoute(window.location.hash))
-  const [userId, setUserId] = useState(1)
+  const [route, setRoute] = useState<Route>(() => parseRoute(window.location.hash))
+  const [userId, setUserId] = useState<number>(1)
   const user = users().find((candidate) => candidate.id === userId)
 
   useEffect(() => {
@@ -33,7 +39,7 @@ export default function App() {
         <select
           aria-label="Demo identity"
           value={userId}
-          onChange={(event) => setUserId(Number(event.target.value))}
+          onChange={(event: ChangeEvent<HTMLSelectElement>) => setUserId(Number(event.target.value))}
         >
           {users().map((candidate) => (
             <option key={candidate.id} value={candidate.id}>{candidate.name}</option>

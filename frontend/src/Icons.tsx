@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+
 const PATHS = {
   branch: (
     <>
@@ -98,9 +100,16 @@ const PATHS = {
       <path d="M18 14.5l.7 1.9 1.9.7-1.9.7-.7 1.9-.7-1.9-1.9-.7 1.9-.7.7-1.9z" />
     </>
   ),
+} satisfies Record<string, ReactNode>
+
+export type IconName = keyof typeof PATHS
+
+interface IconProps {
+  name: IconName
+  className?: string
 }
 
-export default function Icon({ name, className = '' }) {
+export default function Icon({ name, className = '' }: IconProps) {
   return (
     <svg className={`icon ${className}`} viewBox="0 0 24 24" aria-hidden="true">
       {PATHS[name]}
