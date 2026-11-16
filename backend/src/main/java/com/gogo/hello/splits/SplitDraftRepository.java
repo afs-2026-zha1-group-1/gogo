@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository;
 
 /**
  * JdbcTemplate persistence for the splits capability (design D2/D9). Adapted to the main trip schema:
- * identity is app_user (INTEGER) via the {@code X-User-Id} header, membership is trip_member(trip_id, user_id),
+ * identity is app_user (INTEGER) supplied by the session principal, membership is trip_member(trip_id, user_id),
  * confirmation is {@code trip.main_plan_confirmed}, and the split draft lives in the separate {@code split_draft}
  * table (unique per trip). main-line stops and split route structure nodes live in {@code plan_node}. No ORM.
  */
@@ -116,6 +116,46 @@ public class SplitDraftRepository {
     public int deleteSplitRoutes(String tripId) {
         return jdbcTemplate.update(
                 "DELETE FROM plan_node WHERE trip_id = ? AND branch_id IN ('split-a', 'split-b')", tripId);
+    }
+
+    /** Trip organizer id as the identity string used by {@code X-User-Id} (app_user.id); empty when missing. */
+    public Optional<String> findOrganizerId(String tripId) {
+        List<String> ids = jdbcTemplate.queryForList(
+                "SELECT organizer_id FROM trip WHERE id = ?", String.class, tripId);
+        return ids.stream().findFirst();
+    }
+
+    /**
+     * Conditional confirmation (design D4/D5/D11): succeeds only while the stored draft is active at the expected
+     * version. The JSON status is part of the predicate so a concurrent cancel/confirm cannot be overwritten, and the
+     * column version deliberately stays unchanged because confirmation is not a draft content edit.
+     */
+    public int confirmDraftIfActive(String tripId, int expectedVersion, String draftJson, String now) {
+        return jdbcTemplate.update(
+                "UPDATE split_draft SET document = ?, updated_at = ? "
+                        + "WHERE trip_id = ? AND draft_version = ? "
+                        + "AND json_extract(document, '$.status') = 'active'",
+                draftJson, now, tripId, expectedVersion);
+    }
+
+    /** Conditional cancellation (design D4/D6/D11): same active + version predicate as confirmation. */
+    public int cancelDraftIfActive(String tripId, int expectedVersion, String draftJson, String now) {
+        return jdbcTemplate.update(
+                "UPDATE split_draft SET document = ?, updated_at = ? "
+                        + "WHERE trip_id = ? AND draft_version = ? "
+                        + "AND json_extract(document, '$.status') = 'active'",
+                draftJson, now, tripId, expectedVersion);
+    }
+
+    /**
+     * Rebuilds a cancelled draft in place (design D7/D11): the replacement document and the reset column version both
+     * land only while the stored status is still cancelled, so concurrent rebuilds collapse to a single winner.
+     */
+    public int rebuildIfCancelled(String tripId, String draftJson, String now) {
+        return jdbcTemplate.update(
+                "UPDATE split_draft SET document = ?, draft_version = 1, updated_at = ? "
+                        + "WHERE trip_id = ? AND json_extract(document, '$.status') = 'cancelled'",
+                draftJson, now, tripId);
     }
 
     /**

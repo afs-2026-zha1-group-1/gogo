@@ -17,6 +17,9 @@ const ERROR_TEXT: Record<string, string> = {
   TRIP_NOT_FOUND: "行程不存在，请检查行程 ID。",
   NOT_A_MEMBER: "你不是该行程的成员，无法查看或操作其分队草稿。",
   NOT_SPLIT_INITIATOR: "仅草稿发起人可执行此操作。",
+  NOT_SPLIT_ORGANIZER: "仅行程组织者可确认分队。",
+  SPLIT_DRAFT_INCOMPLETE: "草稿尚不完整：请先保存边界并生成两条路线。",
+  SPLIT_TIMING_INFEASIBLE: "路线对不可行：存在超窗或缺失输入，整对无法确认。",
   NONPOSITIVE_SPLIT_WINDOW: "时间窗必须为正：会合时刻需晚于出发时刻。",
   BOUNDARY_NOT_IN_MAIN_PLAN: "边界节点不在已确认主线内，请仅从主线 stop 选择。",
   INVALID_ROUTE_PAIR: "快照非法：需恰好两条分组路线。",
@@ -28,7 +31,7 @@ const ERROR_TEXT: Record<string, string> = {
   ROUTE_GENERATION_FAILED: "路线生成失败，整对已回滚（无半成品路线）。",
 }
 
-const PERMISSION_CODES = new Set(["MEMBER_REQUIRED", "NOT_A_MEMBER", "NOT_SPLIT_INITIATOR"])
+const PERMISSION_CODES = new Set(["MEMBER_REQUIRED", "NOT_A_MEMBER", "NOT_SPLIT_INITIATOR", "NOT_SPLIT_ORGANIZER"])
 
 export function LoadingState({ label = "加载中…" }: { label?: string }) {
   return (
@@ -88,6 +91,22 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
             <Badge variant={permission ? "warn" : "err"}>{code}</Badge>
           </div>
           <p className={cn("mt-1 text-xs leading-relaxed", ink)}>{text}</p>
+          {apiError?.details?.routes?.length ? (
+            <ul className="mt-1.5 space-y-0.5 text-[11px] leading-relaxed text-ink-2">
+              {apiError.details.routes.map((route) => (
+                <li key={route.groupLabel}>
+                  {route.groupLabel} 组：合计 {route.totalMinutes ?? "—"} 分
+                  {route.overrunMinutes ? ` · 超窗 ${route.overrunMinutes} 分` : ""}
+                  {route.missingInputs.length > 0 ? ` · 缺 ${route.missingInputs.join("、")}` : ""}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {apiError?.details?.missing?.length ? (
+            <p className="mt-1 text-[11px] leading-relaxed text-ink-2">
+              缺失项：{apiError.details.missing.join("、")}
+            </p>
+          ) : null}
           {apiError ? (
             <p className="mt-1 text-[10.5px] text-ink-3">
               HTTP {apiError.status} · {apiError.message}

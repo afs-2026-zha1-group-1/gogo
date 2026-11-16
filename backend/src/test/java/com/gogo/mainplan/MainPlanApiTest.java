@@ -1,5 +1,7 @@
 package com.gogo.mainplan;
 
+import com.gogo.auth.TestAuth;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -62,7 +64,7 @@ class MainPlanApiTest {
     // ---- request helpers ----
 
     private MockHttpServletRequestBuilder withIdentity(MockHttpServletRequestBuilder request, String userId) {
-        return userId == null ? request : request.header("X-User-Id", userId);
+        return request.with(TestAuth.asUser(userId));
     }
 
     private MvcResult generate(String userId) throws Exception {
@@ -156,7 +158,7 @@ class MainPlanApiTest {
     void allReadyMembersGenerateDraftVersionOne() throws Exception {
         MvcResult result = generate("1");
         org.junit.jupiter.api.Assertions.assertEquals(201, result.getResponse().getStatus());
-        mockMvc.perform(get("/api/trips/" + tripId + "/main-plan").header("X-User-Id", "2"))
+        mockMvc.perform(get("/api/trips/" + tripId + "/main-plan").with(TestAuth.asUser("2")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.tripId").value(tripId))
                 .andExpect(jsonPath("$.version").value(1))
@@ -195,7 +197,7 @@ class MainPlanApiTest {
     @Test
     void pendingMemberBlocksGeneration() throws Exception {
         setReady(4, false);
-        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan").header("X-User-Id", "1"))
+        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan").with(TestAuth.asUser("1")))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("MEMBERS_NOT_READY"))
                 .andExpect(jsonPath("$.pendingMembers.length()").value(1))
@@ -211,7 +213,7 @@ class MainPlanApiTest {
     void nullLocationsAreCompletedAtGeneration() throws Exception {
         nullLocations();
         generateOk();
-        mockMvc.perform(get("/api/trips/" + tripId).header("X-User-Id", "1"))
+        mockMvc.perform(get("/api/trips/" + tripId).with(TestAuth.asUser("1")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.startLocation").value("Merlion Park"))
                 .andExpect(jsonPath("$.endLocation").value("City Hall MRT"));
@@ -221,7 +223,7 @@ class MainPlanApiTest {
     @Test
     void suppliedLocationsArePreserved() throws Exception {
         generateOk();
-        mockMvc.perform(get("/api/trips/" + tripId).header("X-User-Id", "1"))
+        mockMvc.perform(get("/api/trips/" + tripId).with(TestAuth.asUser("1")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.startLocation").value("City Hall MRT"))
                 .andExpect(jsonPath("$.endLocation").value("Merlion Park"));
@@ -230,7 +232,7 @@ class MainPlanApiTest {
     // M4/G4: a member who is not the organizer cannot generate.
     @Test
     void nonOrganizerCannotGenerate() throws Exception {
-        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan").header("X-User-Id", "2"))
+        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan").with(TestAuth.asUser("2")))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("NOT_ORGANIZER"));
         org.junit.jupiter.api.Assertions.assertEquals(0, draftCount());
@@ -246,7 +248,7 @@ class MainPlanApiTest {
         org.junit.jupiter.api.Assertions.assertEquals(2, body.get("version").asInt());
         org.junit.jupiter.api.Assertions.assertEquals("superseded", draftStatus(1));
         org.junit.jupiter.api.Assertions.assertEquals("current", draftStatus(2));
-        mockMvc.perform(get("/api/trips/" + tripId + "/main-plan").header("X-User-Id", "2"))
+        mockMvc.perform(get("/api/trips/" + tripId + "/main-plan").with(TestAuth.asUser("2")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.version").value(2));
     }
@@ -256,7 +258,7 @@ class MainPlanApiTest {
     void generationAfterConfirmationIsRejected() throws Exception {
         generateOk();
         confirmOk();
-        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan").header("X-User-Id", "1"))
+        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan").with(TestAuth.asUser("1")))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("ALREADY_CONFIRMED"));
         org.junit.jupiter.api.Assertions.assertEquals(1, draftCount());
@@ -266,7 +268,7 @@ class MainPlanApiTest {
     // M6/I1: a member reads the inputs summary with the full wire field set.
     @Test
     void memberReadsInputsSummary() throws Exception {
-        mockMvc.perform(get("/api/trips/" + tripId + "/main-plan/inputs").header("X-User-Id", "2"))
+        mockMvc.perform(get("/api/trips/" + tripId + "/main-plan/inputs").with(TestAuth.asUser("2")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.tripId").value(tripId))
                 .andExpect(jsonPath("$.readyCount").value(4))
@@ -297,7 +299,7 @@ class MainPlanApiTest {
     // M7/I2: the inputs summary is readable before any draft exists.
     @Test
     void inputsReadableBeforeAnyDraft() throws Exception {
-        mockMvc.perform(get("/api/trips/" + tripId + "/main-plan/inputs").header("X-User-Id", "1"))
+        mockMvc.perform(get("/api/trips/" + tripId + "/main-plan/inputs").with(TestAuth.asUser("1")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.readyCount").value(4))
                 .andExpect(jsonPath("$.memberCount").value(4));
@@ -307,7 +309,7 @@ class MainPlanApiTest {
     // M8/I3: a non-member is denied the inputs summary.
     @Test
     void nonMemberDeniedInputs() throws Exception {
-        mockMvc.perform(get("/api/trips/" + tripId + "/main-plan/inputs").header("X-User-Id", "5"))
+        mockMvc.perform(get("/api/trips/" + tripId + "/main-plan/inputs").with(TestAuth.asUser("5")))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("NOT_A_MEMBER"));
     }
@@ -316,7 +318,7 @@ class MainPlanApiTest {
     @Test
     void memberReadsCurrentDraft() throws Exception {
         generateOk();
-        mockMvc.perform(get("/api/trips/" + tripId + "/main-plan").header("X-User-Id", "2"))
+        mockMvc.perform(get("/api/trips/" + tripId + "/main-plan").with(TestAuth.asUser("2")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.tripId").value(tripId))
                 .andExpect(jsonPath("$.version").value(1))
@@ -334,7 +336,7 @@ class MainPlanApiTest {
     void revisionBumpSurfacesStaleness() throws Exception {
         generateOk();
         bumpRevision(2, 2);
-        mockMvc.perform(get("/api/trips/" + tripId + "/main-plan").header("X-User-Id", "2"))
+        mockMvc.perform(get("/api/trips/" + tripId + "/main-plan").with(TestAuth.asUser("2")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.version").value(1))
                 .andExpect(jsonPath("$.stale").value(true))
@@ -346,7 +348,7 @@ class MainPlanApiTest {
     // M11: reading before any generation reports NO_DRAFT.
     @Test
     void draftReadWithoutDraftIsNotFound() throws Exception {
-        mockMvc.perform(get("/api/trips/" + tripId + "/main-plan").header("X-User-Id", "2"))
+        mockMvc.perform(get("/api/trips/" + tripId + "/main-plan").with(TestAuth.asUser("2")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NO_DRAFT"));
     }
@@ -356,7 +358,7 @@ class MainPlanApiTest {
     void confirmedPlanRead() throws Exception {
         generateOk();
         confirmOk();
-        mockMvc.perform(get("/api/trips/" + tripId + "/main-plan").header("X-User-Id", "2"))
+        mockMvc.perform(get("/api/trips/" + tripId + "/main-plan").with(TestAuth.asUser("2")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.version").value(1))
                 .andExpect(jsonPath("$.confirmed").value(true))
@@ -371,7 +373,7 @@ class MainPlanApiTest {
         generateOk();
         confirmOk();
         bumpRevision(2, 2);
-        mockMvc.perform(get("/api/trips/" + tripId + "/main-plan").header("X-User-Id", "2"))
+        mockMvc.perform(get("/api/trips/" + tripId + "/main-plan").with(TestAuth.asUser("2")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.version").value(1))
                 .andExpect(jsonPath("$.confirmed").value(true))
@@ -393,11 +395,11 @@ class MainPlanApiTest {
         org.junit.jupiter.api.Assertions.assertEquals("confirmed", draftStatus(1));
         org.junit.jupiter.api.Assertions.assertTrue(tripConfirmed());
         // J4 closure through the real invitation endpoints.
-        MvcResult issue = mockMvc.perform(post("/api/trips/" + tripId + "/invitation").header("X-User-Id", "1"))
+        MvcResult issue = mockMvc.perform(post("/api/trips/" + tripId + "/invitation").with(TestAuth.asUser("1")))
                 .andReturn();
         org.junit.jupiter.api.Assertions.assertEquals(200, issue.getResponse().getStatus());
         String token = objectMapper.readTree(issue.getResponse().getContentAsString()).get("token").asText();
-        mockMvc.perform(post("/api/invitations/" + token + "/accept").header("X-User-Id", "5"))
+        mockMvc.perform(post("/api/invitations/" + token + "/accept").with(TestAuth.asUser("5")))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("JOINING_CLOSED"));
     }
@@ -407,7 +409,7 @@ class MainPlanApiTest {
     void hardBudgetOverrunBlocksConfirmation() throws Exception {
         generateOk();
         insertBudget(1, 4000, "hard");
-        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan/confirm").header("X-User-Id", "1"))
+        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan/confirm").with(TestAuth.asUser("1")))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.overruns.length()").value(1))
@@ -425,7 +427,7 @@ class MainPlanApiTest {
     void outOfOrderStopsBlockConfirmation() throws Exception {
         generateOk();
         mutateStop(2, "start_local", "08:00");
-        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan/confirm").header("X-User-Id", "1"))
+        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan/confirm").with(TestAuth.asUser("1")))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.scheduleErrors[?(@.type == 'OUT_OF_ORDER' && @.seq == 2)]").exists())
@@ -438,7 +440,7 @@ class MainPlanApiTest {
     void overlappingStopsBlockConfirmation() throws Exception {
         generateOk();
         mutateStop(2, "start_local", "09:15");
-        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan/confirm").header("X-User-Id", "1"))
+        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan/confirm").with(TestAuth.asUser("1")))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.scheduleErrors[?(@.type == 'OVERLAP' && @.seq == 2)]").exists());
@@ -450,7 +452,7 @@ class MainPlanApiTest {
     void missingTravelLegBlocksConfirmation() throws Exception {
         generateOk();
         mutateStop(1, "travel_minutes_to_next", null);
-        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan/confirm").header("X-User-Id", "1"))
+        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan/confirm").with(TestAuth.asUser("1")))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.scheduleErrors[?(@.type == 'MISSING_LEG' && @.seq == 1)]").exists());
@@ -462,7 +464,7 @@ class MainPlanApiTest {
     void travelExceedingGapBlocksConfirmation() throws Exception {
         generateOk();
         mutateStop(1, "travel_minutes_to_next", 45);
-        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan/confirm").header("X-User-Id", "1"))
+        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan/confirm").with(TestAuth.asUser("1")))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.scheduleErrors[?(@.type == 'TRAVEL_EXCEEDS_GAP' && @.seq == 1)]").exists());
@@ -474,7 +476,7 @@ class MainPlanApiTest {
     void outOfDayStopBlocksConfirmation() throws Exception {
         generateOk();
         mutateStop(3, "start_local", "25:00");
-        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan/confirm").header("X-User-Id", "1"))
+        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan/confirm").with(TestAuth.asUser("1")))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.scheduleErrors[?(@.type == 'OUT_OF_DAY' && @.seq == 3)]").exists());
@@ -486,7 +488,7 @@ class MainPlanApiTest {
     void staleDraftBlocksUntilRegeneration() throws Exception {
         generateOk();
         bumpRevision(2, 2);
-        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan/confirm").header("X-User-Id", "1"))
+        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan/confirm").with(TestAuth.asUser("1")))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("STALE_DRAFT"));
         org.junit.jupiter.api.Assertions.assertFalse(tripConfirmed());
@@ -499,7 +501,7 @@ class MainPlanApiTest {
     @Test
     void nonOrganizerCannotConfirm() throws Exception {
         generateOk();
-        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan/confirm").header("X-User-Id", "2"))
+        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan/confirm").with(TestAuth.asUser("2")))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("NOT_ORGANIZER"));
         org.junit.jupiter.api.Assertions.assertEquals("current", draftStatus(1));
@@ -509,7 +511,7 @@ class MainPlanApiTest {
     // V6: confirming before any generation reports NO_DRAFT and changes nothing.
     @Test
     void confirmWithoutDraftIsNotFound() throws Exception {
-        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan/confirm").header("X-User-Id", "1"))
+        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan/confirm").with(TestAuth.asUser("1")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NO_DRAFT"));
         org.junit.jupiter.api.Assertions.assertEquals(0, draftCount());
@@ -521,7 +523,7 @@ class MainPlanApiTest {
     void reConfirmIsRejectedWithoutStateChange() throws Exception {
         generateOk();
         confirmOk();
-        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan/confirm").header("X-User-Id", "1"))
+        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan/confirm").with(TestAuth.asUser("1")))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("ALREADY_CONFIRMED"));
         org.junit.jupiter.api.Assertions.assertEquals(1, draftCount());
@@ -552,16 +554,16 @@ class MainPlanApiTest {
     // M-N/V-N: an unknown trip id is 404 on all four endpoints.
     @Test
     void allEndpointsReportUnknownTrip() throws Exception {
-        mockMvc.perform(post("/api/trips/999999/main-plan").header("X-User-Id", "1"))
+        mockMvc.perform(post("/api/trips/999999/main-plan").with(TestAuth.asUser("1")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("TRIP_NOT_FOUND"));
-        mockMvc.perform(post("/api/trips/999999/main-plan/confirm").header("X-User-Id", "1"))
+        mockMvc.perform(post("/api/trips/999999/main-plan/confirm").with(TestAuth.asUser("1")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("TRIP_NOT_FOUND"));
-        mockMvc.perform(get("/api/trips/999999/main-plan").header("X-User-Id", "1"))
+        mockMvc.perform(get("/api/trips/999999/main-plan").with(TestAuth.asUser("1")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("TRIP_NOT_FOUND"));
-        mockMvc.perform(get("/api/trips/999999/main-plan/inputs").header("X-User-Id", "1"))
+        mockMvc.perform(get("/api/trips/999999/main-plan/inputs").with(TestAuth.asUser("1")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("TRIP_NOT_FOUND"));
     }
@@ -570,16 +572,16 @@ class MainPlanApiTest {
     @Test
     void nonMemberDeniedOnAllEndpoints() throws Exception {
         generateOk();
-        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan").header("X-User-Id", "5"))
+        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan").with(TestAuth.asUser("5")))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("NOT_A_MEMBER"));
-        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan/confirm").header("X-User-Id", "5"))
+        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan/confirm").with(TestAuth.asUser("5")))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("NOT_A_MEMBER"));
-        mockMvc.perform(get("/api/trips/" + tripId + "/main-plan").header("X-User-Id", "5"))
+        mockMvc.perform(get("/api/trips/" + tripId + "/main-plan").with(TestAuth.asUser("5")))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("NOT_A_MEMBER"));
-        mockMvc.perform(get("/api/trips/" + tripId + "/main-plan/inputs").header("X-User-Id", "5"))
+        mockMvc.perform(get("/api/trips/" + tripId + "/main-plan/inputs").with(TestAuth.asUser("5")))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("NOT_A_MEMBER"));
         org.junit.jupiter.api.Assertions.assertEquals(1, draftCount());
@@ -597,7 +599,7 @@ class MainPlanApiTest {
                 post("/api/trips/" + tripId + "/members/2/preferences"),
                 put("/api/trips/" + tripId + "/members/2/preferences"),
                 patch("/api/trips/" + tripId + "/members/2/preferences"))) {
-            int status = mockMvc.perform(request.header("X-User-Id", "1")).andReturn().getResponse().getStatus();
+            int status = mockMvc.perform(request.with(TestAuth.asUser("1"))).andReturn().getResponse().getStatus();
             org.junit.jupiter.api.Assertions.assertTrue(status == 404 || status == 405,
                     "preference write path must be absent, got " + status);
         }
@@ -621,7 +623,7 @@ class MainPlanApiTest {
                 post("/api/trips/" + tripId + "/split-expenses"),
                 get("/api/trips/" + tripId + "/notifications"),
                 post("/api/trips/" + tripId + "/notifications"))) {
-            int status = mockMvc.perform(request.header("X-User-Id", "1")).andReturn().getResponse().getStatus();
+            int status = mockMvc.perform(request.with(TestAuth.asUser("1"))).andReturn().getResponse().getStatus();
             org.junit.jupiter.api.Assertions.assertTrue(status == 404 || status == 405,
                     "split/notification route must be absent, got " + status);
         }
@@ -632,7 +634,7 @@ class MainPlanApiTest {
     void softBudgetDoesNotBlockConfirmation() throws Exception {
         generateOk();
         insertBudget(2, 1000, "soft");
-        mockMvc.perform(get("/api/trips/" + tripId + "/main-plan/inputs").header("X-User-Id", "2"))
+        mockMvc.perform(get("/api/trips/" + tripId + "/main-plan/inputs").with(TestAuth.asUser("2")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.budgets[1].userId").value(2))
                 .andExpect(jsonPath("$.budgets[1].hardBudgetCents").doesNotExist())

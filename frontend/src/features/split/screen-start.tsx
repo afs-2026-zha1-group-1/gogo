@@ -10,10 +10,11 @@ import { IconArrowRight, IconBranch, IconCheck, IconClock, IconInfo } from "@/co
 import { shortId } from "@/lib/format"
 
 /**
- * Screen 11 — split start (spec REQ-004 / US-038). Empty state (GET data=null) shows the fork-join
- * intro and a start button wired to POST start; once a draft exists it shows the saved status
- * (initiator / mainPlanVersion / draftVersion). Conflict / main-plan-not-confirmed / permission
- * rejections surface from the backend response — the client never judges uniqueness or confirmation.
+ * Screen 11 — split start (spec REQ-004 / US-038, US-050 replacement). Empty state (GET data=null) shows the
+ * fork-join intro and a start button wired to POST start; an existing draft shows the saved status. The action
+ * branches on status: no draft or `cancelled` starts (or replaces) the draft, `active` continues to boundaries,
+ * `confirmed` opens the confirmed review on Screen 15 (read-only terminal state, no start entry). Rejections
+ * surface from the backend — the client never judges uniqueness, confirmation or cancellation eligibility.
  */
 export function ScreenStart() {
   const { tripId = "" } = useParams()
@@ -22,13 +23,19 @@ export function ScreenStart() {
   const start = useStartDraft(tripId)
   const detail = draft.data
 
-  const action = detail ? (
+  const status = detail?.status
+  const action = status === "active" ? (
     <Button className="flex-1" onClick={() => navigate(`/trips/${tripId}/split/boundaries`)}>
       下一步：选择边界 <IconArrowRight />
     </Button>
+  ) : status === "confirmed" ? (
+    <Button className="flex-1" onClick={() => navigate(`/trips/${tripId}/split/confirm`)}>
+      查看已确认分队 <IconArrowRight />
+    </Button>
   ) : (
     <Button className="flex-1" disabled={start.isPending} onClick={() => start.mutate()}>
-      {start.isPending ? "发起中…" : "发起分队草稿"} <IconArrowRight />
+      {start.isPending ? "发起中…" : status === "cancelled" ? "发起（替换）分队草稿" : "发起分队草稿"}{" "}
+      <IconArrowRight />
     </Button>
   )
 
@@ -74,7 +81,8 @@ export function ScreenStart() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <IconCheck className="text-ok" /> 草稿已发起
+                  <IconCheck className="text-ok" />{" "}
+                  {detail.status === "confirmed" ? "拆分已确认" : detail.status === "cancelled" ? "草稿已取消" : "草稿已发起"}
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
@@ -84,6 +92,16 @@ export function ScreenStart() {
                   <StatusRow label="草稿版本" value={`v${detail.draftVersion}`} />
                   <StatusRow label="状态" value={detail.status} />
                 </dl>
+                {detail.status === "cancelled" ? (
+                  <p className="mt-2 text-[11.5px] leading-relaxed text-ink-2">
+                    该提案已放弃，主线未改变；可直接发起替换草稿，重新选择边界与路线。
+                  </p>
+                ) : null}
+                {detail.status === "confirmed" ? (
+                  <p className="mt-2 text-[11.5px] leading-relaxed text-ink-2">
+                    当前拆分已确认并锁定，不可再编辑或取消；可点下方「查看已确认分队」查看路线与分组。
+                  </p>
+                ) : null}
               </CardContent>
             </Card>
           ) : null}

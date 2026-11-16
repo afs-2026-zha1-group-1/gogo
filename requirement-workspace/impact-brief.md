@@ -891,3 +891,166 @@ No critical blocker invalidates US-049-050; split may proceed.
 ## 8. Suggested split boundaries
 
 One change `us-049-050-split-confirm-cancel`（用户 BQ-1 裁决）。Effort: **small-medium** — 2 个写端点、2 个新错误码、无迁移、1 个新屏幕、~12 条验收 case（CF/CN + 反向）。Ordering: 后端契约（守卫/状态机/复算/锁）→ 前端 Screen 15 → ATDD 矩阵；无并行轨道。
+
+# Impact brief — REQ-008 (US-066, 2026-11-16)
+
+Sections 1–45 above describe REQ-001 through the discarded US-013 draft and are
+not authoritative for this change. This section is self-contained.
+
+## 38. Requirement set
+
+| id | Path |
+|---|---|
+| REQ-008 | `requirement-workspace/requirements/REQ-008.md` |
+
+Supporting: `requirement-workspace/deep-dive.md` §REQ-008,
+`requirement-workspace/intents/2026-11-16-req-008.md`,
+`requirement-workspace/analysis/req-008-dor.md`,
+`requirement-workspace/acceptance-test-fixtures.md`.
+
+Mode: embedded at the end of `/sdd:pre-spec-req` (blocking OQs = 0, DoR
+BLOCKERs = 0), refreshed after G1 C1–C4. Solution direction: **add** new `auth`
+capability, **modify** `trips`/`invitations` identity and `app-shell`
+login/identity surface, and migrate the living `main-itinerary` and `splits`
+identity boundaries to the session → deep-dive Phase 2.5 in scope.
+
+## 39. As-is asset inventory (evidence paths)
+
+| Asset | Evidence | State |
+|---|---|---|
+| Living Spec — trips | `openspec/specs/trips/spec.md` | Caller identity is the `X-User-Id` header; creation/detail/permission requirements built on it |
+| Living Spec — invitations | `openspec/specs/invitations/spec.md` | Preview is identity-free; issuance/acceptance use the header; `USER_REQUIRED` precedence is specified |
+| Living Spec — app-shell | `openspec/specs/app-shell/spec.md` | Every in-app route renders the shell; identity switcher labeled 非登录 sets the header; join is full-screen; `#/` is the dashboard/home |
+| Living Spec — greeting | `openspec/specs/greeting/spec.md` | Public read endpoint; unchanged |
+| Living Spec — main-itinerary | `openspec/specs/main-itinerary/spec.md` §"Authorization and identity for main-plan operations" | Four main-plan endpoints still name `X-User-Id`; frontend `MainPlan.tsx`/`MainPlanInputs.tsx` receive `userId` |
+| Living Spec — splits | `openspec/specs/splits/spec.md` (5 requirements; Purpose still says `X-Member-Id` while code uses `X-User-Id`) | Five split-draft endpoints use `X-User-Id`; frontend `features/split/*` sends the header and renders an identity bar; `MemberGuard` returns `MEMBER_REQUIRED` with the `{data,error}` envelope |
+| Backend identity — trips/invitations | `backend/src/main/java/com/gogo/trip/TripController.java:30,52,65-68`; `backend/src/main/java/com/gogo/invitation/InvitationController.java:24,37,45-49` | No session, principal or credential; header parsed per controller |
+| Backend security stack | `backend/pom.xml` | No `spring-boot-starter-security`; no password encoder, session store or auth filter |
+| Database | `V1`–`V5` (`V4__splits.sql`, `V5__create_main_plan.sql`) | `app_user(id, display_name)` only; no email, password, credential or session table; `V6` is the next free migration |
+| Frontend identity | `frontend/src/api.ts:16-27`; `frontend/src/App.tsx`; `frontend/src/router.tsx`; `frontend/src/features/split/api.ts:36`, `identity.tsx` | Every request sends `X-User-Id`; the scaffold switcher renders in the shell and the split feature has its own identity bar |
+| Frontend routes/pages | `frontend/src/App.tsx`; `frontend/src/router.tsx`; `frontend/src/pages/{CreateTrip,TripDetails,Join,InvitationPanel,MainPlan,MainPlanInputs}.*`; `frontend/src/features/split/*` | Pages receive `userId` props; no login route or guard; join preview is public; main-plan and split routes are in-app pages |
+| Backend tests | `backend/src/test/java/com/gogo/{trip,invitation,mainplan}/*.java`; `backend/src/test/java/com/gogo/hello/splits/**` | MockMvc tests drive identity with `.header("X-User-Id", …)`; greeting test is public; 4 splits test classes use the header |
+| Fixtures | `requirement-workspace/acceptance-test-fixtures.md` (users, sample trip, main-plan and splits matrices, REQ-008 section) | Alice 1 … Eve 5, sample trip; credentials added in REQ-008 |
+| UI reference | issue #38 attachment; `ui-design-reference/screenshots/` (no login screen); `AGENTS.md` | Login screenshot exists only on the issue; local prototype HTML has no login markup; Ant Design is the UI reference; current app uses custom tokens/CSS |
+| Binding plan | `docs/knowledge/architecture/tech-stack-plan.md` §2, §6 | States "MVP 不做账号体系 / 权限 / 注册登录", identity = invite code + nickname, `X-Member-Id`; no auth/session design |
+| CI | `.github/workflows/ci.yml` | Backend `mvn -B test`, frontend `npm ci && npm run build`; unchanged structure |
+| Board | issue #38; Project #2 card | Backlog → assigned `elian-jiang`, moved to `Req Analysis` 2026-11-16 (pick evidence) |
+| Downstream | issues #39 (US-067), #40 (US-068), #41 (US-069) | Backlog, unassigned; all consume this story's login/session |
+
+Baseline classification: brownfield identity-boundary replacement on top of the
+newly merged main-plan work. No new authority root; the deviation from the
+binding plan is explicit.
+
+## 40. As-is → proposed delta
+
+| Touched asset | As-is (evidence) | Proposed delta |
+|---|---|---|
+| `openspec/specs/auth` | Does not exist | New capability with ADDED requirements: credential login; server session and protected access; CSRF; public surfaces; login page + post-login resume |
+| `openspec/specs/trips/spec.md` | Caller identity = `X-User-Id` header | MODIFY "Trip caller identity": session principal; header no longer authenticates; 401 `USER_REQUIRED`/403 codes preserved; creation/detail behavior unchanged |
+| `openspec/specs/invitations/spec.md` | Issuance/accept use the header; preview public | MODIFY issuance/accept identity to the session principal; keep preview public, identity-error precedence and all join outcomes |
+| `openspec/specs/app-shell/spec.md` | Switcher labeled scaffold sets the header; every route in shell | MODIFY: switcher removed; signed-in name read-only; `#/login` full-screen without dock; shell pages require sign-in; frame/dock/join exclusion unchanged |
+| `openspec/specs/main-itinerary/spec.md` | Identity requirement names `X-User-Id` | MODIFY "Authorization and identity for main-plan operations": session principal; organizer/member outcomes and `USER_REQUIRED` code stay |
+| `openspec/specs/splits/spec.md` | Five split-draft requirements name a member/header identity; `MEMBER_REQUIRED` + `{data,error}` | MODIFY all five identity phrases to the session principal; keep `MEMBER_REQUIRED` and the envelope as documented exceptions; no split behavior change |
+| Database | `V1`–`V5`; `V6` free | ADD `V6__create_account_credential.sql`: credential table (user_id PK/FK, unique email, BCrypt hash) and seed rows for users 1–5; no other schema change |
+| Backend dependencies | No security starter | ADD `spring-boot-starter-security` (BCrypt, session/CSRF support); no ORM/JWT/Spring Session |
+| Backend auth surface | None | ADD `AuthController` (`POST /api/auth/login`, `GET /api/auth/me`, `GET /api/auth/csrf`), credential repository and `UserDetailsService`; JSON 401/403 handling |
+| Backend controllers | Trip/invitation/main-plan/splits parse `X-User-Id` per method | Read the authenticated principal instead; same statuses/codes and permission rules; splits keeps `MEMBER_REQUIRED`/envelope |
+| Error contract | Trip/invitation/main-plan flat `{code,message}`; splits `{data,error}` | ADD flat `{code,message}` for auth + Security handlers; document splits as the only envelope exception; no third shape |
+| Security configuration | None | ADD `SecurityFilterChain`: public login/CSRF/greeting/invitation-preview/static; authenticated everything else; CSRF cookie token; session fixation protection; configurable timeout; no form-login or logout surface (US-069 owns logout) |
+| Frontend API client | Sends `X-User-Id` | Remove header; same-origin cookies; attach CSRF header on state-changing requests; surface 401 to the auth layer |
+| Frontend app shell | Hard-coded users + switcher on every route | Auth bootstrap (`me`), signed-in/out state; remove switcher/list; read-only signed-in name; route guard; `#/login` full-screen; join preview stays public |
+| Frontend pages | Receive `userId` props and pass it to `api()` | Remove identity props across create/details/join/invitation/main-plan/split pages; authorization display derives from the authenticated account and server data |
+| Login page | None | ADD dedicated full-screen login page (email/password, busy, generic error), Ant Design language + existing tokens; no dock |
+| Pending invitation resume | None | Store the invitation token while signed out; after login return to the same `#/join/<token>` preview; never auto-accept |
+| Fixtures | Users/trip/main-plan values only | ADD credential emails + documented demo password and auth request cases (valid, invalid, no session, expired, header-only, CSRF, pending invitation) |
+| Tests | Header-driven MockMvc across trip/invitation/main-plan/splits | Rewrite identity setup to login/session; ADD auth tests (login, `me`, 401, CSRF, fixation, expiry); business assertions unchanged |
+| Docs | README, workdir, stage reports | Document demo credentials, login flow, public/protected surfaces; archive-time tech-stack reconciliation |
+| CI | Two jobs | Unchanged structure; backend adds the security dependency, frontend build covers the login page |
+
+## 41. Blast radius
+
+- Backend runtime: Spring Security filter chain wraps every request; session
+  state is held in the single Spring Boot instance (no external store).
+- Identity boundary: every protected endpoint and all five backend test suites
+  (trip, invitation, main-plan, splits, auth) change their caller source; trip,
+  invitation, main-plan and split permission outcomes must remain identical.
+- Database: one new credential table + five seeded rows (V6, after V5); `app_user`
+  ids and all memberships/plans stay unchanged, so existing trip data remains
+  valid.
+- Frontend: every API call loses the header and relies on cookies; all pages
+  that received identity props (including the two main-plan screens and the
+  split feature) must be adjusted; a new login route and guard affect every
+  protected page.
+- Public surface shrinks to login/CSRF, greeting and invitation preview; the
+  rest of the product now requires a session.
+- CI: no new service; backend dependency download grows; frontend bundle gains
+  the login page only.
+- Deployment: HTTPS and secure cookies are deployment concerns; the single
+  instance means in-memory sessions are acceptable but are lost on restart.
+
+## 42. Artifact impact
+
+- Specs: new `openspec/changes/us-066-log-in/specs/auth/spec.md` (ADDED) at P2;
+  MODIFIED `trips`, `invitations`, `app-shell`, `main-itinerary`, `splits`
+  deltas.
+- Tests: new `AuthApiTest`; rewritten trip/invitation/main-plan/splits identity
+  setup; browser checks for login, redirect, invitation resume, header-ignored
+  behavior.
+- Fixtures: credential values and auth request matrix in
+  `acceptance-test-fixtures.md`.
+- Docs: `README.md` run/login notes; workdir and `docs/ai4se-plugins/` reports;
+  tech-stack-plan reconciliation at archive.
+- KB: not configured; `scripts/kb-lint.sh` remains a documented `SKIP`.
+
+## 43. Dual-track notes
+
+One story (issue #38) → one change, one vertical slice (credentials + login +
+session + protected access + login page + invitation resume + identity migration
+for all existing protected surfaces). The story list already fixes US-066;
+`/sdd:story-split` is Skipped. US-067/068/069 remain separate downstream stories
+and are not implemented here.
+
+## 44. Risks & blockers
+
+| id | Risk | Severity | Status |
+|---|---|---|---|
+| R30 | Binding tech-stack plan says no accounts and documents `X-Member-Id`; this change adds Spring Security and a credential table | doc/stack deviation | Explicit deviation recorded in the proposal; reconcile at archive per `openspec/config.yaml`. Owner SA |
+| R31 | Every existing backend test (trip, invitation, main-plan, splits) drives `X-User-Id`; migration is broad and could accidentally change business outcomes | process, high touch | Rewrite identity setup only; keep existing assertions for codes and values. Owner Dev |
+| R32 | CSRF bootstrap and header plumbing are easy to get wrong, especially for the first login POST | implementation risk | P3 defines bootstrap order; S8 covers missing/valid token; tests exercise both. Owner Dev |
+| R33 | In-memory sessions are lost on backend restart; all users re-login | accepted for single instance | Document; no Spring Session/JWT dependency. AC5 expiry semantics still hold. Owner SA |
+| R34 | Seeded demo passwords/emails live in the repository | accepted for demo | Document as demo-only, never show in UI/logs; no production claim. Owner SA |
+| R35 | Login errors could reveal whether an email exists or leak account data | security risk | One generic failure for unknown email and wrong password; no account fields in the error. S3 asserts it. Owner Dev/SA |
+| R36 | Pending-invitation resume could auto-join or leak private trip data before login | contract risk | Preview stays identity-free; login only resumes the preview; explicit accept remains; S2 asserts no membership. Owner Dev/IO |
+| R37 | Spring Security defaults could expose form login/logout or redirect HTML for APIs | integration risk | Explicit JSON entry point, no form-login/logout surface; P3 verifies the filter chain. Owner Dev/SA |
+| R38 | `#/` is both the current public home and the post-login dashboard; making it protected changes existing public access | contract change | Story AC1 makes dashboard the post-login landing; greeting/preview remain public; note in the proposal. Owner IO |
+| R39 | Concurrent sessions for one account are allowed; no single-session policy | low, unspecified | Accepted for MVP; US-069 only needs the current session invalidated. Owner SA |
+| R40 | Only the five seeded accounts can log in (no registration) | accepted MVP limit | Recorded; registration is a separate future story. Owner IO |
+| R41 | Removal of the switcher contradicts the archived US-064 verification docs | historical records | Do not rewrite history; live specs/docs reflect the new contract. Owner Dev |
+| R42 | Dev proxy must keep cookies same-origin; no CORS is configured | environment risk | Vite proxy already forwards `/api`; verify cookies in the P4 browser run. Owner Dev |
+| R43 | Session TTL makes expiry hard to test if fixed at 30 minutes | testability | Test profile uses a short timeout; S5 acceptance uses it. Owner Dev |
+| R44 | `main-itinerary` and `splits` Living Specs still name header identity (splits Purpose still says `X-Member-Id` while code uses `X-User-Id`) | cross-capability contract | US-066 adds MODIFIED deltas for both; splits Purpose drift remains a residual for SA to fix at archive. Owner SA/Dev |
+| R45 | Main advanced repeatedly during P1/P2; `V4` = splits and `V5` = main plan | migration ordering | `V6` remains the next free migration; the branch is merged to `f6419a5` (merge `53bdcc6`); re-check the head before implementation. Owner Dev |
+| R47 | Spring Security would normally reject a split request before `MemberGuard`, changing its 401 to `USER_REQUIRED` | contract exception | P3 must route unauthenticated split requests to the documented `MEMBER_REQUIRED`/`{data,error}` exception (permit + guard or path-specific entry point). Owner Dev/SA |
+| R46 | The 仪表盘/dashboard named by the story is still home content; US-061 is not implemented | scope ambiguity | AC1 only requires the dashboard route to open after login; no aggregation added. Owner IO |
+
+No critical blocker invalidates REQ-008, so split may proceed.
+
+## 45. Suggested split boundaries
+
+One change: `us-066-log-in`. New capability `auth` (six ADDED requirements) plus
+MODIFIED `trips`, `invitations`, `app-shell`, `main-itinerary` and `splits`.
+Splitting backend auth from the login UI would produce an API with no way to
+obtain a session and a page with no backend, violating independently-shippable
+and E2E-verifiable. The change is a single identity-boundary replacement; one
+gate cycle is the only way to verify "existing outcomes unchanged" once.
+
+Effort: medium–large — `V6` credential migration; Spring Security configuration
+and auth endpoints; controller identity migration across trip, invitation,
+main-plan and splits packages; frontend auth bootstrap, login page, route guard,
+switcher removal and invitation resume; fixture/test migration; six spec deltas
+(auth + five modified). Phase order: credential migration + auth endpoints →
+security chain + controller migration (including the splits exception) →
+frontend bootstrap/login/guard → invitation resume + header-ignored verification
+→ full existing-acceptance re-run. Baseline: `origin/main` `f6419a5`, merged as
+`53bdcc6`. The story already exists as GitHub issue #38, so
+`/sdd:story-split` is Skipped.

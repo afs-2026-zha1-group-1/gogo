@@ -2,65 +2,35 @@
 
 - Change: `req-020-manage-must-do`
 - Baseline: the `preferences` delta of `req-019-save-interests`, which is not archived yet. This delta
-  stacks on it. The caller identity, trip existence and membership precondition is defined once in
-  REQ-019's `Preference caller identity and membership` and applies unchanged to the endpoints
-  below; it is not restated here as a new ADDED requirement.
+  stacks on the **revised** text of that baseline (2026-11-16: ten Chinese interest labels and the
+  `screen-08-preferences.png` page layout). The caller identity, trip existence and membership
+  precondition is defined once in REQ-019's `Preference caller identity and membership` and applies
+  unchanged to the endpoints below; it is not restated here as a new ADDED requirement.
+- Revision (2026-11-16, P3): three amendments. (1) The MODIFIED `Preferences page` requirement was
+  re-based on that revised revision 1, because it had been written against the pre-revision text
+  (seven English labels, no layout paragraph). (2) A storage-only `name` mirror was added (R4),
+  because the merged main-plan reader reads `name`; it costs two scenarios, so this delta is now
+  3 requirements / 44 scenarios instead of the earlier 42. (3) The two ADDED requirement bodies were
+  shortened to the 500-character strict limit (G1 condition 6); every statement they dropped is
+  asserted by a scenario of the same requirement, so no contract, no scenario and no count changed.
+  Amendments (1) and (2) were re-reviewed and signed Pass on 2026-11-16 by IO Emily and SA
+  evelyn.huang (`g1-decision.md`, "Revision re-review (2026-11-16) — Pass", condition 8 closed).
+  Amendment (3) is a formatting change made afterwards under condition 6 and does not reopen that
+  signature.
 - Storage: `member_preference` with `kind = 'must_do'`, one row per member, payload
-  `{"items": [{id, activity, location, time}]}`, `null` where a field is absent. No migration.
+  `{"items": [{id, activity, name, location, time}]}`, `null` where a field is absent. `name` mirrors
+  `activity` and is never returned. No migration.
 
 ## ADDED Requirements
 
 ### Requirement: Save member must-do items
 
-The system SHALL expose `PUT /api/trips/{tripId}/preferences/must-dos` accepting
-`{"items": [ {"id"?: integer, "activity": string, "location"?: string, "time"?: string} ]}` and
-SHALL replace the caller's must-do list as a whole.
-
-The server SHALL issue the `id` of every item submitted without one (or with `id: null`); an item
-submitted with an `id` that exists in the caller's current list SHALL be updated in place; an item
-of the caller's current list that is absent from the request SHALL be deleted.
-
-Item ids SHALL be unique within the caller's list only, and SHALL be unrelated to ids of other
-members. The server SHALL assign `max(current ids) + 1` to a newly created item, so an id MAY be
-reassigned once the list that carried it has been emptied. Item ids SHALL NOT be used as durable
-references outside this list.
-
-The response SHALL be status 200 with `{"items": [...]}`, carrying the stored items in the order
-of the request, each with `id`, `activity`, and `location`/`time` set to the stored string or
-`null`.
-
-`activity`, `location` and `time` SHALL be trimmed of surrounding whitespace before validation and
-storage; a `location` or `time` that is blank after trimming SHALL be treated as absent and stored
-as `null`.
-
-Validation SHALL complete before any write, in this order:
-
-1. the body is a JSON object, otherwise status 400 with `code = INVALID_REQUEST`;
-2. `items` is present and is an array of objects, otherwise `INVALID_REQUEST`; an `id` that is
-   present, non-null and not an integer is also `INVALID_REQUEST`;
-3. every item has a non-blank `activity` after trimming, otherwise status 400 with
-   `code = MUST_DO_ACTIVITY_REQUIRED`;
-4. every item has at least one non-blank `location` or `time` after trimming, otherwise status 400
-   with `code = MUST_DO_PLACE_OR_TIME_REQUIRED`;
-5. every `time` that is present matches `^([01][0-9]|2[0-3]):[0-5][0-9]$`, otherwise status 400
-   with `code = MUST_DO_TIME_INVALID`;
-6. no `id` occurs twice in the same request, otherwise status 400 with
-   `code = MUST_DO_ITEM_DUPLICATE_ID`;
-7. every submitted `id` belongs to the caller's current list, otherwise status 400 with
-   `code = MUST_DO_ITEM_UNKNOWN`; an id that belongs to another member is treated as unknown.
-
-A rejected request SHALL NOT write any row and SHALL NOT modify the `payload` or `updated_at` of
-an existing row, so a rejected request never applies partially.
-
-An empty `items` array SHALL be accepted and SHALL mean "clear the list": the system SHALL keep the
-member's record and store `{"items": []}`, and SHALL NOT delete the record.
-
-A member SHALL have at most one `must_do` record per trip, so the first save inserts and later saves
-overwrite. Repeating an identical list SHALL be idempotent: ids, stored order and `payload` SHALL
-stay the same, while `updated_at` MAY be refreshed.
-
-The capability SHALL NOT impose an item-count limit, a field-length limit or name-based
-deduplication.
+`PUT /api/trips/{tripId}/preferences/must-dos` SHALL replace the caller's must-do list: an item with
+no or null `id` is created with `max(current ids)+1`, a known `id` is updated in place, an omitted
+item is deleted. The stored payload mirrors `activity` as `name`, never returned (R4). Validation
+precedes any write, in order: shape, `activity`, place-or-time, `time` as
+`^([01]\d|2[0-3]):[0-5]\d$`, duplicate `id`, `id` ownership (foreign = unknown). No count, length or
+deduplication limit applies.
 
 #### Scenario: An item is added and read back
 
@@ -197,18 +167,22 @@ deduplication.
 - **WHEN** Ben saves one item
 - **THEN** `member_preference` holds exactly one row for `(trip_id=1, user_id=2, kind='must_do')`
 
+#### Scenario: The stored payload mirrors the activity under `name`
+
+- **GIVEN** Ben has no saved must-do items
+- **WHEN** Ben saves one item whose `activity` is `National Gallery Singapore visit`, and then edits
+  that same item's `activity` to `Night visit`
+- **THEN** after each of the two writes the stored payload's item carries `name` equal to its own
+  `activity`
+- **AND** neither response body carries a `name` key
+
 ### Requirement: Read member must-do items
 
-The system SHALL expose `GET /api/trips/{tripId}/preferences/must-dos`, returning the must-do
-items of every member to a member of that trip, in the shape
-`{"members": [ {"userId": <integer>, "mustDos": [ {"id","activity","location","time"} ]} ]}`.
-
-Each member object SHALL carry exactly `userId` and `mustDos`; each item SHALL carry exactly
-`id`, `activity`, `location` and `time`, with `null` for an absent location or time. `members`
-SHALL be ordered by ascending `userId` so assertions are repeatable. A member who never saved items
-SHALL still appear with `mustDos: []`, so the endpoint SHALL NOT omit members.
-
-The endpoint SHALL be read-only: reading SHALL NOT create or modify any row.
+The system SHALL expose `GET /api/trips/{tripId}/preferences/must-dos` to any member of that trip,
+returning every member's items as
+`{"members": [{"userId": <integer>, "mustDos": [{"id","activity","location","time"}]}]}`, with `null`
+for an absent `location` or `time` and `mustDos: []` for a member who never saved, so no member is
+omitted. Reading SHALL NOT create or modify any row and SHALL NOT return the stored `name` mirror.
 
 #### Scenario: A member reads back the saved list
 
@@ -239,6 +213,13 @@ The endpoint SHALL be read-only: reading SHALL NOT create or modify any row.
 - **THEN** every `members` element carries exactly `userId` and `mustDos`
 - **AND** every item carries exactly `id`, `activity`, `location` and `time`
 - **AND** the elements are ordered by ascending `userId`
+
+#### Scenario: The storage mirror never reaches a response
+
+- **GIVEN** Ben saved one item, so his stored payload carries both `activity` and its `name` mirror
+- **WHEN** any member reads the must-do items
+- **THEN** no item in the response carries a `name` key
+- **AND** `GET /api/trips/{tripId}/main-plan/inputs` still lists that activity in `mustDo`
 
 #### Scenario: Reading changes nothing
 

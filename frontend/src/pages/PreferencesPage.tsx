@@ -2,15 +2,13 @@ import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import Icon from '../Icons'
-import { ApiError } from '../api/client'
-import { fetchPreferences, savePreferences } from '../api/preferences'
+import { ApiError, fetchPreferences, savePreferences } from '../api/preferences'
+import { useAuth } from '../features/auth/AuthProvider'
 import { INTEREST_OPTIONS } from '../types/preferences'
 import type { PreferencesResponse } from '../types/preferences'
 
 interface PreferencesPageProps {
   tripId: number
-  userId: number
-  userName?: string
 }
 
 interface Rejection {
@@ -22,7 +20,7 @@ interface Rejection {
 function rejectionOf(error: unknown): Rejection | null {
   if (!(error instanceof ApiError)) return null
   if (error.status === 401) {
-    return { heading: '需要选择身份', explanation: '顶部身份选择器需要指向一个已存在的成员。' }
+    return { heading: '需要重新登录', explanation: '登录会话已失效，请重新登录后再试。' }
   }
   if (error.status === 403) {
     return { heading: '没有访问权限', explanation: '你不是这个行程的成员。请先通过邀请链接加入。' }
@@ -37,16 +35,19 @@ function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : '请求失败，请重试'
 }
 
-export default function PreferencesPage({ tripId, userId, userName }: PreferencesPageProps) {
+export default function PreferencesPage({ tripId }: PreferencesPageProps) {
+  // US-066: the session supplies identity, so the page no longer takes a userId prop.
+  const { account } = useAuth()
+  const userId = account?.id ?? null
   const queryClient = useQueryClient()
-  const queryKey = ['preferences', tripId, userId]
+  const queryKey = ['preferences', tripId]
   const [selected, setSelected] = useState<string[]>([])
   const [acknowledged, setAcknowledged] = useState<string[]>([])
   const [failure, setFailure] = useState<string | null>(null)
 
   const query = useQuery({
     queryKey,
-    queryFn: () => fetchPreferences(tripId, userId),
+    queryFn: () => fetchPreferences(tripId),
   })
 
   // Switching identity starts from an empty, clearly unloaded state; the fetch below seeds it.
@@ -66,7 +67,7 @@ export default function PreferencesPage({ tripId, userId, userName }: Preference
   }, [query.data, userId])
 
   const mutation = useMutation({
-    mutationFn: (interests: string[]) => savePreferences(tripId, userId, interests),
+    mutationFn: (interests: string[]) => savePreferences(tripId, interests),
     onSuccess: (response) => {
       setSelected(response.interests)
       setAcknowledged(response.interests)
@@ -109,7 +110,7 @@ export default function PreferencesPage({ tripId, userId, userName }: Preference
       </a>
       <div className="grow">
         <div className="title">我的偏好</div>
-        <div className="sub">{userName ? `${userName} · US-019` : 'US-019 · 兴趣'}</div>
+        <div className="sub">{account ? `${account.name} · US-019` : 'US-019 · 兴趣'}</div>
       </div>
       {!query.isError && <span className={statusTone}>{statusLabel}</span>}
     </div>

@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ValidItem, ValidList } from "@/components/ui/valid-item"
-import { IconAlert, IconBranch, IconCheck, IconClock, IconFlag, IconNav, IconRoute, IconSparkle } from "@/components/icons"
+import { IconAlert, IconArrowRight, IconBranch, IconCheck, IconClock, IconFlag, IconInfo, IconNav, IconRoute, IconSparkle } from "@/components/icons"
 import { formatClock } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
@@ -17,7 +17,8 @@ import { cn } from "@/lib/utils"
  * (POST routes:check-timing, read-only, zero DB). Inputs are pre-filled from the saved routes and stay
  * editable so the overrun (T2-N) and missing-input (T3-N) states are observable in the walkthrough;
  * clearing a field sends null. The client never declares feasibility — it renders the backend's
- * totalMinutes / overrunMinutes / missingInputs / feasible. Confirm (US-049) is out of scope.
+ * totalMinutes / overrunMinutes / missingInputs / feasible. The review/confirm step (US-049) lives on
+ * Screen 15; a terminal (confirmed/cancelled) draft is shown read-only here.
  */
 interface RouteInput {
   groupLabel: string
@@ -160,7 +161,37 @@ export function ScreenTiming() {
             </div>
           ) : null}
 
-          <p className="text-[10.5px] leading-relaxed text-ink-3">确认分队（US-049）本期不实现；校验为只读快照、不写库。</p>
+          <p className="text-[10.5px] leading-relaxed text-ink-3">校验为只读快照、不写库；可行性由后端判定。</p>
+
+          {detail.status !== "active" ? (
+            <Card className="flex items-start gap-2.5 border-line bg-surface-3/60 p-3.5">
+              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-surface text-ink-3 [&_svg]:size-4">
+                <IconInfo />
+              </span>
+              <div className="min-w-0">
+                <div className="text-[12.5px] font-bold text-ink">当前草稿已{detail.status === "confirmed" ? "确认" : "取消"}</div>
+                <p className="mt-0.5 text-[11px] leading-relaxed text-ink-2">终态草稿只读，不可再编辑或重新校验确认。</p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-2"
+                  onClick={() =>
+                    navigate(
+                      detail.status === "confirmed"
+                        ? `/trips/${tripId}/split/confirm`
+                        : `/trips/${tripId}/split`,
+                    )
+                  }
+                >
+                  {detail.status === "confirmed" ? "查看已确认分队" : "发起替换草稿"} <IconArrowRight />
+                </Button>
+              </div>
+            </Card>
+          ) : (
+            <Button className="w-full" variant="outline" onClick={() => navigate(`/trips/${tripId}/split/confirm`)}>
+              前往复核并确认 <IconArrowRight />
+            </Button>
+          )}
         </div>
       )}
     </SplitLayout>
@@ -333,9 +364,9 @@ function Legend({ swatch }: { swatch: "solid" | "striped" | "light" }) {
 function toInput(route: GroupRoute): RouteInput {
   return {
     groupLabel: route.groupLabel,
-    activity: String(route.activityMinutes),
-    legs: route.travelLegsMinutes.map(String),
-    buffer: String(route.bufferMinutes),
+    activity: route.activityMinutes != null ? String(route.activityMinutes) : "",
+    legs: (route.travelLegsMinutes ?? []).map((leg) => (leg != null ? String(leg) : "")),
+    buffer: route.bufferMinutes != null ? String(route.bufferMinutes) : "",
   }
 }
 

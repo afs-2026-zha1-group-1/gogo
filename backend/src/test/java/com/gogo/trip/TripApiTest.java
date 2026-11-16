@@ -1,5 +1,7 @@
 package com.gogo.trip;
 
+import com.gogo.auth.TestAuth;
+
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -59,9 +61,7 @@ class TripApiTest {
 
     private MvcResult create(String body, String userId) throws Exception {
         var request = post("/api/trips").contentType(MediaType.APPLICATION_JSON).content(body);
-        if (userId != null) {
-            request = request.header("X-User-Id", userId);
-        }
+        request = request.with(TestAuth.asUser(userId));
         return mockMvc.perform(request).andReturn();
     }
 
@@ -87,7 +87,7 @@ class TripApiTest {
     void rejectsInvertedDateRangeWithoutWriting() throws Exception {
         long before = tripCount();
         mockMvc.perform(post("/api/trips").contentType(MediaType.APPLICATION_JSON)
-                        .header("X-User-Id", "1")
+                        .with(TestAuth.asUser("1"))
                         .content(FULL_BODY.replace("\"startDate\":\"2026-12-05\"", "\"startDate\":\"2026-12-06\"")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_DATE_RANGE"));
@@ -98,7 +98,7 @@ class TripApiTest {
     void rejectsBlankNameWithoutWriting() throws Exception {
         long before = tripCount();
         mockMvc.perform(post("/api/trips").contentType(MediaType.APPLICATION_JSON)
-                        .header("X-User-Id", "1")
+                        .with(TestAuth.asUser("1"))
                         .content(FULL_BODY.replace("\"name\":\"Singapore Friends Day\"", "\"name\":\"   \"")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("NAME_REQUIRED"));
@@ -115,7 +115,7 @@ class TripApiTest {
         };
         for (String body : bodies) {
             mockMvc.perform(post("/api/trips").contentType(MediaType.APPLICATION_JSON)
-                            .header("X-User-Id", "1").content(body))
+                            .with(TestAuth.asUser("1")).content(body))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value("DESTINATION_REQUIRED"));
         }
@@ -134,7 +134,7 @@ class TripApiTest {
         org.junit.jupiter.api.Assertions.assertTrue(node.get("startLocation").isNull());
         org.junit.jupiter.api.Assertions.assertTrue(node.get("endLocation").isNull());
         long id = node.get("id").asLong();
-        mockMvc.perform(get("/api/trips/" + id).header("X-User-Id", "1"))
+        mockMvc.perform(get("/api/trips/" + id).with(TestAuth.asUser("1")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.startLocation").value(org.hamcrest.Matchers.nullValue()))
                 .andExpect(jsonPath("$.endLocation").value(org.hamcrest.Matchers.nullValue()))
@@ -153,7 +153,7 @@ class TripApiTest {
     @Test
     void rejectsMalformedDate() throws Exception {
         mockMvc.perform(post("/api/trips").contentType(MediaType.APPLICATION_JSON)
-                        .header("X-User-Id", "1")
+                        .with(TestAuth.asUser("1"))
                         .content(FULL_BODY.replace("\"startDate\":\"2026-12-05\"", "\"startDate\":\"2026-13-01\"")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_DATE"));
@@ -163,11 +163,11 @@ class TripApiTest {
     void rejectsCreateWithoutOrWithUnknownIdentity() throws Exception {
         long before = tripCount();
         create(FULL_BODY, null);
-        mockMvc.perform(post("/api/trips").contentType(MediaType.APPLICATION_JSON).content(FULL_BODY))
+        mockMvc.perform(post("/api/trips").contentType(MediaType.APPLICATION_JSON).with(TestAuth.csrfOnly()).content(FULL_BODY))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("USER_REQUIRED"));
         mockMvc.perform(post("/api/trips").contentType(MediaType.APPLICATION_JSON)
-                        .header("X-User-Id", "99").content(FULL_BODY))
+                        .with(TestAuth.asUser("99")).content(FULL_BODY))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("USER_REQUIRED"));
         org.junit.jupiter.api.Assertions.assertEquals(before, tripCount());
@@ -176,7 +176,7 @@ class TripApiTest {
     @Test
     void memberReadsSavedTrip() throws Exception {
         long id = seededTripId();
-        mockMvc.perform(get("/api/trips/" + id).header("X-User-Id", "2"))
+        mockMvc.perform(get("/api/trips/" + id).with(TestAuth.asUser("2")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Singapore Friends Day"))
                 .andExpect(jsonPath("$.destination").value("Singapore"))
@@ -189,7 +189,7 @@ class TripApiTest {
     @Test
     void nonMemberIsDeniedWithoutTripValues() throws Exception {
         long id = seededTripId();
-        mockMvc.perform(get("/api/trips/" + id).header("X-User-Id", "5"))
+        mockMvc.perform(get("/api/trips/" + id).with(TestAuth.asUser("5")))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("NOT_A_MEMBER"))
                 .andExpect(jsonPath("$.name").doesNotExist())
@@ -207,7 +207,7 @@ class TripApiTest {
 
     @Test
     void unknownTripIdIsReportedSeparately() throws Exception {
-        mockMvc.perform(get("/api/trips/999999").header("X-User-Id", "2"))
+        mockMvc.perform(get("/api/trips/999999").with(TestAuth.asUser("2")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("TRIP_NOT_FOUND"));
     }
@@ -215,12 +215,12 @@ class TripApiTest {
     @Test
     void noEditDeleteOrListRoutesExist() throws Exception {
         long id = seededTripId();
-        mockMvc.perform(put("/api/trips/" + id).header("X-User-Id", "1")
+        mockMvc.perform(put("/api/trips/" + id).with(TestAuth.asUser("1"))
                         .contentType(MediaType.APPLICATION_JSON).content(FULL_BODY))
                 .andExpect(status().isMethodNotAllowed());
-        mockMvc.perform(delete("/api/trips/" + id).header("X-User-Id", "1"))
+        mockMvc.perform(delete("/api/trips/" + id).with(TestAuth.asUser("1")))
                 .andExpect(status().isMethodNotAllowed());
-        mockMvc.perform(get("/api/trips").header("X-User-Id", "1"))
+        mockMvc.perform(get("/api/trips").with(TestAuth.asUser("1")))
                 .andExpect(status().isMethodNotAllowed());
     }
 

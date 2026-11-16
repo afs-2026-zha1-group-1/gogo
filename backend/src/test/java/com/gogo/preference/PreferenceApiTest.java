@@ -28,9 +28,11 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gogo.auth.TestAuth;
 
 // REQ-019: US-019 interests; delta scenarios ID-1..5, CAT-1..4, SAVE-1..8, READ-1..5
-// plus the API-level reverse checks of the ATDD design section 5.
+// plus the API-level reverse checks of the ATDD design section 5. US-066 replaced the
+// `X-User-Id` header with the session, so identity comes from TestAuth.asUser here.
 @SpringBootTest(classes = com.gogo.hello.HelloApplication.class, properties = {
         "spring.datasource.url=jdbc:sqlite:file:preference-test?mode=memory&cache=shared&foreign_keys=on",
         "spring.datasource.hikari.maximum-pool-size=1"
@@ -83,10 +85,8 @@ class PreferenceApiTest {
         if (body != null) {
             request = request.contentType(MediaType.APPLICATION_JSON).content(body);
         }
-        if (userId != null) {
-            request = request.header("X-User-Id", userId);
-        }
-        return mockMvc.perform(request).andReturn();
+        // A null userId posts only the CSRF token, so anonymous calls stay anonymous.
+        return mockMvc.perform(request.with(TestAuth.asUser(userId))).andReturn();
     }
 
     private JsonNode body(MvcResult result) throws Exception {
@@ -161,19 +161,35 @@ class PreferenceApiTest {
     }
 
     @Test
-    void rejectsUnusableIdentity() throws Exception {
-        assertRejected(read("99"), 401, "USER_REQUIRED");
-        assertRejected(read("abc"), 401, "USER_REQUIRED");
-        assertRejected(save("{\"interests\":[\"摄影\"]}", "99"), 401, "USER_REQUIRED");
-        assertTrue(body(read("abc")).get("members") == null);
+    void rejectsAnonymousCallerEvenWhenTheRetiredHeaderIsPresent() throws Exception {
+        // US-066 made the session the only identity, so a stale header authenticates nothing.
+        MvcResult readResult = mockMvc.perform(get(path("/preferences"))
+                .header("X-User-Id", "2")).andReturn();
+        assertRejected(readResult, 401, "USER_REQUIRED");
+        assertNull(body(readResult).get("members"));
+
+        MvcResult saveResult = mockMvc.perform(put(path("/preferences"))
+                        .with(TestAuth.csrfOnly())
+                        .header("X-User-Id", "2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"interests\":[\"摄影\"]}"))
+                .andReturn();
+        assertRejected(saveResult, 401, "USER_REQUIRED");
+        assertEquals(0, rowCount(2));
     }
 
     @Test
-    void toleratesWhitespaceAroundIdentity() throws Exception {
-        assertEquals(200, save("{\"interests\":[\"摄影\"]}", " 2 ").getResponse().getStatus());
-        String padded = read(" 2 ").getResponse().getContentAsString();
-        String plain = read("2").getResponse().getContentAsString();
-        assertEquals(plain, padded);
+    void ignoresTheRetiredIdentityHeader() throws Exception {
+        // The session wins: a conflicting header must not change which member is stored.
+        MvcResult result = mockMvc.perform(put(path("/preferences"))
+                        .with(TestAuth.asUser("2"))
+                        .header("X-User-Id", "5")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"interests\":[\"摄影\"]}"))
+                .andReturn();
+        assertEquals(200, result.getResponse().getStatus());
+        assertNotNull(storedPayload(2));
+        assertNull(storedPayload(5));
     }
 
     @Test
@@ -195,11 +211,11 @@ class PreferenceApiTest {
     void reportsUnknownTripBeforeMembership() throws Exception {
         for (String userId : List.of("2", "5")) {
             MvcResult result = mockMvc.perform(get("/api/trips/999999/preferences")
-                    .header("X-User-Id", userId)).andReturn();
+                    .with(TestAuth.asUser(userId))).andReturn();
             assertRejected(result, 404, "TRIP_NOT_FOUND");
         }
         MvcResult write = mockMvc.perform(put("/api/trips/999999/preferences")
-                        .header("X-User-Id", "2").contentType(MediaType.APPLICATION_JSON)
+                        .with(TestAuth.asUser("2")).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"interests\":[\"摄影\"]}"))
                 .andReturn();
         assertRejected(write, 404, "TRIP_NOT_FOUND");
@@ -431,7 +447,7 @@ class PreferenceApiTest {
         mockMvc.perform(get("/api/greeting"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Hello World"));
-        mockMvc.perform(put("/api/trips/" + seededTripId()).header("X-User-Id", "1")
+        mockMvc.perform(put("/api/trips/" + seededTripId()).with(TestAuth.asUser("1"))
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isMethodNotAllowed());
     }

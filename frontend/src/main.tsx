@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from 'react-router-dom'
-import { IdentityProvider } from './features/split/identity'
+import { AuthProvider } from './features/auth/AuthProvider'
 import { router } from './router'
 import './index.css'
 import './app.css'
@@ -21,9 +21,9 @@ if (!rootElement) {
 createRoot(rootElement).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <IdentityProvider>
+      <AuthProvider>
         <RouterProvider router={router} />
-      </IdentityProvider>
+      </AuthProvider>
     </QueryClientProvider>
   </StrictMode>,
 )

@@ -1,8 +1,3 @@
-export interface User {
-  id: number
-  name: string
-}
-
 export interface GreetingResponse {
   message: string
 }
@@ -71,6 +66,7 @@ export type TabId = 'dashboard' | 'trips' | 'split' | 'members'
 
 export type Route =
   | { page: 'home' }
+  | { page: 'login' }
   | { page: 'trips-empty' }
   | { page: 'create' }
   | { page: 'split' }
@@ -81,5 +77,6 @@ export type Route =
   | { page: 'main-plan-inputs'; tripId: number }
   | { page: 'preferences'; tripId: number }
 
-// main-plan and preference screens are full-page flows (like join) without the bottom TabBar.
-export type InAppPage = Exclude<Route['page'], 'join' | 'main-plan' | 'main-plan-inputs' | 'preferences'>
+// login, join, main-plan and preference screens are full-page flows without the bottom TabBar.
+export type InAppPage =
+  Exclude<Route['page'], 'join' | 'login' | 'main-plan' | 'main-plan-inputs' | 'preferences'>

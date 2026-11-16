@@ -245,11 +245,11 @@ Day, users 1-5, window 09:30-11:30 = 120 minutes, routes A=105 / B=110).
 
 | Item | Value | Why |
 |---|---|---|
-| Active draft v2 (confirmable case) | `POST split-draft` (Ben, `X-User-Id: 2`) then `PUT boundaries` (City Hall MRT -> Merlion Park) then `POST routes:generate`; fixture groups A = Alice+Ben / B = Chloe+Daniel; resulting `draftVersion = 2` | Both stories assume a draft with boundaries and a route pair already saved; the B chain owns those steps |
+| Active draft v3 (confirmable case) | `POST split-draft` (Ben, `X-User-Id: 2`) → v1; `PUT boundaries` (City Hall MRT -> Merlion Park) → v2; `POST routes:generate` → **v3**; fixture groups A = Alice+Ben / B = Chloe+Daniel | Both stories assume a draft with boundaries and a route pair already saved; each write bumps the version, so the confirmable draft is v3 |
 | Timing verdict on that draft | A = 15+60+20+10 = 105, B = 20+60+20+10 = 110, window 120 -> both feasible | Same arithmetic as the US-043 section; the confirm recomputation must reproduce it |
 | Infeasible case (CF2-N) | test-only document mutation: route A `travelLegsMinutes` last leg 20 -> 40 (A = 125) | US-049 AC2 names 125 in a 120-minute window; no product write path makes an infeasible pair, so the setup is documented as test-only |
 | Missing-input case (CF3-N) | test-only document mutation: route A `activityMinutes` = null | AC-equivalent to US-043 S3-N (missing input must not be declared feasible) |
-| Stale-version case (CF4-N) | request `draftVersion: 1` while the stored draft is v2 | Value comes from the difference, not from a sample claim |
+| Stale-version case (CF4-N) | request `draftVersion: 1` while the stored draft is v3 | Value comes from the difference, not from a sample claim |
 | Non-organizer case (CF5-N) | confirm with `X-User-Id: 2` (Ben, member not organizer; organizer = 1) | US-049 AC3 "Ben attempts organizer-only confirmation" |
 | Non-initiator case (CN3-N) | cancel with `X-User-Id: 3` (Chloe) while initiator = Ben (2) | US-050 AC3 |
 | Confirmed-then-cancel case (CN2-N) | after CF1 succeeds, call cancel as the initiator | US-050 AC2 "split plan is confirmed" |
@@ -260,13 +260,15 @@ Day, users 1-5, window 09:30-11:30 = 120 minutes, routes A=105 / B=110).
 
 | Case | Call | Expected |
 |---|---|---|
-| CF1 confirm pass | `POST /api/trips/1/split-draft:confirm` `X-User-Id: 1`, `{"draftVersion":2}` | `200`; draft detail with `status = confirmed`; `GET split-draft` returns the same; a later `PUT boundaries` -> `409 SPLIT_DRAFT_NOT_ACTIVE` |
-| CF2-N over window | same call on the infeasible draft | `409 SPLIT_TIMING_INFEASIBLE`; detail `totalMinutes = 125`, `overrunMinutes = 5`; draft stays `active`, `draftVersion` unchanged |
-| CF3-N missing input | same call on the missing-input draft | `409 SPLIT_TIMING_INFEASIBLE`; detail `missingInputs` non-empty; stays `active` |
+| CF1 confirm pass | `POST /api/trips/1/split-draft:confirm` `X-User-Id: 1`, `{"draftVersion":3}` | `200`; draft detail with `status = confirmed`; `GET split-draft` returns the same; a later `PUT boundaries` -> `409 SPLIT_DRAFT_NOT_ACTIVE` |
+| CF2-N over window | same call on the infeasible draft | `409 SPLIT_TIMING_INFEASIBLE`; `error.details.routes[0]` = {`groupLabel: "A"`, `totalMinutes: 125`, `overrunMinutes: 5`, `missingInputs: []`}, `routes[1]` = {`groupLabel: "B"`, `totalMinutes: 110`, `overrunMinutes: 0`, `missingInputs: []`}; draft stays `active`, `draftVersion` unchanged |
+| CF3-N missing input | same call on the missing-input draft | `409 SPLIT_TIMING_INFEASIBLE`; `error.details.routes[0].missingInputs` non-empty (field names, e.g. `activityMinutes`), `routes[1].missingInputs` empty; stays `active` |
+| CF7-N incomplete draft | confirm on a draft with boundaries but no generated routes (or only one boundary) | `409 SPLIT_DRAFT_INCOMPLETE`; `error.details.missing` lists `routes` / `boundaries`; stays `active`; no timing recomputation |
 | CF4-N stale | same call with `{"draftVersion":1}` | `409 STALE_DRAFT_VERSION`; no state change |
 | CF5-N non-organizer | same call `X-User-Id: 2` | `403 NOT_SPLIT_ORGANIZER`; no state change |
 | CF6-N not active | confirm before any draft, after CF1 (confirmed), and after CN1 (cancelled) | `409 SPLIT_DRAFT_NOT_ACTIVE` in all three |
-| CN1 cancel pass | `POST /api/trips/1/split-draft:cancel` `X-User-Id: 2`, `{"draftVersion":2}` | `200`; `status = cancelled`; `plan_node` main rows unchanged, split rows deleted; ensuing `POST split-draft` `X-User-Id: 1` -> `201`, `draftVersion = 1`, `status = active`, `initiatorMemberId = 1` |
+| CN1 cancel pass | `POST /api/trips/1/split-draft:cancel` `X-User-Id: 2`, `{"draftVersion":3}` | `200`; `status = cancelled` and `routes = []`; `plan_node` main rows unchanged, split rows deleted; reading detail again shows `status = cancelled`, `routes = []`; ensuing `POST split-draft` `X-User-Id: 1` -> `201`, `draftVersion = 1`, `status = active`, `initiatorMemberId = 1`, and `split_draft.draft_version` column = 1 |
+| CN6-N stale cancel | after the cancelled row is rebuilt by Alice (v1, active), Alice cancels using the pre-rebuild `draftVersion` (3) | `409 STALE_DRAFT_VERSION`; new draft stays `active` with its initiator/boundaries/routes |
 | CN2-N cancel confirmed | cancel after CF1 | `409 SPLIT_DRAFT_NOT_ACTIVE`; confirmed document and split rows unchanged |
 | CN3-N non-initiator | `X-User-Id: 3` cancel | `403 NOT_SPLIT_INITIATOR`; draft stays `active` |
 | CN4-N no draft | cancel before any draft | `409 SPLIT_DRAFT_NOT_ACTIVE` |
@@ -278,6 +280,7 @@ Day, users 1-5, window 09:30-11:30 = 120 minutes, routes A=105 / B=110).
 Both `:confirm` and `:cancel` return the existing draft-detail projection (`GET /split-draft` shape) with `status` set to `confirmed` / `cancelled`:
 `tripId`, `initiatorMemberId`, `mainPlanVersion`, `draftVersion`, `status`, `departureStopId`, `reunionStopId`, `groups` {`A`, `B`}, `routes` {`A`, `B`} -> {`activityMinutes`, `travelLegsMinutes`, `bufferMinutes`}, `createdAt`, `updatedAt`.
 The `SPLIT_TIMING_INFEASIBLE` error detail adds `totalMinutes`, `overrunMinutes`, `missingInputs` (array of `A|B` + field hints); only `code` is contractual.
+（C7 补丁 2026-11-16）上述明细的标准形状为 `error.details.routes[]`：每项 `{groupLabel, totalMinutes, overrunMinutes, missingInputs}`，固定长度 2、按 A/B 顺序；`SPLIT_DRAFT_INCOMPLETE` 的标准形状为 `error.details.missing: string[]`（`boundaries` / `routes` / `routes.A` / `routes.B`）；`data` 仍为 `null`，`code` 为唯一契约字段。
 
 ### Values deliberately not fixed (US-049-050)
 
@@ -286,3 +289,60 @@ The `SPLIT_TIMING_INFEASIBLE` error detail adds `totalMinutes`, `overrunMinutes`
 | Confirm/cancel response ids and timestamps | Assigned by the backend; tests read them from responses |
 | Whether the replacement draft reuses the seeded groups | MVP fixture supplies the same split; the assertion is on initiator/version/status, not group content round two |
 | Error message wording | Only `code` is contractual |
+
+## REQ-008 — login and session (US-066)
+
+Same users as above. Credentials are seeded by `V6__create_account_credential.sql`
+for the five fixture accounts. **Demo-only values**: they exist so acceptance can
+log in without a registration story; they are shown on the demo login page (not a production account directory).
+
+### Accounts
+
+| id | display name | email | demo password |
+|---|---|---|---|
+| 1 | Alice | `alice@example.com` | `gogo-demo-2026` |
+| 2 | Ben | `ben@example.com` | `gogo-demo-2026` |
+| 3 | Chloe | `chloe@example.com` | `gogo-demo-2026` |
+| 4 | Daniel | `daniel@example.com` | `gogo-demo-2026` |
+| 5 | Eve | `eve@example.com` | `gogo-demo-2026` |
+
+All five share one documented demo password; passwords are stored only as BCrypt
+hashes.
+
+### Requests
+
+| Case | Call | Expected |
+|---|---|---|
+| A1 valid login | `POST /api/auth/login` `{"email":"alice@example.com","password":"gogo-demo-2026"}` | 200, body `id = 1`, `name = Alice`, `email = alice@example.com`; no password/hash field; session cookie set |
+| A2 normalized email | A1 with `"  Alice@Example.COM  "` | 200, same account as A1 |
+| A3 wrong password | A1 with `"wrong-password"` | 401, `code = INVALID_CREDENTIALS`; no session; no account field |
+| A4 unknown email | A1 with `"nobody@example.com"` | 401, `code = INVALID_CREDENTIALS`, identical body to A3 |
+| A5 blank credentials | A1 with email or password missing/blank | 401, `code = INVALID_CREDENTIALS`; no session |
+| A6 current account | `GET /api/auth/me` with the A1 session | 200, same account as A1 |
+| A7 no session | `GET /api/auth/me` without a session cookie | 401, `code = USER_REQUIRED`; no account data |
+| A8 fixation | capture the anonymous session id, then A1 | post-login session id differs; the anonymous id returns 401 on `me` |
+| A9 expiry | test profile with a short idle timeout; wait past it, then A6 | 401, `code = USER_REQUIRED`; a fresh A1 restores access |
+| A10 CSRF missing | authenticated POST (e.g. create trip) without `X-XSRF-TOKEN` | 403, `code = CSRF_INVALID`; no state change |
+| A11 CSRF valid | bootstrap the token, repeat A10 with `X-XSRF-TOKEN` | normal success/validation outcome; state changes only as the case allows |
+| A12 login CSRF | A1 without and then with the CSRF token | without: 403 `CSRF_INVALID`; with: A1/A3 outcome |
+| P1 protected no session | `GET /api/trips/{id}` or `POST /api/trips` without a session | 401, `code = USER_REQUIRED`; no trip values and no write |
+| P2 header only | P1 with `X-User-Id: 1` but no session | 401, `code = USER_REQUIRED`; header ignored |
+| P3 public surfaces | `GET /api/greeting` and `GET /api/invitations/{token}` without a session | 200 as before; preview carries only the public basics and no member/itinerary/preference data |
+| P4 authenticated permissions | login as Alice, Ben, Eve; exercise create, details, issuance, accept | Alice organizer on create; Ben details 200; Eve details 403 `NOT_A_MEMBER`; Ben issuance 403 `NOT_ORGANIZER`; Eve accept joins once and her next read is 200 |
+| P5 main-plan protected | main-plan read/generate/confirm without a session | 401, `code = USER_REQUIRED`; no plan data; authenticated outcomes unchanged |
+| P6 invitation resume | signed-out browser opens `#/join/<token>`, acts on it, logs in | preview is public; login opens; after login the same preview resumes; no membership until explicit accept; accept then joins |
+| P7 login redirect | signed-in browser opens `#/login` | `#/` opens |
+| P8 hash storage | test-only direct read of `account_credential.password_hash` | value is a BCrypt hash (starts `$2`) and is not the demo password |
+| C1 existing acceptance | re-run create/detail/invitation/join/main-plan/split acceptance while logged in | same outcomes and codes as the archived fixtures |
+| P9 split no session | any `GET/POST/PUT /api/trips/{id}/split-draft...` without a session | 401 with `data = null` and `error.code = MEMBER_REQUIRED` (splits exception), no private data |
+| P10 split authenticated | the same split calls with a member session | existing split outcomes and `{data,error}` envelope unchanged; no header is sent |
+
+### Values deliberately not fixed (REQ-008)
+
+| Item | Why no value is set |
+|---|---|
+| Session cookie value / session id | Generated per session; tests capture it from the response |
+| BCrypt hash string | Salted per seed run; only the BCrypt format is contractual |
+| Login error message wording | Only `code = INVALID_CREDENTIALS` is contractual |
+| Exact idle timeout beyond the default | 30 minutes default; tests use a short configured timeout |
+| Demo password in UI | Never displayed; it is a fixture value documented here only |

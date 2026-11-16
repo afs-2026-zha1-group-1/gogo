@@ -5,13 +5,15 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.gogo.auth.AccountPrincipal;
 
 @RestController
 @RequestMapping("/api/trips")
@@ -27,9 +29,9 @@ public class TripController {
 
     @PostMapping
     public ResponseEntity<TripResponse> create(
-            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
+            @AuthenticationPrincipal AccountPrincipal principal,
             @RequestBody TripCreateRequest request) {
-        long userId = caller(userIdHeader);
+        long userId = principal.id();
         LocalDate start = parseDate(request.startDate());
         LocalDate end = parseDate(request.endDate());
         if (isBlank(request.name())) {
@@ -49,9 +51,9 @@ public class TripController {
 
     @GetMapping("/{id}")
     public TripResponse read(
-            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
+            @AuthenticationPrincipal AccountPrincipal principal,
             @PathVariable long id) {
-        long userId = caller(userIdHeader);
+        long userId = principal.id();
         TripResponse trip = repository.findById(id)
                 .orElseThrow(() -> new TripApiException(404, "TRIP_NOT_FOUND", "No trip with id " + id));
         if (!repository.isMember(id, userId)) {
@@ -62,9 +64,9 @@ public class TripController {
 
     @PostMapping("/{id}/main-plan:confirm")
     public TripResponse confirmMainPlan(
-            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
+            @AuthenticationPrincipal AccountPrincipal principal,
             @PathVariable long id) {
-        long userId = caller(userIdHeader);
+        long userId = principal.id();
         repository.findById(id)
                 .orElseThrow(() -> new TripApiException(404, "TRIP_NOT_FOUND", "No trip with id " + id));
         if (!repository.isMember(id, userId)) {
@@ -73,14 +75,6 @@ public class TripController {
         repository.confirmMainPlan(id);
         return repository.findById(id)
                 .orElseThrow(() -> new TripApiException(404, "TRIP_NOT_FOUND", "No trip with id " + id));
-    }
-
-    private long caller(String headerValue) {
-        if (headerValue == null) {
-            throw new TripApiException(401, "USER_REQUIRED", "X-User-Id header is required");
-        }
-        return repository.findUserId(headerValue)
-                .orElseThrow(() -> new TripApiException(401, "USER_REQUIRED", "X-User-Id must name a seeded user"));
     }
 
     private static LocalDate parseDate(String value) {

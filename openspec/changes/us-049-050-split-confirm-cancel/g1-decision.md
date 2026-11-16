@@ -63,13 +63,13 @@
 | C4 | P3 承接 Screen 15：路线对/分组/边界/校验结论展示 + error/empty/loading/permission 四态 + confirmed/cancelled 终态 | Dev | P3 | 非阻塞承接 | 待 P3 |
 | C5 | P5 归档：`tech-stack-plan` API 清单补 `:confirm`/`:cancel` 两行；living-merge 必须以 delta Purpose 覆盖旧链级约定（lint F4） | SA / Dev | P5 | 非阻塞承接 | 待 P5 |
 | C6 | 清理残留 change 噪声：空壳 `req-004-split-draft-start`、未归档 `req-002-greeting-json-sqlite`（lint F2） | Dev | 可并行 | 非阻塞 | pending |
-| C7 | P3 定稿前完成 delta 补丁：① D1b 改为 cancelled 返回 `routes=[]`（取消同事务清空 `document.routes`），CN1 增加投影断言；② 补 CN6-N（取消携带过期版本 → 409 `STALE_DRAFT_VERSION`，草稿仍 active）；③ 补 CF7-N（active 但缺路线/半边界 → 409 `SPLIT_DRAFT_INCOMPLETE`，含 `missing` 明细）；④ 定义 `error.details.routes[]` 形状；⑤ Screen 11 按 status 分支（active→下一步；cancelled→发起替换；confirmed→只读终态）并补场景断言；⑥ 明确 S8 `mainPlanVersion` 口径（本期恒为 1，R2 多版本再扩展）；复跑 `openspec validate --strict` 与 consistency-lint(p2) | SA / Dev | P3 design 定稿前 | **阻塞**（P4 前必闭） | pending |
-| C8 | P3 design：① confirm/cancel 使用状态 CAS（`WHERE draft_version=? AND document.status='active'`），保持列版本不变；② 重建同事务重置 `split_draft.draft_version=1`，以 `WHERE status='cancelled'` 条件更新，失败 409 `SPLIT_DRAFT_CONFLICT`；③ 补 S9-N 并发重建与 confirm/cancel 并发用例；④ 草稿时长模型改可空（`RouteDurations` 用 `Integer` 或显式 missing），使 CF3-N 可测 | SA / Dev | P3 | 非阻塞承接（P4 前必闭） | 待 P3 |
-| C9 | P3 design：定义下游读模型（US-052/058/063）只读 `GET split-draft` 的 `status`，禁止按 `split_draft` 行存在判定“已拆分/已确认” | SA | P3 | 非阻塞承接 | 待 P3 |
+| C7 | P3 定稿前完成 delta 补丁：① D1b 改为 cancelled 返回 `routes=[]`（取消同事务清空 `document.routes`），CN1 增加投影断言；② 补 CN6-N（取消携带过期版本 → 409 `STALE_DRAFT_VERSION`，草稿仍 active）；③ 补 CF7-N（active 但缺路线/半边界 → 409 `SPLIT_DRAFT_INCOMPLETE`，含 `missing` 明细）；④ 定义 `error.details.routes[]` 形状；⑤ Screen 11 按 status 分支（active→下一步；cancelled→发起替换；confirmed→只读终态）并补场景断言；⑥ 明确 S8 `mainPlanVersion` 口径（本期恒为 1，R2 多版本再扩展）；复跑 `openspec validate --strict` 与 consistency-lint(p2) | SA / Dev | P3 design 定稿前 | **阻塞**（P4 前必闭） | **closed**（2026-11-16，P3 首步：delta 51 场景，`validate --strict` valid，lint 复跑 Pass，fixtures 同步） |
+| C8 | P3 design：① confirm/cancel 使用状态 CAS（`WHERE draft_version=? AND document.status='active'`），保持列版本不变；② 重建同事务重置 `split_draft.draft_version=1`，以 `WHERE status='cancelled'` 条件更新，失败 409 `SPLIT_DRAFT_CONFLICT`；③ 补 S9-N 并发重建与 confirm/cancel 并发用例；④ 草稿时长模型改可空（`RouteDurations` 用 `Integer` 或显式 missing），使 CF3-N 可测 | SA / Dev | P3 | 非阻塞承接（P4 前必闭） | **closed**（2026-11-16 design D4/D5/D7/D8；S9-N 并发重建落 ATDD/Tasks 测试级用例） |
+| C9 | P3 design：定义下游读模型（US-052/058/063）只读 `GET split-draft` 的 `status`，禁止按 `split_draft` 行存在判定“已拆分/已确认” | SA | P3 | 非阻塞承接 | **closed**（2026-11-16 design D13：下游只读 `status`） |
 | C10 | P4：Screen 14/15 增加 `status` 门禁；确认/取消收到 409 时重新 GET 判定是否已成功（重试幂等 UX） | Dev | P4 | 非阻塞承接 | 待 P4 |
 | C11 | P5：fixtures 投影字段对齐（`tripId` 去掉或 delta 明确加入）；proposal 夹具矩阵补 CN5/S9；`tech-stack-plan` 补两端点、3 个错误码与 `error.details`；`initiatorMemberId` 命名注（实为 `app_user.id`） | SA / Dev | P5 | 非阻塞承接 | 待 P5 |
 
-> C1/C2 已 closed；**C7 阻塞 P3 design 定稿**，C3–C6、C8–C11 按阶段承接。C7–C11 未全部 closed 前**不得进入 P4 实现与 G2**。
+> C1/C2 已 closed；**C7 已于 2026-11-16 P3 首步 closed**（delta 51 场景、validate valid、lint 复跑 Pass）；C8/C9 随 P3 design 承接；C3–C6、C10、C11 按阶段承接。C8–C11 未全部 closed 前**不得进入 P4 实现与 G2**。
 
 ## Approvers
 

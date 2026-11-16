@@ -1,5 +1,7 @@
 package com.gogo.hello.splits.controller;
 
+import com.gogo.auth.TestAuth;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -8,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.gogo.auth.TestAuth;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
@@ -149,7 +152,7 @@ class SplitDraftDetailApiTest extends AbstractSplitApiTest {
     @DisplayName("getDetail_knownMemberUnknownTrip_returns404TripNotFoundAndCreatesNothing")
     void getDetail_knownMemberUnknownTrip_returns404TripNotFoundAndCreatesNothing() throws Exception {
         mockMvc.perform(get("/api/trips/{tripId}/split-draft", UNKNOWN_TRIP)
-                        .header("X-User-Id", memberId("Ben")))
+                        .with(TestAuth.asUser(memberId("Ben"))))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.data").doesNotExist())
                 .andExpect(jsonPath("$.error.code").value("TRIP_NOT_FOUND"));
@@ -158,12 +161,46 @@ class SplitDraftDetailApiTest extends AbstractSplitApiTest {
 
     private ResultActions getDetail(String memberId) throws Exception {
         return mockMvc.perform(get("/api/trips/{tripId}/split-draft", sgfTripId())
-                .header("X-User-Id", memberId));
+                .with(TestAuth.asUser(memberId)));
+    }
+
+    @Test
+    @DisplayName("getDetail_confirmedDraft_keepsSavedRoutes")
+    void getDetail_confirmedDraft_keepsSavedRoutes() throws Exception {
+        int version = prepareConfirmableDraftAs("Ben");
+        mockMvc.perform(post("/api/trips/{tripId}/split-draft:confirm", sgfTripId())
+                        .with(TestAuth.asUser(memberId("Alice")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"draftVersion\":" + version + "}"))
+                .andExpect(status().isOk());
+        getDetail(memberId("Chloe"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("confirmed"))
+                .andExpect(jsonPath("$.data.draftVersion").value(version))
+                .andExpect(jsonPath("$.data.routes.length()").value(2))
+                .andExpect(jsonPath("$.data.routes[0].activityName").value("National Gallery Singapore"));
+    }
+
+    @Test
+    @DisplayName("getDetail_cancelledDraft_returnsEmptyRoutesWithoutGhostActivities")
+    void getDetail_cancelledDraft_returnsEmptyRoutesWithoutGhostActivities() throws Exception {
+        int version = prepareConfirmableDraftAs("Ben");
+        mockMvc.perform(post("/api/trips/{tripId}/split-draft:cancel", sgfTripId())
+                        .with(TestAuth.asUser(memberId("Ben")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"draftVersion\":" + version + "}"))
+                .andExpect(status().isOk());
+        getDetail(memberId("Chloe"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("cancelled"))
+                .andExpect(jsonPath("$.data.draftVersion").value(version))
+                .andExpect(jsonPath("$.data.routes.length()").value(0));
+        assertThat(splitRouteCount()).isZero();
     }
 
     private void startDraft() throws Exception {
         mockMvc.perform(post("/api/trips/{tripId}/split-draft", sgfTripId())
-                        .header("X-User-Id", memberId("Ben")))
+                        .with(TestAuth.asUser(memberId("Ben"))))
                 .andExpect(status().isCreated());
     }
 
@@ -173,7 +210,7 @@ class SplitDraftDetailApiTest extends AbstractSplitApiTest {
         body.put("reunionStopId", stopId("Merlion Park"));
         body.put("draftVersion", draftVersion);
         mockMvc.perform(put("/api/trips/{tripId}/split-draft/boundaries", sgfTripId())
-                        .header("X-User-Id", memberId("Ben"))
+                        .with(TestAuth.asUser(memberId("Ben")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isOk());
@@ -181,7 +218,7 @@ class SplitDraftDetailApiTest extends AbstractSplitApiTest {
 
     private ResultActions postGenerate(String memberId, int draftVersion) throws Exception {
         return mockMvc.perform(post("/api/trips/{tripId}/split-draft/routes:generate", sgfTripId())
-                .header("X-User-Id", memberId)
+                .with(TestAuth.asUser(memberId))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"draftVersion\":" + draftVersion + "}"));
     }

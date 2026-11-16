@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api'
+import { useAuth } from '../features/auth/AuthProvider'
 import Icon from '../Icons'
 import type {
   BudgetOverrun,
@@ -42,11 +43,11 @@ interface BlockedConfirm {
 }
 
 interface MainPlanProps {
-  userId: number
   tripId: number
 }
 
-export default function MainPlan({ userId, tripId }: MainPlanProps) {
+export default function MainPlan({ tripId }: MainPlanProps) {
+  const { account } = useAuth()
   const [state, setState] = useState<PlanState>({ kind: 'loading' })
   const [busy, setBusy] = useState<'regen' | 'confirm' | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -58,8 +59,8 @@ export default function MainPlan({ userId, tripId }: MainPlanProps) {
     setActionError(null)
     setBlocked(null)
     Promise.all([
-      api<TripSummary>(`/api/trips/${tripId}`, { userId }),
-      api<MainPlan & MainPlanError>(`/api/trips/${tripId}/main-plan`, { userId }),
+      api<TripSummary>(`/api/trips/${tripId}`),
+      api<MainPlan & MainPlanError>(`/api/trips/${tripId}/main-plan`),
     ])
       .then(([tripResult, planResult]) => {
         if (!active) return
@@ -85,12 +86,12 @@ export default function MainPlan({ userId, tripId }: MainPlanProps) {
     return () => {
       active = false
     }
-  }, [userId, tripId])
+  }, [tripId])
 
   useEffect(() => load(), [load])
 
   async function refreshPlan() {
-    const { ok, data } = await api<MainPlan>(`/api/trips/${tripId}/main-plan`, { userId })
+    const { ok, data } = await api<MainPlan>(`/api/trips/${tripId}/main-plan`)
     if (ok && data) {
       setState((current) => current.kind === 'ready' ? { ...current, plan: data } : current)
     }
@@ -101,7 +102,7 @@ export default function MainPlan({ userId, tripId }: MainPlanProps) {
     setActionError(null)
     setBlocked(null)
     try {
-      const { status, ok, data } = await api<MainPlan & MainPlanError>(`/api/trips/${tripId}/main-plan`, { userId, method: 'POST' })
+      const { status, ok, data } = await api<MainPlan & MainPlanError>(`/api/trips/${tripId}/main-plan`, { method: 'POST' })
       if (ok && data) {
         setState((current) => current.kind === 'ready' ? { ...current, plan: data } : current)
       } else if (status === 409 && data?.code === 'MEMBERS_NOT_READY') {
@@ -122,7 +123,7 @@ export default function MainPlan({ userId, tripId }: MainPlanProps) {
     setActionError(null)
     setBlocked(null)
     try {
-      const { status, ok, data } = await api<MainPlan & MainPlanError>(`/api/trips/${tripId}/main-plan/confirm`, { userId, method: 'POST' })
+      const { status, ok, data } = await api<MainPlan & MainPlanError>(`/api/trips/${tripId}/main-plan/confirm`, { method: 'POST' })
       if (ok && data) {
         setState((current) => current.kind === 'ready' ? { ...current, plan: data } : current)
       } else if (status === 422 && data?.code === 'VALIDATION_FAILED') {
@@ -170,7 +171,7 @@ export default function MainPlan({ userId, tripId }: MainPlanProps) {
   }
 
   if (state.kind === 'empty') {
-    const isOrganizer = state.trip.organizerId === userId
+    const isOrganizer = state.trip.organizerId === account?.id
     return (
       <div className="screen">
         {appbar}
@@ -226,7 +227,7 @@ export default function MainPlan({ userId, tripId }: MainPlanProps) {
   }
 
   const { trip, plan } = state
-  const isOrganizer = trip.organizerId === userId
+  const isOrganizer = trip.organizerId === account?.id
 
   return (
     <div className="screen">
