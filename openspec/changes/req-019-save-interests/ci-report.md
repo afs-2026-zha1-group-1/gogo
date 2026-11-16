@@ -10,11 +10,12 @@ Full report: `docs/ai4se-plugins/20261116-153521-pipeline-report.md`.
 **Pipeline URL:** https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43824457379
 **Commit:** `e7333f0` — equals local `HEAD`, `origin/feat/travel_preference` and PR #44 `headRefOid`
 
-**Latest head (2026-11-16 16:15 UTC+08:00):** `f16d009` (third `origin/main` merge, base
-`40381ac`), PR #44 `mergeStateStatus` = `CLEAN`, run
-[43829662798](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43829662798) green on it —
-see §"Update — E1 on the merged head". The section below stays as the first E1 evidence on
-`e7333f0`.
+**Latest head (2026-11-16 16:20 UTC+08:00):** `0e93804` — the merge commit `f16d009` plus the
+G2-draft documentation only — base `40381ac`, PR #44 `mergeStateStatus` = `CLEAN`; run
+[43830251839](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43830251839) is green on it
+(`Backend tests` 203/203 + `BUILD SUCCESS`, `Frontend build` 20 s). See §"Update — E1 on the merged
+head" for the code-bearing run `43829662798` on `f16d009`. Any later documentation commit re-runs
+CI on the new head; take the live check from `gh pr view 44`.
 
 ## E1
 

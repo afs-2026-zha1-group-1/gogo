@@ -13,9 +13,10 @@
 - **Timestamp:** *签署时填写*
 - **Target:** PR #44 `REQ-019: save member interests on main's shadcn baseline`，base `main`，
   head = `feat/travel_preference` 的当前 tip（整理时为 `6828754`；其后两次并入 main：`02fa201`
-  并入 US-065 前端 TS 化、`f16d009` 并入 `40381ac`）。签核前最后一次 CI 绿 head 为 `f16d009`、
-  base `40381ac`、`mergeStateStatus` = `CLEAN`。签署前后请以 `gh pr view 44` 的实时
-  `headRefOid` 与 check 结果为准
+  并入 US-065 前端 TS 化、`f16d009` 并入 `40381ac`）。本记录定稿时的 head 为 `0e93804`
+  （`f16d009` 之后仅本文档改动），base `40381ac`，`mergeStateStatus` = `CLEAN`，该 head 上
+  run `43830251839` 双 job 全绿。签署前后请以 `gh pr view 44` 的实时 `headRefOid` 与 check
+  结果为准（其后若还有文档提交，CI 会在新 head 上重跑）
 
 ## Inputs
 
@@ -34,7 +35,8 @@
 | run | head | 结论 | 说明 |
 |---|---|---|---|
 | [43824457379](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43824457379) | `e7333f0` | success | `Backend tests` 43 s（`Tests run: 203, Failures: 0, Errors: 0` + `BUILD SUCCESS`）、`Frontend build` 17 s（`npm ci` → `typecheck` → `build`） |
-| [43829662798](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43829662798) | `f16d009` | success | **当前 PR head**（第三次并入 main 后的合并提交）：`Backend tests` 33 s（`Tests run: 203, Failures: 0, Errors: 0, Skipped: 0` + `BUILD SUCCESS`）、`Frontend build` 20 s（`Check lockfile portability` 2/2 → `npm ci` → `typecheck` → `build`，`136 modules` / `488.36 kB`） |
+| [43830251839](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43830251839) | `0e93804` | success | **本记录定稿 head**（`f16d009` + 仅文档改动）：`Backend tests` 36 s（`Tests run: 203, Failures: 0, Errors: 0, Skipped: 0` + `BUILD SUCCESS`）、`Frontend build` 20 s（`136 modules transformed`） |
+| [43829662798](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43829662798) | `f16d009` | success | 第三次并入 main 的合并提交：`Backend tests` 33 s（`Tests run: 203, Failures: 0, Errors: 0, Skipped: 0` + `BUILD SUCCESS`）、`Frontend build` 20 s（`Check lockfile portability` 2/2 → `npm ci` → `typecheck` → `build`，`136 modules` / `488.36 kB`） |
 | [43825093537](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43825093537) | `6828754` | success | 上者之后仅文档提交，双 job 仍全绿；其后被 main 的 US-065 合并推离 head |
 | [43822010878](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43822010878) | `ec299b7` | success | 更早 head，同一份代码 |
 
