@@ -1342,3 +1342,71 @@ for US-013.
 Residual risk: F2 (unify split anonymous error code), R38 (auth arrived after
 G1; the delta was amended under these conditions and the VL re-records G2 on
 the merged head). No critical blocker remains for the US-013 slice.
+
+---
+
+# Impact brief — US-072
+
+- Date: 2026-11-16
+- Workdir: `requirement-workspace/`
+- Mode: embedded at the end of `/sdd:pre-spec-req`（blocking OQs = 0, DoR BLOCKERs = 0）
+- Change id: 待 P2 建立（`us-072-trip-detail-main-plan-entry`）
+
+## 1. Requirement set
+
+| id | Path |
+|---|---|
+| US-072 | `requirement-workspace/requirements/US-072.md` |
+
+Supporting: `requirement-workspace/intents/2026-11-16-us-072.md`，
+`requirement-workspace/analysis/us-072-dor.md`.
+
+## 2. As-is asset inventory (evidence paths)
+
+| Asset | Evidence | State |
+|---|---|---|
+| TripDetails 页面 | `frontend/src/pages/TripDetails.tsx` | 已有 InvitationPanel (L178) 和分队规划 section (L183)，两者之间无主线方案入口 |
+| MainPlan 页面 | `frontend/src/pages/MainPlan.tsx` | 完整实现六态 (loading/ready/empty/denied/missing/failed)；appbar 右侧 info 按钮 `href="#/trips/${tripId}"` 已支持返回行程详情 |
+| MainPlanInputs 页面 | `frontend/src/pages/MainPlanInputs.tsx` | 组织者生成入口，已有返回 MainPlan 的 back 按钮 |
+| Hash 路由 | `frontend/src/App.tsx` L28–29 | `#/trips/{id}/main-plan` 和 `#/trips/{id}/main-plan/inputs` 已注册，在 shell 内渲染 |
+| 后端 GET main-plan | `backend/src/main/java/com/gogo/mainplan/` | 成员可读，session auth，已由 US-031-037 归档 |
+| Living Spec `main-itinerary` | `openspec/specs/main-itinerary/spec.md` | 7 requirements，含方案读取/展示/状态 |
+| Living Spec `trips` | `openspec/specs/trips/spec.md` | 含行程详情读 |
+| CSS tokens & 组件类 | `frontend/src/app.css` | `sec-title`、`card pad`、`btn btn-primary`、`iconbtn` 均已可用 |
+| Icons | `frontend/src/Icons.tsx` | `sparkle`、`cal`、`info`、`nav` 等图标已注册 |
+
+## 3. As-is → proposed delta
+
+| Touched asset | As-is (evidence) | Proposed delta |
+|---|---|---|
+| `frontend/src/pages/TripDetails.tsx` | InvitationPanel 紧接分队规划 section | 在两者之间插入 `sec-title "主线方案"` + `card pad` + `<a className="btn btn-primary" href="#/trips/{tripId}/main-plan">查看主线方案</a>` (~8 行 JSX) |
+| 后端 API / DB | — | 无变更 |
+| App.tsx 路由 / parseRoute | — | 无变更（`main-plan` 路由已存在） |
+| MainPlan.tsx / MainPlanInputs.tsx | — | 无变更 |
+| InvitationPanel.tsx | — | 无变更 |
+| types.ts / types/mainPlan.ts | — | 无变更 |
+| Living Spec `trips` | 行程详情能力无主线方案入口条款 | P5 archive 时新增 MODIFIED requirement（入口可见性） |
+| Living Spec `main-itinerary` | — | 无变更（复用，不扩面） |
+| `openspec/specs/` 新 capability | — | 不新增 capability |
+
+## 4. Impact classification
+
+**方向: extend** — 在已有的 trips 能力前端页面添加一条到 main-itinerary 的导航入口。不引入新业务概念、新 API 端点、新数据表、新页面组件。
+
+## 5. Cross-REQ consistency
+
+| Related REQ/US | Relationship | Risk |
+|---|---|---|
+| US-031-037 (main-itinerary) | 入口指向其 MainPlan 页面和路由，复用其权限和状态展示 | 无——不修改其逻辑 |
+| REQ-004 (invitations) | InvitationPanel 在入口上方，两者无交互 | 无 |
+| US-049-050 (splits) | 分队规划 section 在入口下方，逻辑不变 | 无 |
+| REQ-008 / US-066 (login/session) | 入口在已登录 shell 内渲染，route guard 拦截未登录 | 无——现有机制覆盖 |
+| US-013 (members) | 无直接关联 | 无 |
+
+## 6. Risk register
+
+| id | Risk | Severity | Mitigation |
+|---|---|---|---|
+| R1 | 入口文案或位置与未来 UI redesign 冲突 | Low | 当前 AC 明确指定"邀请朋友"与"分队规划"之间；后续 redesign 可重排 |
+
+No critical blocker. 可进入 P2 proposal-split。

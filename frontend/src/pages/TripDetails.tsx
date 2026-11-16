@@ -180,6 +180,16 @@ export default function TripDetails({ tripId }: TripDetailsProps) {
           isOrganizer={isOrganizer}
         />
 
+        <div className="sec-title" style={{ marginTop: 18 }}><Icon name="sparkle" className="sm" /> 主线方案</div>
+        <section className="card pad">
+          <p className="hint" style={{ marginBottom: 12 }}>
+            查看大家共享的主线行程和方案状态。
+          </p>
+          <a className="btn btn-primary" href={`#/trips/${trip.id}/main-plan`}>
+            查看主线方案
+          </a>
+        </section>
+
         <div className="sec-title" style={{ marginTop: 18 }}>分队规划</div>
         <section className="card pad">
           <p className="hint" style={{ marginBottom: 12 }}>
