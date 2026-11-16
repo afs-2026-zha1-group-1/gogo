@@ -15,7 +15,7 @@
 | P4-2 | yes | Pass | Local Overall = Pass; no Waiver required |
 | P4-3 | yes* | Pass | PR #47; CI run 43828244877 on `f104477`: backend + frontend success; `docs/ai4se-plugins/20261116-155440-pipeline-report.md` (+ `ci-report.md`) |
 | P4-4 | yes* | Skipped | Not deployed; CD not applicable |
-| P4-5 | yes* | Skipped | G2 not claimed; human-only decision pending |
+| P4-5 | yes* | Pass | G2 **Pass**, VL lumi (`openspec/changes/archive/2026-11-16-us-066-log-in/g2-decision.md`) |
 | P4-6 | yes | Pass | Apply and verify are separate; no agent-signed Gate |
 
 | **Stage Overall** | — | Pass | required in-focus items: P4-1/P4-2/P4-6 Pass; later-stage items skipped |
@@ -31,7 +31,7 @@
 | Check id | Gap | Owner (if known) | Suggested next |
 |----------|-----|------------------|----------------|
 | P4-3 | CI run 43828244877 success (backend + frontend) | — | Closed; see pipeline report |
-| P4-5 | G2 not recorded | VL | Human G2 after CI/local evidence; agent must not self-sign |
+| P4-5 | G2 recorded Pass (VL lumi) | — | Closed via `g2-decision.md` |
 
 ## Notes
 

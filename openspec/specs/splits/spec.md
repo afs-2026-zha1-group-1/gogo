@@ -30,7 +30,7 @@
 
 ### Requirement: Split draft start
 
-系统 SHALL 提供 `POST /api/trips/{tripId}/split-draft`（`X-Member-Id` 头），
+系统 SHALL 提供 `POST /api/trips/{tripId}/split-draft`（`authenticated session` 头），
 允许任意行程成员从已确认主线发起该行程唯一的拆分草稿。系统 SHALL 依序校验
 成员资格、主线确认前置、活跃唯一性，并以条件更新在 `trip.split_draft` 创建
 JSON 文档（`initiatorMemberId`、`mainPlanVersion`、`draftVersion = 1`、
@@ -53,7 +53,7 @@ JSON 文档（`initiatorMemberId`、`mainPlanVersion`、`draftVersion = 1`、
 
 #### Scenario: 成员发起唯一草稿（S1）
 
-- **WHEN** 主线 v1 已确认且无活跃草稿，成员 Ben 携带有效 `X-Member-Id` 发起
+- **WHEN** 主线 v1 已确认且无活跃草稿，成员 Ben 携带有效 `authenticated session` 发起
 - **THEN** 响应 `201`，`data` 含 initiatorMemberId = Ben、mainPlanVersion = 1、
   draftVersion = 1、status = active
 - **AND** 库中该行程恰有一份活跃草稿文档
@@ -73,13 +73,13 @@ JSON 文档（`initiatorMemberId`、`mainPlanVersion`、`draftVersion = 1`、
 
 #### Scenario: 非成员拒绝（S4-N）
 
-- **WHEN** Eve（非本行程成员）携带其 `X-Member-Id` 发起
+- **WHEN** Eve（非本行程成员）携带其 `authenticated session` 发起
 - **THEN** 响应 `403` 且 `error.code = NOT_A_MEMBER`
 - **AND** 不创建草稿，响应不含行程私有数据
 
 #### Scenario: 缺失或未知身份拒绝（S5-N）
 
-- **WHEN** 请求缺失 `X-Member-Id` 头或其 id 在全局成员记录中不存在
+- **WHEN** 请求缺失 `authenticated session` 头或其 id 在全局成员记录中不存在
 - **THEN** 响应 `401` 且 `error.code = MEMBER_REQUIRED`
 - **AND** 不创建草稿
 
@@ -104,7 +104,7 @@ JSON 文档（`initiatorMemberId`、`mainPlanVersion`、`draftVersion = 1`、
 ### Requirement: Split boundary selection
 
 系统 SHALL 提供 `PUT /api/trips/{tripId}/split-draft/boundaries`
-（`X-Member-Id` 头，body 含 `departureStopId`、`reunionStopId`、`draftVersion`），
+（`authenticated session` 头，body 含 `departureStopId`、`reunionStopId`、`draftVersion`），
 仅允许草稿发起人成对保存出发与会合边界（不开放半边界）。两 stop SHALL 均属
 已确认主线；出发时刻 = 出发 stop 的 `end_at`（scheduled end），会合时刻 =
 会合 stop 的 `start_at`（scheduled start），窗口 = 会合 − 出发（分钟）且
@@ -263,7 +263,7 @@ and reject an empty snapshot or route count other than two with 400 `INVALID_ROU
 
 #### Scenario: Timing identity and trip guards precede calculation (T6-N)
 
-- **WHEN** the timing endpoint receives a missing or globally unknown member id,
+- **WHEN** the timing endpoint receives a missing or globally unknown authenticated account,
   a known member with an unknown trip, or known outsider Eve for the fixture trip
 - **THEN** the respective response is `401 MEMBER_REQUIRED`, `404 TRIP_NOT_FOUND`
   or `403 NOT_A_MEMBER`, with `data = null`
@@ -309,13 +309,13 @@ the draft, routes or versions, and SHALL NOT require initiator status.
 
 #### Scenario: Known outsider cannot read draft detail (D3-N)
 
-- **WHEN** Eve uses her known member id to read the fixture trip's draft detail
+- **WHEN** Eve uses her known authenticated account to read the fixture trip's draft detail
 - **THEN** response is 403 with `error.code=NOT_A_MEMBER` and `data=null`
 - **AND** no trip, draft or route values are returned
 
 #### Scenario: Missing or globally unknown identity cannot read detail (D4-N)
 
-- **WHEN** a detail request has a missing or globally unknown `X-Member-Id`
+- **WHEN** a detail request has a missing or globally unknown `authenticated session`
 - **THEN** response is 401 with `error.code=MEMBER_REQUIRED` and `data=null`
 - **AND** no trip, draft or route values are returned
 
