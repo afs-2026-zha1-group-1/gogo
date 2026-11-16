@@ -1085,3 +1085,73 @@ displayed. No notification (email, push, queue) is in scope.
 No retention, volume or SLA is stated by the ACs. The endpoint is a read-only
 projection over existing rows; no data is created or changed. Recorded, not
 invented.
+
+## US-071
+
+触发：impact 方向为 **add**（`trips` 新增一条只读列表能力 + `app-shell` 一条
+MODIFIED 放置 requirement + 详情页一个入口卡片）。单故事、单只读切片，零迁移，
+无新业务概念。
+
+### ⑨ Data contract
+
+| 概念 | 粒度 | 字段 | 状态迁移 | 来源 |
+|---|---|---|---|---|
+| 我的行程列表（投影） | 每次请求一份，按会话账号过滤 | 包封套 `{trips:[...]}`；行 `{id, name, destination, startDate, endDate, organizer, mainPlanConfirmed}` | 本变更不改状态；行随 `trip_member` 增删自然增删 | `GET /api/trips` 由 `trip` + `trip_member` 派生 |
+| 行程归属 | 一行 per (trip, user) | `trip_id`, `user_id` | 建行程时写入 organizer 行；接受邀请时写入受邀者行（REQ-004 J2/J3）；本变更只读 | `V2__create_trip.sql`（复合主键，天然去重） |
+| 行程 | 一行 per 行程 | `id`, `name`, `destination`, `start_date`, `end_date`, `start_location`, `end_location`, `organizer_id`, `main_plan_confirmed` | `main_plan_confirmed` 由 confirm 写入，本变更不改 | `V2__create_trip.sql` |
+| 账号身份 | 一行 per 种子账号凭据 | `user_id`, `email`, `password_hash` | 会话由 `/api/auth/login` 建立（US-066） | `V6__create_account_credential.sql` |
+| `organizer` 派生 | 每行一个布尔 | `organizer` = (`trip.organizer_id` = 当前账号 id) | 读时派生，不落库 | `trip.organizer_id` |
+| 「已结束」显示态 | 每行前端计算 | 无 wire 字段；由 `endDate` < 本地当天 推导 | 仅显示层判定，服务端无状态机、不写入 | 前端渲染 |
+
+无 `{TBD}` 字段。排序契约：`start_date` 升序 → `id` 升序（同日可确定性断言）。
+
+### ⑩ Boundary enumeration
+
+| 规则 | 分支 | In / Out | 依据 |
+|---|---|---|---|
+| 调用者身份 | 无已认证会话 | Out — `401 USER_REQUIRED` | `SecurityConfig` entry point（US-066） |
+| 调用者身份 | 仅携带退役 `X-User-Id`（含合法种子 id） | Out — `401 USER_REQUIRED` | 请求头不再认证 |
+| 可见范围 | 当前账号是成员（含 organizer） | In — 该行出现在列表中 | S1 |
+| 可见范围 | 当前账号非成员 | Out — 该行程不出现在列表中，响应体无其任何字段 | S4 / R3；列表不是按 id 读取，故无 403 语义 |
+| 空集 | 当前账号无任何成员行 | In — `200` + `{"trips":[]}`；前端显示空态 | S5 |
+| 去重 | 同一行程存在一行成员记录 | In — 恰好一条 | R4；`trip_member` 复合主键 |
+| 已结束行程 | `end_date` < 当天 | In — 仍在列表，前端显示「已结束」徽标 | S9；用户裁决不分区 |
+| 主线已确认 | `main_plan_confirmed = 1` | In — 正常出现，不影响可见性 | S12 |
+| 写入语义 | `POST /api/trips` | 不变 — 仍为创建行程 | R6 |
+| 详情读取 | 非成员按 id 读详情 | Out — 既有 `403 NOT_A_MEMBER` | 不在本变更范围，行为不变 |
+| 排序 | 同 `start_date` | In — 按 `id` 升序 | 确定性测试 |
+
+### ⑪ Cross-REQ consistency
+
+| 能力 | 其他 REQ / 界面 | US-071 行为 | 收敛 |
+|---|---|---|---|
+| `trips` 身份与错误词汇 | US-066 / REQ-008 会话 | 沿用 `USER_REQUIRED`；列表不新增错误码 | ✓ 与既有 trip 端点一致 |
+| `trips` 详情读取 | REQ-003 `Trip detail read` | 点击行进入 `#/trips/{id}`，读取行为不变 | ✓ 组合，不改 |
+| `trips` 成员名册 | US-013 `Trip member list read` | 列表不显示成员名，名册仍由成员 tab 读取 | ✓ 无重叠 |
+| `app-shell` 行程 tab 放置 | US-064 `Trips tab placement and no-trip empty state` | tab 恒落 `#/trips`；空态动作改为「创建行程」；删除「不得新增列表端点」禁令 | ✓ MODIFIED（本变更核心） |
+| `app-shell` 底部导航 | US-064 `Bottom dock navigation` | 四个 tab 顺序、激活规则不变；`#/trips` 仍激活「行程」 | ✓ 不改 |
+| `app-shell` 仪表盘 | US-064 `Dashboard tab placement` | 首页仍为 greeting/创建入口，不承载列表 | ✓ 不改 |
+| `invitations` | REQ-004 接受邀请 | 接受成功后 Join 页回 `#/`；再进列表能看到新行程且仅一条 | ✓ 组合验证 S6 |
+| `main-itinerary` | US-031-037 `#/trips/{id}/main-plan` | tab 不再承担跳转；改为详情页入口卡片 | ✓ 入口迁移，行为不变 |
+| `splits` | US-049-050 分队屏 | `tripsHref` 改为 `#/trips` 后，分队页「去行程」指向列表 | ✓ 合理收敛 |
+| US-061 单行程仪表盘 | 未实现 | 本故事不做聚合仪表盘 | ✓ 范围外 |
+
+### ⑫ Notification / display contract
+
+| 界面 | 触发 | 受众 | 内容 + 显示字段 | 通道 | 数量 |
+|---|---|---|---|---|---|
+| 我的行程列表 | 「行程」tab 激活或 `#/trips` 直达 | 已登录账号 | 标题「我的行程」；每行 `name`、`destination`、`startDate – endDate`；已结束时追加「已结束」徽标 | `GET /api/trips`；客户端渲染 | 每次渲染一份 |
+| 行点击 | 点击某行 | 已登录账号 | 跳 `#/trips/{id}` 详情 | hash 路由 | 一次一程 |
+| loading 态 | 请求进行中 | 查看者 | 加载文案或骨架；不显示旧数据 | 客户端渲染 | 一 |
+| 空态 | `200` + 空数组 | 查看者 | 「还没有行程」文案 + 「创建行程」按钮（跳 `#/create`）；不要求输入编号 | 客户端渲染 | 一 |
+| 错误态 | 网络失败或非 2xx | 查看者 | 错误信息 + 重试按钮；重试重新请求 | 客户端渲染 | 一 |
+| 账号切换 | 会话账号变化后重新挂载/刷新 | 查看者 | 按新账号重新读取：只显示新账号行程 | 同一端点新会话 | 一 |
+| 详情页主线方案入口 | 打开 `#/trips/{id}` | 行程成员 | 卡片 + 「主线方案」按钮，跳 `#/trips/{id}/main-plan` | 客户端链接 | 一 |
+
+无通知（邮件/推送/队列）在范围内；不显示偏好、预算、就绪度等他人私密字段。
+
+### NFR business-policy layer
+
+AC 未声明保留期、SLA 或容量指标。列表是既有行的只读投影，按用户维度过滤，规模为
+个位数到几十，MVP 不分页（OQ-5 deferred）。若后续出现首屏预算压力，再单独立项。
+

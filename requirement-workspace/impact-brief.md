@@ -1343,6 +1343,114 @@ Residual risk: F2 (unify split anonymous error code), R38 (auth arrived after
 G1; the delta was amended under these conditions and the VL re-records G2 on
 the merged head). No critical blocker remains for the US-013 slice.
 
+# Impact brief — US-071（2026-11-16 追加）
+
+- Date: 2026-11-16
+- Workdir: `requirement-workspace/`
+- Mode: embedded at the end of `/sdd:pre-spec-req`（blocking OQ = 0，DoR BLOCKER = 0）
+- Change id：待 P2 创建（建议 `us-071-my-trips`）
+
+## 1. Requirement set
+
+| id | Path |
+|---|---|
+| US-071 | `requirement-workspace/requirements/US-071.md` |
+
+支撑：`intents/2026-11-16-us-071.md`、`analysis/us-071-dor.md`、`deep-dive.md` §US-071。
+
+## 2. As-is asset inventory（证据路径）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| Living Spec – trips | `openspec/specs/trips/spec.md` | 5 条 requirement（identity / creation / detail read / main-plan confirmation state / member list read），**无列表读取** |
+| Living Spec – app-shell | `openspec/specs/app-shell/spec.md` | 6 条 requirement；其中 `Trips tab placement and no-trip empty state` 明确禁止列表端点与调用，且要求空态提供「创建行程 + 按编号打开行程」 |
+| Living Spec – 其他 | `openspec/specs/{invitations,main-itinerary,splits,auth}/spec.md` | 仅被消费，不改 |
+| 归档资产 | `openspec/changes/archive/2026-11-15-req-003-trip-create-and-view/`、`2026-11-16-us-013-view-trip-members/`、`2026-11-16-us-064-mobile-app-shell/` | 建行程/详情读、成员名册、shell + 四 tab 的落地依据 |
+| 后端 trip 包 | `backend/src/main/java/com/gogo/trip/TripController.java`、`TripRepository.java` | create / read / members / confirm 四个入口；无按用户列行程的查询 |
+| 后端认证 | `backend/src/main/java/com/gogo/auth/SecurityConfig.java` | `/api/**` 已 `authenticated()`；新 GET 自动受保护 |
+| 前端路由与 tab | `frontend/src/App.tsx`、`TabBar.tsx`、`types.ts` | `#/trips` → `trips-empty`；`tripsHref = lastTripId ? #/trips/{id}/main-plan : #/trips`（同时驱动 TabBar、分队未选行程、成员页、创建页返回） |
+| 前端页面 | `frontend/src/pages/TripsEmpty.tsx`、`TripDetails.tsx` | TripsEmpty = 「按编号打开行程」占位；TripDetails 只有「设置我的兴趣」入口，**无主线方案链接** |
+| 知识库 | `docs/knowledge/architecture/tech-stack-plan.md`、`docs/knowledge/rules/` | 技术栈与规则载体；本次不新增规则 |
+| UI 参考 | issue #45 附件 `us-071-my-trips`；`ui-design-reference/gogo-mvp-prototype.html` | 无本地截图文件；原型为内存态，仅界面参考 |
+| 验收夹具 | `requirement-workspace/acceptance-test-fixtures.md` | 尚无 §US-071（P3 ATDD 设计时补） |
+
+## 3. As-is → proposed delta
+
+### 3.1 `trips` 能力（后端 + 前端详情入口）
+
+**As-is**：4 个端点；无列表；详情页无主线方案入口。
+
+**Proposed delta**：ADDED「Trip list read」——`GET /api/trips` 返回 `{trips:[{id,name,destination,startDate,endDate,organizer,mainPlanConfirmed}]}`，只含当前会话账号为成员的行程，按 `start_date` 升序、同日 `id` 升序；不改既有四个端点。详情页新增「主线方案」卡片（纯前端链接）。
+
+### 3.2 `app-shell` 能力
+
+**As-is**（`Trips tab placement and no-trip empty state`）：tab 落 `#/trips/<id>` 详情，无行程时显示「创建行程 + 按编号打开行程」，并禁止列表端点/调用。
+
+**Proposed delta**：MODIFIED 该条——行程 tab 恒指向 `#/trips` 列表；空态动作改为「创建行程」（移除编号入口）；删除「不得新增列表端点/调用」禁令。`Bottom dock navigation`、`Dashboard tab placement`、`Tab content`、`Mobile shell frame` 不变。
+
+### 3.3 前端路由与导航
+
+**As-is**：`tripsHref` 依赖 `lastTripId` 跳 main-plan；`#/trips` 渲染 `TripsEmpty`。
+
+**Proposed delta**：`tripsHref` 恒为 `#/trips`；`#/trips` 渲染新列表页（替换 TripsEmpty 的编号输入）；TabBar 的行程 tab 随之指向列表；分队页「去行程」、成员页与创建页返回均指向列表（语义一致）。`lastTripId` 仍用于分队 tab 的进入逻辑，不改。
+
+### 3.4 认证 / 数据 / 迁移
+
+**As-is**：会话认证（US-066）、`trip` + `trip_member`（V2）。
+
+**Proposed delta**：**无**。不改 `SecurityConfig`、不新增迁移、不改 `app_user`/`trip_member` 结构。
+
+### 3.5 已检查、无影响
+
+| 资产 | 结论 |
+|---|---|
+| `invitations`（预览/接受）与 Join 页 | 无改动；接受后回 `#/`，再进列表自然可见新行程（组合验证） |
+| `main-itinerary`（`#/trips/{id}/main-plan`） | 端点与页面不改；仅入口从 tab 迁移至详情页卡片 |
+| `splits`（分队屏） | 无改动；「去行程」按钮指向由 `tripsHref` 变化自动指向列表 |
+| `auth` 能力 | 无改动（logout 属 US-069 / issue #41） |
+| `greeting` | 无影响 |
+| CI（`.github/workflows/ci.yml`） | 无改动；沿用 backend `mvn -B test` + frontend typecheck/build |
+
+## 4. Blast radius
+
+- 后端：`trip` 包新增一个只读查询与 DTO；无新包、无迁移、无新依赖。
+- 前端：`App.tsx`（路由键与 `tripsHref`）、`TabBar.tsx`（无代码改动，仅指向变化）、新增列表页组件替换 `TripsEmpty`、`TripDetails.tsx` 增卡片、`types.ts` 增类型。
+- 运行时：无新服务/端口；仍是 Vite + Spring Boot 单实例 + SQLite。
+- 用户可见面：行程 tab 的首屏语义改变（从「空态/上次行程」变为列表），是本次最大的行为变更。
+
+## 5. Artifact impact
+
+| 类别 | 影响 |
+|---|---|
+| Specs | `trips` +1 ADDED；`app-shell` 1 MODIFIED（P2 delta） |
+| 测试 | 后端集成测试：401、空数组、成员范围、排序、去重、已确认主线不影响；前端 `tsc` + build；浏览器 E2E：S1–S14 + R1–R6 |
+| 文档 | `registry.md` 登记行；`docs/knowledge/_LOG.md`（落地对账）；`acceptance-test-fixtures.md` §US-071（P3）；README 无需改 |
+| 归档 | 无（新 change 结束后归档） |
+
+## 6. Dual-track notes
+
+- OpenSpec：单 change，两条 delta（`trips` ADDED + `app-shell` MODIFIED），vertical slice 完整（列表读 + 列表页 + 详情入口）。
+- Agile：issue #45 已存在（Iteration 1 / Priority Must），`/sdd:story-split` 可跳过；看板已由 Backlog 移到 Req Analysis。
+
+## 7. Risks & blockers
+
+| id | 风险 | 严重度 | 状态 |
+|---|---|---|---|
+| R1 | `app-shell` 明文禁令与 AC1 冲突 | spec 冲突 | 已由 MODIFIED 收敛（本变更核心）；归档时必须合并 |
+| R2 | tab 改列表后 main-plan 失去入口 | 回归 | 已裁决：详情页卡片（S13） |
+| R3 | AC7 UI 层依赖 logout | 验证缺口 | US-069（issue #41）覆盖；本变更 API 层验收 + UI 补测登记 |
+| R4 | `tripsHref` 一处改动影响四处导航 | 回归面 | E2E 覆盖分队「去行程」、成员页、创建返回、TabBar |
+| R5 | 「已结束」按客户端时区判定 | 显示差异 | 接受；仅显示层，无数据影响 |
+| R6 | 无分页的极端账号 | 性能 | 非阻塞；已定 OQ-5 不做，超预算再立项 |
+| R7 | `TripsEmpty` 被删除后是否有其他引用 | 代码完整性 | 实施前 grep 确认；由列表页取代 |
+
+无 critical blocker 使需求失效，可进入 `/sdd:proposal-split`。
+
+## 8. Suggested split boundaries
+
+单 change（建议 `us-071-my-trips`）：`trips` ADDED 列表读 + `app-shell` MODIFIED 行程 tab 放置 + 前端列表页 + 详情页主线入口。工作量：后端一个 repository 查询 + 一个 controller 方法 + 两个 DTO（包封套与行）；前端一个列表页 + 路由/`tripsHref` 调整 + 详情页卡片 + 类型；零迁移。建议 P3 拆两组：① 后端端点与测试；② 前端列表/路由/详情卡与 E2E——两组在同一 change 内顺序实现，不跨 PR 拆分（列表页依赖端点，端点通过列表页验收）。
+
+
 ---
 
 # Impact brief — US-072
