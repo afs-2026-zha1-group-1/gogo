@@ -68,3 +68,17 @@ Counts: BLOCKER 0 · WARNING 1 · SUGGESTION 3 · N/A 2 (tasks/design absent at 
 `/sdd:g1-decision-record` after the human resolves or accepts L1; otherwise
 continue `/sdd:p2`. This report is not a Gate decision and does not edit the
 Living or Delta specs.
+
+## G1 review addendum (2026-11-16)
+
+- **L1 superseded.** `us-031-037-main-itinerary` is archived on main and
+  `openspec/specs/main-itinerary/spec.md` exists, so the reconciliation target is
+  a MODIFIED living-spec delta, not the in-flight delta.
+- **New BLOCKER-level findings** from the G1 review (`g1-decision.md` B1–B4):
+  the merged `splits` capability is identity-bound to `X-User-Id` and absent from
+  this change's scope; `main-itinerary` has no delta here; the branch base is 25
+  commits behind main and `V4` is `V4__splits.sql`; two error-envelope/401-code
+  conventions coexist.
+- Revised counts for a re-run at p2 after the conditions are met: BLOCKER 4
+  (scope/splits, cross-change main-itinerary contract, stale baseline, error
+  envelope + 401 code), WARNING 0 (L1 closed), SUGGESTION 3 (L2–L4).

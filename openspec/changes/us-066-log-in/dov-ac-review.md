@@ -11,7 +11,7 @@
 
 | Item | Result | Evidence | Notes |
 |---|---|---|---|
-| AC-1 Each requirement has at least one testable AC | Pass | auth has 5 requirements / 26 scenarios; trips 1/4; invitations 3/12; app-shell 4/14 | Every requirement includes observable scenarios |
+| AC-1 Each requirement has at least one testable AC | Pass | auth has 5 requirements / 24 scenarios; trips 1/4; invitations 3/14; app-shell 4/15 (counts corrected at the G1 review, 2026-11-16) | Every requirement includes observable scenarios |
 | AC-2 ACs are observable | Pass | e.g. auth §Server session §An expired session is unauthenticated; trips §A valid session supplies the caller identity | Status codes, cookies, account fields, membership rows and routes are observable |
 | AC-3 Negative / edge cases called out | Pass | auth: invalid credentials, fixation, expiry, missing header, CSRF, header-only, pending invite; invitations: identity-before-token, closed, unusable; app-shell: no dock, no switcher | Risk areas from REQ-006 are covered |
 | AC-4 ACs are not disguised implementation detail / vague | Pass | auth §Account credential login fixes email normalization and one generic failure; bounds are behavioral, not class-level | `BCrypt` is a security contract (R-5), not a UI/class choice |
@@ -45,7 +45,17 @@ visible as residual concerns. This review is not a Gate decision.
 ## G1 sign-off status (2026-11-16)
 
 - SA: **Elian Jiang** accepted (user: "sa 可以先选我").
-- IO: **pending** — the user stated G1 needs another signer; no IO name supplied.
-- Gate record: **not written**. A partial gate is not valid; `g1-decision.md`
-  will be created only after the IO signs and the verdict (Pass / Conditional /
-  Fail) is given.
+- IO: **Johnson** — named by the user on 2026-11-16.
+- Gate record: **RECORDED — Conditional** in `g1-decision.md` (C1–C5 with owners).
+  C1–C4 must close before P4; the gate turns Pass after the conditions close.
+
+### Independent G1 review (2026-11-16)
+
+- Recorded in `g1-decision.md` as **RECORDED — Conditional** (B1–B4 blocking,
+  C1–C5 conditions), IO Johnson / SA Elian Jiang.
+- R1 is **superseded**: `us-031-037-main-itinerary` is archived on main and
+  `openspec/specs/main-itinerary/spec.md` exists, so the reconciliation target is
+  a MODIFIED living-spec delta, not the in-flight delta (see B2).
+- DoV-1 (scope matches the proposal) must be re-judged after C1: the merged
+  `splits` capability is identity-bound to `X-User-Id` and is absent from the
+  proposal's scope (see B1).
