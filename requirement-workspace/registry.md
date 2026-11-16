@@ -40,6 +40,12 @@ REQ-019 在 P4 之后把兴趣标签改为 10 项中文、并按 `screen-08-pref
 `dov-ac-review.md` §8。G2 可据此引用修订后的 G1。REQ-019 行中原「需重新评审、代理不自签」
 的表述以本节为准。strict validation（exit 1）仍为归档前置，未标记通过。
 
+**合并 main 后的编号变更（2026-11-16）**：合入 `main`（`bac8095`；splits 已占用 `V4`，且
+`V5__create_main_plan.sql` 已以 `IF NOT EXISTS` 声明 `member_preference`）后，本变更的迁移改号为
+`V6__create_member_preference.sql` 并改为 `IF NOT EXISTS`，前端 `antd` 移除改 `.notice`
+（design TS-13）。需求文本、payload 与场景未变，不重开 G1。REQ-020/024/026 条目中
+「硬前置 REQ-019 的 `V4`」应读作 `V6`（表结构与页面契约不变）。
+
 ## US-031-037 product review update (2026-11-15)
 
 This update supersedes pending product-choice wording in the snapshot row below.

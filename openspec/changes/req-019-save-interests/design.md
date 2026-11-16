@@ -38,9 +38,10 @@ Goals:
 - `GET` and `PUT /api/trips/{tripId}/preferences` with the 31 specified scenarios; ten
   Chinese interest constants (label on the wire, code in the row); one row per
   `(trip_id, user_id, kind)` replaced as a whole; strict literal matching.
-- The preferences page built with the plan's frontend stack (TypeScript, Ant Design 5,
-  TanStack Query 5), so the page is a worked example of the stack rather than a sixth
-  hand-written page. Routing stays on the merged `parseRoute` (TS-12).
+- The preferences page built with the plan's frontend stack (TypeScript, TanStack Query 5),
+  so the page is a worked example of the stack rather than a sixth hand-written page; Ant
+  Design is dropped once the second merge brings `shadcn/ui` (TS-13). Routing stays on the
+  merged `parseRoute` (TS-12).
 - The datasource and Flyway baseline brought to plan §5/§7 in this change: WAL, busy
   timeout, enforced foreign keys, single-connection pool, pinned Flyway and SQLite artifacts.
 - A details-page entry link to the new page.
@@ -59,10 +60,10 @@ D1–D17.
 
 ## Decisions
 
-**DD1 — Migration `V4__create_member_preference.sql`.** SQLite dialect, one table:
+**DD1 — Migration `V6__create_member_preference.sql`.** SQLite dialect, one table:
 
 ```sql
-CREATE TABLE member_preference (
+CREATE TABLE IF NOT EXISTS member_preference (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     trip_id    INTEGER NOT NULL REFERENCES trip (id),
     user_id    INTEGER NOT NULL REFERENCES app_user (id),
@@ -72,6 +73,17 @@ CREATE TABLE member_preference (
     UNIQUE (trip_id, user_id, kind)
 );
 ```
+
+Merge note (2026-11-16): the file was `V4__create_member_preference.sql` until this change
+merged `origin/main`. `main` took `V4` for the splits migration and shipped
+`V5__create_main_plan.sql` carrying an `IF NOT EXISTS` stand-in for this same table, because
+its own fixtures needed one; `V5` therefore applies first and wins, so the statement above is
+`CREATE TABLE IF NOT EXISTS`. Columns, types and the unique key are identical either way. Two
+consequences are accepted rather than repaired: the effective table carries no `REFERENCES`
+clauses, because the stand-in declares none and SQLite cannot add them without a table
+rebuild; and the stand-in seeds `interest`/`must_do` rows in the retired English codes for
+the fixture trip, which `MainPlanApiTest` asserts as raw codes, so the merge leaves them
+untouched and the preference tests still clear the table per case.
 
 No seed rows and no trigger: `updated_at` is written only by the service, so a rejected or
 read-only call leaves it byte-identical (SAVE-5, READ-5). `kind` stays a free `TEXT` because
@@ -94,7 +106,7 @@ spring:
       maximum-pool-size: 1
 ```
 
-Three reasons this is part of REQ-019 rather than a later chore: `V4` declares foreign keys
+Three reasons this is part of REQ-019 rather than a later chore: `V6` declares foreign keys
 that mean nothing while `PRAGMA foreign_keys` is off; §7's rule 1 (one connection) exists
 precisely because a larger pool multiplies `SQLITE_BUSY` on the single-writer file, and the
 preferences endpoint is a writer; and the parameters are additive — no data move, no
@@ -196,7 +208,8 @@ on the hand-written shell:
   (`strict`, `jsx: "react-jsx"`, `moduleResolution: "bundler"`, `noEmit`) and an
   `npm run typecheck` script. `origin/main` landed the TS migration first, so the merged tree
   already has these files and every page is `.tsx` except the four REQ-003/004 pages; the
-  script is `tsc -b --noEmit` because the project is now a build-mode solution.
+  script is `tsc -b` because the project is now a build-mode solution and `noEmit` sits in
+  `tsconfig.app.json`.
 - **Data.** `@tanstack/react-query` v5 with a `QueryClientProvider` in `main.jsx` and
   `defaultOptions.queries.retry = 0` — PAGE-9 requires a visible retry action, and the
   default three invisible retries would make the failing state arrive seconds late. Transport
@@ -206,18 +219,21 @@ on the hand-written shell:
   the pages that have not migrated yet.
 - **Routing.** `react-router-dom` 7 with `HashRouter` was the intent: a route table covering
   `/`, `/create`, `/trips/:tripId`, `/join/:token` and the new
-  `/trips/:tripId/preferences`. The merge with `origin/main` settled it the other way —
-  `App.tsx` kept the hand-written `parseRoute`, and the new page is one more branch there, so
-  no routing dependency was added and the existing addresses keep their contracts. Recorded
-  as TS-12.
+  `/trips/:tripId/preferences`. The merges with `origin/main` settled it the other way —
+  `App.tsx` kept the hand-written `parseRoute` for the hub pages, and the new page is one more
+  branch there, while `router.tsx` (`createBrowserRouter`) mounts `App` at `/` and owns only
+  the splits screens. No routing code was written for this page, the existing addresses keep
+  their contracts, and the dependency arrives with `main` rather than from this change.
+  Recorded as TS-12.
 - **UI.** The page reuses the design system `origin/main` introduced in `app.css` —
   `.appbar`/`.grow`/`.title`/`.sub`, `.iconbtn`, `.sec-title`, `.chips`, `.actionbar`,
   `.btn.btn-primary`, `.pill` and `.hint` — plus `Icon` from `Icons.tsx`, so it matches the
   hand-written pages instead of introducing a second palette. One class is new, `.pick`
   (chip, hover, selected and disabled states), because the merged `.chip` is a static label
-  used by the main-itinerary pages and reusing it would have changed those pages. Ant Design
-  is wrapped in a `ConfigProvider` whose `theme.token.colorPrimary` is `#0d9488` (the existing
-  `--brand` token) and supplies `Alert` for load and save failures; selection, save and the
+  used by the main-itinerary pages and reusing it would have changed those pages. Load and
+  save failures render as `.notice` with `role="alert"` instead of an Ant Design `Alert`: the
+  second merge replaced the shell with `shadcn/ui` primitives and Tailwind tokens, so keeping
+  `antd` would have meant two design systems for one box (TS-13). Selection, save and the
   loading state are hand-written DOM so they can carry the screen-08 shapes. Detail:
   Revision 2026-11-16.
 - **Shared-file cost.** `App.tsx`, `main.jsx` and `app.css` are the pre-existing frontend
@@ -228,7 +244,7 @@ on the hand-written shell:
 `['preferences', tripId, userId]`, so mounting and switching identity both refetch without
 manual wiring. The selection is local component state seeded from the fetched data; Save is
 one `useMutation` PUT, and on success the state is set to the response and the cache is
-seeded with `setQueryData`; on failure the `Alert` shows the server `message` and the
+seeded with `setQueryData`; on failure the `.notice` box shows the server `message` and the
 selection rolls back to the last acknowledged set; a failed load renders the error plus a
 retry action (`refetch`). No `localStorage`. Clearing means deselecting all ten and saving
 (accepted product ruling), so no Clear All control is added. The details page adds one entry
@@ -237,16 +253,17 @@ link.
 **DD11 — Test isolation.** `PreferenceApiTest` mirrors `TripApiTest`:
 `@SpringBootTest(classes = HelloApplication.class)` with
 `jdbc:sqlite:file:preference-test?mode=memory&cache=shared&foreign_keys=on`, Hikari pool size
-1, Flyway `V1`–`V4`; `@BeforeEach` clears `member_preference`; the fixture trip id is read by
+1, Flyway `V1`–`V6`; `@BeforeEach` clears `member_preference`; the fixture trip id is read by
 name, never hard-coded; rows, `payload` and `updated_at` are asserted through the autowired
 `JdbcClient` (Boot 3.5 configures it next to `JdbcTemplate`).
 
 **DD12 — Dependencies, CI and gates.** Backend `pom.xml` gains
 `spring-boot-starter-validation`, and follows plan §7 on Flyway: `flyway-core` **plus**
 `flyway-database-nc-sqlite` at one explicit `${flyway.version}`, with `sqlite-jdbc` also
-pinned. Frontend `package.json` gains `antd`, `@tanstack/react-query`, `react-router-dom`
-and the TypeScript dev dependencies. The frontend CI job gains `npm run typecheck` between
-`npm ci` and `npm run build`; the backend job stays `mvn -B test`.
+pinned. Frontend `package.json` gains `@tanstack/react-query` and the TypeScript dev
+dependencies, but not `antd` (TS-13); `react-router-dom` arrives with the splits merge rather
+than from this change. The frontend CI job gains `npm run typecheck` between `npm ci` and
+`npm run build`; the backend job stays `mvn -B test`.
 
 Flyway caveat, stated so it is not decided silently at implementation time: if
 `flyway-database-nc-sqlite` cannot be resolved for the Boot-managed Flyway version, the
@@ -285,7 +302,8 @@ applied to this change — every other choice follows it.
 | TS-9 | §3: no extra frontend dependency | `qrcode` + `jsqr` from REQ-004 | the QR join flow needed them (Apache-2.0) | REQ-004 record |
 | TS-10 | §4: `com.bettertrips.*` with one `common/GlobalExceptionHandler` | `com.gogo.*` with one advice per feature package | renaming four packages gains nothing functional; the per-package advice already exists twice and D15 follows it | DD3, D15; plan reconciliation |
 | TS-11 | §7: `flyway-core` **plus** `flyway-database-nc-sqlite` at one explicit `${flyway.version}` | `flyway-core` only; no Flyway version change | measured 2026-11-16: the module does not exist on Maven Central for the managed Flyway (11.7.2 or the Boot 3.5.14 default), and re-pinning the shared Flyway version would re-checksum `V1`–`V4` for four in-flight changes; Flyway still detects SQLite without it | DD12; plan reconciliation, reopened when the module ships |
-| TS-12 | §3: React Router for the route table | the hand-written `parseRoute` in `App.tsx`; the page is one more branch | `origin/main` landed the app shell (US-064) with `parseRoute` while this change was in P4; replacing it would have rewritten the router for five other pages inside a preferences change, and the addresses are identical either way | DD9; pick it up with US-064 |
+| TS-12 | §3: React Router for the route table | the hand-written `parseRoute` in `App.tsx`, which the splits merge now mounts from `router.tsx`; the page is one more `parseRoute` branch | `origin/main` landed the app shell (US-064) with `parseRoute` while this change was in P4; replacing it would have rewritten the router for five other pages inside a preferences change, and the addresses are identical either way | DD9; pick it up with US-064 |
+| TS-13 | §3 dependency table: UI is Ant Design 5.x | no `antd`; `.notice` (`role="alert"`) carries the two failure states | the second merge replaced the hand-written shell with `shadcn/ui` primitives and Tailwind tokens, so `antd` would have been a second design system installed for one alert box, and its lockfile entries would have to be pinned through a registry the build sandbox cannot reach; the notice keeps the page's own palette and the same accessible role | DD9; plan reconciliation decides one UI kit for the whole app |
 
 What the reversal changed, for the reviewers who read the first version:
 
@@ -295,8 +313,9 @@ What the reversal changed, for the reviewers who read the first version:
   `{"interests":[42]}` answer `INVALID_REQUEST` instead of `INTEREST_NOT_ALLOWED`.
 - `application.yml` now carries §7's WAL / busy-timeout / foreign-keys parameters and pins
   the pool to one connection — inside this change, not later.
-- The page uses TypeScript, Ant Design (theme + `Alert`) and TanStack Query, CI typechecks
-  the frontend, and routing stayed on `parseRoute` once the merge settled it (TS-12).
+- The page uses TypeScript, TanStack Query and the merged `shadcn/ui` palette, not
+  `antd` (TS-13); CI typechecks the frontend, and routing stayed on `parseRoute` once the
+  merges settled it (TS-12).
 - Flyway gains the SQLite module with one pinned version, subject to the DD12 caveat. The
   caveat fired: the module is not published, so `flyway-core` stays and TS-11 records it.
 
@@ -319,9 +338,8 @@ What the reversal changed, for the reviewers who read the first version:
   `main.jsx` and `ci.yml` are all edited while four changes are in flight on one branch.
   Merge conflicts are expected, and the TS migration owner plus the other change owners need
   to know before the shell lands.
-- **Bundle growth.** `antd` plus TanStack Query is a real increase in the built bundle for
-  one page; no code splitting is introduced here, so `npm run build` chunk warnings may
-  appear.
+- **Bundle growth.** TanStack Query is a real increase in the built bundle for one page; no
+  code splitting is introduced here, so `npm run build` chunk warnings may appear.
 - **Foreign-key enforcement is now live.** Any code path still writing orphan rows starts
   failing instead of silently succeeding. `V1`–`V3` seeds and the merged invite/trip flows
   were checked; a full `mvn test` is the proof, not this sentence.

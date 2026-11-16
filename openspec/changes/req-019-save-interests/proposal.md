@@ -70,7 +70,9 @@ None。`greeting` 与 `trips` 的契约都不变；`trips` 只被复用表与成
   前端新增 `frontend/src/pages/Preferences.jsx`，修改 `App.jsx` 的路由与页面挂载，
   并在 `TripDetails.jsx` 增一个入口链接。
 - **Database**：新增 `V4__create_member_preference.sql`；不改 `V1` / `V2`；
-  库文件仍是 `backend/data/gogo.db`。
+  库文件仍是 `backend/data/gogo.db`。实际落库为 `V6__create_member_preference.sql`：合入
+  `main` 时 `V4` 已被 splits 占用，且 `V5__create_main_plan.sql` 已以 `IF NOT EXISTS` 声明
+  同一张表（design DD1、tasks 8.8）
 - **APIs**：新增 2 个端点，`X-User-Id` 身份，裸 DTO 成功 + `{"code","message"}` 失败；
   新增错误码 `INTEREST_NOT_ALLOWED`，复用 `USER_REQUIRED` / `NOT_A_MEMBER` /
   `TRIP_NOT_FOUND` / `INVALID_REQUEST`。
@@ -82,6 +84,7 @@ None。`greeting` 与 `trips` 的契约都不变；`trips` 只被复用表与成
   `requirement-workspace/{registry,handoff}.md`。知识库无需新增长期事实。
 - **Collaboration**：`V3` 归 REQ-004（邀请）。本变更的 `V4` 必须在其后落库，
   否则 Flyway 会因 out-of-order 失败；合入前确认，必要时按下一可用版本调整。
+  该条按预期触发：splits 取了 `V4`，本变更顺延为 `V6`
 
 ## Effort and ordering
 

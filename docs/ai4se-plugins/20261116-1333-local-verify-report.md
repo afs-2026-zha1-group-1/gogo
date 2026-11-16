@@ -259,3 +259,53 @@ no findings, so G2 may cite this G1 for the revised text. `openspec validate --s
 exits 1 on five overlong ADDED requirement bodies and stays an archive blocker; Overall
 remains Partial only for the remote-CI and G2/G3 items of §Findings/WARNING.
 
+## Merge with `origin/main` (2026-11-16, `bac8095`) — reconciliation
+
+`origin/main` moved from `27b09e6` to `bac8095` while this change waited: it now carries the
+splits capability (REQ-004–007, `V4__splits.sql`) and the `shadcn/ui` + Tailwind migration.
+Pushing the branch without merging would have produced a PR that cannot be merged, and
+`.github/workflows/ci.yml` only runs on a push to `main` or a pull request into `main`, so the
+merge happened locally first.
+
+Six conflicts, resolved one by one:
+
+| File | Resolution |
+|---|---|
+| `backend/src/main/resources/application.yml` | keep `main`'s SQLite three-rules block (WAL / `busy_timeout` / `foreign_keys`) and its single-connection pool |
+| `frontend/package.json`, `package-lock.json` | keep `main`'s files (`shadcn`/Tailwind dependencies, public-registry lockfile); add `"typecheck": "tsc -b"`, because `ci.yml` runs that script and `main` no longer declares it |
+| `frontend/src/main.jsx` | `main`'s `RouterProvider` + `IdentityProvider` + `router`, with this change's `QueryClient` defaults (`retry: false`, `refetchOnWindowFocus: false`) |
+| `frontend/tsconfig.json` | `main`'s solution file (`files: []` plus project references) |
+| `requirement-workspace/impact-brief.md` | both sides kept; the 893-line file rebuilt line by line, 0 conflict markers |
+
+The migrations collided on the version number: `main` took `V4` for splits, and its
+`V5__create_main_plan.sql` already declares `member_preference` as an `IF NOT EXISTS`
+stand-in. The preference migration is therefore `V6__create_member_preference.sql` and is
+itself `CREATE TABLE IF NOT EXISTS`. The first full run after the merge failed for exactly
+that reason — `Script V6__create_member_preference.sql failed … (table member_preference
+already exists)` in 152 of 203 cases — and the `IF NOT EXISTS` form fixes it without renaming
+anything a second time. `design.md` DD1 records what the merge costs: the effective table
+carries no `REFERENCES` clauses, because the stand-in declares none.
+
+Ant Design was dropped rather than carried over: `main` now ships `shadcn/ui` primitives, so
+the two `Alert`s became `.notice` boxes with `role="alert"` (`design.md` TS-13). The public
+registry is also unreachable from this sandbox, so a fresh `antd` lockfile entry could not be
+produced even if it were wanted.
+
+Evidence on the merged tree:
+
+| Check | Result | Command |
+|---|---|---|
+| Backend | `Tests run: 203, Failures: 0, Errors: 0`, `BUILD SUCCESS` | `(cd backend && mvn -B clean test)` |
+| Typecheck | clean | `(cd frontend && npm run typecheck)` |
+| Build | `136 modules transformed`, `487.83 kB` JS / `38.39 kB` CSS | `(cd frontend && npm run build)` |
+
+`npm ci` could not run in this checkout — `EPERM` on
+`node_modules/@rolldown/binding-win32-x64-msvc`, because a dev server from the earlier
+browser pass still holds it — so the install was `npm install --no-audit --no-fund`. The
+lockfile is `main`'s, byte for byte; CI runs `npm ci` on a clean runner, which is where that
+step gets its real proof.
+
+What this section does not change: the G1 record (schema, payload and scenarios are the same
+text), the Overall verdict (still Partial for the remote CI run and G2/G3), and
+`openspec validate --strict` (still exit 1).
+

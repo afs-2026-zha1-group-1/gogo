@@ -47,8 +47,11 @@
       `dependency:get org.flywaydb:flyway-database-nc-sqlite:11.7.2` answered
       `Could not find artifact ... in central`, so `flyway-core` stays and the gap is
       design TS-11
-- [x] 2.3 `V4__create_member_preference.sql`: one table, `UNIQUE(trip_id,user_id,kind)`,
-      no seed rows, no trigger (DD1); confirm it applies after `V3` with foreign keys on
+- [x] 2.3 `V6__create_member_preference.sql`: one table, `UNIQUE(trip_id,user_id,kind)`,
+      no seed rows, no trigger (DD1); applies after `V5` with foreign keys on. Renumbered from
+      `V4` when `origin/main` merged on 2026-11-16 — `V4` became the splits migration and
+      `V5` already declares the same table as an `IF NOT EXISTS` stand-in, so the statement is
+      now `CREATE TABLE IF NOT EXISTS` (8.8)
 - [x] 2.4 `PreferenceRepository` on `JdbcClient` with `record` mapping (DD3): the single
       upsert save statement and the member-left-join read query (DD7, DD8); `payload`
       written as `{"codes":[...]}`
@@ -74,10 +77,12 @@
 
 ## 4. Frontend on the plan stack (owner: Dev)
 
-- [x] 4.1 Add `typescript`, `@types/react`, `@types/react-dom`, `antd`,
-      `@tanstack/react-query`, `react-router-dom`; add `tsconfig.json` (`strict`,
-      `jsx: react-jsx`, `moduleResolution: bundler`, `allowJs`, `checkJs: false`,
-      `noEmit`) and the `typecheck` script (DD9)
+- [x] 4.1 Add `typescript`, `@types/react`, `@types/react-dom`,
+      `@tanstack/react-query`, and add `tsconfig.json` (`strict`, `jsx: react-jsx`,
+      `moduleResolution: bundler`, `allowJs`, `checkJs: false`, `noEmit`) and the `typecheck`
+      script (DD9). `antd` and `react-router-dom` were added with the first version and both
+      were settled by the merges: `antd` is gone (TS-13) and the router arrives with the
+      splits screens (TS-12, 8.8)
 - [x] 4.2 `src/api/client.ts` (`request<T>()` raising `ApiError {status, code, message}`),
       `src/api/preferences.ts`, `src/types/preferences.ts` (DD9); leave `api.js` for the
       un-migrated pages
@@ -187,6 +192,13 @@ so it is logged here instead of being absorbed silently.
       bar, heading, chip order and selection inversion match; the scoped differences
       (subtitle, badge text, button text, absent US-020/024/027 blocks) are listed in the P4
       report
+- [x] 8.8 Merge `origin/main` (`bac8095`, splits + `shadcn/ui`) and reconcile: six conflicts
+      resolved (`application.yml`, `package.json`, `package-lock.json`, `main.jsx`,
+      `tsconfig.json`, `impact-brief.md`), the preference migration renumbered `V4` → `V6`
+      (2.3), `antd` dropped for `.notice` (TS-13), `typecheck` defined as `tsc -b`. Re-run on
+      the merged tree: `mvn -B clean test` 203/203 green, `npm run typecheck` clean,
+      `npm run build` 136 modules / 487.83 kB JS. Evidence: P4 report §"Merge with
+      `origin/main` (2026-11-16)"
 
 ## Alignment self-check (Spec ↔ Design ↔ Tasks ↔ ATDD)
 
@@ -199,9 +211,9 @@ so it is logged here instead of being absorbed silently.
 | Preferences page (9) | DD9, DD10 | 4.1–4.7, 5.2, 8.3, 8.4 | PAGE-1…PAGE-10 | Pass |
 | Non-goals (other kinds, US-027, US-026, US-031, auth, `tag`, locking, i18n, page migration) | Goals / Non-Goals, DD1, DD3, DD9 | 1.2, 5.3 | ATDD §5 reverse table | Pass |
 | Display contract (deep-dive ⑫: loading/empty/error/saving) | DD9, DD10 | 4.5, 5.2 | PAGE-1, PAGE-2, PAGE-7, PAGE-8, PAGE-9 | Pass |
-| Revision 2026-11-16 (Chinese catalogue, screen-08 baseline) | DD6, DD9, DD10; Revision section | 8.1–8.7 | CAT-1…CAT-4, SAVE-1, PAGE-3, PAGE-7, PAGE-10 | Pass — 8.1–8.7 all closed; 8.6 is the G1 revision re-review, signed Pass 2026-11-16 by IO Emily and SA evelyn.huang |
+| Revision 2026-11-16 (Chinese catalogue, screen-08 baseline); merge of `origin/main` | DD6, DD9, DD10, TS-13; Revision section | 8.1–8.8 | CAT-1…CAT-4, SAVE-1, PAGE-3, PAGE-7, PAGE-10 | Pass — 8.1–8.8 all closed; 8.6 is the G1 revision re-review, signed Pass 2026-11-16 by IO Emily and SA evelyn.huang |
 | G1 condition 4 (strict validation) | Risks: strict validation still failing | 6.5 | — (not an ATDD row; archive gate) | Pass as a registered task, not as a passed check |
-| Tech-stack baseline (`config.yaml` `context`, D17 plan-first) | DD2, DD3, DD4, DD9, DD12; deviations TS-1…TS-12 | 2.1, 2.2, 4.1, 6.1, 6.6 | — (not an ATDD row; archive gate) | Pass as plan-first choices plus recorded deviations (TS-11 still open) |
+| Tech-stack baseline (`config.yaml` `context`, D17 plan-first) | DD2, DD3, DD4, DD9, DD12; deviations TS-1…TS-13 | 2.1, 2.2, 4.1, 6.1, 6.6 | — (not an ATDD row; archive gate) | Pass as plan-first choices plus recorded deviations (TS-11 still open) |
 
 No silent scope creep: every task traces to a spec scenario, a declared non-goal reverse
 check, or a stage artifact. NFR testing is explicitly excluded by the user's decision, so

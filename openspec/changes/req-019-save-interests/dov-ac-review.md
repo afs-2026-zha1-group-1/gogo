@@ -120,3 +120,8 @@ page keeps only the US-019 block of screen-08. Both choices are recorded in `des
 Update, 2026-11-16: the re-review this section asked for has been recorded. IO Emily and SA
 evelyn.huang both signed the revised delta as Pass; see `g1-decision.md` §"Revision re-review
 (2026-11-16) — Pass" and `tasks.md` 8.6. No condition or finding came with either signature.
+
+Update, 2026-11-16 (merge): the table this delta adds ships as
+`V6__create_member_preference.sql`, not `V4` — `origin/main` took `V4` for the splits
+migration and its `V5` already declares the same columns and unique key as a stand-in. No
+requirement text changes, so every row above stands.

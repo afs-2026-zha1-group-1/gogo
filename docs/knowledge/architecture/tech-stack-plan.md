@@ -275,7 +275,9 @@ PostgreSQL/PostGIS 替换 SQLite（Repository 层已隔离 SQL 与方言）→ F
   - a read-only `member_preference` stand-in table is created `IF NOT EXISTS` so
     the migration is self-contained until REQ-019 lands its authoritative
     kind/payload `member_preference` at `V4` (this change renumbers to `V5` per
-    G1 C2).
+    G1 C2; REQ-019 renumbered again to `V6` when the two branches met, so on a
+    merged database this stand-in is the first and only declaration and the
+    preference migration is a no-op).
 - API (§6 listed `POST /plan:generate`, `GET /plan`, `POST /plan:ack`). The main
   plan instead ships four endpoints under the trip resource:
   - `POST /api/trips/{id}/main-plan` → 201 draft projection (readiness-gated;

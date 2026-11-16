@@ -60,8 +60,13 @@ re-review of that text; it does not replace the record of the original review ab
   ten" reading that replaces contract detail C6, and the page requirement with its visual
   baseline.
 - Unchanged: five ADDED requirements, 31 scenarios, the two endpoints, the
-  `member_preference` payload shape `{"codes":[...]}`, `V4`, and the identity/membership
+  `member_preference` payload shape `{"codes":[...]}`, and the identity/membership
   preconditions. No data migration follows, because nothing is released.
+- Renumbered after this re-review (2026-11-16): merging `origin/main` took `V4` for the splits
+  migration, so the reviewed table ships as `V6__create_member_preference.sql` and is declared
+  `IF NOT EXISTS`, because `main`'s `V5__create_main_plan.sql` already declares the same
+  columns and unique key as a stand-in. Schema, payload shape and scenarios are untouched, so
+  this does not reopen the gate; it is recorded in `design.md` DD1 and `tasks.md` 8.8.
 - Two product choices were accepted by the same instruction rather than re-opened: chip
   order follows the prototype (`历史人文` before `手作`, `慢游` last), and the page renders
   only the US-019 block of screen-08 (the US-020/024/027 blocks and `提交并标记就绪` belong
@@ -179,7 +184,8 @@ instruction and does not retroactively validate the withdrawn statement.
 
 ## What this record does and does not allow
 
-- Allowed: P4 implementation of this change, provided `V4` lands in order after `V3`;
+- Allowed: P4 implementation of this change, provided `V4` lands in order after `V3`
+  (now `V6` after `V5`, per the renumbering recorded in the revision section);
   P3 design; and presenting `preferences` as G1-aligned in the registry.
 - Allowed after the 2026-11-16 revision re-review: G2 may cite this G1 for the revised
   ten-label / screen-08 text as well as for the original text.
