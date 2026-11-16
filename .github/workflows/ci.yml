@@ -38,5 +38,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Install from the lockfile
         run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
       - name: Build
         run: npm run build
