@@ -56,6 +56,11 @@ shadcn baseline`，`feat/travel_preference` → `main`，OPEN、非 draft、`mer
 `%LOCALAPPDATA%\Programs\gh\bin` 且已登录）。仍未完成：G2 具名 VL 签核、strict validation（exit 1，
 阻塞归档）；`main` 已前进至 `c4f9e32`（docs-only）需在 G3 前复核。
 
+**G2 待签草稿（2026-11-16）**：`openspec/changes/req-019-save-interests/g2-decision.md` 已按 G2 输入
+清单整理——输入（local-verify / pipeline ci 含 E1 slot / 验证矩阵 / G1 / delta）、三个 run、维度结果、
+缺陷分级、偏差与已接受后果、未闭合项、基线复核说明与空白签核区；`Decision` 留作 `OPEN`、无 VL
+署名、时间戳空白，由具名 VL 复核后自行择一 Pass / Fail / Conditional。实现方不代签、不代推送签名。
+
 ## US-031-037 product review update (2026-11-15)
 
 This update supersedes pending product-choice wording in the snapshot row below.

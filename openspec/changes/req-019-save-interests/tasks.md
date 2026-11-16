@@ -132,7 +132,10 @@
       (`Backend tests` 203/203, `Frontend build` with `typecheck`), read through the
       authenticated gh API; `ci-report.md` +
       `docs/ai4se-plugins/20261116-153521-pipeline-report.md`
-- [ ] 6.3 G2 decision record by a named VL; G3 by a named SA; the agent never self-signs
+- [ ] 6.3 G2 decision record by a named VL; G3 by a named SA; the agent never self-signs —
+      **draft ready, unsigned**: `g2-decision.md` carries the inputs, the dimension table, the
+      defect grades, the deviations and an empty §Sign-off block (`Decision: OPEN`), so a named VL
+      reviews and signs it without the implementer pre-filling a verdict
 - [x] 6.4 Update `README.md` (endpoints, page route, `typecheck`) and the registry/handoff
       rows: `README.md` carries the two endpoints, `#/trips/<id>/preferences`, the
       `typecheck` command and the CI step; `requirement-workspace/registry.md` and
