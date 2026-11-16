@@ -10,6 +10,7 @@ import Placeholder from './pages/Placeholder'
 import Join from './pages/Join.jsx'
 import MainPlan from './pages/MainPlan'
 import MainPlanInputs from './pages/MainPlanInputs'
+import Members from './pages/Members'
 
 function parseRoute(hash: string): Route {
   const path = hash.replace(/^#/, '') || '/'
@@ -111,7 +112,7 @@ export default function App() {
           <Placeholder title="分队" tripsHref={tripsHref} />
         )}
         {route.page === 'members' && (
-          <Placeholder title="成员" tripsHref={tripsHref} />
+          <Members userId={userId} tripId={lastTripId} tripsHref={tripsHref} />
         )}
       </div>
       <TabBar active={TAB_FOR_PAGE[route.page]} tripsHref={tripsHref} />

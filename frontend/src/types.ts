@@ -36,6 +36,17 @@ export interface InvitationIssue {
   tripName: string
 }
 
+export interface TripMember {
+  userId: number
+  displayName: string
+  organizer: boolean
+}
+
+export interface TripMemberList {
+  tripId: number
+  members: TripMember[]
+}
+
 export interface ApiError {
   code?: string
   message?: string
