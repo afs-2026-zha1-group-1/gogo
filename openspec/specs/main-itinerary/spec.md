@@ -217,20 +217,20 @@ free.
 #### Scenario: G4/C5 — non-organizer member writes
 
 - **GIVEN** Ben is a trip member but not the organizer
-- **WHEN** Ben (member, non-organizer, `X-User-Id: 2`) generates or confirms the main plan
+- **WHEN** Ben (member, non-organizer, authenticated as Ben) generates or confirms the main plan
 - **THEN** the request is rejected with 403 and code `NOT_ORGANIZER`
 - **AND** no draft or confirmation state changes
 
 #### Scenario: Non-member access
 
 - **GIVEN** Eve is a seeded user who is not a member of the trip
-- **WHEN** Eve (non-member, `X-User-Id: 5`) generates, confirms, or reads the main plan
+- **WHEN** Eve (non-member, authenticated as Eve) generates, confirms, or reads the main plan
 - **THEN** the request is rejected with 403 and code `NOT_A_MEMBER`
 
 #### Scenario: Missing or unknown identity
 
 - **GIVEN** the fixture trip exists
-- **WHEN** a main-plan request arrives without `X-User-Id` or with an id that is
+- **WHEN** a main-plan request arrives without `authenticated session` or with an id that is
   not a seeded user
 - **THEN** the request is rejected with 401 and code `USER_REQUIRED`
 
