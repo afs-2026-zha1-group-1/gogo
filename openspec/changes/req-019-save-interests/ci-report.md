@@ -114,7 +114,9 @@ preference feature changed — no migration, endpoint, test or page line was tou
 
 Local on the merged tree: `mvn -B clean test` **255/255** (the 243 above plus main's
 `TripMembersApiTest` 12), `node --test tests/lockfile.test.mjs` 2/2, `npm run typecheck` clean,
-`npm run build` 503.85 kB JS. The head that is merged is `15bfa95`, and CI is green on it twice:
+`npm run build` 503.85 kB JS. The fifth merge's head `15bfa95` carries exactly the feature tree
+that is merged — every later commit on the branch touches only `openspec/` and `docs/` — and CI is
+green on it twice:
 
 | Phase | Job | Status | Duration | Evidence |
 |---|---|---|---|---|
