@@ -78,11 +78,12 @@
 - [x] 6.1 Push the branch (typed authorization) and read a fresh CI run with
       `gh`; never inherit a green. The workflow trigger was broadened to all
       branch pushes by user instruction 2026-11-16 (job contents unchanged), so
-      this branch produces its own run without a main PR. Observed: run
-      `43818961221` on head `077e762` (code), both jobs success; re-run
-      `43819461209` on docs head `5dd3d6f`, both jobs success.
+      this branch produces its own run without a main PR. Observed: pre-merge
+      run `43818961221` on `077e762`; **merged-head run `43834492224` on
+      `6061579`**, both jobs success.
 - [x] 6.2 Write the P4 pipeline report under `docs/ai4se-plugins/` —
-      `20261116-144618-pipeline-report.md`; E1 slot `ci-report.md`.
+      `20261116-165200-pipeline-report.md` (merged head); E1 slot
+      `ci-report.md`.
 - [x] 6.3 Prepare the G2 decision record for VL Leo; do not self-sign —
       `g2-decision.md` records VL **Leo**'s Conditional (C1–C5); the re-record
       remains with the VL
@@ -104,9 +105,10 @@
 - [x] C1 Merge `group1/main` `135d3df`; keep main-plan:confirm,
       `mainPlanConfirmed`, real `#/split` and US-066 auth; add `/members` +
       `findMembers`; resolve README + five requirement-workspace conflicts
-- [ ] C2 Re-run the full gate on the merged head: `mvn -B test` 198/198 and
-      `npm run build` green (done); browser regression for 成员 and 分队 and
-      fresh CI evidence still to record
+- [x] C2 Re-run the full gate on the merged head: `mvn -B test` 198/198,
+      `npm run build` green, browser regression for 成员 and 分队, fresh CI run
+      `43834492224` on `6061579` both jobs success; local-verify
+      `20261116-165153` and pipeline `20261116-165200` refreshed
 - [x] C3 app-shell delta: 分队 = shipped split entry, 成员 = roster; Purpose,
       proposal and US-013 wording updated
 - [x] C4 Identity divergence accepted: trips/members = session auth +

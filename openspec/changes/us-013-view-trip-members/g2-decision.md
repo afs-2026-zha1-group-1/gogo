@@ -15,10 +15,10 @@
 |---|---|
 | G1 record | `g1-decision.md` — Pass by IO Emily + SA Johnson (2026-11-16); G1 signatures are **not** inherited by G2 |
 | Delta specs | `specs/trips/spec.md` (ADDED, 8 scenarios) + `specs/app-shell/spec.md` (MODIFIED, 3 scenarios); `openspec validate` valid |
-| Local verify | `docs/ai4se-plugins/20261116-144729-local-verify-report.md` — Build Pass, Static Pass, Code review Pass, Evidence Partial (gate/archive tasks open by design); Overall **Partial**, no Waiver. VL note: tasks 7.1/7.2 are actually implemented in the branch but remain unchecked (see C5). |
+| Local verify | `docs/ai4se-plugins/20261116-165153-local-verify-report.md` — merged-head re-run: Build Pass, Static 5/5 Pass, Code review Pass, Evidence Partial (human gates open); Overall **Partial**, no Waiver. The earlier `20261116-144729` report is superseded. |
 | Verification evidence | `docs/feedback/verification-us-013.md` — `mvn test` 101/101 (new 11/11), `npm run build` green, API matrix M1–M10, browser U1–U3 + loading/error/retry |
 | E2E checklist | `docs/feedback/e2e-us-013.md` |
-| CI | run `43818961221`, head `077e762`, event `push`, **both jobs success**; re-run `43819461209` on the docs head `5dd3d6f` also both success; `ci-report.md` and `docs/ai4se-plugins/20261116-144618-pipeline-report.md` |
+| CI | **merged head** run `43834492224`, head `6061579`, event `push`, **both jobs success**; `ci-report.md` and `docs/ai4se-plugins/20261116-165200-pipeline-report.md` |
 | Tasks | `tasks.md` — implementation and CI tasks 0–6.2 checked; 7.1/7.2 land in the tree but boxes are unchecked; 7.3 and 8.x open |
 | Story | GitHub issue #9 |
 | VL review (2026-11-16) | Independent check against `origin/main` `b73a921`: the branch baseline is `729a889`, **28 commits behind** main. `git merge-tree origin/main HEAD` reports content conflicts in `TripController.java`, `TripRepository.java`, `acceptance-test-fixtures.md`, `deep-dive.md`, `handoff.md`, `impact-brief.md` and `registry.md`. Main now ships `V4__splits.sql`, `MemberGuard` (`MEMBER_REQUIRED`) and the real `#/split` entry (`10736d9`). |
@@ -32,7 +32,7 @@
 | Code review | Pass | endpoint reuses identity/access; read-only join; projection excludes personal fields; no new dependency |
 | Evidence V1–V8 | V1 Partial (gate tasks open); V2–V8 Pass | local-verify report |
 | Merge readiness | Fail | 7 conflicting files vs `origin/main`; branch 28 commits behind; see VL review row |
-| E1 machine | Pass | CI run `43818961221`, both jobs success on head `077e762`; no run on the current head `baeb449` (docs-only) |
+| E1 machine | Pass | merged-head CI run `43834492224`, both jobs success on `6061579` |
 | E2 AI | Pass | local-verify + verification documents |
 | E3 human | Conditional | Recorded by VL Leo in this sheet (2026-11-16); not Verified |
 
@@ -64,7 +64,7 @@
 
 | Role | Name | Decision (Pass / Conditional / Fail) | Date | Conditions + owner (required for Conditional) | Evidence |
 |---|---|---|---|---|---|
-| VL | Leo | **Conditional** | 2026-11-16 | C1–C5 below, owners Dev (Johnson) / SA (Johnson) | This sheet + `docs/ai4se-plugins/20261116-144729-local-verify-report.md` + `docs/ai4se-plugins/20261116-144618-pipeline-report.md` + VL merge check 2026-11-16 |
+| VL | Leo | **Conditional** | 2026-11-16 | C1–C5 below, owners Dev (Johnson) / SA (Johnson) | This sheet + `docs/ai4se-plugins/20261116-165153-local-verify-report.md` + `docs/ai4se-plugins/20261116-165200-pipeline-report.md` + VL merge check 2026-11-16 |
 
 ## Conditions (must be closed before merge / archive)
 
@@ -109,9 +109,11 @@ until then.
 | # | Evidence |
 |---|---|
 | C1 | Merged `group1/main` `135d3df` into the branch. `TripController` keeps US-066 `@AuthenticationPrincipal` + `main-plan:confirm` and adds `GET /{id}/members`; `TripRepository` keeps `findById`/`isMember`/`confirmMainPlan` and adds `findMembers`; `App.tsx` keeps the login gate and shipped `#/split` entry and renders `Members`; README and five requirement-workspace conflicts resolved without dropping main rows |
-| C2 | `mvn -B test` **198/198** (new `TripMembersApiTest` 12/12, 6 migrations); `npm run build` green; browser on the merged head: Ben roster 4 rows + Alice organizer only, full reload on `#/members` shows no-trip guidance, Eve login shows denied with no names, `#/split` with a trip shows the shipped entry (button) and no placeholder |
+| C2 | `mvn -B test` **198/198** (new `TripMembersApiTest` 12/12, 6 migrations); `npm run build` green; browser on the merged head: Ben roster 4 rows + Alice organizer only, full reload on `#/members` shows no-trip guidance, Eve login shows denied with no names, `#/split` with a trip shows the shipped entry (button) and no placeholder; fresh CI run `43834492224` on `6061579` both jobs success |
 | C3 | `specs/app-shell/spec.md` MODIFIED requirement now says 分队 = shipped split entry, 成员 = roster; Purpose/proposal/US-013 statements updated; no "分队 stays a placeholder" wording remains |
 | C4 | Decision recorded: trips/members use US-066 session auth + `USER_REQUIRED`; splits are session-based but return `MEMBER_REQUIRED` for anonymous callers. Accepted divergence; follow-up **F2**; R32/registry/handoff updated |
 | C5 | Tasks 7.1/7.2 checked; V1 wording corrected (evidence open only for G2/archive/gates); M8/M9 renamed to direct insert; retired-header 401 (blank/non-numeric/seeded) and POST/PUT/DELETE 405 tests added; unreachable empty/missing UI states documented; `openspec validate` cited; all-branch CI trigger recorded as user-approved infra R37 |
 
-Fresh CI on the merged head and the VL's re-record remain the only open items.
+Only the VL's re-record remains open. Status stays **Conditional** until the VL
+records Pass/Fail on the merged head; merge and archive must not start before
+that.

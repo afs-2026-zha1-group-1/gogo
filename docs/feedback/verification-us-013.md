@@ -93,5 +93,6 @@ credentials), the branch was re-verified:
   run. API negatives now cover unauthenticated 401, retired-header 401 and
   POST/PUT/DELETE 405.
 
-Fresh CI on the merged head is still pending at the time of writing; the G2
-sheet records the Conditional and requires a VL re-record.
+Fresh CI on the merged head: run `43834492224` on `6061579`, both jobs
+success. The G2 sheet records the Conditional; the VL must re-record on this
+head before merge/archive.
