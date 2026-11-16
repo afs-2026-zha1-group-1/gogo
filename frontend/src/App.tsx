@@ -5,10 +5,10 @@ import Home from './pages/Home'
 import CreateTrip from './pages/CreateTrip'
 import TripDetails from './pages/TripDetails'
 import TripsEmpty from './pages/TripsEmpty'
-import Placeholder from './pages/Placeholder'
 import Join from './pages/Join'
 import MainPlan from './pages/MainPlan'
 import MainPlanInputs from './pages/MainPlanInputs'
+import Members from './pages/Members'
 import LoginPage from './features/auth/LoginPage'
 import { useAuth } from './features/auth/AuthProvider'
 
@@ -146,7 +146,7 @@ export default function App() {
           </div>
         )}
         {route.page === 'members' && (
-          <Placeholder title="成员" tripsHref={tripsHref} />
+          <Members tripId={lastTripId} tripsHref={tripsHref} />
         )}
       </div>
       <TabBar active={TAB_FOR_PAGE[route.page]} tripsHref={tripsHref} />
