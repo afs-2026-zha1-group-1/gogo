@@ -20,7 +20,8 @@ blocking 开放问题为 0、DoR BLOCKER 为 0、A0 深潜四项 Pass，因此�
 ## What Changes
 
 - **ADDED** 能力 `preferences`：成员兴趣的读写契约。
-  - `PUT /api/trips/{tripId}/preferences`：`X-User-Id` 定位当前成员，幂等覆盖
+  - `PUT /api/trips/{tripId}/preferences`：以登录会话定位当前成员（`main` 的 US-066 之后
+    `X-User-Id` 头已退役，匿名调用为 `401 USER_REQUIRED`），幂等覆盖
     `interests`；请求体 `{"interests":["摄影","自然风景","摄影"]}`，响应
     `{"interests":["摄影","自然风景"]}`。
   - `GET /api/trips/{tripId}/preferences`：返回全员明细
@@ -31,7 +32,7 @@ blocking 开放问题为 0、DoR BLOCKER 为 0、A0 深潜四项 Pass，因此�
   接口收发用 `label`，落库写 `code`，**不做大小写与空白归一化**。
 - 校验语义：任一值不匹配 label 即 `400 INTEREST_NOT_ALLOWED`，在写事务之前判定，
   合法值也不落地；空数组表示清空，写 `{"codes":[]}` 但保留行。
-- 新增迁移 `V4__create_member_preference.sql`：只有一张表
+- 新增迁移 `V7__create_member_preference.sql`：只有一张表
   `member_preference(id, trip_id, user_id, kind, payload, updated_at)`，
   UNIQUE(`trip_id`,`user_id`,`kind`)，外键指向已有的 `trip` / `app_user`。
   `V2` 的三张表与 fixture 数据**不改**。
@@ -69,11 +70,13 @@ None。`greeting` 与 `trips` 的契约都不变；`trips` 只被复用表与成
   `com.gogo.trip.TripRepository` 的 `findUserId` / `isMember`（不修改其行为）；
   前端新增 `frontend/src/pages/Preferences.jsx`，修改 `App.jsx` 的路由与页面挂载，
   并在 `TripDetails.jsx` 增一个入口链接。
-- **Database**：新增 `V4__create_member_preference.sql`；不改 `V1` / `V2`；
-  库文件仍是 `backend/data/gogo.db`。实际落库为 `V6__create_member_preference.sql`：合入
-  `main` 时 `V4` 已被 splits 占用，且 `V5__create_main_plan.sql` 已以 `IF NOT EXISTS` 声明
-  同一张表（design DD1、tasks 8.8）
-- **APIs**：新增 2 个端点，`X-User-Id` 身份，裸 DTO 成功 + `{"code","message"}` 失败；
+- **Database**：新增 `V7__create_member_preference.sql`；不改 `V1` / `V2`；
+  库文件仍是 `backend/data/gogo.db`。该文件改号两次：合入 `main` 时 `V4` 已被 splits 占用，
+  且 `V5__create_main_plan.sql` 已以 `IF NOT EXISTS` 声明同一张表，故先改为 `V6`
+  （design DD1、tasks 8.8）；第四次合入时 `V6` 又被 US-066 的
+  `V6__create_account_credential.sql` 占用，故最终为 `V7`（tasks 8.11）
+- **APIs**：新增 2 个端点，会话身份（`AccountPrincipal`，CSRF 保护 `PUT`），裸 DTO 成功 +
+  `{"code","message"}` 失败；
   新增错误码 `INTEREST_NOT_ALLOWED`，复用 `USER_REQUIRED` / `NOT_A_MEMBER` /
   `TRIP_NOT_FOUND` / `INVALID_REQUEST`。
 - **Dependencies**：无新增（前端不引组件库/路由库，后端不引新库）。
@@ -84,7 +87,7 @@ None。`greeting` 与 `trips` 的契约都不变；`trips` 只被复用表与成
   `requirement-workspace/{registry,handoff}.md`。知识库无需新增长期事实。
 - **Collaboration**：`V3` 归 REQ-004（邀请）。本变更的 `V4` 必须在其后落库，
   否则 Flyway 会因 out-of-order 失败；合入前确认，必要时按下一可用版本调整。
-  该条按预期触发：splits 取了 `V4`，本变更顺延为 `V6`
+  该条按预期触发两次：splits 取了 `V4`，本变更顺延为 `V6`；US-066 又取了 `V6`，故顺延为 `V7`
 
 ## Effort and ordering
 
@@ -92,7 +95,7 @@ None。`greeting` 与 `trips` 的契约都不变；`trips` 只被复用表与成
 依赖顺序：
 
 ```
-V4 迁移（确认 V3 已在 main）→ 身份/成员判定复用 → interests 校验与写入 → GET 回读 → 前端页面 → 验证矩阵/README
+迁移（确认 V3 已在 main；实际落库号 V7）→ 身份/成员判定复用 → interests 校验与写入 → GET 回读 → 前端页面 → 验证矩阵/README
 ```
 
 `GET` 回读是 AC1「reload 后仍可见」的唯一证据链，必须早于页面完成。
@@ -115,7 +118,8 @@ REQ-019 是新增能力，深潜在范围内。`analysis/req-019-dor.md` 已复�
   "payload 解析后集合元素唯一"，而不是仅看 HTTP 200。
 - **索引类型偏离计划**：`member_preference` 由技术栈计划 §5 的普通索引改为 UNIQUE；
   合并口径登记在 deep-dive ⑪。
-- **身份与响应风格跟随代码而非计划**：`X-User-Id` + 裸 DTO + `{code,message}`；
+- **身份与响应风格跟随代码而非计划**：会话身份 + 裸 DTO + `{code,message}`（合并前是
+  `X-User-Id`，US-066 落地后改为登录会话）；
   `tech-stack-plan.md` §6 的 `{data,error}` / `X-Member-Id` / `JdbcClient` 是文档漂移，
   作为团队任务单独修正（OQ-16）。
 - **错误 advice 作用域**：`TripErrorAdvice` 只覆盖 `com.gogo.trip`，本变更需要自己的

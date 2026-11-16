@@ -156,7 +156,7 @@ Playwright/POM/Excel generators, and no new CI product.
 | No preference comparison or plan generation (US-031) | `GET/POST /api/trips/{id}/plans`, preference-comparison route | no such mapping (405/404); no comparison code in the package | API + static |
 | No locking after the main plan is confirmed (D4) | `trip.main_plan_confirmed = 1` by test-only update, then `PUT` | still 200; no lock branch in the service | API |
 | No `tag` table or `/api/tags` dependency (D2) | `GET /api/tags`; grep the new package for `tag` | no such endpoint; no reference in `com.gogo.preference` | API + static |
-| No real authentication (scaffold) | any seeded id works with no credential | accepted as given; `X-User-Id` documented as scaffold | API |
+| Login session required (US-066 landed with the fourth merge) | anonymous `GET`/`PUT`; the retired `X-User-Id` header sent alone | `401 USER_REQUIRED`, nothing written; the header no longer selects a caller (reverse-checked by `PreferenceApiTest`) | API |
 | No local storage as saved-state evidence | grep `frontend/src` for `localStorage` | no match | static |
 | No regression in merged capabilities | full `mvn test`; `PUT /api/trips/{id}`; `GET /api/greeting` | `greeting` JSON unchanged, trip write still 405, invitation suite green | API |
 

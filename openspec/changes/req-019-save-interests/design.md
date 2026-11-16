@@ -60,7 +60,7 @@ D1–D17.
 
 ## Decisions
 
-**DD1 — Migration `V6__create_member_preference.sql`.** SQLite dialect, one table:
+**DD1 — Migration `V7__create_member_preference.sql`.** SQLite dialect, one table:
 
 ```sql
 CREATE TABLE IF NOT EXISTS member_preference (
@@ -85,6 +85,12 @@ rebuild; and the stand-in seeds `interest`/`must_do` rows in the retired English
 the fixture trip, which `MainPlanApiTest` asserts as raw codes, so the merge leaves them
 untouched and the preference tests still clear the table per case.
 
+Second renumbering (2026-11-16, fourth merge): `V6` was taken by
+`V6__create_account_credential.sql`, which main's US-066 shipped, so this migration is `V7`.
+Only the version prefix changed — the statement, columns and unique key are the same, and
+`IF NOT EXISTS` still keeps it a no-op where `V5`'s stand-in won. Later changes (REQ-020/024/026)
+that cite "REQ-019's `V6`" mean this file and should read `V7`.
+
 No seed rows and no trigger: `updated_at` is written only by the service, so a rejected or
 read-only call leaves it byte-identical (SAVE-5, READ-5). `kind` stays a free `TEXT` because
 REQ-020/024 extend the domain; only `interest` is used here. `updated_at` holds ISO-8601 UTC
@@ -106,8 +112,8 @@ spring:
       maximum-pool-size: 1
 ```
 
-Three reasons this is part of REQ-019 rather than a later chore: `V6` declares foreign keys
-that mean nothing while `PRAGMA foreign_keys` is off; §7's rule 1 (one connection) exists
+Three reasons this is part of REQ-019 rather than a later chore: the migration declares foreign
+keys that mean nothing while `PRAGMA foreign_keys` is off; §7's rule 1 (one connection) exists
 precisely because a larger pool multiplies `SQLITE_BUSY` on the single-writer file, and the
 preferences endpoint is a writer; and the parameters are additive — no data move, no
 migration. The file name stays `gogo.db` (TS-4). Existing test classes keep their own URLs;
@@ -242,7 +248,8 @@ on the hand-written shell:
   owners of the main-itinerary pages still need to know that `.pick` arrived.
 
 **DD10 — Page behaviour `#/trips/<id>/preferences`.** The query key is
-`['preferences', tripId, userId]`, so mounting and switching identity both refetch without
+`['preferences', tripId]` (the session fixes the caller, so there is no identity dimension left
+to key on), so mounting refetches without
 manual wiring. The selection is local component state seeded from the fetched data; Save is
 one `useMutation` PUT, and on success the state is set to the response and the cache is
 seeded with `setQueryData`; on failure the `.notice` box shows the server `message` and the
@@ -254,9 +261,11 @@ link.
 **DD11 — Test isolation.** `PreferenceApiTest` mirrors `TripApiTest`:
 `@SpringBootTest(classes = HelloApplication.class)` with
 `jdbc:sqlite:file:preference-test?mode=memory&cache=shared&foreign_keys=on`, Hikari pool size
-1, Flyway `V1`–`V6`; `@BeforeEach` clears `member_preference`; the fixture trip id is read by
+1, Flyway `V1`–`V7`; `@BeforeEach` clears `member_preference`; the fixture trip id is read by
 name, never hard-coded; rows, `payload` and `updated_at` are asserted through the autowired
-`JdbcClient` (Boot 3.5 configures it next to `JdbcTemplate`).
+`JdbcClient` (Boot 3.5 configures it next to `JdbcTemplate`). Since the fourth merge every
+request carries main's `TestAuth.asUser(userId)` (a principal plus the CSRF token) instead of
+the retired `X-User-Id` header; `TestAuth.csrfOnly()` covers the anonymous writes.
 
 **DD12 — Dependencies, CI and gates.** Backend `pom.xml` gains
 `spring-boot-starter-validation`, and follows plan §7 on Flyway: `flyway-core` **plus**
@@ -265,6 +274,11 @@ pinned. Frontend `package.json` gains `@tanstack/react-query` and the TypeScript
 dependencies, but not `antd` (TS-13); `react-router-dom` arrives with the splits merge rather
 than from this change. The frontend CI job gains `npm run typecheck` between `npm ci` and
 `npm run build`; the backend job stays `mvn -B test`.
+
+Fourth-merge updates (2026-11-16): `pom.xml` also carries main's
+`spring-boot-starter-security` and `spring-security-test`, so the preference tests can post a
+real principal; the frontend job now runs `node --test tests/lockfile.test.mjs` before
+`npm ci` (main's `171ec00`), then `npm ci` → `typecheck` → `build`.
 
 Flyway caveat, stated so it is not decided silently at implementation time: if
 `flyway-database-nc-sqlite` cannot be resolved for the Boot-managed Flyway version, the
@@ -293,7 +307,7 @@ applied to this change — every other choice follows it.
 | # | Plan says | This change | Why the plan cannot be applied here | Tracked as |
 |---|---|---|---|---|
 | TS-1 | §6: `{data, error}` envelope | bare DTO on success, top-level `{code, message}` on failure | the G1-passed delta says the response body "carries `code` equal to `INVALID_REQUEST`" and PAGE-9 reads the response `message`; nesting them under `error` contradicts the approved text, and the delta outranks the plan | Delta spec; plan reconciliation |
-| TS-2 | §6: `X-Member-Id` | `X-User-Id` | every delta scenario names `X-User-Id`, and `V2` identity is `app_user.id` | Delta spec; plan reconciliation |
+| TS-2 | §6: `X-Member-Id` | the authenticated session (originally `X-User-Id`) | every delta scenario named `X-User-Id` while `V2` identity is `app_user.id`; main's US-066 then replaced header identity with `SecurityConfig` + `Session` and the trip/split endpoints follow it, so the preference endpoints take the caller from `AccountPrincipal` and ignore the header | Delta spec; plan reconciliation |
 | TS-3 | §5: `member_preference` with `member_id` and a plain index `(trip_id, member_id, kind)` | `user_id` + `UNIQUE (trip_id, user_id, kind)` | `V2` has no `member_id`, and inventing one would fork identity from the merged trip code; the delta also needs "one row per kind", which a plain index cannot express (UNIQUE also serves the lookup) | DD1; plan reconciliation |
 | TS-4 | §5: `./data/bettertrips.db` | `./data/gogo.db` | renaming a database file is a data migration for every existing checkout, not a config edit; the URL **parameters** the plan mandates are applied (DD2) | Plan reconciliation |
 | TS-5 | §5, DR-12: interests stored as `tag.code` from the 24-code vocabulary | ten constants; no `tag` table, no `/api/tags` | the vocabulary ships with M2.5/US-031, and the AC fixes exactly ten Chinese labels and forbids aliases | D2; plan reconciliation |
@@ -322,8 +336,12 @@ What the reversal changed, for the reviewers who read the first version:
 
 ## Risks / Trade-offs
 
-- **`X-User-Id` impersonation.** Any seeded id is accepted with no credential; the cost was
-  accepted at REQ-003 G1 and is never described as a security control.
+- **`X-User-Id` impersonation (retired).** Any seeded id used to be accepted with no
+  credential; main's US-066 removed that hole by requiring a session. The preference endpoints
+  now reject anonymous callers with `401 USER_REQUIRED` and require the CSRF token on `PUT`,
+  so the risk is closed rather than merely accepted. `PreferenceApiTest` keeps the two
+  scenarios that pin it: an anonymous caller is rejected even when the old header is sent, and
+  a header that disagrees with the session does not change which member is stored.
 - **Existence leak.** `403` for a non-member confirms the trip id exists; inherited from the
   merged read path and confirmed at G1.
 - **Malformed body outranks identity** (DD5). Accepted: it comes from Spring's argument

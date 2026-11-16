@@ -122,6 +122,9 @@ evelyn.huang both signed the revised delta as Pass; see `g1-decision.md` §"Revi
 (2026-11-16) — Pass" and `tasks.md` 8.6. No condition or finding came with either signature.
 
 Update, 2026-11-16 (merge): the table this delta adds ships as
-`V6__create_member_preference.sql`, not `V4` — `origin/main` took `V4` for the splits
-migration and its `V5` already declares the same columns and unique key as a stand-in. No
-requirement text changes, so every row above stands.
+`V7__create_member_preference.sql`, not `V4` — `origin/main` took `V4` for the splits
+migration, its `V5` already declares the same columns and unique key as a stand-in, and the
+fourth merge found `V6` taken by US-066's `V6__create_account_credential.sql`, so the file moved
+one number further. The identity precondition also follows `main`'s US-066 now: the caller comes
+from the login session instead of the retired `X-User-Id` header. No requirement text changes, so
+every row above stands.

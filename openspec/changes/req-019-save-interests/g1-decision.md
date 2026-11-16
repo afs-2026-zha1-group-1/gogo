@@ -15,8 +15,7 @@ that the CLI is unavailable; strict validation has not passed.
 
 - Change id: `req-019-save-interests`
 - Gate: G1 (Align)
-- Status: **RECORDED — Pass; gate closed 2026-11-16**, and **Pass again on the revised
-  delta, 2026-11-16** (see "Revision re-review" below). SA evelyn.huang and IO Emily
+- Status: **RECORDED — Pass; gate closed 2026-11-16**. SA evelyn.huang and IO Emily
   have both signed. The SA's 2026-11-16 re-review of the REQ-020/024 revised
   contracts released condition 1, and no findings came with it. `openspec validate
   --strict` still exits 1 and is carried as a follow-up, not as a passed check.
@@ -67,6 +66,11 @@ re-review of that text; it does not replace the record of the original review ab
   `IF NOT EXISTS`, because `main`'s `V5__create_main_plan.sql` already declares the same
   columns and unique key as a stand-in. Schema, payload shape and scenarios are untouched, so
   this does not reopen the gate; it is recorded in `design.md` DD1 and `tasks.md` 8.8.
+- Renumbered a second time (2026-11-16, after the VL signature): `main`'s US-066 shipped
+  `V6__create_account_credential.sql`, so the same file is now `V7`; its US-066 also replaced
+  the `X-User-Id` header with the login session as the caller's identity. Again no schema,
+  payload or scenario change — recorded in `design.md` DD1 (second paragraph), `tasks.md` 8.11
+  and the G2 record's "Update — 第四次并入 main".
 - Two product choices were accepted by the same instruction rather than re-opened: chip
   order follows the prototype (`历史人文` before `手作`, `慢游` last), and the page renders
   only the US-019 block of screen-08 (the US-020/024/027 blocks and `提交并标记就绪` belong
@@ -184,8 +188,9 @@ instruction and does not retroactively validate the withdrawn statement.
 
 ## What this record does and does not allow
 
-- Allowed: P4 implementation of this change, provided `V4` lands in order after `V3`
-  (now `V6` after `V5`, per the renumbering recorded in the revision section);
+- Allowed: P4 implementation of this change, provided the preference migration lands in order
+  after `V3` (now `V7` after `V5` and `main`'s `V6`, per the two renumberings recorded in the
+  revision section);
   P3 design; and presenting `preferences` as G1-aligned in the registry.
 - Allowed after the 2026-11-16 revision re-review: G2 may cite this G1 for the revised
   ten-label / screen-08 text as well as for the original text.
@@ -195,7 +200,7 @@ instruction and does not retroactively validate the withdrawn statement.
 ## Next
 
 1. Run P3 (`/sdd:atdd-design`, `/sdd:task-plan`), then P4:
-   `V4__create_member_preference.sql`, the `com.gogo.preference` package and the
+   `V7__create_member_preference.sql`, the `com.gogo.preference` package and the
    preferences page.
 2. The revised documents and Emily approval record are pushed at `27b09e6`; no
    further push is outstanding for review. The 2026-11-16 revision re-review is recorded

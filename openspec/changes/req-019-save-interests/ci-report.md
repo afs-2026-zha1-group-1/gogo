@@ -10,12 +10,18 @@ Full report: `docs/ai4se-plugins/20261116-153521-pipeline-report.md`.
 **Pipeline URL:** https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43824457379
 **Commit:** `e7333f0` — equals local `HEAD`, `origin/feat/travel_preference` and PR #44 `headRefOid`
 
-**Latest head (2026-11-16 16:20 UTC+08:00):** `0e93804` — the merge commit `f16d009` plus the
+**Latest head (2026-11-16 17:40 UTC+08:00):** `c1c1f89` — the fourth merge of `origin/main`
+(`80d3dce` = PR #48) — base `80d3dce`; run
+[43840919975](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43840919975) is green on it.
+See §"Update — E1 on the fourth merge" for the details; the earlier heads listed below stay as
+recorded history.
+
+**Earlier head (2026-11-16 16:20 UTC+08:00):** `0e93804` — the merge commit `f16d009` plus the
 G2-draft documentation only — base `40381ac`, PR #44 `mergeStateStatus` = `CLEAN`; run
 [43830251839](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43830251839) is green on it
 (`Backend tests` 203/203 + `BUILD SUCCESS`, `Frontend build` 20 s). See §"Update — E1 on the merged
-head" for the code-bearing run `43829662798` on `f16d009`. Any later documentation commit re-runs
-CI on the new head; take the live check from `gh pr view 44`.
+head" for the code-bearing run `43829662798` on `f16d009`. Any later commit re-runs CI on the new
+head; take the live check from `gh pr view 44`.
 
 ## E1
 
@@ -35,8 +41,10 @@ confirmation.
 
 Remote value of this run beyond "green": the 203 cases include `MainPlanApiTest` (34), and a clean
 CI database applies `V5__create_main_plan` — which declares `member_preference` as an
-`IF NOT EXISTS` stand-in — before `V6`. Reaching `v6` with 203/203 there is the off-machine proof
-that the merge-time table reconciliation (tasks 8.8) is not a local-only artifact.
+`IF NOT EXISTS` stand-in — before the preference migration. Reaching that migration with 203/203
+there is the off-machine proof that the merge-time table reconciliation (tasks 8.8) is not a
+local-only artifact. (The file was `V6` at the time of this run; the fourth merge took `V6` for
+US-066's credentials and renumbered it `V7`, see the last update.)
 
 ## Security / compliance
 
@@ -75,3 +83,21 @@ Run created 2026-11-16T08:14:36Z, completed 08:15:14Z; head `f16d009`, base `403
 One residual risk from the section above is now closed: `main`'s lockfile no longer breaks Windows
 `npm ci` — `171ec00` drops the `libc` constraints on non-Linux native packages and the new
 `frontend/tests/lockfile.test.mjs` guards the regression as the first CI step.
+
+## Update — E1 on the fourth merge (run 43840919975)
+
+While the G2 signature was being recorded, `origin/main` advanced to `80d3dce` (PR #48: archives
+US-066/US-065 and ships the US-049/050 follow-up), so PR #44 went `dirty`. The branch merged it a
+fourth time in `c1c1f89` — four text conflicts plus two behaviour adaptations that the merge itself
+surfaced: the preference migration renumbered `V6` → `V7` (`V6__create_account_credential.sql`
+now exists on `main`) and both endpoints take the caller from `Authentication`/`AccountPrincipal`
+because US-066 retired the `X-User-Id` header. Read through the same authenticated API:
+
+| Phase | Job | Status | Duration | Evidence |
+|---|---|---|---|---|
+| ci | `Backend tests` | success | 35 s | job 133209064056, started 09:34:18Z; aggregate `Tests run: 243, Failures: 0, Errors: 0, Skipped: 0`, then `BUILD SUCCESS` (40 more than the 203 of the previous run — `40381ac..80d3dce` adds `AuthApiTest` and `SessionExpiryApiTest` and turns the splits suites onto `TestAuth`; `PreferenceApiTest` keeps 29 cases, rewritten to post a principal instead of the retired header) |
+| ci | `Frontend build` | success | 20 s | job 133209064501; steps `Check lockfile portability` (2/2), `Install from the lockfile`, `Typecheck`, `Build` (139 modules transformed) |
+
+Run created 2026-11-16T09:34:16Z, completed 09:34:53Z; head `c1c1f89`, base `80d3dce`.
+Local mirror of the same tree: `mvn -B clean test` 243/243, `node --test tests/lockfile.test.mjs`
+2/2, `npm run typecheck` clean, `npm run build` 500.89 kB JS / 38.87 kB CSS.

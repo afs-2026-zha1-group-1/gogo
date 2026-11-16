@@ -47,7 +47,7 @@
       `dependency:get org.flywaydb:flyway-database-nc-sqlite:11.7.2` answered
       `Could not find artifact ... in central`, so `flyway-core` stays and the gap is
       design TS-11
-- [x] 2.3 `V6__create_member_preference.sql`: one table, `UNIQUE(trip_id,user_id,kind)`,
+- [x] 2.3 `V7__create_member_preference.sql` (originally `V4`, then `V6`): one table, `UNIQUE(trip_id,user_id,kind)`,
       no seed rows, no trigger (DD1); applies after `V5` with foreign keys on. Renumbered from
       `V4` when `origin/main` merged on 2026-11-16 — `V4` became the splits migration and
       `V5` already declares the same table as an `IF NOT EXISTS` stand-in, so the statement is
@@ -233,6 +233,22 @@ so it is logged here instead of being absorbed silently.
       `npm run build` 136 modules / 488.36 kB JS / 38.39 kB CSS; no backend file in the merge,
       so 203/203 still stands. Merge commit `f16d009`; PR #44 back to `CLEAN` and run
       43829662798 green on that head
+- [x] 8.11 Merge `origin/main` a fourth time (`80d3dce` = PR #48, which archives US-066 and
+      US-065 and adds the US-049/050 follow-up) and reconcile: four conflicts, `README.md`,
+      `backend/pom.xml` (kept `spring-boot-starter-validation` **and** main's
+      `spring-boot-starter-security`), `frontend/src/App.tsx` and `frontend/src/types.ts`
+      (`AccountBar` replaces `ScaffoldBar`; `login` joins the full-page list). Two adaptations
+      were forced by main's US-066 rather than by the conflict itself: the migration was
+      renumbered `V6` → `V7` because `V6__create_account_credential.sql` now exists on `main`,
+      and the preference endpoints take the caller from `Authentication`/`AccountPrincipal`
+      instead of `X-User-Id` (the header is now inert; an anonymous call is `401
+      USER_REQUIRED` and a `PUT` needs the CSRF token). `PreferenceApiTest` switched to
+      `TestAuth.asUser`/`csrfOnly` and kept 29 tests, with the two header scenarios rewritten
+      as "anonymous + old header is still 401" and "a header that disagrees with the session
+      does not change the stored member". The page derives `userId` from `useAuth()` and the
+      client uses main's `api()` + `lib/csrf`, so the obsolete `api/client.ts` was deleted.
+      Verified on the merged tree: `mvn -B clean test` 243/243, `npm run typecheck` clean,
+      lockfile test 2/2, `npm run build` 500.89 kB JS
 
 ## Alignment self-check (Spec ↔ Design ↔ Tasks ↔ ATDD)
 
@@ -245,7 +261,7 @@ so it is logged here instead of being absorbed silently.
 | Preferences page (9) | DD9, DD10 | 4.1–4.7, 5.2, 8.3, 8.4 | PAGE-1…PAGE-10 | Pass |
 | Non-goals (other kinds, US-027, US-026, US-031, auth, `tag`, locking, i18n, page migration) | Goals / Non-Goals, DD1, DD3, DD9 | 1.2, 5.3 | ATDD §5 reverse table | Pass |
 | Display contract (deep-dive ⑫: loading/empty/error/saving) | DD9, DD10 | 4.5, 5.2 | PAGE-1, PAGE-2, PAGE-7, PAGE-8, PAGE-9 | Pass |
-| Revision 2026-11-16 (Chinese catalogue, screen-08 baseline); merge of `origin/main` | DD6, DD9, DD10, TS-13; Revision section | 8.1–8.9 | CAT-1…CAT-4, SAVE-1, PAGE-3, PAGE-7, PAGE-10 | Pass — 8.1–8.9 all closed; 8.6 is the G1 revision re-review, signed Pass 2026-11-16 by IO Emily and SA evelyn.huang; 8.8 and 8.9 are the two `origin/main` merges |
+| Revision 2026-11-16 (Chinese catalogue, screen-08 baseline); merges of `origin/main` | DD6, DD9, DD10, TS-13; Revision section | 8.1–8.11 | CAT-1…CAT-4, SAVE-1, PAGE-3, PAGE-7, PAGE-10 | Pass — 8.1–8.11 all closed; 8.6 is the G1 revision re-review, signed Pass 2026-11-16 by IO Emily and SA evelyn.huang; 8.8–8.11 are the four `origin/main` merges |
 | G1 condition 4 (strict validation) | Risks: strict validation still failing | 6.5 | — (not an ATDD row; archive gate) | Pass as a registered task, not as a passed check |
 | Tech-stack baseline (`config.yaml` `context`, D17 plan-first) | DD2, DD3, DD4, DD9, DD12; deviations TS-1…TS-13 | 2.1, 2.2, 4.1, 6.1, 6.6 | — (not an ATDD row; archive gate) | Pass as plan-first choices plus recorded deviations (TS-11 still open) |
 
