@@ -1,6 +1,6 @@
 # Agent engineering guide
 
-This guide applies to coding agents working in this repository. Read the relevant spec, implementation, and tests before editing. Write repository documentation in English.
+This guide applies to coding agents working in this repository. Read the relevant spec, implementation, and tests before editing. Write repository documentation in Chinese.
 
 ## Four development principles
 
