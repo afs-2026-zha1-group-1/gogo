@@ -8,5 +8,6 @@ public record TripResponse(
         String endDate,
         String startLocation,
         String endLocation,
-        long organizerId) {
+        long organizerId,
+        boolean mainPlanConfirmed) {
 }
