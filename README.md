@@ -77,6 +77,13 @@ and hard budgets first (422 `VALIDATION_FAILED` with both error lists, 409
 provider is a fixture-backed fake (`FakeMainPlanProvider`); preference rows are
 a read-only stand-in until REQ-019 lands.
 
+US-013 adds the member roster. `GET /api/trips/{id}/members` returns each member
+once with `userId`, `displayName` and an `organizer` flag to members only (401
+`USER_REQUIRED`, 403 `NOT_A_MEMBER`, 404 `TRIP_NOT_FOUND`; denial bodies carry no
+member identity). The 成员 tab (`#/members`) renders the roster with an
+organizer badge and loading, empty, error, permission-denied and no-trip states;
+it deliberately omits readiness, preference summaries and generation actions.
+
 The database is SQLite at `backend/data/gogo.db`. The Flyway migrations create the
 schema and seed data on first start (`V1` greeting, `V2` users/trips/members,
 `V3` invitations and the main-plan column, `V5` main-plan drafts/stops plus

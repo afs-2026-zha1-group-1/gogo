@@ -65,7 +65,9 @@ Screenshots (local, not committed): `logs/us-013-u1-members.png`,
 
 ## Not verified / remaining
 
-- CI run on the pushed branch (P4 pipeline report).
+- CI: **verified green** — run `43818961221` on head `077e762`, both jobs
+  success; see `docs/ai4se-plugins/20261116-144618-pipeline-report.md` and
+  `openspec/changes/us-013-view-trip-members/ci-report.md`.
 - G2 by VL Elian Jiang; G3 after human merge and archive.
 - The existing dev database was not migrated or modified; the verification
   backend used `gogo-us013.db`.
