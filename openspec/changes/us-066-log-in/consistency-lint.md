@@ -81,3 +81,45 @@ Living or Delta specs.
   conventions coexist.
 - Revised counts for a re-run at p2 after the conditions are met: BLOCKER 3
   (scope, baseline, contract), WARNING 0 (L1 closed), SUGGESTION 3 (L2–L4).
+
+## Re-run after G1 C1–C4 (2026-11-16)
+
+- Artifact level: 2 (proposal + 6 delta specs: auth ADDED; trips, invitations,
+  app-shell, main-itinerary, splits MODIFIED; no tasks/design yet).
+- Tooling: `openspec validate us-066-log-in` → **valid**.
+- **L1 closed:** `main-itinerary` is archived/living; a MODIFIED delta now
+  targets the Living Spec (`specs/main-itinerary/spec.md`).
+- **C1 closed:** `specs/splits/spec.md` MODIFIED added (5 requirements, all
+  requirement/scenario names retained; identity phrases now use the session).
+- **C3 resolved:** `specs/auth/spec.md` defines flat `{code,message}` for
+  auth/trip/invitation/main-plan + Security handlers, and documents splits
+  `{data,error}` + `MEMBER_REQUIRED` as the only exception.
+- **C4 resolved:** baseline refreshed to `origin/main` `f6419a5` (merge
+  `53bdcc6`); frontend/test lists and `V4/V6` wording updated.
+- **REQ renumber:** REQ-006 → REQ-008 (main took REQ-006 for US-042; REQ-007 is
+  US-043). Signed G1 record unchanged; addendum records it.
+
+| id | Severity | Phase | Location | Issue | Suggested fix | Evidence | Authority | Fact/Inference |
+|---|---|---|---|---|---|---|---|---|
+| L5 | WARNING | p2 | `openspec/specs/splits/spec.md` Purpose (line 11) | Purpose still says identity = `X-Member-Id` / `trip_member.id`, while code uses `X-User-Id` and the delta now uses the authenticated session. Pre-existing drift, not introduced by US-066. | Correct the Purpose at archive/living-merge; do not silently rewrite the Living Spec here. | splits Purpose vs `SplitDraftController` / `MemberGuard` | spec + code | [fact] |
+| L6 | SUGGESTION | p2 | MODIFIED app-shell/splits blocks | Historical scenario/requirement names retained by OpenSpec archive rules although their content changed (e.g. "The identity switcher stays a scaffold", splits "缺失或未知身份拒绝"). | Treat names as identifiers; P3 design explains the removal/exception. | `openspec validate` retention rule | spec | [inference] |
+
+### Verdict after remediation
+
+**Partial** — no BLOCKER, one pre-existing WARNING (L5) plus SUGGESTION L2–L4/L6.
+C1–C4 are closed; L5 is a Living Spec prose drift owned by SA for
+archive/living-merge and does not change the identity contract in the delta.
+
+### Residual risks after remediation
+
+- L5 splits Purpose drift (SA; living-merge).
+- In-memory sessions lost on restart (accepted).
+- Demo credentials in fixtures (accepted, demo-only).
+- CSRF bootstrap order and the splits `MEMBER_REQUIRED` security-chain exception
+  must be designed at P3 (R32/R47).
+
+### Next (non-Gate)
+
+IO + SA confirm the Conditional → Pass conversion using
+`g1-addendum-c1-c4.md`; then `/sdd:p3`. This re-run does not edit the Living or
+Delta specs and is not a Gate decision.

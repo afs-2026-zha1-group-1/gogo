@@ -433,7 +433,7 @@ data contract covers both the persisted credential row and the runtime session.
 
 | Concept | Grain | Fields | State transitions |
 |---|---|---|---|
-| `account_credential` (new, V6) | One row per `app_user` account | `user_id` INTEGER PRIMARY KEY REFERENCES `app_user(id)`; `email` TEXT NOT NULL with a UNIQUE index (trimmed, lower-cased for comparison); `password_hash` TEXT NOT NULL (BCrypt, never plaintext) | Seeded once for users 1–5 by `V6` (V4 is reserved by the in-flight preference change, V5 is the merged main-plan migration); no create/update/delete path in this change (registration/password change out of scope) |
+| `account_credential` (new, V6) | One row per `app_user` account | `user_id` INTEGER PRIMARY KEY REFERENCES `app_user(id)`; `email` TEXT NOT NULL with a UNIQUE index (trimmed, lower-cased for comparison); `password_hash` TEXT NOT NULL (BCrypt, never plaintext) | Seeded once for users 1–5 by `V6` (V1–V5 occupied: V4 = splits, V5 = main plan); no create/update/delete path in this change (registration/password change out of scope) |
 | Authenticated account (wire) | One object per login/`me` response | `id` (integer), `name` (`app_user.display_name`), `email` (credential email); no password/hash field ever | Read-only projection |
 | Session (Spring Security) | One server-side session per signed-in browser | Session id in an HttpOnly cookie; principal carries account id/email/name; CSRF token bound to the session; idle timeout configurable (30 min default, short in tests) | anonymous → authenticated on valid login (session id rotated); authenticated → anonymous on expiry, invalid cookie or future logout; restart of the single server drops in-memory sessions and therefore authenticates nobody |
 | CSRF token | One token per session, exposed to the SPA | `XSRF-TOKEN` cookie readable by same-origin JS; required in the `X-XSRF-TOKEN` header for state-changing requests | Issued on bootstrap/login; validated per request; invalid/missing → 403 and no state change |
@@ -449,7 +449,7 @@ have concrete proposals and do not change grain or ownership.
 | Branch | In / out | Attribution |
 |---|---|---|
 | Valid seeded email + password | in | S1; 200 account + new session; `me` 200; dashboard opens |
-| Unknown email, wrong password, malformed/blank fields | in | S3; one generic credential failure (400/401), no session, no account-existence signal |
+| Unknown email, wrong password, malformed/blank fields | in | S3; one generic credential failure (401), no session, no account-existence signal |
 | Same email with different letter case or surrounding spaces | in | Credential comparison trims and lower-cases; same account, no duplicate row |
 | Protected endpoint without a session cookie | in | S4/S9; 401 `USER_REQUIRED`, no private data |
 | Protected endpoint with an expired/invalid session | in | S5; 401 `USER_REQUIRED`, no private data; frontend opens login |
@@ -477,16 +477,19 @@ Every branch referenced by a scenario has a row above.
 | Caller identity | `trips` "Trip caller identity" (living) | MODIFY: session principal replaces `X-User-Id`; 401 `USER_REQUIRED` retained; 403 membership rule unchanged | One identity mechanism; no header fallback |
 | Trip creation/detail | `trips` creation/detail requirements | Behavior unchanged; the organizer/member is the authenticated account | Scenarios rewritten to "after login as Alice/Ben" |
 | Invitation issuance/accept | `invitations` issuance/acceptance (living) | MODIFY: principal replaces the header; preview stays public; identity-error precedence stays | Same outcomes and codes |
+| Main-plan identity | `main-itinerary` "Authorization and identity for main-plan operations" (living) | MODIFY: session principal replaces `X-User-Id`; organizer/member outcomes and `USER_REQUIRED` retained | Delta added in this change |
+| Split identity | `splits` five draft endpoints (living) | MODIFY: session principal replaces the header; `MEMBER_REQUIRED` and the `{data,error}` envelope remain documented exceptions | Delta added in this change; no split behavior change |
 | Shell identity surface | `app-shell` "Mobile shell frame" (living) | MODIFY: switcher removed, signed-in name shown read-only; login is full-screen without dock; dock/frame/join exclusion unchanged | Shell is signed-in only; guest preview outside |
 | Greeting | `greeting` (living) | Unchanged and public | No dependency |
 | Dashboard landing | `app-shell` "Dashboard tab placement"; US-061 | `#/` becomes protected and is the post-login landing; aggregation still US-061 | No dashboard data added here |
 | Scanner | US-067 (Backlog) | Consumes `#/login` and session; no scanner code | Downstream only |
 | My Account / logout | US-068/US-069 (Backlog) | Session and principal support them; no account/logout endpoint added | Downstream only |
 | Binding plan | `docs/knowledge/architecture/tech-stack-plan.md` | Plan states no accounts and `X-Member-Id`; this change adds Spring Security + credentials | Recorded deviation; reconcile at archive per `openspec/config.yaml` |
-| Fixtures/tests | REQ-003/004 acceptance tests use the header | Rewrite to authenticate via session; expected outcomes/codes unchanged | Test-only migration, no product contract change |
+| Fixtures/tests | trip/invitation/main-plan/splits acceptance tests use the header | Rewrite to authenticate via session; expected outcomes/codes unchanged | Test-only migration, no product contract change |
 
-No ✗ row remains. `auth` is new; `trips`, `invitations` and `app-shell` are the
-only modified capabilities; `greeting` is untouched.
+No ✗ row remains. `auth` is new; `trips`, `invitations`, `app-shell`,
+`main-itinerary` and `splits` are the modified capabilities; `greeting` is
+untouched.
 
 ### ⑫ Notification / display contract
 
@@ -499,6 +502,7 @@ only modified capabilities; `greeting` is untouched.
 | Shell identity indicator | Any signed-in shell route | Signed-in traveler | Read-only account display name; no switcher, no seeded-user list, no account actions | Session-derived `me` |
 | Public greeting | Home/dashboard greeting request | Any visitor | Existing greeting content | `GET /api/greeting` (public) |
 | Public invitation preview | Guest opens `#/join/<token>` | Any visitor | Existing public preview (trip name, destination, dates, joining state); no identities | `GET /api/invitations/{token}` (public) |
+| Split error surface | Split endpoint without a valid session | Caller | `401 MEMBER_REQUIRED` with `{data:null,error:{code,message}}`; unchanged from the merged splits contract | Split endpoints (session-derived identity, documented exception) |
 
 No notifications (email, push, queue) are in scope.
 

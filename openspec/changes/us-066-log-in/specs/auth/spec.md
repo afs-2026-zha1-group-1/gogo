@@ -104,11 +104,13 @@ US-069 and SHALL NOT be added here.
 Every non-public endpoint SHALL require an authenticated session and SHALL derive
 the caller from the session principal. The legacy `X-User-Id` header SHALL NOT
 authenticate any request. An unauthenticated or expired request SHALL return 401
-`USER_REQUIRED` without private data or state change. Authentication SHALL prove
-identity only; trip membership and organizer rules SHALL remain unchanged. The
-login endpoint, CSRF bootstrap, `GET /api/greeting` and
-`GET /api/invitations/{token}` preview SHALL remain accessible without a
-session.
+`USER_REQUIRED` without private data or state change, except the `splits`
+endpoints, which keep their documented 401 `MEMBER_REQUIRED` outcome and
+`{data,error}` envelope (see "Error response shape and split identity
+exception"). Authentication SHALL prove identity only; trip membership and
+organizer rules SHALL remain unchanged. The login endpoint, CSRF bootstrap,
+`GET /api/greeting` and `GET /api/invitations/{token}` preview SHALL remain
+accessible without a session.
 
 #### Scenario: A protected endpoint rejects an unauthenticated caller
 
@@ -148,6 +150,42 @@ session.
   session
 - **THEN** the response is 401 `USER_REQUIRED` with no plan data
 - **AND** an authenticated member or organizer sees exactly today's outcomes
+
+#### Scenario: Splits endpoints use session identity with their documented exception
+
+- **WHEN** a split endpoint is called without a valid session
+- **THEN** the response is 401 with `code` equal to `MEMBER_REQUIRED` and the
+  splits `{data,error}` envelope, as documented in the splits delta
+- **AND** an authenticated split member sees exactly today's outcomes
+
+### Requirement: Error response shape and split identity exception
+
+The `auth`, `trips`, `invitations` and `main-itinerary` endpoints, together with
+the Spring Security authentication entry point and access-denied handler, SHALL
+return the flat error body `{code, message}`. The `splits` endpoints SHALL keep
+their existing `{data: null, error: {code, message}}` envelope and their
+`401 MEMBER_REQUIRED` outcome for a missing or unknown authenticated caller, as
+an explicit exception. No third error shape SHALL be introduced.
+
+#### Scenario: Auth and trip failures use the flat error body
+
+- **WHEN** a login fails or a trip request is rejected
+- **THEN** the body carries top-level `code` and `message`
+- **AND** no `data`/`error` wrapper is added by the new auth or Security handlers
+
+#### Scenario: Splits keep the envelope and MEMBER_REQUIRED
+
+- **WHEN** a split endpoint receives no valid session
+- **THEN** the response is 401 with `data = null` and `error.code =
+  MEMBER_REQUIRED`
+- **AND** the splits error-body contract is unchanged
+
+#### Scenario: A missing session does not create a third error shape
+
+- **WHEN** any protected endpoint rejects an unauthenticated caller
+- **THEN** its body is either the flat `{code,message}` shape or the documented
+  splits `{data,error}` shape
+- **AND** no other envelope is used
 
 ### Requirement: CSRF protection
 

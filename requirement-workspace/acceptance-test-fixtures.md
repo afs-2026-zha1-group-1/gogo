@@ -330,7 +330,9 @@ hashes.
 | P6 invitation resume | signed-out browser opens `#/join/<token>`, acts on it, logs in | preview is public; login opens; after login the same preview resumes; no membership until explicit accept; accept then joins |
 | P7 login redirect | signed-in browser opens `#/login` | `#/` opens |
 | P8 hash storage | test-only direct read of `account_credential.password_hash` | value is a BCrypt hash (starts `$2`) and is not the demo password |
-| C1 existing acceptance | re-run create/detail/invitation/join/main-plan acceptance while logged in | same outcomes and codes as the archived fixtures |
+| C1 existing acceptance | re-run create/detail/invitation/join/main-plan/split acceptance while logged in | same outcomes and codes as the archived fixtures |
+| P9 split no session | any `GET/POST/PUT /api/trips/{id}/split-draft...` without a session | 401 with `data = null` and `error.code = MEMBER_REQUIRED` (splits exception), no private data |
+| P10 split authenticated | the same split calls with a member session | existing split outcomes and `{data,error}` envelope unchanged; no header is sent |
 
 ### Values deliberately not fixed (REQ-008)
 

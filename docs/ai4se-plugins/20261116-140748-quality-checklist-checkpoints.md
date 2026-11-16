@@ -23,9 +23,9 @@
 
 - mode: persisted
 - report_path: `docs/ai4se-plugins/20261116-140806-quality-checklist-report.md`
-- overall: Pass
-- required_failed: none
-- skipped_optional: P2-3 (G1 not claimed), P2-4 (consistency lint Partial, optional)
+- overall: Partial
+- required_failed: none; P2-3 Partial (G1 Conditional, Pass conversion pending)
+- skipped_optional: P2-4 consistency lint (Partial, optional)
 
 ## Next
 

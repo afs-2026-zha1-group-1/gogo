@@ -29,8 +29,8 @@ here and must be reconciled in the tech-stack plan at archive per
 
 - **ADDED** `auth` capability:
   - Credential login: email + password for the five seeded accounts, verified
-    against BCrypt hashes in a new `account_credential` table (`V6`; V4 is
-    reserved by the in-flight preference change and V5 is the merged main-plan
+    against BCrypt hashes in a new `account_credential` table (`V6`; `V1`–`V5`
+    are occupied — `V4` = splits, `V5` = main plan — so `V6` is the next free
     migration). Unknown email and wrong password share one generic failure that
     reveals neither account existence nor account/trip data. No registration,
     password change or reset.
@@ -61,22 +61,27 @@ here and must be reconciled in the tech-stack plan at archive per
   removed and replaced by a read-only signed-in name; `#/login` is full-screen
   without the dock; shell pages require sign-in; frame, dock and guest-join
   exclusion keep their contracts.
-- **Cross-change identity migration** for the in-flight `main-itinerary`
-  capability (merged PR #37, archive pending): its four main-plan endpoints,
-  two screens and tests move from `X-User-Id` to the session principal with
-  unchanged outcomes. Its delta identity scenarios are updated during this
-  change (or after its archive, against the Living Spec).
-- Controller identity migration across the trip, invitation and main-plan
-  packages; a Spring Security configuration (JSON 401, CSRF cookie token,
-  fixation protection, timeout, no form-login/logout surface); a credential
-  repository + `UserDetailsService`; `POST /api/auth/login`,
+- **Cross-change identity migration** for the living `main-itinerary` and
+  `splits` capabilities (both merged and archived to the Living Spec): the
+  main-plan endpoints/screens and the five split-draft endpoints/feature move
+  from `X-User-Id` to the session principal with unchanged outcomes. Splits
+  keeps `401 MEMBER_REQUIRED` and its `{data,error}` envelope as documented
+  exceptions.
+- Controller identity migration across the trip, invitation, main-plan and
+  splits packages; a Spring Security configuration (flat JSON 401, CSRF cookie
+  token, fixation protection, timeout, no form-login/logout surface); a
+  credential repository + `UserDetailsService`; `POST /api/auth/login`,
   `GET /api/auth/me`, `GET /api/auth/csrf`.
+- Error contract: flat `{code,message}` for auth, trip, invitation, main-plan
+  and the Security handlers; splits keeps its existing `{data,error}` envelope
+  as the only exception; no third shape.
 - Frontend: remove `X-User-Id` from the API client, add auth bootstrap and
   signed-in/out state, add the login page and route guard, remove identity props
-  from create/details/join/invitation/main-plan pages, and retain the pending
-  invitation token.
-- Fixtures, backend acceptance tests and browser verification move from header
-  identity to session login; expected business outcomes and codes are unchanged.
+  from create/details/join/invitation/main-plan/split pages, and retain the
+  pending invitation token.
+- Fixtures, backend acceptance tests (trip, invitation, main-plan, splits) and
+  browser verification move from header identity to session login; expected
+  business outcomes and codes are unchanged.
 
 Unchanged: trip creation/validation, detail permission, invitation
 issuance/join/closed/unusable outcomes, main-plan generation/validation/confirm
@@ -116,46 +121,57 @@ identity switcher no longer exists.
   preview stays public and identity-free.
 - `app-shell`: switcher removed, signed-in name read-only, login page outside
   the dock/shell, protected pages require sign-in.
+- `main-itinerary`: its identity requirement moves to the session principal;
+  organizer/member outcomes and codes are unchanged.
+- `splits`: the five split-draft identity phrases move to the session principal;
+  `MEMBER_REQUIRED` and the `{data,error}` envelope stay as documented
+  exceptions.
 
-`main-itinerary` is not yet in `openspec/specs/` (its change is merged but not
-archived). If it archives before this change's P2, its living spec is MODIFIED;
-otherwise the in-flight delta is updated cross-change. Either way the behavior
-does not change.
+G1 C1/C3 decisions (2026-11-16): splits is in scope; the new auth/Security error
+body is flat `{code,message}`; splits keeps `MEMBER_REQUIRED` + envelope. G1 C2
+is satisfied by the `main-itinerary` living delta; G1 C4 by the merge to
+`f6419a5`.
 
 ## Impact
 
-- **Requirement**: REQ-006
-  (`requirement-workspace/requirements/REQ-006.md`), intent
-  `requirement-workspace/intents/2026-11-16-req-006.md`, DoR
-  `requirement-workspace/analysis/req-006-dor.md`, impact brief §38–45,
-  deep-dive §REQ-006.
+- **Requirement**: REQ-008
+  (`requirement-workspace/requirements/REQ-008.md`; renumbered from REQ-006
+  after main took REQ-006 for US-042), intent
+  `requirement-workspace/intents/2026-11-16-req-008.md`, DoR
+  `requirement-workspace/analysis/req-008-dor.md`, impact brief §38–45,
+  deep-dive §REQ-008.
 - **Story**: issue #38 (US-066), `Iteration 0`, `Priority - Must`, `Type -
   Members`; assigned and moved to `Req Analysis` 2026-11-16.
 - **Backend code**: new `com.gogo.auth` package (controller, credential
   repository, `UserDetailsService`, security config); identity migration in
-  `trip`, `invitation` and `mainplan` controllers; JSON error handling.
-- **Frontend code**: `api.ts` (cookie/CSRF), `App.tsx` (auth bootstrap, login
-  route, guard, switcher removal), new login page, identity-prop removal across
-  `CreateTrip`, `TripDetails`, `Join`, `InvitationPanel`, `MainPlan` and
-  `MainPlanInputs`, pending-invitation resume.
+  `trip`, `invitation`, `mainplan` and `hello/splits` controllers; JSON error
+  handling.
+- **Frontend code**: `api.ts` (cookie/CSRF), `App.tsx`/`router.tsx` (auth
+  bootstrap, login route, guard, switcher removal), new login page, identity-prop
+  removal across `CreateTrip`, `TripDetails`, `Join`, `InvitationPanel`,
+  `MainPlan`, `MainPlanInputs` and `features/split/*`, pending-invitation
+  resume.
 - **APIs**: ADD `POST /api/auth/login`, `GET /api/auth/me`,
-  `GET /api/auth/csrf`; protected trip/invitation/main-plan routes keep their
-  paths, statuses and business codes but derive identity from the session;
+  `GET /api/auth/csrf`; protected trip/invitation/main-plan/splits routes keep
+  their paths, statuses and business codes but derive identity from the session;
   `GET /api/greeting` and invitation preview stay public. `X-User-Id` is no
   longer honored.
 - **Data**: `V6__create_account_credential.sql` adds one credential table and
   five seeded rows (email + BCrypt hash). No `app_user` change, no membership or
   plan change.
 - **Security**: BCrypt hashing, session fixation protection, CSRF token, generic
-  login failure, configurable idle timeout, no form-login/logout surface.
+  login failure, configurable idle timeout, no form-login/logout surface; splits
+  exception documented.
 - **Dependencies**: backend adds `spring-boot-starter-security`; no frontend
   dependency. Build and CI structure unchanged.
-- **Tests/fixtures**: new auth acceptance tests; trip/invitation/main-plan
+- **Tests/fixtures**: new auth acceptance tests; trip/invitation/main-plan/splits
   tests and browser checks migrate to session login; credential/auth matrix
   added to `acceptance-test-fixtures.md`.
 - **Docs/harness**: README login/demo-credential notes, workdir, stage reports;
   tech-stack-plan reconciliation at archive.
-- **Upstream**: current main `00ea4bc` (US-031-037 merged); no other dependency.
+- **Upstream**: `origin/main` `f6419a5`, merged into this branch as `53bdcc6`
+  (includes splits, main-itinerary archive and US-049/050 P1); no other
+  dependency.
 - **Downstream**: US-067/068/069 consume the login page and session; US-061's
   dashboard becomes the protected post-login landing.
 
@@ -163,13 +179,12 @@ does not change.
 
 Medium–large. One vertical slice in one change (confirmed 2026-11-16): V6
 credential migration → auth endpoints + repository/UserDetailsService →
-Spring Security chain + identity migration in trip/invitation/main-plan →
-frontend auth bootstrap + login page + guard + switcher removal → pending
-invitation resume + header-ignored verification → full existing-acceptance
-re-run.
+Spring Security chain + identity migration in trip/invitation/main-plan/splits
+(including the splits exception) → frontend auth bootstrap + login page + guard
++ switcher removal → pending invitation resume + header-ignored verification →
+full existing-acceptance re-run.
 
-Ordering constraints: use V6 (V4 reserved, V5 taken); re-check the migration
-head before implementation; update the main-itinerary identity delta (or its
-living spec if archived first); keep all business outcomes/codes identical so
-the existing acceptance matrix stays valid. No push or merge is part of this
-proposal.
+Ordering constraints: use V6 (V1–V5 occupied); re-check the migration head before
+implementation; the `main-itinerary` and `splits` deltas target the Living Specs;
+keep all business outcomes/codes identical so the existing acceptance matrix
+stays valid. No push or merge is part of this proposal.

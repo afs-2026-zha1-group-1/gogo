@@ -13,25 +13,31 @@
 |----------|-----------|--------|----------|
 | P2-1 | yes | Pass | `openspec/changes/us-066-log-in/specs/{auth,trips,invitations,app-shell}/spec.md`; `openspec validate us-066-log-in` → valid |
 | P2-2 | yes | Pass | `openspec/changes/us-066-log-in/dov-ac-review.md` (AC-1…4 Pass, DoV-1…5 Pass, residual R1–R5) |
-| P2-3 | yes* | Skipped | G1 not claimed yet; SA Elian Jiang accepted 2026-11-16, IO pending (`g1-decision.md` absent by design) |
-| P2-4 | no | Partial | `openspec/changes/us-066-log-in/consistency-lint.md` — verdict Partial (1 WARNING: main-itinerary delta still names X-User-Id; 3 SUGGESTIONs) |
+| P2-3 | yes* | Partial | G1 recorded **Conditional** (IO Johnson / SA Elian Jiang, `g1-decision.md`); C1–C4 remediated, conversion to Pass pending (`g1-addendum-c1-c4.md`) |
+| P2-4 | no | Partial | `openspec/changes/us-066-log-in/consistency-lint.md` — re-run after C1–C4: no BLOCKER; one pre-existing splits Purpose WARNING (L5) + SUGGESTIONs |
 
-| **Stage Overall** | — | Pass | required-only aggregation (P2-1/P2-2 Pass; P2-3 Skipped per the "G1 not claimed" footnote; P2-4 optional) |
+| **Stage Overall** | — | Partial | required-only aggregation (P2-3 Partial: Gate is not Pass; P2-1/P2-2 Pass; P2-4 optional) |
 
 ### Roll-up
 
 | Scope | Overall | Notes |
 |-------|---------|-------|
-| selected stages | Pass | Only p2 selected; no required Fail/Partial |
+| selected stages | Partial | G1 is Conditional; C1–C4 closed, Pass conversion pending IO+SA |
 
 ## Gaps
 
 | Check id | Gap | Owner (if known) | Suggested next |
 |----------|-----|------------------|----------------|
-| P2-4 / L1 | In-flight `us-031-037-main-itinerary` delta still specifies `X-User-Id` while US-066 makes it non-authenticating | SA/Dev | Reconcile during implementation: update that delta or add a MODIFIED living-spec delta after its archive; candidate G1 condition |
-| P2-3 | G1 decision record not yet signed | SA Elian Jiang accepted; IO pending | Record only after IO signs and a verdict (Pass/Conditional/Fail) is given |
+| P2-4 / L1 | L1 (main-itinerary in-flight delta) is **closed**; baseline merged to `f6419a5`; splits included | SA/Dev | Closed 2026-11-16 |
+| P2-4 / L5 | splits Living Spec Purpose still says `X-Member-Id` (pre-existing prose drift; code/delta use session) | SA | Fix at archive/living-merge |
+| P2-3 | G1 is Conditional; C1–C4 remediated | IO + SA | Confirm Conditional → Pass via `g1-addendum-c1-c4.md` |
 
 ## Notes
+
+- C1–C4 remediation (2026-11-16): splits + main-itinerary deltas added; flat error
+  body + splits `MEMBER_REQUIRED` exception; branch merged to `origin/main`
+  `f6419a5` (merge `53bdcc6`); `openspec validate us-066-log-in` valid.
+- REQ-006 → REQ-008 renumber (main took REQ-006 for US-042).
 
 - P2-3 is marked Skipped because G1 has not been claimed; if G1 is recorded, re-score P2-3 as Pass.
 - P2-4 is optional; its Partial verdict does not block the required-only Stage Overall.

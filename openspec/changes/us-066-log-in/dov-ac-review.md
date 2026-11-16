@@ -59,3 +59,29 @@ visible as residual concerns. This review is not a Gate decision.
 - DoV-1 (scope matches the proposal) must be re-judged after C1: the merged
   `splits` capability is identity-bound to `X-User-Id` and is absent from the
   proposal's scope (see B1).
+
+## G1 C1–C4 remediation (2026-11-16)
+
+- **R1 closed:** `main-itinerary` is living; a MODIFIED delta now targets
+  `openspec/specs/main-itinerary/spec.md`. The stale "in-flight delta" wording
+  was removed from the proposal/impact/lint.
+- **C1 applied:** `specs/splits/spec.md` MODIFIED added; all five split
+  requirements keep their names and scenarios, with the identity source changed
+  to the authenticated session. Splits `MEMBER_REQUIRED` and `{data,error}` stay
+  as documented exceptions (`specs/auth/spec.md` "Error response shape and split
+  identity exception").
+- **C2 applied:** main-itinerary identity requirement delta added.
+- **C3 applied:** flat `{code,message}` for auth/trip/invitation/main-plan and
+  Security handlers; splits remains the only envelope exception.
+- **C4 applied:** branch merged to `origin/main` `f6419a5` (merge `53bdcc6`);
+  baseline, frontend/test lists and `V4/V6` wording refreshed.
+- **Renumber:** REQ-006 → REQ-008 (main took REQ-006 for US-042; REQ-007 is
+  US-043). The signed G1 record is unchanged; `g1-addendum-c1-c4.md` records
+  this.
+- **Re-validation:** `openspec validate us-066-log-in` → valid.
+- **Residual:** splits Purpose still names `X-Member-Id` (Living Spec prose
+  drift, SA at archive/living-merge); historical scenario names retained by the
+  OpenSpec archive rule.
+
+Gate status remains **Conditional** until IO + SA confirm the conversion to Pass
+using `g1-addendum-c1-c4.md`.
