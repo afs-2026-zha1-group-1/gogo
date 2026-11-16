@@ -149,7 +149,7 @@ class SplitDraftDetailApiTest extends AbstractSplitApiTest {
     @DisplayName("getDetail_knownMemberUnknownTrip_returns404TripNotFoundAndCreatesNothing")
     void getDetail_knownMemberUnknownTrip_returns404TripNotFoundAndCreatesNothing() throws Exception {
         mockMvc.perform(get("/api/trips/{tripId}/split-draft", UNKNOWN_TRIP)
-                        .header("X-Member-Id", memberId("Ben")))
+                        .header("X-User-Id", memberId("Ben")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.data").doesNotExist())
                 .andExpect(jsonPath("$.error.code").value("TRIP_NOT_FOUND"));
@@ -158,12 +158,12 @@ class SplitDraftDetailApiTest extends AbstractSplitApiTest {
 
     private ResultActions getDetail(String memberId) throws Exception {
         return mockMvc.perform(get("/api/trips/{tripId}/split-draft", sgfTripId())
-                .header("X-Member-Id", memberId));
+                .header("X-User-Id", memberId));
     }
 
     private void startDraft() throws Exception {
         mockMvc.perform(post("/api/trips/{tripId}/split-draft", sgfTripId())
-                        .header("X-Member-Id", memberId("Ben")))
+                        .header("X-User-Id", memberId("Ben")))
                 .andExpect(status().isCreated());
     }
 
@@ -173,7 +173,7 @@ class SplitDraftDetailApiTest extends AbstractSplitApiTest {
         body.put("reunionStopId", stopId("Merlion Park"));
         body.put("draftVersion", draftVersion);
         mockMvc.perform(put("/api/trips/{tripId}/split-draft/boundaries", sgfTripId())
-                        .header("X-Member-Id", memberId("Ben"))
+                        .header("X-User-Id", memberId("Ben"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isOk());
@@ -181,7 +181,7 @@ class SplitDraftDetailApiTest extends AbstractSplitApiTest {
 
     private ResultActions postGenerate(String memberId, int draftVersion) throws Exception {
         return mockMvc.perform(post("/api/trips/{tripId}/split-draft/routes:generate", sgfTripId())
-                .header("X-Member-Id", memberId)
+                .header("X-User-Id", memberId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"draftVersion\":" + draftVersion + "}"));
     }

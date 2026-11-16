@@ -101,7 +101,7 @@ class SplitRouteGenerationApiTest extends AbstractSplitApiTest {
         startDraft();
         saveBoundaries(1);
         when(provider.candidateFor(eq("A"), any(), any())).thenAnswer(inv -> {
-            jdbc.update("UPDATE trip SET split_draft = json_set(split_draft, '$.draftVersion', 3) WHERE id = ?",
+            jdbc.update("UPDATE split_draft SET document = json_set(document, '$.draftVersion', 3), draft_version = 3 WHERE trip_id = ?",
                     sgfTripId());
             return fixture.candidateFor("A", inv.getArgument(1), inv.getArgument(2));
         });
@@ -142,7 +142,7 @@ class SplitRouteGenerationApiTest extends AbstractSplitApiTest {
     void generateRoutes_groupMoveEndpoint_notImplemented() throws Exception {
         startDraft();
         int status = mockMvc.perform(post("/api/trips/{tripId}/split-draft/groups:move", sgfTripId())
-                        .header("X-Member-Id", memberId("Ben"))
+                        .header("X-User-Id", memberId("Ben"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"from\":\"A\",\"to\":\"B\",\"memberId\":\"x\"}"))
                 .andReturn().getResponse().getStatus();
@@ -152,7 +152,7 @@ class SplitRouteGenerationApiTest extends AbstractSplitApiTest {
 
     private void startDraft() throws Exception {
         mockMvc.perform(post("/api/trips/{tripId}/split-draft", sgfTripId())
-                        .header("X-Member-Id", memberId("Ben")))
+                        .header("X-User-Id", memberId("Ben")))
                 .andExpect(status().isCreated());
     }
 
@@ -162,7 +162,7 @@ class SplitRouteGenerationApiTest extends AbstractSplitApiTest {
         body.put("reunionStopId", stopId("Merlion Park"));
         body.put("draftVersion", draftVersion);
         mockMvc.perform(put("/api/trips/{tripId}/split-draft/boundaries", sgfTripId())
-                        .header("X-Member-Id", memberId("Ben"))
+                        .header("X-User-Id", memberId("Ben"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isOk());
@@ -170,7 +170,7 @@ class SplitRouteGenerationApiTest extends AbstractSplitApiTest {
 
     private ResultActions postGenerate(String memberId, int draftVersion) throws Exception {
         return mockMvc.perform(post("/api/trips/{tripId}/split-draft/routes:generate", sgfTripId())
-                .header("X-Member-Id", memberId)
+                .header("X-User-Id", memberId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"draftVersion\":" + draftVersion + "}"));
     }

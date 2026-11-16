@@ -23,8 +23,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 })
 class MemberGuardTest {
 
-    private static final String UNKNOWN_TRIP = "00000000-0000-0000-0000-000000000000";
-    private static final String UNKNOWN_MEMBER = "99999999-9999-9999-9999-999999999999";
+    private static final String UNKNOWN_TRIP = "999999";
+    private static final String UNKNOWN_MEMBER = "999999";
 
     @Autowired
     private MemberGuard guard;
@@ -98,16 +98,16 @@ class MemberGuardTest {
     }
 
     private String sgfTripId() {
-        return jdbc.queryForObject("SELECT id FROM trip WHERE invite_code = 'SGF26A'", String.class);
+        return jdbc.queryForObject(
+                "SELECT id FROM trip WHERE name = 'Singapore Friends Day'", String.class);
     }
 
     private String memberId(String displayName) {
         return jdbc.queryForObject(
-                "SELECT id FROM trip_member WHERE display_name = ? AND trip_id = ?",
-                String.class, displayName, sgfTripId());
+                "SELECT id FROM app_user WHERE display_name = ?", String.class, displayName);
     }
 
     private String eveId() {
-        return jdbc.queryForObject("SELECT id FROM trip_member WHERE display_name = 'Eve'", String.class);
+        return jdbc.queryForObject("SELECT id FROM app_user WHERE display_name = 'Eve'", String.class);
     }
 }

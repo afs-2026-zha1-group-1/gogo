@@ -24,12 +24,12 @@
     `ci-report.md` — Overall **Partial**, Data source **none**, human confirmation
     **NOT SIGNED**. Not `Pass-by-human-confirm`
   - pipeline cd: n/a — no deployment in scope
-  - upstream gates: `g1-decision.md` **NOT RECORDED** (IO/SA pending);
-    `g2-decision.md` **NOT RECORDED** (VL pending)
+  - upstream gates: `g1-decision.md` **Pass** (IO = Johnson, SA = Johnson,
+    2026-11-13 17:20); `g2-decision.md` **NOT RECORDED** (VL pending)
   - stage checklists: P1 Pass (`7d1132e`), P2 Pass (`0239566`), P3 Pass
     (`20261113-160916`), P4 **Partial** (`20261113-163448`), P5 Pass **pre-archive**
     (`20261113-164151`); roll-up **Partial**
-  - tasks: `tasks.md` — 30/33; open 3.5 (push), 3.6 (fresh CI confirmation),
+  - tasks: `tasks.md` — 31/33; open 3.6 (fresh CI confirmation),
     5.5 (merge-ready confirmation)
 - Check conclusions:
 
@@ -49,8 +49,8 @@
 - Why the record is being held — the G3 contract rejects `Decision=Pass` when the
   archive is incomplete, and the common gate rules reject self-approval:
   1. **The archive has not run**, so there is no living-merge evidence to cite.
-  2. **Both upstream gates are NOT RECORDED.** G3 cannot pass over an unrecorded G1
-     and G2.
+  2. **G2 is NOT RECORDED.** G3 cannot pass over an unrecorded upstream gate.
+     G1 is recorded as Pass, so alignment is no longer a blocker.
   3. **The P4 DoV is not met.** Local-verify Overall is Partial (required check
      P4-2 Partial) and the pipeline report is Partial without a citable
      human-confirm label (P4-3 Partial).
@@ -63,10 +63,10 @@
 |---|---|---|---|
 | 1 | Authorize and perform the push to `origin/main` | Johnson (user) | task 3.5 |
 | 2 | Fresh four-field human CI confirmation for this change's commit, or machine evidence if remote read access is restored | Johnson (VL) | task 3.6; re-record the pipeline report and `ci-report.md` |
-| 3 | Named G1 (IO + SA) and G2 (VL) signatures | Johnson | `g1-decision.md`, `g2-decision.md`; then re-record the local-verify report so E3 is Signed and Overall can become Pass |
+| 3 | Named G2 (VL) signature | Johnson | `g2-decision.md`; then re-record the local-verify report so E3 is Signed and Overall can become Pass |
 | 4 | Explicit merge-ready confirmation | Johnson (user) | task 5.5, recorded in this change folder **before** any archive command runs |
 | 5 | Run the archive and verify the Living Spec | Dev | `openspec archive "req-002-greeting-json-sqlite" --yes`, then `openspec validate --specs --strict` → `✓ spec/greeting`, 1 passed, 0 failed; confirm the other two requirements are untouched |
-| 6 | Named G3 (SA) signature; close tasks 3.5, 3.6 and 5.5 so `tasks.md` reaches 33/33 | Johnson / Dev | this file; P5 checklist re-score after the archive |
+| 6 | Named G3 (SA) signature; close tasks 3.6 and 5.5 so `tasks.md` reaches 33/33 | Johnson / Dev | this file; P5 checklist re-score after the archive |
 
 - Approvers: **SA = pending.** No signature. AO asks: none attached. When signed,
   the role concentration (one person covering IO, SA and VL) must be recorded
@@ -95,12 +95,16 @@ work — not as an approval:
 
 The standing user instruction "帮我按照Openspec 的方式从P1-P5进行编写和commit。
 每个P都commit一次。" authorizes authoring the P1–P5 artifacts and committing each
-stage. It does **not** authorize:
+stage. It does **not** on its own authorize pushing, the living-merge, or any gate
+signature. Those were separately and explicitly authorized:
 
-- pushing this change to `origin/main` (task 3.5),
-- the living-merge / archive (task 5.5 requires a separate merge-ready
-  confirmation),
-- or any gate signature.
+- **Push (task 3.5):** "没问题，授权推送。然后帮我remote到这个位置，push上去" —
+  pushed 2026-11-13 17:19 (+08:00) to `origin` and `group1`. The authorization
+  named the `group1` URL, so it was bound to that remote; no other remote was
+  substituted.
+- **G1 signature (IO + SA):** "签署Johnson" — recorded at 17:20.
+- **Still not authorized:** the living-merge / archive (task 5.5 needs a separate
+  merge-ready confirmation) and the G2/G3 signatures.
 
 REQ-001's "没问题，ci全绿。都签署我的名字即可Johnson" was scoped to REQ-001's three
 gates and to a CI run that predates the `sqlite-jdbc` dependency. It is not reused
@@ -109,8 +113,8 @@ as they were in REQ-001's `g3-decision.md`.
 
 ## Next
 
-Tasks 5.3 (this summary and the P5 checklist `20261113-164151`), 5.4 (this draft)
-and 5.6 (KB Skipped) are closed by the P5 increment. Tasks 3.5, 3.6 and 5.5 remain
-open and all three require the user. Until they close, this file stays
-**NOT RECORDED**, the change stays in `openspec/changes/` (not `archive/`), the
-Living Spec keeps REQ-001's contract, and nothing is pushed.
+Tasks 5.3 (this summary and the P5 checklist `20261113-164151`), 5.4 (this draft),
+5.6 (KB Skipped) and 3.5 (push) are closed. Tasks 3.6 (fresh CI confirmation) and
+5.5 (merge-ready confirmation) remain open and both require the user. Until they
+close, this file stays **NOT RECORDED** and the change stays in
+`openspec/changes/` (not `archive/`), so the Living Spec keeps REQ-001's contract.

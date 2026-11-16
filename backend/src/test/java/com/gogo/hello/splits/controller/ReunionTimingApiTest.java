@@ -141,7 +141,7 @@ class ReunionTimingApiTest extends AbstractSplitApiTest {
     void checkTiming_knownMemberUnknownTrip_returns404TripNotFound() throws Exception {
         String body = timingBody(120, List.of(route("A", 60, List.of(15, 20), 10), route("B", 60, List.of(20, 20), 10)));
         mockMvc.perform(post("/api/trips/{tripId}/split-draft/routes:check-timing", UNKNOWN_TRIP)
-                        .header("X-Member-Id", memberId("Ben"))
+                        .header("X-User-Id", memberId("Ben"))
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.data").doesNotExist())
@@ -151,7 +151,7 @@ class ReunionTimingApiTest extends AbstractSplitApiTest {
 
     private ResultActions postTiming(String memberId, String body) throws Exception {
         return mockMvc.perform(post("/api/trips/{tripId}/split-draft/routes:check-timing", sgfTripId())
-                .header("X-Member-Id", memberId)
+                .header("X-User-Id", memberId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body));
     }

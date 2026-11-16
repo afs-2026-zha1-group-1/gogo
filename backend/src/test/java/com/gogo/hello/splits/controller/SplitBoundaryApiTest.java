@@ -139,13 +139,13 @@ class SplitBoundaryApiTest extends AbstractSplitApiTest {
 
     private void startDraft() throws Exception {
         mockMvc.perform(post("/api/trips/{tripId}/split-draft", sgfTripId())
-                        .header("X-Member-Id", memberId("Ben")))
+                        .header("X-User-Id", memberId("Ben")))
                 .andExpect(status().isCreated());
     }
 
     private ResultActions putBoundaries(String memberId, String body) throws Exception {
         return mockMvc.perform(put("/api/trips/{tripId}/split-draft/boundaries", sgfTripId())
-                .header("X-Member-Id", memberId)
+                .header("X-User-Id", memberId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body));
     }

@@ -5,6 +5,7 @@ import { RouterProvider } from 'react-router-dom'
 import { IdentityProvider } from './features/split/identity'
 import { router } from './router'
 import './index.css'
+import './app.css'
 
 // Errors surface immediately (no retry backoff) so the permission/rejection states are observable
 // during the local walkthrough; screens expose an explicit retry. Polling is set per split query.

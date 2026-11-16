@@ -9,10 +9,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
- * Shared base for splits API acceptance tests (atdd-design §2/§4). Boots one in-memory SQLite context
- * (shared-cache, pool=1) with the real Flyway V1+V2 seed and centrally resets to seed state before each test:
- * {@code split_draft=NULL}, generated split route pairs removed, all members re-acknowledged. Fixture ids are
- * resolved by natural key (invite_code / display_name / title) so tests never hardcode seed UUIDs.
+ * Shared base for splits API acceptance tests on the main trip schema. Boots one in-memory SQLite context with
+ * the real Flyway migrations (V1 greeting, V2 app_user/trip/trip_member seed, V3 invitation + main_plan_confirmed,
+ * V4 split_draft + plan_node). Before each test it resets to a split-ready seed state: no active draft, no
+ * generated split route pairs, and the fixture trip's main plan confirmed. Identity is app_user via X-User-Id;
+ * fixtures are resolved by natural keys so tests never hardcode ids.
  */
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:sqlite:file:split-api-test?mode=memory&cache=shared",
@@ -32,23 +33,23 @@ abstract class AbstractSplitApiTest {
 
     @BeforeEach
     void resetToSeed() {
-        jdbc.update("UPDATE trip SET split_draft = NULL");
+        jdbc.update("DELETE FROM split_draft");
         jdbc.update("DELETE FROM plan_node WHERE branch_id IN ('split-a', 'split-b')");
-        jdbc.update("UPDATE trip_member SET plan_ack_version = 1");
+        jdbc.update("UPDATE trip SET main_plan_confirmed = 1");
     }
 
     protected String sgfTripId() {
-        return jdbc.queryForObject("SELECT id FROM trip WHERE invite_code = 'SGF26A'", String.class);
+        return jdbc.queryForObject(
+                "SELECT id FROM trip WHERE name = 'Singapore Friends Day'", String.class);
     }
 
     protected String memberId(String displayName) {
         return jdbc.queryForObject(
-                "SELECT id FROM trip_member WHERE display_name = ? AND trip_id = ?",
-                String.class, displayName, sgfTripId());
+                "SELECT id FROM app_user WHERE display_name = ?", String.class, displayName);
     }
 
     protected String eveId() {
-        return jdbc.queryForObject("SELECT id FROM trip_member WHERE display_name = 'Eve'", String.class);
+        return jdbc.queryForObject("SELECT id FROM app_user WHERE display_name = 'Eve'", String.class);
     }
 
     protected String stopId(String title) {
@@ -58,11 +59,13 @@ abstract class AbstractSplitApiTest {
 
     protected int activeDraftCount() {
         Integer count = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM trip WHERE id = ? AND split_draft IS NOT NULL", Integer.class, sgfTripId());
+                "SELECT COUNT(*) FROM split_draft WHERE trip_id = ?", Integer.class, sgfTripId());
         return count == null ? 0 : count;
     }
 
     protected String draftJson() {
-        return jdbc.queryForObject("SELECT split_draft FROM trip WHERE id = ?", String.class, sgfTripId());
+        var docs = jdbc.queryForList(
+                "SELECT document FROM split_draft WHERE trip_id = ?", String.class, sgfTripId());
+        return docs.isEmpty() ? null : docs.get(0);
     }
 }

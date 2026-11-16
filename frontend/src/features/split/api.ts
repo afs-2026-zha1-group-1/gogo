@@ -33,7 +33,7 @@ const BASE = "/api/trips"
 
 async function request<T>(path: string, memberId: string, init?: RequestInit): Promise<T> {
   const headers: Record<string, string> = {}
-  if (memberId) headers["X-Member-Id"] = memberId
+  if (memberId) headers["X-User-Id"] = memberId
   if (init?.body != null) headers["Content-Type"] = "application/json"
 
   const response = await fetch(`${BASE}${path}`, { ...init, headers })

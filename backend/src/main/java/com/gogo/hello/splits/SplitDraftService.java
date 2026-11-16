@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gogo.hello.common.ApiException;
 import com.gogo.hello.common.ErrorCode;
-import com.gogo.hello.splits.domain.MainPlanConfirmation;
 import com.gogo.hello.splits.domain.PlanStop;
 import com.gogo.hello.splits.domain.ReunionTimingCalculator;
 import com.gogo.hello.splits.domain.RouteCandidate;
@@ -62,14 +61,13 @@ public class SplitDraftService {
      */
     public SplitDraftDocument startDraft(String tripId, String memberId) {
         guard.requireMember(memberId, tripId);
-        int planVersion = repository.findTripPlanVersion(tripId);
-        if (!MainPlanConfirmation.isConfirmed(planVersion, repository.findMemberAckVersions(tripId))) {
-            throw new ApiException(ErrorCode.MAIN_PLAN_NOT_CONFIRMED, "all members must acknowledge the main plan");
+        if (!repository.isMainPlanConfirmed(tripId)) {
+            throw new ApiException(ErrorCode.MAIN_PLAN_NOT_CONFIRMED, "the main plan must be confirmed");
         }
         Map<String, List<String>> groups =
                 SplitDraftDocument.partitionGroups(repository.findMemberIdsOrdered(tripId));
         String now = Instant.now().toString();
-        SplitDraftDocument draft = SplitDraftDocument.initial(memberId, planVersion, groups, now);
+        SplitDraftDocument draft = SplitDraftDocument.initial(memberId, 1, groups, now);
         if (repository.createDraftIfAbsent(tripId, toJson(draft)) == 0) {
             throw new ApiException(ErrorCode.SPLIT_DRAFT_CONFLICT, "an active split draft already exists");
         }

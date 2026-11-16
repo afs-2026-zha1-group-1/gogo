@@ -38,7 +38,7 @@ public class SplitDraftController {
     @GetMapping
     public ResponseEntity<ApiResponse<SplitDraftDetailResponse>> getDraftDetail(
             @PathVariable String tripId,
-            @RequestHeader(name = "X-Member-Id", required = false) String memberId) {
+            @RequestHeader(name = "X-User-Id", required = false) String memberId) {
         SplitDraftDetailResponse detail = service.getDraftDetail(tripId, memberId);
         return ResponseEntity.ok(ApiResponse.ok(detail));
     }
@@ -46,7 +46,7 @@ public class SplitDraftController {
     @PostMapping
     public ResponseEntity<ApiResponse<SplitDraftDocument>> startDraft(
             @PathVariable String tripId,
-            @RequestHeader(name = "X-Member-Id", required = false) String memberId) {
+            @RequestHeader(name = "X-User-Id", required = false) String memberId) {
         SplitDraftDocument draft = service.startDraft(tripId, memberId);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(draft));
     }
@@ -54,7 +54,7 @@ public class SplitDraftController {
     @PutMapping("/boundaries")
     public ResponseEntity<ApiResponse<BoundaryResponse>> saveBoundaries(
             @PathVariable String tripId,
-            @RequestHeader(name = "X-Member-Id", required = false) String memberId,
+            @RequestHeader(name = "X-User-Id", required = false) String memberId,
             @RequestBody SaveBoundariesRequest request) {
         BoundaryResponse response = service.saveBoundaries(tripId, memberId, request);
         return ResponseEntity.ok(ApiResponse.ok(response));
@@ -63,7 +63,7 @@ public class SplitDraftController {
     @PostMapping("/routes:generate")
     public ResponseEntity<ApiResponse<RouteGenerationResponse>> generateRoutes(
             @PathVariable String tripId,
-            @RequestHeader(name = "X-Member-Id", required = false) String memberId,
+            @RequestHeader(name = "X-User-Id", required = false) String memberId,
             @RequestBody GenerateRoutesRequest request) {
         RouteGenerationResponse response = service.generateRoutes(tripId, memberId, request);
         return ResponseEntity.ok(ApiResponse.ok(response));
@@ -72,7 +72,7 @@ public class SplitDraftController {
     @PostMapping("/routes:check-timing")
     public ResponseEntity<ApiResponse<TimingResult>> checkTiming(
             @PathVariable String tripId,
-            @RequestHeader(name = "X-Member-Id", required = false) String memberId,
+            @RequestHeader(name = "X-User-Id", required = false) String memberId,
             @RequestBody CheckTimingRequest request) {
         TimingResult result = service.checkTiming(tripId, memberId, request);
         return ResponseEntity.ok(ApiResponse.ok(result));

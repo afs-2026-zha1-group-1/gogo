@@ -6,13 +6,16 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 /**
- * JdbcTemplate persistence for the splits capability (design D2/D9), matching the {@code GreetingRepository}
- * precedent. Slice 1 exposes the identity/trip/membership lookups consumed by {@link MemberGuard}; conditional
- * draft updates are added with the draft-start slice. No ORM, no extra tables or columns.
+ * JdbcTemplate persistence for the splits capability (design D2/D9). Adapted to the main trip schema:
+ * identity is app_user (INTEGER) via the {@code X-User-Id} header, membership is trip_member(trip_id, user_id),
+ * confirmation is {@code trip.main_plan_confirmed}, and the split draft lives in the separate {@code split_draft}
+ * table (unique per trip). main-line stops and split route structure nodes live in {@code plan_node}. No ORM.
  */
 @Repository
 public class SplitDraftRepository {
@@ -24,7 +27,7 @@ public class SplitDraftRepository {
     }
 
     public boolean memberExistsGlobally(String memberId) {
-        return count("SELECT COUNT(*) FROM trip_member WHERE id = ?", memberId) > 0;
+        return count("SELECT COUNT(*) FROM app_user WHERE id = ?", memberId) > 0;
     }
 
     public boolean tripExists(String tripId) {
@@ -32,38 +35,47 @@ public class SplitDraftRepository {
     }
 
     public boolean isMemberOfTrip(String memberId, String tripId) {
-        return count("SELECT COUNT(*) FROM trip_member WHERE id = ? AND trip_id = ?", memberId, tripId) > 0;
+        return count("SELECT COUNT(*) FROM trip_member WHERE user_id = ? AND trip_id = ?", memberId, tripId) > 0;
     }
 
-    public int findTripPlanVersion(String tripId) {
-        Integer version = jdbcTemplate.queryForObject(
-                "SELECT plan_version FROM trip WHERE id = ?", Integer.class, tripId);
-        return version == null ? 0 : version;
+    /** main_plan_confirmed (V3 boolean state column, default 0) is the confirmation predicate. */
+    public boolean isMainPlanConfirmed(String tripId) {
+        List<Integer> flags = jdbcTemplate.queryForList(
+                "SELECT main_plan_confirmed FROM trip WHERE id = ?", Integer.class, tripId);
+        return !flags.isEmpty() && flags.get(0) != null && flags.get(0) != 0;
     }
 
-    public List<Integer> findMemberAckVersions(String tripId) {
-        return jdbcTemplate.queryForList(
-                "SELECT plan_ack_version FROM trip_member WHERE trip_id = ?", Integer.class, tripId);
-    }
-
+    /** Member user ids of a trip, ordered by display name (Alice, Ben, Chloe, Daniel...). */
     public List<String> findMemberIdsOrdered(String tripId) {
         return jdbcTemplate.queryForList(
-                "SELECT id FROM trip_member WHERE trip_id = ? ORDER BY display_name", String.class, tripId);
+                "SELECT tm.user_id FROM trip_member tm JOIN app_user u ON u.id = tm.user_id "
+                        + "WHERE tm.trip_id = ? ORDER BY u.display_name",
+                String.class, tripId);
     }
 
     /**
-     * Conditional insert of the first active draft (design D9): only succeeds while {@code split_draft IS NULL}.
-     * Returns the affected row count; 0 means an active draft already exists (caller maps to 409 CONFLICT).
+     * Inserts the first active draft (design D9). The {@code split_draft.trip_id} UNIQUE constraint makes this
+     * atomic: a duplicate insert (an active draft already exists) raises a key violation, mapped to 0 so the
+     * caller returns 409 SPLIT_DRAFT_CONFLICT.
      */
     public int createDraftIfAbsent(String tripId, String draftJson) {
-        return jdbcTemplate.update(
-                "UPDATE trip SET split_draft = ? WHERE id = ? AND split_draft IS NULL", draftJson, tripId);
+        String now = Instant.now().toString();
+        try {
+            jdbcTemplate.update(
+                    "INSERT INTO split_draft (id, trip_id, document, draft_version, created_at, updated_at) "
+                            + "VALUES (?, ?, ?, 1, ?, ?)",
+                    UUID.randomUUID().toString(), tripId, draftJson, now, now);
+            return 1;
+        } catch (DataAccessException ex) {
+            // SQLite UNIQUE(trip_id) violation (error 19) is not auto-translated; any failure here means an
+            // active draft already exists → map to 0 so the caller returns 409 SPLIT_DRAFT_CONFLICT.
+            return 0;
+        }
     }
 
     /**
      * Loads a confirmed main-plan stop (design D7): only {@code branch_id = 'main'} rows at the draft's main-plan
-     * version qualify. A null/unknown/out-of-main id yields empty, which the caller maps to BOUNDARY_NOT_IN_MAIN_PLAN
-     * (this also covers the half-boundary reverse case where one stop id is missing).
+     * version qualify. A null/unknown/out-of-main id yields empty, which the caller maps to BOUNDARY_NOT_IN_MAIN_PLAN.
      */
     public Optional<PlanStop> findMainPlanStop(String tripId, String stopId, int planVersion) {
         if (stopId == null) {
@@ -81,20 +93,23 @@ public class SplitDraftRepository {
         return stops.stream().findFirst();
     }
 
-    /** Reads the raw draft JSON document; SQL NULL (no active draft) maps to {@code null}. */
+    /** Reads the raw draft JSON document from split_draft; no row (no active draft) maps to {@code null}. */
     public String findDraftJson(String tripId) {
-        return jdbcTemplate.queryForObject("SELECT split_draft FROM trip WHERE id = ?", String.class, tripId);
+        List<String> docs = jdbcTemplate.queryForList(
+                "SELECT document FROM split_draft WHERE trip_id = ?", String.class, tripId);
+        return docs.isEmpty() ? null : docs.get(0);
     }
 
     /**
-     * Conditional draft update (design D9): only succeeds while the stored {@code draftVersion} matches the
-     * expected version. Returns the affected row count; 0 means a concurrent change advanced the version
-     * (caller maps to 409 STALE_DRAFT_VERSION). pool=1 serializes writers.
+     * Conditional draft update (design D9): only succeeds while the stored {@code draft_version} matches the
+     * expected version; the column is bumped atomically. Returns the affected row count; 0 means a concurrent
+     * change advanced the version (caller maps to 409 STALE_DRAFT_VERSION). pool=1 serializes writers.
      */
     public int updateDraftIfVersion(String tripId, String draftJson, int expectedVersion) {
         return jdbcTemplate.update(
-                "UPDATE trip SET split_draft = ? WHERE id = ? AND json_extract(split_draft, '$.draftVersion') = ?",
-                draftJson, tripId, expectedVersion);
+                "UPDATE split_draft SET document = ?, draft_version = draft_version + 1, updated_at = ? "
+                        + "WHERE trip_id = ? AND draft_version = ?",
+                draftJson, Instant.now().toString(), tripId, expectedVersion);
     }
 
     /** Deletes the existing split route pair (design D10); main-plan rows are never touched. */
@@ -105,8 +120,8 @@ public class SplitDraftRepository {
 
     /**
      * Inserts one split route structure node (design D6): {@code branch_id = split-a/split-b}, activity title and
-     * location, the shared window start/end, {@code plan_version = mainPlanVersion}. Uses existing columns only
-     * (no new plan_node column); durations live in the draft document, not here.
+     * location, the shared window start/end, {@code plan_version = mainPlanVersion}. Durations live in the draft
+     * document, not here.
      */
     public void insertSplitRoute(String id, String tripId, int planVersion, String branchId, String activityName,
             String startAt, String endAt, int sortOrder, String createdAt) {
@@ -117,10 +132,7 @@ public class SplitDraftRepository {
                 id, tripId, planVersion, branchId, activityName, startAt, endAt, activityName, sortOrder, createdAt);
     }
 
-    /**
-     * Loads all confirmed main-plan stops at a version (design D14), ordered by sort_order, for the detail
-     * snapshot's selectable boundary options. Only {@code branch_id = 'main'} rows qualify (optional nodes excluded).
-     */
+    /** Loads all confirmed main-plan stops at a version (design D14), ordered by sort_order. */
     public List<PlanStop> findMainPlanStops(String tripId, int planVersion) {
         return jdbcTemplate.query(
                 "SELECT id, title, start_at, end_at FROM plan_node "
@@ -133,11 +145,7 @@ public class SplitDraftRepository {
                 tripId, planVersion);
     }
 
-    /**
-     * Reads the split route pair's activity names keyed by branch id (design D6/D14): the structure node title is
-     * the activity name, joined with the draft's duration breakdown when assembling the detail snapshot. Ordered by
-     * sort_order; main-plan rows are never included.
-     */
+    /** Reads the split route pair's activity names keyed by branch id (design D6/D14), ordered by sort_order. */
     public Map<String, String> findSplitRouteActivities(String tripId) {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
                 "SELECT branch_id, title FROM plan_node "

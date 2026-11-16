@@ -13,10 +13,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
- * Repository-layer acceptance test for the V2 migration and self-contained seed (spec "V2 迁移与自包含种子",
- * design D4/D5, tasks 1.2/1.3). Boots the real Flyway migrations against an in-memory SQLite database and
- * asserts exactly four splits tables, the {@code trip.split_draft} column, no extra {@code plan_node}
- * columns, the fixture seed, and that the greeting capability and V1 seed remain intact.
+ * Repository-layer acceptance test for the splits extension (V4) on the main trip schema. Boots the real Flyway
+ * migrations (V1 greeting, V2 app_user/trip/trip_member seed, V3 invitation + main_plan_confirmed, V4 split_draft
+ * + plan_node) against in-memory SQLite and asserts the split_draft/plan_node tables, the plan_node seed, the
+ * app_user/trip_member fixture, and that the greeting capability and main seed remain intact.
  */
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:sqlite:file:split-schema-test?mode=memory&cache=shared",
@@ -28,73 +28,60 @@ class SplitSchemaMigrationTest {
     private JdbcTemplate jdbc;
 
     @Test
-    @DisplayName("migrate_v2_createsExactlyFourSplitsTables")
-    void migrate_v2_createsExactlyFourSplitsTables() {
+    @DisplayName("migrate_v4_addsSplitDraftAndPlanNodeOnMainSchema")
+    void migrate_v4_addsSplitDraftAndPlanNodeOnMainSchema() {
         List<String> tables = jdbc.queryForList(
                 "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'", String.class);
-        List<String> splitsTables = tables.stream()
-                .filter(t -> !t.equals("greeting") && !t.equals("flyway_schema_history"))
-                .toList();
-        assertThat(splitsTables)
-                .containsExactlyInAnyOrder("trip", "trip_member", "member_preference", "plan_node");
+        assertThat(tables).contains(
+                "greeting", "app_user", "trip", "trip_member", "trip_invitation", "split_draft", "plan_node");
     }
 
     @Test
-    @DisplayName("migrate_v2_tripHasNullableSplitDraftTextColumn")
-    void migrate_v2_tripHasNullableSplitDraftTextColumn() {
-        Map<String, Object> splitDraft = columnInfo("trip", "split_draft");
-        assertThat(splitDraft.get("type")).isEqualTo("TEXT");
-        assertThat(((Number) splitDraft.get("notnull")).intValue()).isZero();
+    @DisplayName("migrate_v3_tripHasMainPlanConfirmedColumn")
+    void migrate_v3_tripHasMainPlanConfirmedColumn() {
+        assertThat(columnNames("trip")).contains("main_plan_confirmed");
     }
 
     @Test
-    @DisplayName("migrate_v2_planNodeHasNoExtraColumns")
-    void migrate_v2_planNodeHasNoExtraColumns() {
+    @DisplayName("migrate_v4_planNodeHasExpectedColumns")
+    void migrate_v4_planNodeHasExpectedColumns() {
         assertThat(columnNames("plan_node")).containsExactlyInAnyOrder(
                 "id", "trip_id", "plan_version", "parent_id", "branch_id", "node_type", "title",
                 "start_at", "end_at", "location_name", "lat", "lng", "sort_order", "created_at");
     }
 
     @Test
-    @DisplayName("seed_v2_singaporeFriendsDayTripConfirmedAndNoDraft")
-    void seed_v2_singaporeFriendsDayTripConfirmedAndNoDraft() {
-        Map<String, Object> trip = jdbc.queryForMap("SELECT * FROM trip WHERE invite_code = 'SGF26A'");
-        assertThat(trip.get("id")).isNotNull();
-        assertThat(trip.get("title")).isEqualTo("Singapore Friends Day");
-        assertThat(trip.get("destination")).isEqualTo("Singapore");
-        assertThat(((Number) trip.get("plan_version")).intValue()).isEqualTo(1);
-        assertThat(trip.get("split_draft")).isNull();
+    @DisplayName("migrate_v4_splitDraftHasUniqueTripId")
+    void migrate_v4_splitDraftHasUniqueTripId() {
+        assertThat(columnNames("split_draft")).containsExactlyInAnyOrder(
+                "id", "trip_id", "document", "draft_version", "created_at", "updated_at");
     }
 
     @Test
-    @DisplayName("seed_v2_fourMembersAllAcknowledgedAliceOwner")
-    void seed_v2_fourMembersAllAcknowledgedAliceOwner() {
-        List<Map<String, Object>> members = jdbc.queryForList(
-                "SELECT display_name, role, plan_ack_version FROM trip_member WHERE trip_id = ?", sgfTripId());
-        assertThat(members).hasSize(4);
-        Map<String, Map<String, Object>> byName = members.stream()
-                .collect(Collectors.toMap(m -> (String) m.get("display_name"), m -> m));
-        assertThat(byName.keySet()).containsExactlyInAnyOrder("Alice", "Ben", "Chloe", "Daniel");
-        assertThat(byName.get("Alice").get("role")).isEqualTo("owner");
-        assertThat(byName.get("Ben").get("role")).isEqualTo("member");
-        assertThat(byName.get("Chloe").get("role")).isEqualTo("member");
-        assertThat(byName.get("Daniel").get("role")).isEqualTo("member");
-        assertThat(members).allSatisfy(m ->
-                assertThat(((Number) m.get("plan_ack_version")).intValue()).isEqualTo(1));
+    @DisplayName("seed_appUserHasAliceToEve")
+    void seed_appUserHasAliceToEve() {
+        List<String> names = jdbc.queryForList(
+                "SELECT display_name FROM app_user ORDER BY id", String.class);
+        assertThat(names).containsExactly("Alice", "Ben", "Chloe", "Daniel", "Eve");
     }
 
     @Test
-    @DisplayName("seed_v2_eveBelongsToAnotherTrip")
-    void seed_v2_eveBelongsToAnotherTrip() {
-        Map<String, Object> eve = jdbc.queryForMap(
-                "SELECT trip_id FROM trip_member WHERE display_name = 'Eve'");
-        assertThat(eve.get("trip_id")).isNotNull();
-        assertThat(eve.get("trip_id")).isNotEqualTo(sgfTripId());
+    @DisplayName("seed_tripMembersAreUsersOneToFourEveOutside")
+    void seed_tripMembersAreUsersOneToFourEveOutside() {
+        String tripId = sgfTripId();
+        List<String> memberNames = jdbc.queryForList(
+                "SELECT u.display_name FROM trip_member tm JOIN app_user u ON u.id = tm.user_id "
+                        + "WHERE tm.trip_id = ? ORDER BY u.id", String.class, tripId);
+        assertThat(memberNames).containsExactly("Alice", "Ben", "Chloe", "Daniel");
+        Integer eveMemberships = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM trip_member tm JOIN app_user u ON u.id = tm.user_id "
+                        + "WHERE tm.trip_id = ? AND u.display_name = 'Eve'", Integer.class, tripId);
+        assertThat(eveMemberships).isZero();
     }
 
     @Test
-    @DisplayName("seed_v2_mainPlanHasTwoStopsWithUtcTimes")
-    void seed_v2_mainPlanHasTwoStopsWithUtcTimes() {
+    @DisplayName("seed_mainPlanHasTwoStopsWithUtcTimes")
+    void seed_mainPlanHasTwoStopsWithUtcTimes() {
         List<Map<String, Object>> stops = jdbc.queryForList(
                 "SELECT title, start_at, end_at, plan_version FROM plan_node "
                         + "WHERE trip_id = ? AND branch_id = 'main' ORDER BY start_at", sgfTripId());
@@ -110,26 +97,20 @@ class SplitSchemaMigrationTest {
     }
 
     @Test
-    @DisplayName("migrate_v2_greetingTableAndV1SeedIntact")
-    void migrate_v2_greetingTableAndV1SeedIntact() {
+    @DisplayName("migrate_v4_greetingTableAndV1SeedIntact")
+    void migrate_v4_greetingTableAndV1SeedIntact() {
         assertThat(jdbc.queryForObject("SELECT message FROM greeting WHERE id = 1", String.class))
                 .isEqualTo("Hello World");
     }
 
     private String sgfTripId() {
-        return jdbc.queryForObject("SELECT id FROM trip WHERE invite_code = 'SGF26A'", String.class);
+        return jdbc.queryForObject(
+                "SELECT id FROM trip WHERE name = 'Singapore Friends Day'", String.class);
     }
 
     private Set<String> columnNames(String table) {
         return jdbc.queryForList("PRAGMA table_info(" + table + ")").stream()
                 .map(row -> (String) row.get("name"))
                 .collect(Collectors.toSet());
-    }
-
-    private Map<String, Object> columnInfo(String table, String column) {
-        return jdbc.queryForList("PRAGMA table_info(" + table + ")").stream()
-                .filter(row -> column.equals(row.get("name")))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("column not found: " + table + "." + column));
     }
 }
