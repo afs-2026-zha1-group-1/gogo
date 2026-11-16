@@ -1,7 +1,7 @@
 # Acceptance-test fixtures
 
-- Scope: sample values referenced by US-001 (issue #4), US-002 (issue #5), and
-  US-008 (issue #6), US-010 (issue #7), US-012 (issue #8)
+- Scope: sample values referenced by US-001 (issue #4), US-002 (issue #5),
+  US-008 (issue #6), US-010 (issue #7), US-012 (issue #8) and US-013 (issue #9)
 - Source: story acceptance criteria, extended by explicit user rulings on
   2026-11-14 (required destination, optional locations and invitation boundaries).
   Negative inputs below are test cases, not additional story fixture values.
@@ -9,6 +9,8 @@
   repository; see `intents/2026-11-14-req-003.md`.
 - Extended: 2026-11-14 for REQ-004; see `intents/2026-11-14-req-004.md`. The
   REQ-004 section reuses the users and trip above unchanged.
+- Extended: 2026-11-16 for US-013; see `intents/2026-11-16-us-013.md`. The
+  US-013 section reuses the users and trip above unchanged.
 
 ## Users
 
@@ -234,3 +236,56 @@ follow-up F1 in g1-decision.md).
 | Interests / must-do seed content | AC1 does not depend on specific interests; fake provider supplies the stops |
 | Per-stop `interests` tags | provider-supplied; the fake provider may return none, so the array may be empty. No AC fixes tag content |
 | Error message wording | Only the `code` is contractual |
+
+## US-013 — members (US-013)
+
+Scope: the roster read for an existing trip. Reuses §Users and §Sample trip
+unchanged: Alice (1) organizer, Ben (2), Chloe (3), Daniel (4) members, Eve (5)
+not a member. The trip id is assigned by the database; tests read it from the
+create response (or from the fixture trip) rather than assume a value.
+
+### Requests
+
+| Case | Call | Expected |
+|---|---|---|
+| M1 member list | `GET /api/trips/{id}/members`, `X-User-Id: 2` | `200`; `tripId` is the requested trip; exactly four members with `userId` 1, 2, 3, 4 in ascending order; `organizer = true` only for user 1 (Alice) |
+| M2 organizer reads | `GET /api/trips/{id}/members`, `X-User-Id: 1` | `200`; same four rows; Alice is still the only `organizer = true` row |
+| M3 outsider denied | `GET /api/trips/{id}/members`, `X-User-Id: 5` | `403`, `code = NOT_A_MEMBER`; the body carries no `userId`, `displayName` or organizer value |
+| M4 no identity | `GET /api/trips/{id}/members` without `X-User-Id` | `401`, `code = USER_REQUIRED`; no member data |
+| M5 unknown identity | same call, `X-User-Id: 999999` | `401`, `code = USER_REQUIRED`; no member data |
+| M6 unknown trip | `GET /api/trips/999999/members`, `X-User-Id: 2` | `404`, `code = TRIP_NOT_FOUND` |
+| M7 outsider unknown trip | `GET /api/trips/999999/members`, `X-User-Id: 5` | `404`, `code = TRIP_NOT_FOUND` (trip existence is checked before membership) |
+| M8 joined member | after REQ-004 J2 (Eve accepted a valid invitation), `GET /api/trips/{id}/members`, `X-User-Id: 5` | `200`; five members; Eve (5) appears exactly once; Alice is still the only organizer |
+| M9 duplicate accept | after REQ-004 J3 (same user accepted twice), read as a member | The user still appears exactly once (`trip_member` composite primary key) |
+| M10 no personal fields | `GET /api/trips/{id}/members`, `X-User-Id: 2` | The body contains no readiness, preference, budget or main-plan field values |
+
+### Wire projection
+
+| Projection | Fields |
+|---|---|
+| Member list (`GET /api/trips/{id}/members`) | `tripId` (integer), `members` [{`userId` (integer), `displayName` (string), `organizer` (boolean)}] ordered by ascending `userId` |
+
+`organizer` is derived as `userId == trip.organizer_id`; it is not a stored
+column and does not imply extra permission. Only the organizer row is `true`.
+
+### Error contract
+
+| code | Status | Case |
+|---|---|---|
+| `USER_REQUIRED` | 401 | missing, blank, non-numeric or unknown `X-User-Id` (M4, M5) |
+| `NOT_A_MEMBER` | 403 | known caller who is not a member of an existing trip (M3) |
+| `TRIP_NOT_FOUND` | 404 | unknown trip id, for a member or an outsider (M6, M7) |
+
+Error bodies keep the existing `{code, message}` shape; only `code` is
+contractual. Denial bodies contain no member identity, name or organizer value.
+
+### Values deliberately not fixed (US-013)
+
+| Item | Why no value is set |
+|---|---|
+| Avatar colour and initial rendering | Visual treatment from `ui-design-reference`; not an AC |
+| Row spacing, heading/subtitle wording, count wording | Presentation text; the contract is the visible roster and organizer identification |
+| Error message wording | Only the `code` is contractual |
+| Trip id | Assigned by the database; tests read it from the create response or fixture |
+| Member display order beyond ascending `userId` | `userId` ascending is fixed for deterministic tests; visual grouping may vary |
+| Readiness, preference, budget or plan values | Out of scope; the projection must not contain them |

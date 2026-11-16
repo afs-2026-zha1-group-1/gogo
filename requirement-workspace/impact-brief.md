@@ -450,3 +450,121 @@ after the G1 C2 amendment; no `trip` ALTER), 2 write + 2 read endpoints (3 wire 
 acceptance tests (M1–M14 / V1–V7 + reverses). Ordering: backend contract and
 seeds first, frontend screens second; G1 to rule data model/API contract as a
 named decision item (capability-pack convention).
+
+# Impact brief — US-013 (appended 2026-11-16)
+
+- Mode: embedded at the end of `/sdd:pre-spec-req` (blocking OQs = 0, DoR
+  BLOCKERs = 0)
+- Change id: `us-013-view-trip-members`
+- Branch: `US-013-view-trip-members-planning` (from `group1/main` `729a889`)
+
+## 1. Requirement set
+
+| id | Path |
+|---|---|
+| US-013 | `requirement-workspace/requirements/US-013.md` |
+
+Supporting: `requirement-workspace/intents/2026-11-16-us-013.md`,
+`requirement-workspace/deep-dive.md` §US-013,
+`requirement-workspace/analysis/us-013-dor.md`.
+
+Solution direction: **add** (member-only read in the existing `trips`
+capability, plus a MODIFIED `app-shell` placeholder requirement).
+
+## 2. As-is asset inventory (evidence paths)
+
+| Asset | Evidence | State |
+|---|---|---|
+| `trips` Living Spec | `openspec/specs/trips/spec.md` | Identity, creation, detail read and main-plan state; no member-list requirement |
+| `app-shell` Living Spec | `openspec/specs/app-shell/spec.md` | `#/members` is the 成员 tab target; `Placeholder tabs` currently requires a not-implemented placeholder for 成员 |
+| Trip backend | `backend/src/main/java/com/gogo/trip/TripController.java`, `TripRepository.java`, `TripResponse.java`, `TripApiException.java`, `TripErrorAdvice.java` | `GET /api/trips/{id}` uses `X-User-Id`, checks trip existence then membership, and returns raw DTOs; no member-list method |
+| Schema | `backend/src/main/resources/db/migration/V1..V3, V5` | `V2__create_trip.sql` creates `app_user`, `trip`, `trip_member(trip_id, user_id)` and seeds users 1–5 plus the fixture trip/members; no new table needed |
+| Invitation membership | `backend/src/main/java/com/gogo/invitation/`, `openspec/specs/invitations/spec.md` | Accept inserts one `trip_member` row per (trip, user); composed, not modified |
+| Main-plan read | `backend/src/main/java/com/gogo/mainplan/`, `openspec/specs/main-itinerary/spec.md` | Owns readiness/preference inputs; US-013 does not read or expose them |
+| Frontend routing | `frontend/src/App.tsx:14-38`, `frontend/src/TabBar.tsx` | `#/members` parses to `members`; 成员 tab is active; members page is a `Placeholder` |
+| Frontend pages | `frontend/src/pages/Placeholder.tsx`, `frontend/src/pages/TripDetails.jsx`, `frontend/src/pages/MainPlanInputs.tsx` | Existing `Placeholder`, trip details and state-driven fetch patterns; no members page |
+| API client | `frontend/src/api.ts` | Sends `X-User-Id`; returns status/ok/data; reused unchanged |
+| Design reference | `ui-design-reference/README.md` node 7, `ui-design-reference/screenshots/screen-07-members.png` | Member row, avatar stack, organizer badge, readiness ring (ring and preferences excluded by the issue) |
+| Fixtures | `requirement-workspace/acceptance-test-fixtures.md` §Users / §Sample trip | Users and trip fixed; no §US-013 section yet |
+| CI | `.github/workflows/ci.yml` | Backend `mvn -B test`, frontend `tsc -b && vite build`; unchanged |
+| Split branch | `sdd-req-004-split-planning` (unmerged) | Not part of this baseline; `V4__splits.sql` and split UI are absent on `group1/main`; no conflict in this change |
+| Active changes | `openspec/changes/` | `req-002-greeting-json-sqlite` only; this change becomes the second |
+
+Baseline classification: brownfield. Authority tree `openspec/specs/` exists and
+holds `trips`/`app-shell`; no competing spec root is introduced.
+
+## 3. As-is → proposed delta
+
+| Touched asset | As-is (evidence) | Proposed delta |
+|---|---|---|
+| `openspec/specs/trips/spec.md` | No member-list requirement | **ADDED** "Trip member list read": `GET /api/trips/{id}/members`, member-only, roster projection, organizer flag, denial without identities |
+| `openspec/specs/app-shell/spec.md` | 成员 tab renders a not-implemented placeholder | **MODIFIED** "Placeholder tabs": 成员 renders the real roster; 分队 stays a placeholder; frame/dock/active-tab/scaffold unchanged |
+| `TripController` | `GET /{id}` + `POST /{id}/main-plan:confirm` | Add `GET /{id}/members`; reuse `caller()`, trip-existence and membership checks |
+| `TripRepository` | `findUserId`, `create`, `findById`, `isMember`, `confirmMainPlan` | Add `findMembers(tripId)` read query over `trip_member` + `app_user` + `trip.organizer_id`, ordered by `user_id` |
+| New DTO | — | `TripMemberResponse` / list envelope `{tripId, members[]}` with `userId`, `displayName`, `organizer` |
+| Frontend `App.tsx` | `members` route renders `Placeholder` | Render `Members` page for `route.page === 'members'`; keep `#/members` and active-tab mapping; resolve last-opened trip |
+| New frontend page | — | `frontend/src/pages/Members.tsx` (TS): fetch roster, member rows, organizer badge, count, loading/empty/error/permission/no-trip states |
+| `frontend/src/app.css` | Existing token components (`card`, `av`, `pill`, `hint`, `empty-state`) | Reuse existing classes; add only what the member row needs, using current tokens |
+| Fixtures | Users/trip common section | Add §US-013 requests, wire projection, error contract and deliberately unfixed values |
+| Database / migrations | `V1..V3, V5` | **No change** |
+| Invitations / main-plan / split | Existing code/specs | **No change** |
+
+## 4. Blast radius
+
+- Runtime: one new backend read endpoint in the Spring Boot monolith; one new
+  frontend page inside the existing shell. Same process, port, database file
+  and `/api` proxy.
+- Data: read-only. No migration, no schema/seed change, no write path.
+- API: additive `GET /api/trips/{id}/members`; existing `trips` endpoints keep
+  their paths, bodies and behavior. Error vocabulary reused.
+- Navigation: `#/members` keeps its path and 成员 active-tab rule; only the page
+  content changes. No list-all endpoint is introduced.
+- Access control: inherits the scaffold contract; outsiders receive 403 with no
+  identities.
+- CI: unchanged; backend tests cover the new endpoint, frontend build covers the
+  new page.
+- Ordering: no dependency on the unmerged split branch; US-013 starts from
+  `group1/main`, which already has REQ-003/004, US-031-037 and US-064.
+
+## 5. Artifact impact
+
+- Specs: `openspec/changes/us-013-view-trip-members/specs/trips/spec.md`
+  (ADDED) and `.../specs/app-shell/spec.md` (MODIFIED).
+- Tests: backend API tests for S1–S10 (status, rows, organizer flag, denial
+  bodies); frontend browser verification for U1–U3 and the existing shell walk.
+- Docs: this workdir, `requirement-workspace/registry.md`, `handoff.md`,
+  `docs/ai4se-plugins/` stage reports, `README.md` run notes at P4.
+- KB: not configured; `scripts/kb-lint.sh` remains a documented `SKIP`.
+
+## 6. Dual-track notes
+
+- OpenSpec track: one change, two delta files (one ADDED `trips` requirement,
+  one MODIFIED `app-shell` requirement), one G1 cycle.
+- Agile track: issue #9 already exists as the story; no new story file. The
+  board card is already in `Req Analysis`.
+- `/sdd:story-split` is Skipped (one existing story). `/sdd:proposal-split`
+  produces one change.
+
+## 7. Risks & blockers
+
+| id | Risk | Severity | Status |
+|---|---|---|---|
+| R30 | Exposing preference/readiness data by copying Screen 7 too literally | scope, guarded | Delta excludes those fields; S10 asserts absence. Owner IO/Dev |
+| R31 | `app-shell` placeholder requirement contradicts the shipped member list if not modified | spec conflict, blocked by design | MODIFIED requirement at P2; archive must merge it. Owner SA/Dev |
+| R32 | The unmerged split branch uses `MEMBER_REQUIRED` for a missing identity while this change uses `USER_REQUIRED` | cross-branch vocabulary, advisory | Follow merged `trips`/`main-itinerary` precedent; flag at split-merge review. Owner SA |
+| R33 | No durable trip selection on `#/members`; reload loses the last trip | UX, advisory | P3 choice; the no-trip guidance state is contractual. Owner Dev/IO |
+| R34 | Ordering drift if the query is unordered | testability, guarded | Ascending `userId` fixed in D2/fixtures. Owner Dev |
+| R35 | Stack-plan names AntD 5 + TanStack Query v5 but the merged frontend uses token CSS + plain fetch | stack deviation, accepted for this slice | Follow the actual baseline; adopting the planned stack is a separate migration (US-065/US-066). Recorded in the proposal. Owner Dev/SA |
+| R36 | Outsider denial body leaking names through messages | security, guarded | Generic message; S3 asserts no identity fields. Owner Dev/SA |
+
+No critical blocker invalidates US-013, so split may proceed.
+
+## 8. Suggested split boundaries
+
+One change: `us-013-view-trip-members`, one vertical slice from migration-free
+read to Screen 7. The scenario count (13) is small; the backend and frontend
+halves are not independently shippable (the screen needs the read, the read is
+verified through the screen's states), so splitting would create two
+unverifiable halves. Effort: small — one controller method, one repository
+query, one DTO, one TS page, one placeholder requirement modification, fixtures
+and tests. No backend package, migration, dependency or CI change.

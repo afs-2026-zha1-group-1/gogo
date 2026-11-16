@@ -433,3 +433,74 @@ No notifications (email/push/queue) in scope.
 
 Retention/volume/SLA not decidable for this slice and not required by any AC;
 recorded as non-blocking for Dev, not invented.
+
+## US-013
+
+Trigger: impact solution direction is **add** (a member-only read in the
+existing `trips` capability plus a MODIFIED `app-shell` placeholder
+requirement). One story, one read-only vertical slice. No new business concept,
+no migration; the roster is derived from existing `V2` tables.
+
+### ⑨ Data contract
+
+| Concept | Grain | Fields | State transitions | Source |
+|---|---|---|---|---|
+| Member roster | One list per trip read | Wire: `tripId`, `members[]` where each row is `{userId, displayName, organizer}` | None in this change (read-only); rows appear when membership is created | Derived from `trip_member` + `app_user` + `trip.organizer_id` |
+| Trip membership | One row per (trip, user) | `trip_id`, `user_id` | Created by trip creation (organizer) or invitation acceptance (REQ-004 J2/J3); no update/delete path in this change | `V2__create_trip.sql` |
+| User | One row per seeded user | `id`, `display_name` | Seeded by V2 | `V2__create_trip.sql` |
+| Organizer flag | One boolean per member row | `organizer` = (`user_id` = `trip.organizer_id`) | Derived on read; never stored in `trip_member` | `trip.organizer_id` |
+
+No `{TBD}` field remains. Ordering is contractual for deterministic tests:
+ascending `userId`. Avatar colour/initial treatment is a visual choice, not a
+data field.
+
+### ⑩ Boundary enumeration
+
+| Rule | Branch | In / Out | Rationale |
+|---|---|---|---|
+| Caller identity | Header missing or blank | Out — `401 USER_REQUIRED` | Scaffold contract; no anonymous read |
+| Caller identity | Header non-numeric or unknown user id | Out — `401 USER_REQUIRED` | `TripController.caller` precedent |
+| Trip existence | Known caller, unknown trip id | Out — `404 TRIP_NOT_FOUND` | Distinct from denial |
+| Trip existence | Outsider, unknown trip id | Out — `404 TRIP_NOT_FOUND` | Existence is checked before membership (D4) |
+| Membership | Known outsider on an existing trip | Out — `403 NOT_A_MEMBER`, body carries no identity | Issue AC2 |
+| Membership | Member (including organizer) | In — `200`, full roster | Issue AC1 |
+| Organizer identification | Row user equals `trip.organizer_id` | In — `organizer = true`; every other row `false` | Only Alice is organizer in the fixture |
+| Joined member | Eve joined through a valid invitation | In — appears exactly once | REQ-004 J2/J3 |
+| Duplicate membership | Same user accepted twice | In — still exactly one row | `trip_member` composite primary key |
+| Empty roster | Trip with no membership rows | In — `200` with an empty `members` array; UI shows the empty state | Defensive boundary; unreachable through product writes because the organizer is inserted atomically |
+| Personal data | Request would expose readiness/preference/budget | Out — fields are absent from the projection | Issue design scope; US-031 owns that read |
+| Write verbs | POST/PUT/DELETE on the members path | Out — endpoint is read-only | Story requires Database read only |
+
+### ⑪ Cross-REQ consistency
+
+| Capability | Other REQ / surface | US-013 behavior | Convergence |
+|---|---|---|---|
+| `trips` identity and access | REQ-003 `Trip caller identity` / `Trip detail read` | Reuses `X-User-Id`, `USER_REQUIRED`, `NOT_A_MEMBER`, `TRIP_NOT_FOUND`; denial order identity → trip → membership | ✓ aligned; no change to existing requirements |
+| `invitations` | REQ-004 J2/J3 membership creation | Accepted member appears in the roster exactly once; invitation behavior untouched | ✓ composed, not modified |
+| `app-shell` | US-064 `Bottom dock navigation` / `Placeholder tabs` | `#/members` and the 成员 active-tab rule stay; the placeholder content is replaced by the real list; 分队 stays a placeholder | ✓ MODIFIED `Placeholder tabs` requirement records the supersession; frame/dock unchanged |
+| `app-shell` no-backend clause | US-064 `Mobile shell frame` | The shell frame/dock adds no endpoint; the roster is a `trips` capability read rendered inside the tab | ✓ shell clause remains true; clarified in the MODIFIED requirement |
+| `main-itinerary` | US-031 Screen 9 inputs | Roster exposes names only; readiness, preference revisions, interests, budgets and drafts are not included | ✓ no overlap; US-031 read remains the only source |
+| Split branch | Unmerged `splits` guard uses `MEMBER_REQUIRED` for a missing `X-User-Id` | US-013 follows the merged `trips`/`main-itinerary` `USER_REQUIRED` vocabulary | ⚠ unmerged-branch divergence; recorded as a non-blocking follow-up for merge review, no code touched here |
+| US-064 non-goals | Member list and readiness were explicitly deferred | This change implements the member list only; readiness remains deferred | ✓ |
+
+### ⑫ Notification / display contract
+
+| Surface | Trigger | Recipient | Content + display fields | Channel | Cardinality |
+|---|---|---|---|---|---|
+| Members screen list | 成员 tab activation with a resolved trip | Trip member | Screen heading 成员; member count; one row per member with avatar initial, `displayName` and an 组织者 badge on the organizer row | `GET /api/trips/{id}/members`; client render | Exactly one list per render |
+| Loading state | Request in flight | Viewer | Skeleton or loading text; no stale rows | Client render | One |
+| Empty state | `200` with zero members | Viewer | Text empty state; no fabricated rows | Client render | One |
+| Error state | Network failure or non-403/404 HTTP error | Viewer | Generic retryable message; no private values | Client render | One |
+| Permission-denied state | `403 NOT_A_MEMBER` | Outsider | Denial message; no names, ids or organizer values | Client render | One |
+| Missing-trip state | `404 TRIP_NOT_FOUND` | Viewer | Trip-not-found message with a link back to 行程 | Client render | One |
+| No-trip guidance | 成员 tab opened with no trip selected in the session | Viewer | Guidance to open a trip first + link to 行程; no fabricated members | Client render | One |
+| Identity switch | Scaffold switcher changes the caller | Viewer | The screen re-reads for the new caller: member → list, outsider → denied | Same endpoint with new `X-User-Id` | One |
+
+No readiness ring, preference summary, budget line or generate action is
+displayed. No notification (email, push, queue) is in scope.
+
+### NFR business-policy layer
+
+No retention, volume or SLA is stated by the ACs. The endpoint is a read-only
+projection over existing rows; no data is created or changed. Recorded, not
+invented.
