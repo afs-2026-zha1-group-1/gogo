@@ -21,7 +21,7 @@ public class MemberGuard {
 
     public MemberContext requireMember(String memberId, String tripId) {
         if (memberId == null || memberId.isBlank() || !repository.memberExistsGlobally(memberId)) {
-            throw new ApiException(ErrorCode.MEMBER_REQUIRED, "a valid X-User-Id header is required");
+            throw new ApiException(ErrorCode.MEMBER_REQUIRED, "a valid session is required");
         }
         if (!repository.tripExists(tripId)) {
             throw new ApiException(ErrorCode.TRIP_NOT_FOUND, "trip does not exist");

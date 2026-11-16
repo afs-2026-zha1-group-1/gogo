@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
 import Icon from '../Icons'
+import { useAuth } from '../features/auth/AuthProvider'
 
 function Screen({ children }) {
   return (
@@ -17,7 +18,8 @@ function Screen({ children }) {
   )
 }
 
-export default function Join({ token, userId, userName }) {
+export default function Join({ token }) {
+  const { status, account, setPendingInvite } = useAuth()
   const [state, setState] = useState({ kind: 'loading' })
   const [busy, setBusy] = useState(false)
   const [actionError, setActionError] = useState('')
@@ -41,21 +43,29 @@ export default function Join({ token, userId, userName }) {
   }, [token])
 
   async function accept() {
+    if (status !== 'signedIn') {
+      setPendingInvite(token)
+      window.location.assign('/#/login')
+      return
+    }
     setBusy(true)
     setActionError('')
     try {
-      const { status, ok, data } = await api(
+      const { status: httpStatus, ok, data } = await api(
         `/api/invitations/${encodeURIComponent(token)}/accept`,
-        { userId, method: 'POST' },
+        { method: 'POST' },
       )
       if (ok && data) {
         setState({ kind: 'joined', preview: state.preview, alreadyMember: data.alreadyMember })
-      } else if (status === 404) {
+      } else if (httpStatus === 404) {
         setState({ kind: 'unusable' })
-      } else if (status === 403 && data?.code === 'JOINING_CLOSED') {
+      } else if (httpStatus === 401) {
+        setPendingInvite(token)
+        window.location.assign('/#/login')
+      } else if (httpStatus === 403 && data?.code === 'JOINING_CLOSED') {
         setState({ kind: 'closed', preview: state.preview })
       } else {
-        setActionError(data?.message ? `${data.code}: ${data.message}` : `请求失败（HTTP ${status}）`)
+        setActionError(data?.message ? `${data.code}: ${data.message}` : `请求失败（HTTP ${httpStatus}）`)
       }
     } catch (cause) {
       setActionError(`无法连接服务器：${cause.message}`)
@@ -159,11 +169,13 @@ export default function Join({ token, userId, userName }) {
       </section>
 
       <div className="identity-line" style={{ marginTop: 16 }}>
-        <span>以当前身份加入</span>
-        <b>{userName ?? '未选择身份'}</b>
+        <span>{status === 'signedIn' ? '以当前账号加入' : '登录后加入'}</span>
+        <b>{status === 'signedIn' ? (account?.name ?? '已登录账号') : '尚未登录'}</b>
       </div>
       <p className="help">
-        身份在页面顶部的 scaffold 选择器切换；同一身份仅能加入一次，不会重复。
+        {status === 'signedIn'
+          ? '同一账号仅能加入一次，不会重复。'
+          : '预览是公开的；点击加入会先打开登录页，登录后回到本预览，再由你确认加入。'}
       </p>
 
       <section className="card pad" style={{ marginTop: 14, background: 'var(--surface-2)' }}>
@@ -187,7 +199,7 @@ export default function Join({ token, userId, userName }) {
       ) : (
         <button className="btn btn-primary" type="button" style={{ marginTop: 16 }} onClick={accept} disabled={busy}>
           <Icon name="check" className="sm" />
-          {busy ? '正在加入…' : '接受邀请并加入'}
+          {busy ? '正在加入…' : status === 'signedIn' ? '接受邀请并加入' : '登录后加入'}
         </button>
       )}
     </Screen>

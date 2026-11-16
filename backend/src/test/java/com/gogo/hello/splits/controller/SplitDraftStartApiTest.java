@@ -1,5 +1,7 @@
 package com.gogo.hello.splits.controller;
 
+import com.gogo.auth.TestAuth;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -30,7 +32,7 @@ class SplitDraftStartApiTest extends AbstractSplitApiTest {
     void startDraft_confirmedMainPlanMember_returns201AndPersistsSingleActiveDraft() throws Exception {
         String ben = memberId("Ben");
         mockMvc.perform(post("/api/trips/{tripId}/split-draft", sgfTripId())
-                        .header("X-User-Id", ben))
+                        .with(TestAuth.asUser(ben)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.error").doesNotExist())
                 .andExpect(jsonPath("$.data.initiatorMemberId").value(ben))
@@ -55,7 +57,7 @@ class SplitDraftStartApiTest extends AbstractSplitApiTest {
                     ready.countDown();
                     go.await();
                     return mockMvc.perform(post("/api/trips/{tripId}/split-draft", sgfTripId())
-                            .header("X-User-Id", member)).andReturn();
+                            .with(TestAuth.asUser(member))).andReturn();
                 }));
             }
             assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
@@ -84,7 +86,7 @@ class SplitDraftStartApiTest extends AbstractSplitApiTest {
     void startDraft_mainPlanNotConfirmed_returns409AndCreatesNoDraft() throws Exception {
         jdbc.update("UPDATE trip SET main_plan_confirmed = 0 WHERE id = ?", sgfTripId());
         mockMvc.perform(post("/api/trips/{tripId}/split-draft", sgfTripId())
-                        .header("X-User-Id", memberId("Ben")))
+                        .with(TestAuth.asUser(memberId("Ben"))))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.data").doesNotExist())
                 .andExpect(jsonPath("$.error.code").value("MAIN_PLAN_NOT_CONFIRMED"));
@@ -95,11 +97,11 @@ class SplitDraftStartApiTest extends AbstractSplitApiTest {
     @DisplayName("startDraft_repeatWhileActive_returns409AndKeepsOriginalDraft")
     void startDraft_repeatWhileActive_returns409AndKeepsOriginalDraft() throws Exception {
         mockMvc.perform(post("/api/trips/{tripId}/split-draft", sgfTripId())
-                        .header("X-User-Id", memberId("Ben")))
+                        .with(TestAuth.asUser(memberId("Ben"))))
                 .andExpect(status().isCreated());
         String original = draftJson();
         mockMvc.perform(post("/api/trips/{tripId}/split-draft", sgfTripId())
-                        .header("X-User-Id", memberId("Alice")))
+                        .with(TestAuth.asUser(memberId("Alice"))))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("SPLIT_DRAFT_CONFLICT"));
         assertThat(draftJson()).isEqualTo(original);
@@ -110,7 +112,7 @@ class SplitDraftStartApiTest extends AbstractSplitApiTest {
     @DisplayName("startDraft_outsiderEve_returns403NotAMember")
     void startDraft_outsiderEve_returns403NotAMember() throws Exception {
         mockMvc.perform(post("/api/trips/{tripId}/split-draft", sgfTripId())
-                        .header("X-User-Id", eveId()))
+                        .with(TestAuth.asUser(eveId())))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.data").doesNotExist())
                 .andExpect(jsonPath("$.error.code").value("NOT_A_MEMBER"));
@@ -120,7 +122,7 @@ class SplitDraftStartApiTest extends AbstractSplitApiTest {
     @Test
     @DisplayName("startDraft_missingIdentity_returns401MemberRequired")
     void startDraft_missingIdentity_returns401MemberRequired() throws Exception {
-        mockMvc.perform(post("/api/trips/{tripId}/split-draft", sgfTripId()))
+        mockMvc.perform(post("/api/trips/{tripId}/split-draft", sgfTripId()).with(TestAuth.csrfOnly()))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.data").doesNotExist())
                 .andExpect(jsonPath("$.error.code").value("MEMBER_REQUIRED"));
@@ -131,7 +133,7 @@ class SplitDraftStartApiTest extends AbstractSplitApiTest {
     @DisplayName("startDraft_unknownTrip_returns404TripNotFound")
     void startDraft_unknownTrip_returns404TripNotFound() throws Exception {
         mockMvc.perform(post("/api/trips/{tripId}/split-draft", UNKNOWN_TRIP)
-                        .header("X-User-Id", memberId("Ben")))
+                        .with(TestAuth.asUser(memberId("Ben"))))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.data").doesNotExist())
                 .andExpect(jsonPath("$.error.code").value("TRIP_NOT_FOUND"));
@@ -142,9 +144,9 @@ class SplitDraftStartApiTest extends AbstractSplitApiTest {
     void startDraft_confirmAndCancelEndpoints_notImplemented() throws Exception {
         String ben = memberId("Ben");
         int confirm = mockMvc.perform(post("/api/trips/{tripId}/split-draft:confirm", sgfTripId())
-                .header("X-User-Id", ben)).andReturn().getResponse().getStatus();
+                .with(TestAuth.asUser(ben))).andReturn().getResponse().getStatus();
         int cancel = mockMvc.perform(post("/api/trips/{tripId}/split-draft:cancel", sgfTripId())
-                .header("X-User-Id", ben)).andReturn().getResponse().getStatus();
+                .with(TestAuth.asUser(ben))).andReturn().getResponse().getStatus();
         assertThat(confirm).isIn(404, 405);
         assertThat(cancel).isIn(404, 405);
         assertThat(activeDraftCount()).isZero();

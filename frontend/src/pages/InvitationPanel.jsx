@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import QRCode from 'qrcode'
 import { api } from '../api'
 import Icon from '../Icons'
+import { useAuth } from '../features/auth/AuthProvider'
 
 function invitationUrl(joinPath) {
   return `${window.location.origin}${window.location.pathname}#${joinPath}`
@@ -22,7 +23,8 @@ async function copyText(text, fallbackField) {
   }
 }
 
-export default function InvitationPanel({ tripId, userId, isOrganizer, userName }) {
+export default function InvitationPanel({ tripId, isOrganizer }) {
+  const { account } = useAuth()
   const [state, setState] = useState({ kind: isOrganizer ? 'loading' : 'denied' })
   const [copied, setCopied] = useState(false)
   const [qrFailed, setQrFailed] = useState(false)
@@ -32,7 +34,7 @@ export default function InvitationPanel({ tripId, userId, isOrganizer, userName 
   const load = useCallback(() => {
     let active = true
     setState({ kind: 'loading' })
-    api(`/api/trips/${tripId}/invitation`, { userId, method: 'POST' })
+    api(`/api/trips/${tripId}/invitation`, { method: 'POST' })
       .then(({ status, ok, data }) => {
         if (!active) return
         if (ok && data) {
@@ -49,7 +51,7 @@ export default function InvitationPanel({ tripId, userId, isOrganizer, userName 
     return () => {
       active = false
     }
-  }, [tripId, userId])
+  }, [tripId])
 
   useEffect(() => {
     if (!isOrganizer) {
@@ -95,7 +97,7 @@ export default function InvitationPanel({ tripId, userId, isOrganizer, userName 
             <div>
               <div className="vt">只有组织者可以分享邀请链接</div>
               <div className="vd">
-                当前身份是 {userName ?? '成员'}。切换到组织者身份后可生成链接和二维码。
+                当前身份是 {account?.name ?? '成员'}。只有组织者可以生成链接和二维码。
               </div>
             </div>
           </div>

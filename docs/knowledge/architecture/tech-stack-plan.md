@@ -300,3 +300,27 @@ PostgreSQL/PostGIS 替换 SQLite（Repository 层已隔离 SQL 与方言）→ F
   sketch of `client.ts` was not adopted; the shell already provides `api.ts`).
 
 No other section of this plan was modified by this change.
+
+## 14. US-066 登录与会话（2026-11-16，偏差记录）
+
+US-066 按 IO/SA 决策把 `X-User-Id` scaffold 替换为已验证登录；这是对 §2
+“MVP 不做账号体系 / 权限 / 注册登录”的明确偏差。
+
+- **技术栈新增**：Spring Security 6（`spring-boot-starter-security`）+ 服务端
+  HTTP Session（JSESSIONID，30 分钟空闲超时）+ BCrypt；不引入 JWT/Spring Session。
+- **数据模型新增**：`V6__create_account_credential.sql` 增加
+  `account_credential(user_id PK/FK, email UNIQUE, password_hash)`，只存 BCrypt
+  哈希；五个夹具账号（Alice…Eve）共享演示密码 `gogo-demo-2026`，不做注册。
+- **API 新增**：`POST /api/auth/login`、`GET /api/auth/me`、
+  `GET /api/auth/csrf`；CSRF cookie `XSRF-TOKEN` + `X-XSRF-TOKEN` 头。
+- **身份**：所有受保护 trip/invitation/main-plan/splits 端点从 session principal
+  取 `app_user.id`；`X-User-Id` 不再认证。公开面仍为 `/api/greeting`、
+  `GET /api/invitations/{token}`、登录/CSRF。
+- **错误契约**：auth/trip/invitation/main-plan + Security handler 用扁平
+  `{code,message}`；splits 保留 `{data,error}` 与 `401 MEMBER_REQUIRED` 作为唯一例外。
+- **前端**：`#/login` 与 React Router `/login` 共用登录页；hash shell 与 split
+  router 共用 AuthProvider；移除 scaffold 切换器与 split 身份栏；待邀请 token
+  存 sessionStorage，登录后恢复 preview，不自动 join。
+- **测试**：`AuthApiTest`、`SessionExpiryApiTest` 及全部既有 trip/invitation/
+  main-plan/splits API 测试改为 session/principal；C5 覆盖 CSRF、短超时（以失效
+  session 等价验证，Tomcat 超时粒度为分钟）与 greeting/preview 公开 matcher。

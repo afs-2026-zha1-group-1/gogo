@@ -1,5 +1,7 @@
 package com.gogo.hello.splits.controller;
 
+import com.gogo.auth.TestAuth;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -139,13 +141,13 @@ class SplitBoundaryApiTest extends AbstractSplitApiTest {
 
     private void startDraft() throws Exception {
         mockMvc.perform(post("/api/trips/{tripId}/split-draft", sgfTripId())
-                        .header("X-User-Id", memberId("Ben")))
+                        .with(TestAuth.asUser(memberId("Ben"))))
                 .andExpect(status().isCreated());
     }
 
     private ResultActions putBoundaries(String memberId, String body) throws Exception {
         return mockMvc.perform(put("/api/trips/{tripId}/split-draft/boundaries", sgfTripId())
-                .header("X-User-Id", memberId)
+                .with(TestAuth.asUser(memberId))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body));
     }

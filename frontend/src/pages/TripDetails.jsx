@@ -1,19 +1,20 @@
 import { useEffect, useState } from 'react'
-import { api, users } from '../api'
+import { api } from '../api'
 import Icon from '../Icons'
 import InvitationPanel from './InvitationPanel.jsx'
+import { useAuth } from '../features/auth/AuthProvider'
 
-function organizerName(organizerId) {
-  return users().find((user) => user.id === organizerId)?.name ?? `user ${organizerId}`
-}
-
-export default function TripDetails({ userId, tripId }) {
+export default function TripDetails({ tripId }) {
+  const { account } = useAuth()
   const [state, setState] = useState({ kind: 'loading' })
+
+  const organizerName = (organizerId) =>
+    organizerId === account?.id ? account.name : '组织者'
 
   useEffect(() => {
     let active = true
     setState({ kind: 'loading' })
-    api(`/api/trips/${tripId}`, { userId })
+    api(`/api/trips/${tripId}`)
       .then(({ status, ok, data }) => {
         if (!active) return
         if (ok && data) setState({ kind: 'ready', trip: data })
@@ -27,14 +28,14 @@ export default function TripDetails({ userId, tripId }) {
     return () => {
       active = false
     }
-  }, [userId, tripId])
+  }, [tripId])
 
   const [confirming, setConfirming] = useState(false)
 
   async function confirmMain() {
     setConfirming(true)
     try {
-      const { ok, data } = await api(`/api/trips/${tripId}/main-plan:confirm`, { userId, method: 'POST' })
+      const { ok, data } = await api(`/api/trips/${tripId}/main-plan:confirm`, { method: 'POST' })
       if (ok && data) setState({ kind: 'ready', trip: data })
     } finally {
       setConfirming(false)
@@ -42,11 +43,6 @@ export default function TripDetails({ userId, tripId }) {
   }
 
   function enterSplit() {
-    try {
-      localStorage.setItem('gogo.split.memberId', String(userId))
-    } catch {
-      /* storage unavailable */
-    }
     window.location.href = `/trips/${tripId}/split`
   }
 
@@ -96,8 +92,7 @@ export default function TripDetails({ userId, tripId }) {
   }
 
   const trip = state.trip
-  const isOrganizer = trip.organizerId === userId
-  const currentUser = users().find((user) => user.id === userId)?.name
+  const isOrganizer = trip.organizerId === account?.id
 
   return (
     <div className="screen">
@@ -156,9 +151,7 @@ export default function TripDetails({ userId, tripId }) {
 
         <InvitationPanel
           tripId={trip.id}
-          userId={userId}
           isOrganizer={isOrganizer}
-          userName={currentUser}
         />
 
         <div className="sec-title" style={{ marginTop: 18 }}>分队规划</div>

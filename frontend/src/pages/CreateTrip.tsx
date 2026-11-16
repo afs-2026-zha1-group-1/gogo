@@ -22,7 +22,7 @@ const EMPTY: TripForm = {
   endLocation: '',
 }
 
-export default function CreateTrip({ userId, backHref }: { userId: number; backHref: string }) {
+export default function CreateTrip({ backHref }: { backHref: string }) {
   const [form, setForm] = useState<TripForm>(EMPTY)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -44,7 +44,7 @@ export default function CreateTrip({ userId, backHref }: { userId: number; backH
     setBusy(true)
     setError('')
     try {
-      const { status, ok, data } = await api<Trip>('/api/trips', { userId, method: 'POST', body: form })
+      const { status, ok, data } = await api<Trip>('/api/trips', { method: 'POST', body: form })
       if (ok && data) {
         window.location.hash = `#/trips/${data.id}`
         return

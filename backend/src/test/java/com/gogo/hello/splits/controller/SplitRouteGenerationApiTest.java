@@ -1,5 +1,7 @@
 package com.gogo.hello.splits.controller;
 
+import com.gogo.auth.TestAuth;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -142,7 +144,7 @@ class SplitRouteGenerationApiTest extends AbstractSplitApiTest {
     void generateRoutes_groupMoveEndpoint_notImplemented() throws Exception {
         startDraft();
         int status = mockMvc.perform(post("/api/trips/{tripId}/split-draft/groups:move", sgfTripId())
-                        .header("X-User-Id", memberId("Ben"))
+                        .with(TestAuth.asUser(memberId("Ben")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"from\":\"A\",\"to\":\"B\",\"memberId\":\"x\"}"))
                 .andReturn().getResponse().getStatus();
@@ -152,7 +154,7 @@ class SplitRouteGenerationApiTest extends AbstractSplitApiTest {
 
     private void startDraft() throws Exception {
         mockMvc.perform(post("/api/trips/{tripId}/split-draft", sgfTripId())
-                        .header("X-User-Id", memberId("Ben")))
+                        .with(TestAuth.asUser(memberId("Ben"))))
                 .andExpect(status().isCreated());
     }
 
@@ -162,7 +164,7 @@ class SplitRouteGenerationApiTest extends AbstractSplitApiTest {
         body.put("reunionStopId", stopId("Merlion Park"));
         body.put("draftVersion", draftVersion);
         mockMvc.perform(put("/api/trips/{tripId}/split-draft/boundaries", sgfTripId())
-                        .header("X-User-Id", memberId("Ben"))
+                        .with(TestAuth.asUser(memberId("Ben")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isOk());
@@ -170,7 +172,7 @@ class SplitRouteGenerationApiTest extends AbstractSplitApiTest {
 
     private ResultActions postGenerate(String memberId, int draftVersion) throws Exception {
         return mockMvc.perform(post("/api/trips/{tripId}/split-draft/routes:generate", sgfTripId())
-                .header("X-User-Id", memberId)
+                .with(TestAuth.asUser(memberId))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"draftVersion\":" + draftVersion + "}"));
     }

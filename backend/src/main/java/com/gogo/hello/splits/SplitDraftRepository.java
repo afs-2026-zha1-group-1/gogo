@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository;
 
 /**
  * JdbcTemplate persistence for the splits capability (design D2/D9). Adapted to the main trip schema:
- * identity is app_user (INTEGER) via the {@code X-User-Id} header, membership is trip_member(trip_id, user_id),
+ * identity is app_user (INTEGER) supplied by the session principal, membership is trip_member(trip_id, user_id),
  * confirmation is {@code trip.main_plan_confirmed}, and the split draft lives in the separate {@code split_draft}
  * table (unique per trip). main-line stops and split route structure nodes live in {@code plan_node}. No ORM.
  */
