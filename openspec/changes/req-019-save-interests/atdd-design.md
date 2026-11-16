@@ -32,7 +32,7 @@ items defer to apply-time unit TDD.
 
 DB-state THEN clauses stay at the **API** layer rather than being pushed to E2E
 because each one is observable inside a single endpoint call while the test can read
-the same SQLite file through `JdbcTemplate`; no multi-system path is needed to prove
+the same SQLite file through `JdbcClient`; no multi-system path is needed to prove
 "the row was not written" (layer-inference priority 1 beats priority 3 here).
 
 | # | Scenario | Layer | Recommended extras | Rationale |
@@ -72,16 +72,21 @@ the same SQLite file through `JdbcTemplate`; no multi-system path is needed to p
 | UT-2 | `label` → `code` mapping in both directions | Defer UT | — | pure constant lookup |
 | UT-3 | `payload` serialization / parsing of `{"codes":[...]}` | Defer UT | — | pure transform |
 | UT-4 | Validation completes before the first write | Defer UT | — | ordering of one service method |
-| UT-5 | Malformed-body classification into `INVALID_REQUEST` | Defer UT | — | one deserialization decision |
+
+The malformed-body classification is no longer a unit concern: after D17 the request
+shape is enforced by Jakarta Validation at the argument resolver, so it is asserted by
+SAVE-7 at the API layer (an `INVALID_REQUEST` for a bare string, a null element or a
+number) instead of by a fifth unit case.
 
 ## 2. What is written before production code
 
 1. `backend/src/test/java/com/gogo/preference/PreferenceApiTest.java` authored red
    first, covering the 22 API scenarios plus the API-level reverse rows of §5. It
    follows `TripApiTest`'s harness: `@SpringBootTest(classes = HelloApplication.class,
-   properties = {"spring.datasource.url=jdbc:sqlite:file:preference-test?mode=memory&cache=shared",
+   properties = {"spring.datasource.url=jdbc:sqlite:file:preference-test?mode=memory&cache=shared&foreign_keys=on",
    "spring.datasource.hikari.maximum-pool-size=1"})`, `@AutoConfigureMockMvc`, autowired
-   `JdbcTemplate`.
+   `JdbcClient`. The `foreign_keys=on` parameter mirrors the production URL DD2
+   introduces, so the test enforces the same constraints the shipped app does.
 2. The red run is recorded and must fail for the right reason: before `V4` and the
    controller exist, the endpoints have no mapping and `member_preference` does not
    exist. A green run at this point is a defect in the checks, not success.
@@ -93,13 +98,15 @@ the same SQLite file through `JdbcTemplate`; no multi-system path is needed to p
 
 - Local gate: `cd backend && mvn test` (whole suite on the production engine, so the
   `greeting`, `trips` and `invitation` classes also prove no regression) and
-  `cd frontend && npm ci && npm run build`; then the browser steps. P4 records the
-  evidence in a `docs/ai4se-plugins/` local-verify report and adds
+  `cd frontend && npm ci && npm run typecheck && npm run build`; then the browser steps.
+  The typecheck is part of the gate from P4 on, because the page is TypeScript (DD9).
+  P4 records the evidence in a `docs/ai4se-plugins/` local-verify report and adds
   `docs/feedback/verification-matrix.md` rows.
-- CI gate: the existing two-job workflow (`.github/workflows/ci.yml` — `mvn -B test`
-  and `npm ci` + `npm run build`) on a pull request to `main`. G2 needs a fresh run
-  read for this change's commit; nothing from REQ-003/004 is inherited. No new CI
-  product is introduced.
+- CI gate: the two-job workflow (`.github/workflows/ci.yml` — `mvn -B test`, and
+  `npm ci` + `npm run typecheck` + `npm run build`) on a pull request to `main`. The
+  frontend job gains the typecheck step as part of DD12; the backend job is unchanged.
+  G2 needs a fresh run read for this change's commit; nothing from REQ-003/004 is
+  inherited. No new CI product is introduced.
 - **Not** a P3/P4 gate: `openspec validate req-019-save-interests --strict`. G1 closed
   with that check failing (five requirement bodies over 500 characters) and carried it
   as a G1 condition that blocks archive, not implementation. The CLI is not on `PATH`
@@ -121,7 +128,7 @@ the same SQLite file through `JdbcTemplate`; no multi-system path is needed to p
   `@BeforeEach` runs `DELETE FROM member_preference`. This is test-only state cleanup,
   not a product branch; cross-member cases then create their rows through the API.
 - **No mocks:** row count, `payload` and `updated_at` are read through the same
-  autowired `JdbcTemplate`, so AC2's "byte-identical before and after" is proven on the
+  autowired `JdbcClient`, so AC2's "byte-identical before and after" is proven on the
   real engine.
 - **Reverse-check setup:** the "no lock after main-plan confirmation" row needs
   `trip.main_plan_confirmed = 1`, which no endpoint sets in this change. It is applied

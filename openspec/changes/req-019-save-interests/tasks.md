@@ -5,7 +5,8 @@
   [ATDD design](atdd-design.md) · [design](design.md) ·
   [fixtures](../../../requirement-workspace/acceptance-test-fixtures.md)
 - G1: Pass closed 2026-11-16 (IO Emily 2026-11-15, SA evelyn.huang 2026-11-15 + sibling
-  re-review). P3 rulings: D15 own error advice, D16 no shared-fixture edits.
+  re-review). P3 rulings: D15 own error advice, D16 no shared-fixture edits, **D17
+  plan-first stack** (the plan wins; code-consistency only where the plan cannot apply).
 - Order rule: acceptance checks red before production code (ATDD design §2).
 - NFR tests: out of scope by the user's decision on 2026-11-16 (ATDD design §6). P4
   delivers functional evidence only.
@@ -16,52 +17,76 @@
 
 - [ ] 1.1 Author `backend/src/test/java/com/gogo/preference/PreferenceApiTest.java`
       covering ID-1…ID-5, CAT-1…CAT-4, SAVE-1…SAVE-8, READ-1…READ-5; own in-memory
-      SQLite file, Flyway `V1`–`V4`, pool size 1, `@BeforeEach` clears
-      `member_preference`, fixture trip id resolved by name (DD8, ATDD §4)
+      SQLite file with `&foreign_keys=on`, Flyway `V1`–`V4`, pool size 1, assertions
+      through `JdbcClient`, `@BeforeEach` clears `member_preference`, fixture trip id
+      resolved by name (DD11, ATDD §4)
 - [ ] 1.2 Add the API-level reverse checks of ATDD §5: only the `interest` kind written,
       the caller's own row only, no `noPreference`/`ready` fields, no lock after
       `main_plan_confirmed = 1`, no `/api/tags`
 - [ ] 1.3 Run `mvn test`; record the red run and confirm it fails for the right reason
       (no `V4` table, no route), with `GreetingApiTest`, `TripApiTest` and
-      `InvitationApiTest` still green
+      `InvitationApiTest` still green — this run is also the first proof that the §7
+      datasource change (2.1) breaks nothing
 - [ ] 1.4 Write the E2E check list (PAGE-1…PAGE-9) as numbered browser steps with
       expected observations
 
-## 2. Migration and persistence (owner: Dev)
+## 2. Platform baseline and persistence (owner: Dev)
 
-- [ ] 2.1 `V4__create_member_preference.sql`: one table, `UNIQUE(trip_id,user_id,kind)`,
-      no seed rows, no trigger (DD1); confirm it applies after `V3`
-- [ ] 2.2 `PreferenceRepository`: the single upsert save statement and the
-      member-left-join read query (DD5, DD6); `payload` written as `{"codes":[...]}`
-- [ ] 2.3 `InterestCatalogue` constants in AC order, first-occurrence dedupe and
-      label→code mapping (DD4); apply-time unit TDD for UT-1, UT-2, UT-3
-- [ ] 2.4 Record the design TS-9 gap in the P4 evidence (foreign keys declared but
-      unenforced without `foreign_keys=on`; pool size pinned to 1 only in tests); **do not**
-      edit `application.yml` in this change — the harness fix belongs to Dev/SA
+- [ ] 2.1 `application.yml`: `journal_mode=WAL&busy_timeout=5000&foreign_keys=on` on the
+      SQLite URL and `hikari.maximum-pool-size=1` (DD2, plan §7). Run the whole suite
+      before and after; `V1`–`V3` seeds were reviewed and satisfy their foreign keys
+- [ ] 2.2 `pom.xml`: add `spring-boot-starter-validation` (DD4) and, per plan §7,
+      `flyway-database-nc-sqlite` with an explicit `${flyway.version}` plus a pinned
+      `sqlite-jdbc` (DD12). If the module does not resolve for the managed Flyway
+      version, do **not** move the Flyway version — record the gap and fall back, since
+      four changes share `V1`–`V4`
+- [ ] 2.3 `V4__create_member_preference.sql`: one table, `UNIQUE(trip_id,user_id,kind)`,
+      no seed rows, no trigger (DD1); confirm it applies after `V3` with foreign keys on
+- [ ] 2.4 `PreferenceRepository` on `JdbcClient` with `record` mapping (DD3): the single
+      upsert save statement and the member-left-join read query (DD7, DD8); `payload`
+      written as `{"codes":[...]}`
+- [ ] 2.5 `InterestCatalogue` constants in AC order, first-occurrence dedupe and
+      label→code mapping (DD6); apply-time unit TDD for UT-1, UT-2, UT-3, UT-4
 
-## 3. Endpoints and error mapping (owner: Dev)
+## 3. Endpoints, validation and error mapping (owner: Dev)
 
 - [ ] 3.1 `PreferenceController`: `GET` and `PUT /api/trips/{tripId}/preferences` with
-      identity → trip existence → membership (DD3), reusing `TripRepository`
-- [ ] 3.2 `PUT`: validate the whole array before any write, reject with
-      `INTEREST_NOT_ALLOWED`, echo `{"interests":[…]}` on `200`, accept `[]` as clear
-      (DD4, DD5)
-- [ ] 3.3 `GET`: `{"members":[…]}` with exactly `userId` and `interests`, ordered by
-      `userId`, unsaved members present with `[]` (DD6)
-- [ ] 3.4 `PreferenceApiException` + `PreferenceErrorAdvice` covering
-      `com.gogo.preference` and unreadable bodies as `INVALID_REQUEST` (D15)
+      body shape → identity → trip existence → membership (DD5), reusing
+      `TripRepository`
+- [ ] 3.2 `PreferenceSaveRequest` with `@NotNull List<@NotNull @NotBlank @Pattern… String>`
+      consumed as `@Valid` (DD4); the catalogue check stays in the service and answers
+      `INTEREST_NOT_ALLOWED`, `[]` clears, `200` echoes `{"interests":[…]}`
+- [ ] 3.3 `PreferenceApiException` + `PreferenceErrorAdvice` for
+      `com.gogo.preference`, covering `MethodArgumentNotValidException` and
+      `HttpMessageNotReadableException` as `INVALID_REQUEST` (DD4, D15)
+- [ ] 3.4 `GET`: `{"members":[…]}` with exactly `userId` and `interests`, ordered by
+      `userId`, unsaved members present with `[]` (DD8)
 - [ ] 3.5 Run `mvn test`: ID/CAT/SAVE/READ checks green, merged capability tests unchanged
 
-## 4. Frontend (owner: Dev)
+## 4. Frontend on the plan stack (owner: Dev)
 
-- [ ] 4.1 `parseRoute` gains `#/trips/<id>/preferences` ahead of the details pattern, and
-      `App.jsx` mounts the page with `userId` and `tripId` (DD7)
-- [ ] 4.2 `Preferences.jsx`: `GET` on mount and on identity change, seven interest
-      controls, one `PUT` from the explicit Save action, loading / empty / saved /
-      inline-error / load-failure-with-retry states, no `localStorage` (DD7)
-- [ ] 4.3 `.chips` / `.chip` styles in `app.css`, no Clear All control, no new dependency
-- [ ] 4.4 `TripDetails.jsx`: one entry link to the preferences page (D13)
-- [ ] 4.5 `npm run build` passes
+- [ ] 4.1 Add `typescript`, `@types/react`, `@types/react-dom`, `antd`,
+      `@tanstack/react-query`, `react-router-dom`; add `tsconfig.json` (`strict`,
+      `jsx: react-jsx`, `moduleResolution: bundler`, `allowJs`, `checkJs: false`,
+      `noEmit`) and the `typecheck` script (DD9)
+- [ ] 4.2 `src/api/client.ts` (`request<T>()` raising `ApiError {status, code, message}`),
+      `src/api/preferences.ts`, `src/types/preferences.ts` (DD9); leave `api.js` for the
+      un-migrated pages
+- [ ] 4.3 `main.jsx`: `QueryClientProvider` with `queries.retry = 0` so PAGE-9's retry is
+      a user action (DD9)
+- [ ] 4.4 `App.jsx`: `HashRouter` + route table for `/`, `/create`, `/trips/:tripId`,
+      `/trips/:tripId/preferences`, `/join/:token`; the addresses must not move, so the
+      REQ-003/004 deltas stay satisfied (DD9). Tell the JS→TS migration owner before this
+      lands
+- [ ] 4.5 `PreferencesPage.tsx`: seven `Tag.CheckableTag` chips keyed by label, `Button`
+      for Save, `Alert` for the server `message`, `Skeleton`/`loading` for the pending
+      state, `ConfigProvider` theme `colorPrimary = #0d9488`; query key
+      `['preferences', tripId, userId]`, `useMutation` for the single PUT, rollback to the
+      last acknowledged set on failure, retry action on load failure, no `localStorage`,
+      no Clear All (DD9, DD10)
+- [ ] 4.6 `TripDetails.jsx`: one entry link to `#/trips/<id>/preferences` (D13)
+- [ ] 4.7 `npm ci && npm run typecheck && npm run build` pass, and no new hand-written
+      CSS classes are added to `app.css` (DD9)
 
 ## 5. Runtime acceptance and E2E (owner: Dev; evidence in the local-verify report)
 
@@ -77,19 +102,24 @@
 
 ## 6. CI, gates and documents (owner: Dev drafts; IO/SA/VL decide)
 
-- [ ] 6.1 Push `feat/travel_preference` only on the owner's explicit authorization; read
+- [ ] 6.1 `.github/workflows/ci.yml`: frontend job gains `npm run typecheck` between
+      `npm ci` and `npm run build` (DD12); backend job unchanged. Shared file — tell the
+      other in-flight change owners
+- [ ] 6.2 Push `feat/travel_preference` only on the owner's explicit authorization; read
       the fresh CI run for this change's commit and write the pipeline report
-- [ ] 6.2 G2 decision record by a named VL; G3 by a named SA; the agent never self-signs
-- [ ] 6.3 Update `README.md` (endpoints, page route) and the registry/handoff rows
-- [ ] 6.4 **Archive precondition (G1 condition 4):** fix the five ADDED requirement
+- [ ] 6.3 G2 decision record by a named VL; G3 by a named SA; the agent never self-signs
+- [ ] 6.4 Update `README.md` (endpoints, page route, `typecheck`) and the registry/handoff
+      rows
+- [ ] 6.5 **Archive precondition (G1 condition 4):** fix the five ADDED requirement
       bodies that exceed 500 characters and rerun
       `openspec validate req-019-save-interests --strict` on a machine that has the CLI;
       this environment has no `openspec` on `PATH`, so no pass may be claimed from here
-- [ ] 6.5 **Final task before archive (config.yaml `rules.tasks`):** reconcile
+- [ ] 6.6 **Final task before archive (config.yaml `rules.tasks`):** reconcile
       `docs/knowledge/architecture/tech-stack-plan.md` with what this change actually
-      shipped — the two endpoints (with `interest` only), the `member_preference`
-      columns and `UNIQUE(trip_id,user_id,kind)`, and the deviations TS-1…TS-12 of the
-      design; reconcile only work completed by an archived change, never planned or
+      shipped — the two endpoints (with `interest` only), the `member_preference` columns
+      and `UNIQUE(trip_id,user_id,kind)`, the §7 datasource baseline, the frontend stack
+      gap on the five un-migrated pages, and the deviations TS-1…TS-10 of the design;
+      reconcile only work completed by an archived change, never planned or
       still-unarchived work; append a row to `docs/knowledge/_LOG.md` when the plan
       changes; close this task before `/opsx:archive` (config.yaml
       `operations.archive`)
@@ -105,15 +135,15 @@
 
 | Spec requirement | Design decision | Tasks | ATDD rows | Result |
 |---|---|---|---|---|
-| Preference caller identity and membership (5) | DD2, DD3 | 3.1, 1.1 | ID-1…ID-5 | Pass |
-| Predefined interest catalogue (4) | DD4 | 2.3, 3.2, 1.1 | CAT-1…CAT-4, UT-1/UT-2 | Pass |
-| Save member interests (8) | DD1, DD4, DD5 | 2.1, 2.2, 3.2, 1.1 | SAVE-1…SAVE-8, UT-3/UT-4 | Pass |
-| Read member interests (5) | DD6 | 2.2, 3.3, 1.1 | READ-1…READ-5 | Pass |
-| Preferences page (9) | DD7 | 4.1–4.4, 5.2 | PAGE-1…PAGE-9 | Pass |
-| Non-goals (other kinds, US-027, US-026, US-031, auth, `tag`, locking, i18n, CI) | Goals / Non-Goals, DD1, DD3, DD7 | 1.2, 5.3 | ATDD §5 reverse table | Pass |
-| Display contract (deep-dive ⑫: loading/empty/error/saving) | DD7 | 4.2, 5.2 | PAGE-1, PAGE-2, PAGE-7, PAGE-8, PAGE-9 | Pass |
-| G1 condition 4 (strict validation) | Risks: strict validation still failing | 6.4 | — (not an ATDD row; archive gate) | Pass as a registered task, not as a passed check |
-| Tech-stack baseline (`config.yaml` `context`) | Deviations TS-1…TS-12 recorded, none silent | 2.4, 6.5 | — (not an ATDD row; archive gate) | Pass as recorded deviations, not as fixes |
+| Preference caller identity and membership (5) | DD3, DD5 | 3.1, 1.1 | ID-1…ID-5 | Pass |
+| Predefined interest catalogue (4) | DD4, DD6 | 2.5, 3.2, 1.1 | CAT-1…CAT-4, UT-1/UT-2 | Pass |
+| Save member interests (8) | DD1, DD4, DD6, DD7 | 2.3, 2.4, 3.2, 1.1 | SAVE-1…SAVE-8, UT-3/UT-4 | Pass |
+| Read member interests (5) | DD8 | 2.4, 3.4, 1.1 | READ-1…READ-5 | Pass |
+| Preferences page (9) | DD9, DD10 | 4.1–4.7, 5.2 | PAGE-1…PAGE-9 | Pass |
+| Non-goals (other kinds, US-027, US-026, US-031, auth, `tag`, locking, i18n, page migration) | Goals / Non-Goals, DD1, DD3, DD9 | 1.2, 5.3 | ATDD §5 reverse table | Pass |
+| Display contract (deep-dive ⑫: loading/empty/error/saving) | DD9, DD10 | 4.5, 5.2 | PAGE-1, PAGE-2, PAGE-7, PAGE-8, PAGE-9 | Pass |
+| G1 condition 4 (strict validation) | Risks: strict validation still failing | 6.5 | — (not an ATDD row; archive gate) | Pass as a registered task, not as a passed check |
+| Tech-stack baseline (`config.yaml` `context`, D17 plan-first) | DD2, DD3, DD4, DD9, DD12; deviations TS-1…TS-10 | 2.1, 2.2, 4.1, 6.1, 6.6 | — (not an ATDD row; archive gate) | Pass as plan-first choices plus recorded deviations |
 
 No silent scope creep: every task traces to a spec scenario, a declared non-goal reverse
 check, or a stage artifact. NFR testing is explicitly excluded by the user's decision, so
