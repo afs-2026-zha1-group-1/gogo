@@ -4,7 +4,9 @@ Maps each acceptance area to the command or evidence that proves it. Commands ar
 defined in [verification-commands.md](verification-commands.md); results are
 recorded in `docs/ai4se-plugins/20261113-162526-local-verify-report.md`. The
 REQ-001 matrix rows are superseded where the contract or the engine changed; that
-change's evidence stays in `20261113-153317-local-verify-report.md`.
+change's evidence stays in `20261113-153317-local-verify-report.md`. REQ-019 rows
+sit in their own section below and point to
+`docs/ai4se-plugins/20261116-1333-local-verify-report.md`.
 
 | Area | Check | Command / evidence | Owner |
 |---|---|---|---|
@@ -29,3 +31,27 @@ change's evidence stays in `20261113-153317-local-verify-report.md`.
 | Harness (D7) | CI declares both jobs | `python -c "…assert j==['backend','frontend']…"` → `ci jobs: ['backend', 'frontend']` | Dev |
 | Harness (static layer) | Whitelist runs clean | `run-verify.sh` → `commands_attempted:5`, `commands_failed:0` (`20261113-162029-local-verify-run.log`) | Dev |
 | Harness (remote CI) | GitHub Actions run is green **for this change's commit** | **Not yet verified.** The commit has not been pushed, and REQ-001's confirmation predates the `sqlite-jdbc` dependency so it cannot be reused. Requires a fresh named human confirmation; until then this row is open and the pipeline Overall is Partial at best | Johnson |
+
+## REQ-019 member interests (US-019)
+
+Evidence: `docs/ai4se-plugins/20261116-1333-local-verify-report.md`, commands
+`docs/ai4se-plugins/20261116-1205-req019-api-verify-commands.ps1`, transcript
+`…-run.log`. Rows marked open keep the change's Overall at Partial; none of them is
+`Pass` by assertion.
+
+| Area | Check | Command / evidence | Owner |
+|---|---|---|---|
+| Storage (DD1) | `V4` creates `member_preference` with `UNIQUE(trip_id,user_id,kind)`, no seed rows, no trigger | Fresh start → `Successfully applied 4 migrations … now at version v4`; Python `sqlite3` → `sqlite_master` shows the PK and the unique index; `SELECT count(*) FROM member_preference` = 0 before any save | Dev |
+| Storage (DD7, DD8) | `payload` stores codes, not labels, with an ISO-8601 UTC `updated_at` | Python `sqlite3` → `1|2|interest|{"codes":[]}|2026-11-16T03:52:04.794712400Z`; `PreferenceApiTest#emptyArrayClearsButKeepsRow` | Dev |
+| Endpoint SAVE (REQ-019 AC1/AC3) | `PUT` replaces the whole set, collapses duplicates keeping the first, and `[]` clears while keeping the row | curl SAVE-1…SAVE-8; `PreferenceApiTest` SAVE group | Dev |
+| Endpoint catalogue (REQ-019 AC2) | Exactly seven labels, literal match, one unsupported label rejects the entire request | curl CAT-1…CAT-4 and SAVE-5/6 → `400 INTEREST_NOT_ALLOWED`, stored set unchanged; `InterestCatalogue` in AC order | Dev |
+| Endpoint body shape (DD4) | Element type is judged by JSON token type | curl `[42]`, `[null]`, `{"interests":"Art"}`, `["Art"]`, `{}` → `400 INVALID_REQUEST`; `StrictStringListDeserializer` | Dev |
+| Endpoint READ (REQ-019 AC4) | `{"members":[…]}`, exactly `userId` + `interests`, ascending `userId`, unsaved members present with `[]`, read changes nothing | curl READ-1…READ-5 for four members, order 1,2,3,4; reverse check that no `noPreference`/`ready` field appears | Dev |
+| Endpoint identity (DD5) | 401 `USER_REQUIRED` → 404 `TRIP_NOT_FOUND` → 403 `NOT_A_MEMBER`, bare `{code,message}`, nothing written on rejection | curl ID-1…ID-5 (including `X-User-Id: 99`/`abc` and `" 2 "`) | Dev |
+| Page (REQ-019 AC5) | `#/trips/<id>/preferences` reached from the details page; seven chips; save + reload; 403/404; load failure with Retry | PAGE-1…PAGE-9 in the report; PAGE-4, PAGE-6 and PAGE-7 are **Partial** (a ~20 ms round trip hides the pending state; the page offers no way to submit an invalid label) | Dev |
+| Build | Backend tests on the production engine | `(cd backend && mvn -B test)` → `Tests run: 60, Failures: 0, Errors: 0` (Greeting 3, Invitation 15, Preference 29, Trip 13) | Dev |
+| Build | Frontend typecheck and production build | `(cd frontend && npm ci && npm run typecheck && npm run build)` → `tsc --noEmit` clean, `1491 modules transformed`, one 660 kB chunk warning | Dev |
+| ATDD order | Red before green | Red run `-Dtest=PreferenceApiTest` → 29 errors, every one `no such table: member_preference`; green after the implementation → 29/29 | Dev |
+| Stack constraint (D17) | Plan-first stack, no ORM, recorded deviations | `PreferenceRepository` on `JdbcClient`, no jpa/hibernate in `pom.xml`; frontend on TypeScript + Ant Design + TanStack Query + React Router; deviations TS-1…TS-11 in the design, TS-11 (Flyway SQLite module unpublished) still open | Dev |
+| Harness (CI) | Frontend job typechecks before it builds | `.github/workflows/ci.yml`: `npm ci`, `npm run typecheck`, `npm run build` | Dev |
+| Harness (remote CI) | GitHub Actions run is green **for this change's commit** | **Not yet verified.** `feat/travel_preference` carries no P4 commit yet (task 6.2, needs the owner's push authorization) and no named VL has signed G2 (task 6.3); until both land the change is Partial | SA / VL |

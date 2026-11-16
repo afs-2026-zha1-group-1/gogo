@@ -33,9 +33,9 @@ Bash (for example Git Bash on Windows); their use depends on the selected skill.
 
 CI runs on GitHub Actions (`.github/workflows/ci.yml`) for pushes and pull
 requests to `main`: a backend job runs `mvn -B test` on Java 21, and a frontend
-job runs `npm ci && npm run build` on Node 24. The four original harness scripts
-are intentional placeholders and exit with a message until the project supplies
-an implementation, so CI does not invoke them.
+job runs `npm ci && npm run typecheck && npm run build` on Node 24. The four
+original harness scripts are intentional placeholders and exit with a message
+until the project supplies an implementation, so CI does not invoke them.
 
 ## Run the application
 
@@ -62,11 +62,29 @@ public fields and accept once (`/api/invitations/{token}` and
 confirmed, and unknown links render a generic unusable page. `main_plan_confirmed`
 has no product mutation path until US-037, so tests set it directly in SQLite.
 
-The database is SQLite at `backend/data/gogo.db`. The Flyway migrations create the
-schema and seed data on first start (`V1` greeting, `V2` users/trips/members,
-`V3` invitations and the main-plan column); the application creates the `data/`
-directory itself, because the SQLite driver creates the file but not its parent.
-Delete `backend/data/` to rebuild it.
+REQ-019 adds member interests (US-019): `GET` and `PUT
+/api/trips/{tripId}/preferences`. The `PUT` body is `{"interests":[<label>...]}`
+over exactly seven labels (`Art`, `Nature`, `Culture`, `History`, `Food`,
+`Shopping`, `Adventure`); matching is literal, duplicates collapse keeping the
+first occurrence, and the array replaces the stored set as a whole (`[]` clears it
+and keeps the row). One row per `(trip_id, user_id, kind)` stores
+`{"codes":[...]}`, so labels are presentation and codes are storage. The `GET`
+answers `{"members":[{"userId":n,"interests":[...]}]}` for every member of the
+trip, ordered by `userId`, with `[]` for anyone who has not saved yet. The page
+lives at `#/trips/<id>/preferences`, is linked from `#/trips/<id>`, and is the
+first TypeScript/Ant Design page: Save is explicit, a failed save rolls back to
+the acknowledged set, and a failed load offers Retry instead of an empty state.
+
+The database is SQLite at `backend/data/gogo.db`, opened with
+`journal_mode=WAL`, `busy_timeout=5000` and `foreign_keys=on`, and the pool is
+pinned to one connection because SQLite has a single writer. The Flyway
+migrations create the schema and seed data on first start (`V1` greeting, `V2`
+users/trips/members, `V3` invitations and the main-plan column, `V4` member
+preferences); the application creates the `data/` directory itself, because the
+SQLite driver creates the file but not its parent. `flyway-core` alone is on the
+classpath: `flyway-database-nc-sqlite` has no published artifact for the managed
+Flyway version, a gap recorded as TS-11 in the REQ-019 design. Delete
+`backend/data/` to rebuild it.
 
 Backend on port 8080:
 
@@ -83,6 +101,10 @@ npm install
 npm run dev
 ```
 
+Typecheck the TypeScript sources with `cd frontend && npm run typecheck`
+(`tsc --noEmit`). `checkJs` is off, so the four un-migrated `.jsx` pages are not
+typechecked yet; the preferences page is TypeScript and is.
+
 Open http://localhost:5173/. Check the API directly with
 `curl -i http://localhost:8080/api/greeting`, which returns
 `Content-Type: application/json` and the body `{"message":"Hello World"}`.
@@ -94,9 +116,18 @@ curl -i -X POST http://localhost:8080/api/trips \
   -d '{"name":"Day out","destination":"Singapore","startDate":"2026-12-05","endDate":"2026-12-05"}'
 ```
 
+Get or set the caller's interests with:
+
+```sh
+curl -s -H "X-User-Id: 2" http://localhost:8080/api/trips/1/preferences
+curl -s -X PUT http://localhost:8080/api/trips/1/preferences \
+  -H "Content-Type: application/json" -H "X-User-Id: 2" \
+  -d '{"interests":["Art","Nature"]}'
+```
+
 Run the backend tests with `cd backend && mvn test` (`GreetingApiTest`,
-`TripApiTest`, `InvitationApiTest`); they use the same SQLite engine and the same
-migrations as production.
+`TripApiTest`, `InvitationApiTest`, `PreferenceApiTest`); they use the same
+SQLite engine and the same migrations as production.
 
 Inspect the stored row without stopping the app (Python 3 ships `sqlite3`; no
 separate CLI is needed):

@@ -120,20 +120,27 @@ Identity, trip existence and membership still reuse `TripRepository.findUserId` 
 
 ```java
 public record PreferenceSaveRequest(
-        @NotNull List<@NotNull @NotBlank @Pattern(regexp = "[A-Za-z][A-Za-z ]*") String> interests) {}
+        @NotNull @JsonDeserialize(using = StrictStringListDeserializer.class) List<String> interests) {}
 ```
 
 `@RequestBody @Valid` plus one handler for `MethodArgumentNotValidException` →
 `400 INVALID_REQUEST` in `PreferenceErrorAdvice`.
 
-The shape constraint is what makes the delta's malformed-body scenarios come out right.
-`{"interests":[42]}` must answer `INVALID_REQUEST`, but Jackson coerces the number to
-`"42"`, so a catalogue lookup alone would answer `INTEREST_NOT_ALLOWED` — the wrong code.
-A pattern violation fails before the catalogue runs, and so does a `null` element. A
-well-formed but unknown label (`teleportation`) still passes validation and is rejected by
-the service with `INTEREST_NOT_ALLOWED`; a body that is not a JSON object, or `interests`
-sent as a bare string, fails during Jackson binding (`HttpMessageNotReadableException`) and
-is mapped to the same `INVALID_REQUEST`.
+The first version of this decision also put `@NotBlank @Pattern(regexp = "[A-Za-z][A-Za-z ]*")`
+on the elements. Implementation proved that wrong and the correction is recorded here rather
+than left in the code: those two constraints are **character-level**, and the delta's
+distinction is **token-level**. `[""]` and `[" "]` are strings, so the delta answers
+`INTEREST_NOT_ALLOWED`; `@NotBlank` would have answered `INVALID_REQUEST`. `[42]` and
+`[null]` are not strings, so the delta answers `INVALID_REQUEST`; Jackson coerces `42` to
+`"42"` for a plain `List<String>`, so a pattern would have answered
+`INTEREST_NOT_ALLOWED` — also the wrong code.
+
+The split that satisfies all four: Jakarta Validation owns **presence** (`@NotNull` on the
+field, so `{}` fails), and a field-level `StrictStringListDeserializer` owns **element type**
+(anything but a `VALUE_STRING` token raises `MismatchedInputException`, which Spring wraps in
+`HttpMessageNotReadableException` → `INVALID_REQUEST`). A well-formed but unknown label
+(`teleportation`, `art`, `" Art "`, `""`) therefore still reaches the catalogue and is rejected
+there with `INTEREST_NOT_ALLOWED`, which is exactly the boundary the delta draws.
 
 **DD5 — Check order and codes.** body shape (400 `INVALID_REQUEST`) → identity (401
 `USER_REQUIRED`) → trip existence (404 `TRIP_NOT_FOUND`) → membership (403 `NOT_A_MEMBER`) →
@@ -242,6 +249,15 @@ Flyway version itself is **not** moved — four changes share `V1`–`V4` and re
 re-checksum all of them. In that case §7's own escape clause is not satisfied by a workaround
 and the gap is recorded as an open deviation.
 
+**Measured on 2026-11-16, so the caveat is a fact and not a hypothesis.**
+`mvn dependency:get -Dartifact=org.flywaydb:flyway-database-nc-sqlite:11.7.2` answered
+`Could not find artifact ... in central`, and the same coordinate does not exist for the Boot
+3.5.14-managed Flyway either. The fallback branch was therefore taken: `flyway-core` stays,
+the Flyway version is untouched, `V1`–`V4` keep their checksums, and the missing module is
+recorded as TS-11. Flyway still detects SQLite (the run logs `Database: jdbc:sqlite:...
+(SQLite 3.49)`), so migrations work; what the plan asked for and this change cannot supply is
+the separately versioned SQLite module.
+
 Local gate: `mvn test` (all classes), `npm ci`, `npm run typecheck`, `npm run build`, and a
 browser pass over the page states. The pipeline gate is a fresh CI run on the PR to `main`.
 
@@ -263,6 +279,7 @@ applied to this change — every other choice follows it.
 | TS-8 | §3: Maven Wrapper | none; `mvn` from `PATH` | developer tooling, unrelated to the feature | Plan reconciliation |
 | TS-9 | §3: no extra frontend dependency | `qrcode` + `jsqr` from REQ-004 | the QR join flow needed them (Apache-2.0) | REQ-004 record |
 | TS-10 | §4: `com.bettertrips.*` with one `common/GlobalExceptionHandler` | `com.gogo.*` with one advice per feature package | renaming four packages gains nothing functional; the per-package advice already exists twice and D15 follows it | DD3, D15; plan reconciliation |
+| TS-11 | §7: `flyway-core` **plus** `flyway-database-nc-sqlite` at one explicit `${flyway.version}` | `flyway-core` only; no Flyway version change | measured 2026-11-16: the module does not exist on Maven Central for the managed Flyway (11.7.2 or the Boot 3.5.14 default), and re-pinning the shared Flyway version would re-checksum `V1`–`V4` for four in-flight changes; Flyway still detects SQLite without it | DD12; plan reconciliation, reopened when the module ships |
 
 What the reversal changed, for the reviewers who read the first version:
 
@@ -274,7 +291,8 @@ What the reversal changed, for the reviewers who read the first version:
   the pool to one connection — inside this change, not later.
 - The page and its routing use TypeScript, Ant Design, TanStack Query and React Router, and
   CI typechecks the frontend.
-- Flyway gains the SQLite module with one pinned version, subject to the DD12 caveat.
+- Flyway gains the SQLite module with one pinned version, subject to the DD12 caveat. The
+  caveat fired: the module is not published, so `flyway-core` stays and TS-11 records it.
 
 ## Risks / Trade-offs
 
@@ -301,5 +319,9 @@ What the reversal changed, for the reviewers who read the first version:
 - **Foreign-key enforcement is now live.** Any code path still writing orphan rows starts
   failing instead of silently succeeding. `V1`–`V3` seeds and the merged invite/trip flows
   were checked; a full `mvn test` is the proof, not this sentence.
-- **Flyway pinning may not resolve** (DD12). If the SQLite module has no artifact for the
-  managed Flyway version, the fallback is a recorded deviation, not a version jump.
+- **Flyway pinning may not resolve** (DD12). It did not: `flyway-database-nc-sqlite` has no
+  published artifact for the managed Flyway version, so TS-11 records an open deviation and no
+  version was moved. Migrations still run; only the separately versioned module is missing.
+- **Implementation corrected DD4.** Character-level Jakarta constraints could not express the
+  delta's token-level distinction, so presence moved to `@NotNull` and element type moved to a
+  field deserializer. The design says so; the code and the delta agree.
