@@ -44,8 +44,8 @@
 
 ## 7. 验证与门禁
 
-- [ ] 7.1 `/sdd:local-verify-report`（V1–V8 + E1/E2 证据，E3 待 G2 签核）
-- [ ] 7.2 PR CI 双 job 绿（backend `mvn -B test` + frontend typecheck/build），E1 机器读取
+- [x] 7.1 `/sdd:local-verify-report`（V1–V8 + E1/E2 证据，E3 待 G2 签核）
+- [x] 7.2 PR CI 双 job 绿（backend `mvn -B test` + frontend typecheck/build），E1 机器读取
 - [ ] 7.3 `/sdd:g2-decision-record`（具名 VL）→ 合并 PR → `/sdd:living-merge` + G3（具名 SA）
 
 ## 对齐自检（P3，2026-11-17）
