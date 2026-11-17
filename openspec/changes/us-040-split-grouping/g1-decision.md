@@ -90,19 +90,19 @@ C1–C7（除 C3 转 P3 承接）均已关闭，Decision = `Pass`；后续任何
 ## Revision re-review（2026-11-17，任意成员可编辑分组 + 头像切组）
 
 - 触发：用户 2026-11-17 指令「现在需要所有人都能编辑分组……点击头像换到另外一个分组」，取代原 A9-N「不能替其他成员选择」。
-- delta 变化：ADDED requirement 描述改为「任意成员可移动任意成员（body 可选 `memberId`，缺省为调用者；目标非成员 `403 NOT_A_MEMBER`）」；A9-N 拆为「可移动他人（A9）」+「目标非成员拒绝（A9b-N）」；Screen 13 场景改为头像 chip 点击切组。场景总数 38 → **39**。
+- delta 变化：ADDED requirement 描述改为「任意成员可移动任意成员（body 可选 `memberId`，缺省为调用者；目标非成员 `403 NOT_A_MEMBER`）」；A9-N 拆为「可移动他人（A9）」+「目标非成员拒绝（A9b-N）」；Screen 13 场景改为头像 chip 点击切组。场景总数 38 → **39**（2026-11-17 合并 main 后，US-086 新增的 3 条 Screen 11 场景已逐字补入 → **41**）。
 - 已同步：`proposal.md` `Supersedes ③`、`requirements/US-040.md` OQ-14/BQ-10 + Revision 段、`design.md` DD1/DD2/DD13 + TS-7、`atdd-design.md` A9 行、`acceptance-test-fixtures.md` §US-040、`tasks.md` 11.5、代码与 `SplitAssignmentApiTest`。
-- 签核：SA Leo **Pass**（用户 2026-11-17 指令代记）；**IO 待复核补签**（C8 open）。
+- 签核：SA Leo **Pass**（用户 2026-11-17 指令代记）；IO Emily **Pass**（2026-11-17，用户告知已复核；代理代记，未附具体整改意见）。
 
 | # | Condition | Owner | Deadline | Status |
 |---|---|---|---|---|
-| C8 | IO 对 Revision delta（A9/A9b-N、Screen 13 头像交互、memberId 入参）复核并具名签核 | Emily（IO） | 合并 PR 前 | **open** |
+| C8 | IO 对 Revision delta（A9/A9b-N、Screen 13 头像交互、memberId 入参）复核并具名签核 | Emily（IO） | 合并 PR 前 | **closed（2026-11-17）** |
 
 ### Revision 签核区
 
 | Role | Name | Decision | Date |
 |---|---|---|---|
 | SA | Leo | **Pass** | 2026-11-17 |
-| IO | （待复核补签） | | |
+| IO | Emily | **Pass** | 2026-11-17 |
 
-**Revision Decision: Conditional** —— 原 G1 Pass 仍覆盖原范围；Revision 待 C8 关闭后与其合并生效。
+**Revision Decision: Pass** —— C8 closed（2026-11-17）；G1 全程 Pass，原范围与 Revision 合并生效。

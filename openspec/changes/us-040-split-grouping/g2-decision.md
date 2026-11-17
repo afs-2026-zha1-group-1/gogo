@@ -49,7 +49,7 @@
 
 | id | 级别 | 发现 | 处置 |
 |---|---|---|---|
-| F1 | WARNING | G1 Revision（BQ-10 任意成员可改组）只记录 SA Leo Pass，IO Emily 的 C8 仍 open；本次实现与测试已按修订后 delta 落地 | 记录为**合并前必须关闭**项，owner Emily（IO）；不影响 G2 对已实现行为的验证结论 |
+| F1 | WARNING | G1 Revision（BQ-10 任意成员可改组）只记录 SA Leo Pass，IO Emily 的 C8 仍 open；本次实现与测试已按修订后 delta 落地 | **已关闭（2026-11-17）**：IO Emily 复核 Pass，C8 closed，G1 Revision 升为 Pass（见 `g1-decision.md`） |
 | F2 | WARNING | PR #117 与 base 冲突（main 已前进至 US-083-085 / US-086 归档） | **已关闭（2026-11-17）**：本地 merge origin/main `b0fbd79` → `ec810d7`，逐一解决 6 个冲突文件；delta 补入 main 新增的 3 个 Screen 11 场景（39 → **41**）；后端 356/356、前端 build 绿、validate --strict valid；待 push 后确认新 head CI |
 | F3 | WARNING | `design.md` 写 38 场景、DD16 `AssignmentRequest` 缺 `memberId`、DD17「9 例」与 detail 期望 4/0；`tasks.md` 2.3「10 例（含请求体不可移动他人）」、4.2 旧 DTO 签名、4.9「314/314」、对齐自检「38 场景」；`atdd-design.md` 38 场景/10 例；`registry.md`、`handoff.md` 10 例/38 场景/314 | 复核中已按当前代码（39 场景、11 例、`memberId?`、315/315、A=3/B=1）就地修正 design/tasks/atdd/registry/handoff；`dov-ac-review.md` 保留 G1 时口径并补 Revision 段落（不改已签署结论）；属口径同步，不改语义、不重开 G1 |
 | F4 | SUGGESTION | `SplitAssignmentApiTest` 类注释仍称「no request shape can move another member」；`useAssignGroup` 注释写「Moves the caller」 | **已处理（2026-11-17）**：两处注释改为「任意成员可移动任意成员（memberId 缺省为调用者；目标非成员 403）」 |
@@ -71,7 +71,7 @@
 
 | # | 项 | Owner | 说明 |
 |---|---|---|---|
-| 1 | G1 Revision C8：IO 对「任意成员改组 + 头像切组 + `memberId` 入参」复核并具名签核 | Emily（IO） | 未关闭前 G1 Revision 仍为 Conditional；G3 不得据以合并 |
+| 1 | G1 Revision C8：IO 对「任意成员改组 + 头像切组 + `memberId` 入参」复核并具名签核 | Emily（IO） | **已关闭 2026-11-17**：IO Emily 复核 Pass，Revision Decision = Pass |
 | 2 | PR #117 冲突解决 | Leo（SA） | **已关闭 2026-11-17**：merge `b0fbd79` → `ec810d7`；待 push 后确认新 head CI 双绿 |
 | 3 | 知识库对账（`tasks.md` 9.3） | SA / P5 | **已关闭 2026-11-17**：`tech-stack-plan.md` 新增 §24、`_LOG.md` 新增 A24 行 |
 

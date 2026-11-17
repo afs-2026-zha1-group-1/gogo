@@ -3,11 +3,11 @@
 - Gate: G3 (Merge & Archive)
 - Timestamp: 2026-11-17（草稿创建，+08:00）
 - Branch: `US-040-split-grouping-p0`；PR #117；当前 head `b32e9b4`（功能 head `3d4cf28`，其后仅文档）
-- 状态：**DRAFT / Decision = OPEN** —— Merge 与 Archive 均未执行，合并前仍有 1 项门禁未关闭（C8）
+- 状态：**DRAFT / Decision = OPEN** —— 合并与归档均未执行；C8 已于 2026-11-17 closed，进入合并阶段
 
 ## Inputs
 
-- G1：`g1-decision.md` —— Gate Pass（SA Leo + IO Emily，2026-11-17）；**Revision Conditional，C8「IO 复核任意成员改组 + 头像切组 + `memberId` 入参」仍 open**
+- G1：`g1-decision.md` —— Gate Pass（SA Leo + IO Emily，2026-11-17）；**Revision Pass**（C8 closed 2026-11-17，IO Emily 复核通过）
 - G2：`g2-decision.md` —— **Pass**（VL Leo，2026-11-17）；F1 并入合并前置，F2 冲突已解、F3 由 VL 修正、F4/F5 已处理、F6 接受
 - E1：`ci-report.md` —— head `3d4cf28` 双绿（run 44062093032 / 44062087362），PR `MERGEABLE / CLEAN`
 - Local verify：`docs/ai4se-plugins/20261117-162107-local-verify-report.md`（Overall Partial，E1 已补齐；E3 由 G2 关闭）
@@ -21,7 +21,7 @@
 | 项 | 状态 |
 |---|---|
 | PR #117 | OPEN、非 draft、head `b32e9b4`、`mergeStateStatus = CLEAN`、`mergeable = MERGEABLE` |
-| 合并前条件 | **C8 关闭**（IO Emily 补签 G1 Revision）；关闭后即可合并 |
+| 合并前条件 | **C8 已 closed（2026-11-17）**；可直接合并 |
 | 合并方式 | GitHub PR 合并（禁止直推 main）；合并后记录 `mergeCommit` SHA 于本记录 |
 | 其他依赖 | 无（US-083-085 / US-086 已在 main，本次已并入） |
 
@@ -57,7 +57,7 @@
 
 建议 **Pass**，但需同时满足：
 
-1. C8 关闭（IO Emily 对 Revision delta 与头像切组交互具名签核）；
+1. C8 关闭（已于 2026-11-17 closed，IO Emily 复核 Pass）；
 2. PR #117 已合并并记录 merge SHA；
 3. `openspec archive` 完成且归档目录/Living Spec/registry/handoff/change-summary 齐备。
 
