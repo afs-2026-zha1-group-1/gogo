@@ -1652,11 +1652,11 @@ No critical blocker. 可进入 P2 proposal-split。
 > milestones. Organizer invitation and details destinations invoke the
 > existing invitation POST on load. The changed boundary requires renewed
 > IO/SA alignment; see [US-061](requirements/US-061.md) and its
-> [proposal](../openspec/changes/us-061-view-trip-dashboard/proposal.md).
+> [proposal](../openspec/changes/archive/2026-11-17-us-061-view-trip-dashboard/proposal.md).
 
 > Historical impact analysis for the earlier active-only scope. The current
 > interim scope is recorded in [US-061](requirements/US-061.md) and the
-> [proposal](../openspec/changes/us-061-view-trip-dashboard/proposal.md).
+> [proposal](../openspec/changes/archive/2026-11-17-us-061-view-trip-dashboard/proposal.md).
 > US-058 integration and archive are deferred; the unsafe details destination
 > remains blocked until its separate fix is verified.
 

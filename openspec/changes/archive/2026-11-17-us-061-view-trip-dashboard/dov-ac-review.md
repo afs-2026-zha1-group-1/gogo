@@ -38,7 +38,7 @@ Reported human approval of the updated evidence is recorded in the
 |---|---|---|
 | AC: testable, observable and behavioral | Pass | Both delta specs specify member-only listing, source values, unavailable progress, navigation and explicit access/error outcomes. |
 | AC: negative and edge cases | Pass | The deltas cover empty lists, invalid/missing/denied requests, failed or incomplete reads and blocked unsafe details navigation. The [ATDD design](atdd-design.md) adds isolation and no-write checks; [tasks](tasks.md) cover stale responses. |
-| DoV: scope and traceability | Pass | The [proposal](proposal.md), [deltas](specs/trip-dashboard/spec.md), [shell delta](specs/app-shell/spec.md), [design](design.md) and [local requirement](../../../requirement-workspace/requirements/US-061.md) describe all member trips and unavailable progress. |
+| DoV: scope and traceability | Pass | The [proposal](proposal.md), [deltas](specs/trip-dashboard/spec.md), [shell delta](specs/app-shell/spec.md), [design](design.md) and [local requirement](../../../../requirement-workspace/requirements/US-061.md) describe all member trips and unavailable progress. |
 | DoV: interim scope decisions | Pass | The user selected the interim scope, reuse of existing session authentication and US-061 before later US-066 reconciliation. Completion filtering, progress integration and archive are deferred; details remain blocked until safe. |
 | DoV: implementation and acceptance | Not assessed | Acceptance still requires actual authentication and owning reads, isolation, browser checks and no-write evidence. No upstream delivery or implementation is claimed. |
 

@@ -11,7 +11,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function projectFiles(dir) {
   // Ask Git so tracked files remain checked even when an ignore rule matches.
   const names = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], { cwd: dir, encoding: 'utf8' });
-  return [...new Set(names.split('\0').filter(Boolean))].sort().map(name => {
+  const deleted = new Set(execFileSync('git', ['ls-files', '-z', '--deleted'], { cwd: dir, encoding: 'utf8' }).split('\0').filter(Boolean));
+  return [...new Set(names.split('\0').filter(name => name && !deleted.has(name)))].sort().map(name => {
     const full = path.join(dir, name);
     assert.ok(fs.lstatSync(full).isFile(), `Non-portable project entry: ${name}`);
     return full;
@@ -71,6 +72,20 @@ test('Git-ignored IDE files are excluded while force-tracked files remain checke
   }
 });
 
+test('project inventory excludes tracked files deleted from the worktree', () => {
+  const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'ai4se-deleted-'));
+  try {
+    execFileSync('git', ['init', '--quiet', '--template='], { cwd: temporary });
+    fs.writeFileSync(path.join(temporary, 'moved.md'), 'Archived\n');
+    execFileSync('git', ['add', 'moved.md'], { cwd: temporary });
+    fs.unlinkSync(path.join(temporary, 'moved.md'));
+    fs.writeFileSync(path.join(temporary, 'archive.md'), 'Archived\n');
+    assert.deepEqual(projectFiles(temporary).map(file => path.basename(file)), ['archive.md']);
+  } finally {
+    fs.rmSync(temporary, { recursive: true, force: true });
+  }
+});
+
 test('shared agent assets retain working helpers and project skills after relocation', () => {
   const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'ai4se-relocation-'));
   const clone = path.join(temporary, 'clone with spaces');
@@ -120,9 +135,33 @@ test('shared agent assets retain working helpers and project skills after reloca
 });
 
 test('KB lint placeholder is an explicit non-blocking skip', () => {
-  const output = execFileSync('bash', [path.join(root, 'scripts/kb-lint.sh')], {
-    cwd: root,
+  const output = execFileSync('bash', ['kb-lint.sh'], {
+    cwd: path.join(root, 'scripts'),
     encoding: 'utf8',
   });
   assert.equal(output, 'SKIP: KB lint is not configured for this project.\n');
+});
+
+test('KB lint runs after checkout with Windows automatic line endings', () => {
+  const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'ai4se-kb-checkout-'));
+  try {
+    execFileSync('git', ['init', '--quiet', '--template='], { cwd: temporary });
+    execFileSync('git', ['config', 'core.autocrlf', 'true'], { cwd: temporary });
+    fs.mkdirSync(path.join(temporary, 'scripts'));
+    fs.copyFileSync(path.join(root, 'scripts/kb-lint.sh'), path.join(temporary, 'scripts/kb-lint.sh'));
+    if (fs.existsSync(path.join(root, '.gitattributes'))) {
+      fs.copyFileSync(path.join(root, '.gitattributes'), path.join(temporary, '.gitattributes'));
+    }
+    execFileSync('git', ['add', '.'], { cwd: temporary });
+    const checkout = path.join(temporary, 'checkout');
+    fs.mkdirSync(checkout);
+    execFileSync('git', ['checkout-index', '--all', `--prefix=${checkout}${path.sep}`], { cwd: temporary });
+    const output = execFileSync('bash', ['kb-lint.sh'], {
+      cwd: path.join(checkout, 'scripts'),
+      encoding: 'utf8',
+    });
+    assert.equal(output, 'SKIP: KB lint is not configured for this project.\n');
+  } finally {
+    fs.rmSync(temporary, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  }
 });

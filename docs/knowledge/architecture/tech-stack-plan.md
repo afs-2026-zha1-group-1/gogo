@@ -544,3 +544,27 @@ US-040（issue #84；PR #117）G2 Pass（VL Leo），待 G1 Revision C8（IO）�
 - 后端/数据：**零迁移、零新依赖，未改 `SecurityConfig`**（splits 维持 `permitAll` + `MemberGuard`）。
 - 验证：后端 356/356（合并 main 后）、前端 typecheck/build 绿、E2E 12 行 Pass、E1 run 44046339433 双绿。
 - 残留：TS-1 陈旧路线提示为常驻（未记录路线生成版本）；存量单人 active 草稿仍不可生成/确认。
+
+## 25. Landed reconciliation — US-061 trip dashboard (archived 2026-11-17)
+
+US-061 shipped in PR #118, merge `2c67247`. The living specifications add
+`trip-dashboard` and update `app-shell`.
+
+- **Frontend:** `#/` displays the signed-in member's current-trip overview or
+  an empty/error state; `#/dashboard/trips/<id>` opens a selected-trip overview
+  without persisting that selection. The dashboard composes existing reads for
+  role-specific planning milestones, recommendations and destination links.
+  Reunion and completion remain unknown.
+- **API and data:** no production backend endpoint or migration was added.
+  The dashboard reuses `GET /api/trips/current`, `GET /api/trips/{id}`,
+  `GET /api/trips/{id}/main-plan/inputs`, `GET /api/trips/{id}/main-plan`
+  and `GET /api/trips/{id}/split-draft`; it stores no dashboard progress.
+  Organizer navigation to invitation or trip-details pages can invoke the
+  existing `POST /api/trips/{id}/invitation`, so destination navigation is not
+  necessarily read-only.
+- **Testing tooling:** Playwright was added as a development dependency, with
+  an isolated browser-test runner. Earlier local and CI evidence does not
+  establish final-revision verification; see the archived change summary.
+- **Decision status:** the revised-scope G1 and G2 decisions remain pending.
+  The user confirmed merge readiness and requested that incomplete tasks not
+  block archival; this does not represent gate approval.
