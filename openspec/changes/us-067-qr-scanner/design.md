@@ -205,6 +205,27 @@ Not applicable — frontend-only, no database or API contract changes. Rollback
 = revert the frontend commit; the backend `InvitationApiTest` remains green
 either way.
 
+## D11 - Close target and member direct-notice (2026-11-17 user revisions)
+
+Supersedes D2's restore-origin close and extends the scan→join hand-off:
+
+- **Close = home.** The scanner app-bar × always sets `#/` (dashboard). The
+  `from` prop, `Route` scan `from` field and App `lastNonScanHash` tracker are
+  removed as obsolete. User ruling: closing the scanner returns to the home
+  page regardless of origin.
+- **Member direct-notice.** `GET /api/invitations/{token}` preview additively
+  carries `tripId` and `viewerMember` (computed for the signed-in viewer only;
+  guests get `viewerMember=false`). The Join page renders the already-in-team
+  notice directly for signed-in members (no preview/accept surface); the
+  organizer variant uses creator wording. Re-accepting after a fresh join shows
+  the same notice. Non-members/guests keep the existing preview+accept flow.
+- **SQLite single-connection pitfall.** The membership probe must run after
+  the preview query releases its connection; nesting `trips.isMember` inside
+  the RowMapper deadlocks the pool (30s CannotGetJdbcConnection).
+- Verification: backend 364/364 (incl. `memberPreviewReportsViewerMember`),
+  frontend build green; ×-home browser-verified; member notice user-manual
+  verified; organizer wording build-green pending user re-check.
+
 ## Open Questions
 
 *(none — remaining unknowns are implementation-level and will be settled in

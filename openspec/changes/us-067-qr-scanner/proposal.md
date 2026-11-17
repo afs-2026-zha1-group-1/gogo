@@ -73,3 +73,13 @@ matches the mobile-first UX direction.
 | Specs | `openspec/specs/invitations/spec.md` gains 1 ADDED requirement and `openspec/specs/app-shell/spec.md` gains 1 MODIFIED requirement after archive |
 | Requirement source | `requirement-workspace/requirements/US-067.md` |
 | Impact brief | `requirement-workspace/impact-brief.md` §US-067 |
+
+## Revisions (2026-11-17, user rulings post-P4)
+
+- Scanner close (×) always returns to the home page `#/`; the restore-origin
+  mechanism (D2/S-5) and its `from` plumbing are removed.
+- Scan→join hand-off: signed-in existing members land directly on an
+  already-in-team notice (organizer wording for the creator); preview gains
+  additive `tripId`/`viewerMember` for the signed-in viewer only. Guests and
+  non-members keep the existing preview+accept flow. See design D11, tasks
+  group 11, atdd S-5/S-6/S-7.

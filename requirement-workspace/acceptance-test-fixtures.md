@@ -245,6 +245,13 @@ fixtures below are **decoded text values** the scanner must accept or reject.
 The `<app-origin>` placeholder is `http://localhost:5173` on a dev machine
 (vite proxy forwards `/api` to `:8080`).
 
+**2026-11-17 revision contracts:** scanner × closes to `#/` from any origin
+(no restore state). The scan→join hand-off: `GET /api/invitations/{token}`
+additively carries `tripId` and `viewerMember` (true only for a signed-in
+viewer who is already a member; guests/non-members false); such viewers land
+directly on the already-in-team notice (organizer wording for the creator),
+while non-members keep preview+accept. No new endpoint or migration.
+
 ### Reused invitation state inputs (from REQ-004)
 
 | Case | Scanner behavior | Backed by REQ-004 outcome |
