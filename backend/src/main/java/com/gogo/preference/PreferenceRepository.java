@@ -44,6 +44,16 @@ public class PreferenceRepository {
                 .update();
     }
 
+    // US-026 keeps the submission row as the source of truth; the main-plan read projection still
+    // reads the scaffold trip_member columns, so a real submission projects readiness onto them
+    // here instead of duplicating the flag in every write path.
+    public void markReady(long tripId, long userId) {
+        jdbc.sql("UPDATE trip_member SET ready = 1, preference_revision = preference_revision + 1 "
+                        + "WHERE trip_id = ? AND user_id = ?")
+                .params(tripId, userId)
+                .update();
+    }
+
     public List<StoredPreference> membersOf(long tripId, String kind) {
         return jdbc.sql("SELECT m.user_id, p.payload "
                         + "FROM trip_member m "
