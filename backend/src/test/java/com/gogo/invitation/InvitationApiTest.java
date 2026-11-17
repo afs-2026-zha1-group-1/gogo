@@ -170,6 +170,7 @@ class InvitationApiTest {
         JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
         org.junit.jupiter.api.Assertions.assertTrue(body.get("joined").asBoolean());
         org.junit.jupiter.api.Assertions.assertFalse(body.get("alreadyMember").asBoolean());
+        org.junit.jupiter.api.Assertions.assertEquals(tripId, body.get("tripId").asLong());
         org.junit.jupiter.api.Assertions.assertTrue(isMember(5));
         org.junit.jupiter.api.Assertions.assertEquals(before + 1, memberCount());
         mockMvc.perform(get("/api/trips/" + tripId).with(TestAuth.asUser("5")))

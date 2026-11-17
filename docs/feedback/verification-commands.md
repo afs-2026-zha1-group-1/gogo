@@ -38,8 +38,9 @@ is the success case. A match, or a non-zero exit, is a failure.
 # CI workflow parses and declares exactly the two expected jobs
 python -c "import yaml; d=yaml.safe_load(open('.github/workflows/ci.yml')); j=sorted(d['jobs']); assert j==['backend','frontend'], j; print('ci jobs:', j)"
 
-# CI runs on pushes to main and pull requests targeting main
-python -c "import yaml; d=yaml.load(open('.github/workflows/ci.yml'), Loader=yaml.BaseLoader); assert 'main' in d['on']['push']['branches']; assert 'main' in d['on']['pull_request']['branches']; print('ci triggers: main push and pull request')"
+# CI runs on every branch push (main itself is PR-only per `.githooks/pre-push`)
+# and on pull requests targeting main
+python -c "import yaml; d=yaml.load(open('.github/workflows/ci.yml'), Loader=yaml.BaseLoader); p=d['on']['push']; assert p is None or 'branches' not in p, p; assert 'main' in d['on']['pull_request']['branches']; print('ci triggers: any-branch push + pull request to main')"
 ```
 
 ## Runtime

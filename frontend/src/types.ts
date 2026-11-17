@@ -23,6 +23,24 @@ export interface Trip {
   mainPlanConfirmed?: boolean
 }
 
+export interface TripListItem {
+  id: number
+  name: string
+  destination: string
+  startDate: string
+  endDate: string
+  organizer: boolean
+  mainPlanConfirmed: boolean
+}
+
+export interface TripListResponse {
+  trips: TripListItem[]
+}
+
+export interface CurrentTripResponse {
+  tripId: number | null
+}
+
 export interface InvitationPreview {
   tripName: string
   destination: string
@@ -35,7 +53,6 @@ export interface AcceptResult {
   joined: boolean
   alreadyMember: boolean
   tripId: number
-  tripName: string
 }
 
 export interface InvitationIssue {
@@ -73,12 +90,15 @@ export type ApiResult<T> =
       data: (ApiError & Partial<T>) | null
     }
 
-export type TabId = 'dashboard' | 'trips' | 'split' | 'members'
+export type TabId = 'dashboard' | 'trips' | 'split' | 'members' | 'account'
 
 export type Route =
   | { page: 'home' }
   | { page: 'login' }
-  | { page: 'trips-empty' }
+  | { page: 'register' }
+  | { page: 'account' }
+  | { page: 'my-trips' }
+  | { page: 'trips-current' }
   | { page: 'create' }
   | { page: 'split' }
   | { page: 'members' }
@@ -89,10 +109,11 @@ export type Route =
   | { page: 'scan'; from: string | null }
   | { page: 'preferences'; tripId: number }
 
-// login, join, main-plan, preference and scan screens are full-page flows
-// without the bottom TabBar. 'scan' additionally owns its own app-bar close
-// control, so it must not appear in TAB_FOR_PAGE (Record<InAppPage, TabId>).
+// login, registration, join, main-plan, preference and scan screens are
+// full-page flows without the bottom TabBar. 'scan' additionally owns its own
+// app-bar close control, so it must not appear in TAB_FOR_PAGE
+// (Record<InAppPage, TabId>).
 export type InAppPage = Exclude<
   Route['page'],
-  'join' | 'login' | 'main-plan' | 'main-plan-inputs' | 'scan' | 'preferences'
+  'join' | 'login' | 'register' | 'main-plan' | 'main-plan-inputs' | 'scan' | 'preferences'
 >

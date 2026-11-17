@@ -1,41 +1,56 @@
 # app-shell Specification
 
 ## Purpose
-Give every in-app route one mobile-scaled shell with a persistent bottom dock
-(仪表盘 / 行程 / 分队 / 成员) so a traveler moves between the main areas without
-losing context or identity, while existing home, create, details and invitation
-behavior is placed under the shell unchanged, the 分队 tab leads to the shipped
-split entry, the 成员 tab renders the trip roster, and invited guests joining by
-link never see in-app navigation.
+Give every signed-in in-app route one mobile-scaled shell with a persistent
+bottom dock (仪表盘 / 行程 / 分队 / 成员 / 我的) so a traveler moves between the
+main areas, including My Account, without losing context or identity. The shell
+no longer carries a top-right identity or profile shortcut: the account name is
+shown on My Account and in the dashboard greeting. Existing home, create,
+details and invitation behavior stays under the shell unchanged, future areas
+stay honest text placeholders, and login, registration and invited guests
+joining by link render full-screen without in-app navigation.
+
 ## Requirements
+
 ### Requirement: Mobile shell frame
 
 The frontend SHALL render every signed-in in-app route inside a centered column
 at most 430 px wide and 100 dvh tall, with the page content scrolling above a
 fixed bottom dock and safe-area padding applied. The shell SHALL use the tokens
 and component language of `ui-design-reference` (the existing `app.css` token
-set). The shell SHALL show the authenticated account's display name read-only
-and SHALL NOT expose an identity switcher, seeded-user list or account actions.
-The login page and guest join surfaces SHALL render outside the shell without the
-dock. The shell itself SHALL NOT change create validation, trip-details
-permission, invitation panel or join behavior, or main-plan behavior;
-authentication and session ownership belong to the `auth` capability.
+set). The shell SHALL NOT render a shell-wide identity bar, an identity switcher,
+a seeded-user list or a top-right profile shortcut. The authenticated account's
+display name SHALL be shown on My Account and in the dashboard greeting, and
+account actions SHALL exist only on My Account. The login page, the registration
+page and guest join surfaces SHALL render outside the shell without the dock.
+The shell itself SHALL NOT change create validation, trip-details permission,
+invitation panel or join behavior, or main-plan behavior; authentication and
+session ownership belong to the `auth` capability.
 
 #### Scenario: An in-app route renders inside the frame
 
 - **WHEN** any of `#/`, the no-trip 行程 route, `#/trips/<id>`, `#/create`,
-  `#/split` or `#/members` renders for an authenticated traveler
+  `#/split`, `#/members` or `#/account` renders for an authenticated traveler
 - **THEN** the content is inside a centered column at most 430 px wide and
   100 dvh tall
 - **AND** the bottom dock is fixed below the scrolling content with safe-area
   padding
 - **AND** the dock does not obscure the page content or the home create entry
 
-#### Scenario: The identity switcher stays a scaffold in the shell
+#### Scenario: No shell-wide identity bar or profile shortcut
 
 - **WHEN** an authenticated traveler views any shell page
-- **THEN** no identity switcher or scaffold bar is present
-- **AND** the account's display name is shown read-only
+- **THEN** no identity switcher, scaffold bar or top-right profile shortcut is
+  present
+- **AND** the account display name is shown on My Account and in the dashboard
+  greeting
+- **AND** account actions (edit name, logout) exist only on My Account
+
+#### Scenario: My Account renders inside the shell
+
+- **WHEN** a signed-in traveler opens `#/account`
+- **THEN** My Account renders inside the shell with the 我的 tab active
+- **AND** the dock and safe-area padding remain available
 
 #### Scenario: Existing contracts are unchanged
 
@@ -46,21 +61,21 @@ authentication and session ownership belong to the `auth` capability.
 
 ### Requirement: Bottom dock navigation
 
-The shell SHALL show a bottom dock with exactly four tabs in the order
-仪表盘 / 行程 / 分队 / 成员, each with an icon and a text label. The active tab
-SHALL be visibly highlighted according to the current route: home → 仪表盘;
+The shell SHALL show a bottom dock with exactly five tabs in the order
+仪表盘 / 行程 / 分队 / 成员 / 我的, each with an icon and a text label. The active
+tab SHALL be visibly highlighted according to the current route: home → 仪表盘;
 the no-trip 行程 route, `#/trips/<id>` and `#/create` → 行程; `#/split` → 分队;
-`#/members` → 成员. Activating a tab SHALL update the hash route without a full
-page reload and SHALL keep the authenticated account. Browser back/forward SHALL
-follow the tab history without losing the authenticated account. Every tab page
-SHALL carry a unique visible heading or state so a text-only forward and reverse
-walk can identify each page.
+`#/members` → 成员; `#/account` → 我的. Activating a tab SHALL update the hash
+route without a full page reload and SHALL keep the authenticated account.
+Browser back/forward SHALL follow the tab history without losing the
+authenticated account. Every tab page SHALL carry a unique visible heading or
+state so a text-only forward and reverse walk can identify each page.
 
-#### Scenario: The dock shows four ordered tabs with an active highlight
+#### Scenario: The dock shows five ordered tabs with an active highlight
 
 - **WHEN** the shell renders on any signed-in in-app route
-- **THEN** the dock shows 仪表盘, 行程, 分队, 成员 in that order, each with an
-  icon and a text label
+- **THEN** the dock shows 仪表盘, 行程, 分队, 成员, 我的 in that order, each with
+  an icon and a text label
 - **AND** exactly the tab owning the current route is visibly highlighted
 
 #### Scenario: Tab switching updates the hash without reload and keeps identity
@@ -78,8 +93,8 @@ walk can identify each page.
 
 #### Scenario: Text-only forward and reverse walk identifies every page
 
-- **WHEN** the tabs are activated in order 仪表盘 → 行程 → 分队 → 成员 and then
-  in reverse, recording the visible heading or state each time
+- **WHEN** the tabs are activated in order 仪表盘 → 行程 → 分队 → 成员 → 我的 and
+  then in reverse, recording the visible heading or state each time
 - **THEN** every activation yields a unique visible heading or state
 - **AND** every page is reachable in both directions without screenshots or
   demo data
@@ -94,16 +109,30 @@ walk can identify each page.
 
 The 仪表盘 tab SHALL target `#/`, which SHALL be the default route for an
 authenticated traveler. The existing home content — greeting status, create entry
-and the read-only account name — SHALL render under the shell with 仪表盘
-active. No dashboard status aggregation is added by this change. A signed-out
-visitor SHALL be sent to the login page before this route renders.
+and a personalized greeting using the authenticated account's display name —
+SHALL render under the shell with 仪表盘 active. The greeting SHALL NOT use a
+hard-coded name and SHALL NOT append an organizer label; organizer badges SHALL
+remain where they describe a trip role. No top-right profile shortcut SHALL be
+rendered; the information control SHALL remain available and any scan control
+provided by another capability SHALL not be obscured. No dashboard status
+aggregation is added by this change. A signed-out visitor SHALL be sent to the
+login page before this route renders.
 
 #### Scenario: The default route shows the existing home under the shell
 
 - **WHEN** an authenticated traveler opens the default route `#/`
-- **THEN** the home content (greeting status, create entry, read-only account
-  name) renders inside the shell
+- **THEN** the home content (greeting status, create entry and account-name
+  greeting) renders inside the shell
 - **AND** the 仪表盘 tab is active
+
+#### Scenario: The greeting uses the account name without an organizer label
+
+- **GIVEN** an authenticated traveler whose display name is `Nina` and who
+  organizes a trip
+- **WHEN** the 仪表盘 page renders
+- **THEN** the greeting shows `Nina`
+- **AND** it does not append 组织者
+- **AND** organizer badges remain on the trip surfaces that describe that role
 
 #### Scenario: A signed-out visitor is sent to login first
 
@@ -116,62 +145,22 @@ visitor SHALL be sent to the login page before this route renders.
 - **THEN** it shows only the existing home content
 - **AND** no trip-status aggregation or list-all-trips data is displayed
 
-### Requirement: Trips tab placement and no-trip empty state
-
-The 行程 tab SHALL place the existing trip details screen (hero, information
-rows, organizer invitation panel) under the shell at `#/trips/<id>`, with its
-loading, denied and missing states unchanged. When no trip is selected, the
-行程 tab SHALL show a text empty state offering exactly two actions — 创建行程
-and 按编号打开行程 — and SHALL NOT invent trip data. 按编号打开行程 SHALL
-navigate to the existing `#/trips/<id>` details route; an unknown id SHALL
-surface the existing missing state. `#/create` SHALL be reachable from the
-shell, its back action SHALL return to 行程, and a successful create SHALL
-still navigate to `#/trips/<id>`. This change SHALL NOT add a list-all-trips
-endpoint or call.
-
-#### Scenario: Details render under the shell with 行程 active
-
-- **WHEN** a member opens `#/trips/<id>` for the fixture trip
-  `Singapore Friends Day`
-- **THEN** the existing details screen (hero, information rows, organizer
-  invitation panel) renders inside the shell
-- **AND** the 行程 tab is active
-- **AND** the loading, denied and missing states behave exactly as before
-
-#### Scenario: No trip selected shows the honest empty state
-
-- **WHEN** the 行程 tab is activated and the route carries no trip id
-- **THEN** a text empty state renders with a unique visible heading
-- **AND** it offers 创建行程 and 按编号打开行程
-- **AND** no trip name, member, route or status value is invented
-
-#### Scenario: Open-by-id reuses the details route
-
-- **WHEN** the traveler opens a trip by id from the empty state
-- **THEN** the app navigates to `#/trips/<id>` and the existing details flow runs
-- **AND** an id that does not exist surfaces the existing missing state
-
-#### Scenario: Create is reachable and returns to 行程
-
-- **WHEN** the traveler opens `#/create` from the shell and uses the back action
-- **THEN** the app returns to the 行程 tab
-- **AND** a successful create still navigates to `#/trips/<id>`
-
-#### Scenario: No trip listing is introduced
-
-- **WHEN** the 行程 tab and its empty state are exercised
-- **THEN** no list-all-trips endpoint is called or added
-
 ### Requirement: Guest join exclusion
 
-The shell SHALL render the login page and `#/join/<token>` — preview, accept,
-joined and closed states — and the unusable-invitation state full-screen without
-the bottom dock, so a guest is not shown in-app navigation before joining. The
-invitation preview SHALL stay public. Acceptance SHALL require an authenticated
-session: a signed-out guest who acts on the preview SHALL be sent to login, the
-same preview SHALL resume after login, and no membership SHALL be created until
-the guest explicitly accepts. The previous identity scaffold bar SHALL NOT be
-rendered, and join outcomes SHALL behave exactly as before this change.
+The shell SHALL render the login page, the registration page and
+`#/join/<token>` — preview, accept, joined and closed states — and the
+unusable-invitation state full-screen without the bottom dock, so a guest is not
+shown in-app navigation before joining. The invitation preview SHALL stay
+public. Acceptance SHALL require an authenticated session: a signed-out guest
+who acts on the preview SHALL be sent to login, the same preview SHALL resume
+after login, and no membership SHALL be created until the guest explicitly
+accepts. A signed-out guest MAY register an account instead of logging in; the
+pending invitation SHALL survive registration and resume after the subsequent
+login without automatically joining. After acceptance succeeds, the joined state
+SHALL offer a primary 进入行程 action targeting `#/trips/<id>` for the accepted
+trip and SHALL keep 返回首页 as a secondary action. The previous identity
+scaffold bar SHALL NOT be rendered, and join outcomes SHALL otherwise behave
+exactly as before this change.
 
 #### Scenario: A valid invitation opens full-screen without the dock
 
@@ -199,6 +188,28 @@ rendered, and join outcomes SHALL behave exactly as before this change.
 - **WHEN** the login page renders
 - **THEN** it is full-screen without the bottom dock
 - **AND** it exposes no in-app navigation or private trip data
+
+#### Scenario: The registration page has no dock
+
+- **WHEN** the registration page renders from the login page
+- **THEN** it is full-screen without the bottom dock
+- **AND** it exposes no in-app navigation or private trip data
+
+#### Scenario: Registration during an invitation resumes the preview after login
+
+- **GIVEN** a signed-out guest opened a valid invitation preview and chose to
+  register
+- **WHEN** registration succeeds and the guest then logs in
+- **THEN** registration establishes no session and consumes no invitation
+- **AND** after login the same `#/join/<token>` preview resumes
+- **AND** no membership is created until the guest explicitly accepts
+
+#### Scenario: Joined state opens the accepted trip
+
+- **WHEN** a guest acceptance succeeds and the joined state renders
+- **THEN** the primary action is 进入行程
+- **AND** activating it opens `#/trips/<id>` for the accepted trip
+- **AND** 返回首页 remains available as a secondary action
 
 ### Requirement: Tab content
 
@@ -233,3 +244,138 @@ order, active-tab rule and signed-in account bar SHALL remain unchanged.
 - **THEN** no demo member, route or status value is displayed
 - **AND** an outsider sees the permission-denied state with no member names
 
+### Requirement: Trip-context return links
+
+The split start screen SHALL provide a back action that returns to the trip
+details at `#/trips/<id>` for its trip, and the main plan screen SHALL return to
+the same trip details route from its back action. Returning through either link
+SHALL re-establish the resolved trip context so trip-scoped shell entries keep
+resolving that trip. These return actions SHALL use explicit in-app routes and
+SHALL NOT depend on the browser history length.
+
+#### Scenario: Split start back returns to the trip details
+
+- **WHEN** a member opens `/trips/<id>/split` from the trip details and
+  activates the back action
+- **THEN** the app renders the trip details for `<id>` under the shell
+- **AND** the resolved trip is `<id>` for subsequent members and split entries
+
+#### Scenario: Direct split entry back does not fall to home
+
+- **WHEN** a signed-in member opens `/trips/<id>/split` directly and activates
+  the back action
+- **THEN** the app renders the trip details for `<id>`
+- **AND** the dashboard is not rendered
+
+#### Scenario: Main plan back returns to the trip details
+
+- **WHEN** a member opens `#/trips/<id>/main-plan` from the trip details and
+  activates the back action
+- **THEN** the app renders the trip details for `<id>`
+
+### Requirement: Auth deep-link resume and route consistency
+
+Protected in-app routes SHALL send a signed-out visitor to the login page with
+the attempted in-app route preserved, and a successful login SHALL resume that
+route unless a pending invitation takes precedence. Only same-origin in-app
+paths SHALL be resumed; any other preserved value SHALL fall back to the default
+route. The login and register pages SHALL link to each other through the
+`/login` and `/register` routes.
+
+#### Scenario: Signed-out split deep link resumes after login
+
+- **WHEN** a signed-out visitor opens `/trips/<id>/split/boundaries` directly
+- **THEN** the login page opens
+- **AND** after successful login the boundaries screen for `<id>` renders
+
+#### Scenario: Pending invitation takes precedence
+
+- **WHEN** a signed-out guest acts on a valid invitation preview and logs in
+- **THEN** the same `#/join/<token>` preview resumes instead of any preserved
+  split route
+
+#### Scenario: Unsafe resume value is rejected
+
+- **WHEN** the preserved route value is not a same-origin in-app path
+- **THEN** login falls back to the default route
+- **AND** no external URL is opened
+
+#### Scenario: Auth pages link through router routes
+
+- **WHEN** a traveler activates 创建账号 on the login page or the back and
+  去登录 actions on the register page
+- **THEN** the app opens `/register` or `/login` respectively
+
+### Requirement: Current trip tab and my-trips list
+
+The 我的 page SHALL expose an entry titled 我的行程 opening `#/my-trips`, listing the caller's trips as cards without a trailing arrow. Activating a card SHALL set it as the current trip, highlight that card and show an 已选择 tag at the card's right edge without navigating. The 行程 tab SHALL target `#/trips`, rendering the current trip's details or an empty state linking to `#/my-trips`. `#/trips/<id>` SHALL keep opening details directly.
+
+#### Scenario: The account page exposes the my-trips entry
+
+- **WHEN** a signed-in traveler opens `#/account`
+- **THEN** an entry titled 我的行程 is visible
+- **AND** activating it opens `#/my-trips` inside the shell
+
+#### Scenario: The my-trips page lists the caller's trips
+
+- **WHEN** the traveler opens `#/my-trips`
+- **THEN** every row shows the trip name, destination and start–end dates with the created and ended markers
+- **AND** only trips the caller belongs to are listed
+- **AND** the page carries a unique visible heading
+- **AND** cards and empty states follow the `ui-design-reference` prototype visuals (`.qcard` / `.empty`)
+
+#### Scenario: Selecting a card tags it without navigating
+
+- **WHEN** the traveler activates a card in `#/my-trips`
+- **THEN** the selected trip becomes the caller's current trip on the server
+- **AND** that card is highlighted and shows an 已选择 tag at its right edge (no trailing arrow), staying on `#/my-trips`
+- **AND** any previously selected card loses its tag and highlight
+
+#### Scenario: The selected tag reflects the stored current trip
+
+- **WHEN** the traveler opens `#/my-trips` with a current trip already stored
+- **THEN** the matching card shows the 已选择 tag on first render
+- **AND** no other card shows it
+
+#### Scenario: The trips tab shows the current trip's details
+
+- **WHEN** the traveler activates the 行程 tab with a current trip set
+- **THEN** `#/trips` renders that trip's details screen under the shell with the 行程 tab active
+- **AND** the details' loading, denied and missing states behave as before
+
+#### Scenario: Without a current trip the trips tab guides to my-trips
+
+- **WHEN** the traveler opens `#/trips` and has no current trip
+- **THEN** an empty state renders with a unique visible heading
+- **AND** it offers a link to `#/my-trips`
+- **AND** no trip name, member, route or status value is invented
+
+#### Scenario: The current trip survives reload and re-login
+
+- **WHEN** the traveler reloads the app or signs in again on another device
+- **THEN** `#/trips` still shows the same current trip's details
+- **AND** switching to another account shows that account's own current trip, or its empty state
+
+#### Scenario: Details deep link still works
+
+- **WHEN** the traveler opens `#/trips/<id>` directly by URL
+- **THEN** the existing details flow runs for that id
+- **AND** an id that does not exist surfaces the existing missing state
+
+#### Scenario: Trip-scoped return links keep the trip context
+
+- **WHEN** a member activates the back link on the 成员 roster of a trip
+- **THEN** the app returns to that trip's details at `#/trips/<id>`
+- **AND** guidance shown when no trip is resolved targets `#/trips`
+
+#### Scenario: Create is reachable and returns to the trips tab
+
+- **WHEN** the traveler opens `#/create` from the shell and uses the back action
+- **THEN** the app returns to `#/trips`
+- **AND** a successful create still navigates to `#/trips/<id>`
+
+#### Scenario: No second list source is introduced
+
+- **WHEN** `#/my-trips` and `#/trips` are exercised
+- **THEN** the list comes only from the `trips` list read and the details only from the current-trip read plus the existing details read
+- **AND** no alternate list-all-trips endpoint or client-side cache is introduced

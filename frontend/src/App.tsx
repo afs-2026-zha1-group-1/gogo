@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
-import type { InAppPage, Route, TabId } from './types'
+import type { CurrentTripResponse, InAppPage, Route, TabId } from './types'
 import TabBar from './TabBar'
 import Home from './pages/Home'
 import CreateTrip from './pages/CreateTrip'
 import TripDetails from './pages/TripDetails'
-import TripsEmpty from './pages/TripsEmpty'
+import TripsList from './pages/TripsList'
+import CurrentTrip from './pages/CurrentTrip'
+import { api } from './api'
 import Join from './pages/Join'
 import MainPlan from './pages/MainPlan'
 import MainPlanInputs from './pages/MainPlanInputs'
@@ -12,6 +14,8 @@ import Scanner from './pages/Scanner'
 import PreferencesPage from './pages/PreferencesPage'
 import Members from './pages/Members'
 import LoginPage from './features/auth/LoginPage'
+import RegisterPage from './features/auth/RegisterPage'
+import AccountPage from './features/auth/AccountPage'
 import { useAuth } from './features/auth/AuthProvider'
 
 function parseRoute(hash: string): Route {
@@ -23,6 +27,8 @@ function parseRoute(hash: string): Route {
   const joinMatch = path.match(/^\/join\/([^/]+)$/)
   if (joinMatch) return { page: 'join', token: decodeURIComponent(joinMatch[1]) }
   if (path === '/login') return { page: 'login' }
+  if (path === '/register') return { page: 'register' }
+  if (path === '/account') return { page: 'account' }
   const mainPlanInputsMatch = path.match(/^\/trips\/(\d+)\/main-plan\/inputs$/)
   if (mainPlanInputsMatch) return { page: 'main-plan-inputs', tripId: Number(mainPlanInputsMatch[1]) }
   const mainPlanMatch = path.match(/^\/trips\/(\d+)\/main-plan$/)
@@ -31,7 +37,8 @@ function parseRoute(hash: string): Route {
   if (preferencesMatch) return { page: 'preferences', tripId: Number(preferencesMatch[1]) }
   const tripMatch = path.match(/^\/trips\/(\d+)$/)
   if (tripMatch) return { page: 'details', tripId: Number(tripMatch[1]) }
-  if (path === '/trips') return { page: 'trips-empty' }
+  if (path === '/my-trips') return { page: 'my-trips' }
+  if (path === '/trips') return { page: 'trips-current' }
   if (path === '/create') return { page: 'create' }
   if (path === '/split') return { page: 'split' }
   if (path === '/members') return { page: 'members' }
@@ -40,19 +47,13 @@ function parseRoute(hash: string): Route {
 
 const TAB_FOR_PAGE: Record<InAppPage, TabId> = {
   home: 'dashboard',
-  'trips-empty': 'trips',
+  'my-trips': 'account',
+  'trips-current': 'trips',
   details: 'trips',
   create: 'trips',
   split: 'split',
   members: 'members',
-}
-
-function AccountBar({ name }: { name: string }) {
-  return (
-    <div className="scaffold-bar">
-      <span className="scaffold-label">已登录 · {name}</span>
-    </div>
-  )
+  account: 'account',
 }
 
 export default function App() {
@@ -88,11 +89,28 @@ export default function App() {
     }
   }, [route])
 
-  // The bottom "行程" tab is the entry point to the main plan (design: tab ->
-  // US-037 review). Fall back to the empty list only when no trip is open.
-  const tripsHref = lastTripId != null ? `#/trips/${lastTripId}/main-plan` : '#/trips'
+  // US-071 revision: the current trip is server-side; seed lastTripId from it so the
+  // split tab and roster back links follow the account's selection.
+  useEffect(() => {
+    if (status !== 'signedIn' || !account) return
+    let active = true
+    api<CurrentTripResponse>('/api/trips/current')
+      .then((result) => {
+        if (active && result.ok && result.data?.tripId != null) setLastTripId(result.data.tripId)
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [status, account?.id, route.page])
+
+  // US-071: the bottom "行程" tab always opens the caller's trip list; trip-scoped
+  // pages (roster back, main plan) still use their own `#/trips/<id>` links.
+  const tripsHref = '#/trips'
+  const tripHref = lastTripId != null ? `#/trips/${lastTripId}` : '#/trips'
 
   if (route.page === 'login') return <LoginPage />
+  if (route.page === 'register') return <RegisterPage />
 
   if (route.page === 'join') {
     return (
@@ -121,7 +139,6 @@ export default function App() {
   if (route.page === 'scan') {
     return (
       <div className="app">
-        <AccountBar name={account.name} />
         <Scanner from={route.from} />
       </div>
     )
@@ -130,7 +147,6 @@ export default function App() {
   if (route.page === 'preferences') {
     return (
       <div className="app">
-        <AccountBar name={account.name} />
         <PreferencesPage tripId={route.tripId} />
       </div>
     )
@@ -138,7 +154,6 @@ export default function App() {
 
   return (
     <div className="app">
-      <AccountBar name={account.name} />
       <div className="shell-content">
         {route.page === 'home' && <Home />}
         {route.page === 'create' && <CreateTrip backHref={tripsHref} />}
@@ -147,7 +162,8 @@ export default function App() {
             navigation stays visible when users arrive from the "行程" tab. */}
         {route.page === 'main-plan' && <MainPlan tripId={route.tripId} />}
         {route.page === 'main-plan-inputs' && <MainPlanInputs tripId={route.tripId} />}
-        {route.page === 'trips-empty' && <TripsEmpty />}
+        {route.page === 'my-trips' && <TripsList selectable />}
+        {route.page === 'trips-current' && <CurrentTrip />}
         {route.page === 'split' && (
           <div className="screen">
             <header className="appbar">
@@ -182,8 +198,9 @@ export default function App() {
           </div>
         )}
         {route.page === 'members' && (
-          <Members tripId={lastTripId} tripsHref={tripsHref} />
+          <Members tripId={lastTripId} tripsHref={tripsHref} tripHref={tripHref} />
         )}
+        {route.page === 'account' && <AccountPage />}
       </div>
       <TabBar
         active={

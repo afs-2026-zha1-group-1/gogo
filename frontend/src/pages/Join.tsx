@@ -14,7 +14,7 @@ type JoinState =
   | { kind: 'failed'; message: string | undefined }
   | { kind: 'ready'; preview: InvitationPreview }
   | { kind: 'closed'; preview: InvitationPreview }
-  | { kind: 'joined'; preview: InvitationPreview; alreadyMember: boolean }
+  | { kind: 'joined'; preview: InvitationPreview; alreadyMember: boolean; tripId: number }
 
 function Screen({ children }: { children: ReactNode }) {
   return (
@@ -68,7 +68,7 @@ export default function Join({ token }: JoinProps) {
     if (state.kind !== 'ready') return
     if (status !== 'signedIn') {
       setPendingInvite(token)
-      window.location.assign('/#/login')
+      window.location.assign('/login')
       return
     }
     const preview = state.preview
@@ -80,12 +80,17 @@ export default function Join({ token }: JoinProps) {
         { method: 'POST' },
       )
       if (result.ok && result.data) {
-        setState({ kind: 'joined', preview, alreadyMember: result.data.alreadyMember })
+        setState({
+          kind: 'joined',
+          preview,
+          alreadyMember: result.data.alreadyMember,
+          tripId: result.data.tripId,
+        })
       } else if (result.status === 404) {
         setState({ kind: 'unusable' })
       } else if (result.status === 401) {
         setPendingInvite(token)
-        window.location.assign('/#/login')
+        window.location.assign('/login')
       } else if (!result.ok && result.status === 403 && result.data?.code === 'JOINING_CLOSED') {
         setState({ kind: 'closed', preview })
       } else {
@@ -161,7 +166,8 @@ export default function Join({ token }: JoinProps) {
               : '你现在是行程成员，可以查看完整行程信息。'}
           </p>
         </div>
-        <a className="btn btn-primary" href="#/" style={{ marginTop: 8 }}>返回首页</a>
+        <a className="btn btn-primary" href={`#/trips/${state.tripId}`} style={{ marginTop: 8 }}>进入行程</a>
+        <a className="btn btn-ghost" href="#/" style={{ marginTop: 8 }}>返回首页</a>
       </Screen>
     )
   }

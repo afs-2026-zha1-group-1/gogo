@@ -1,8 +1,9 @@
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './AuthProvider'
 
 export default function RequireAuth({ children }: { children: React.ReactNode }) {
   const { status } = useAuth()
+  const location = useLocation()
   if (status === 'checking') {
     return (
       <div className="screen">
@@ -10,6 +11,9 @@ export default function RequireAuth({ children }: { children: React.ReactNode })
       </div>
     )
   }
-  if (status !== 'signedIn') return <Navigate to="/login" replace />
+  if (status !== 'signedIn') {
+    const next = `${location.pathname}${location.search}${location.hash}`
+    return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />
+  }
   return <>{children}</>
 }

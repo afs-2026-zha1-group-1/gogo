@@ -213,15 +213,18 @@ class TripApiTest {
     }
 
     @Test
-    void noEditDeleteOrListRoutesExist() throws Exception {
+    void noEditOrDeleteRoutesExistAndListIsReadOnly() throws Exception {
         long id = seededTripId();
         mockMvc.perform(put("/api/trips/" + id).with(TestAuth.asUser("1"))
                         .contentType(MediaType.APPLICATION_JSON).content(FULL_BODY))
                 .andExpect(status().isMethodNotAllowed());
         mockMvc.perform(delete("/api/trips/" + id).with(TestAuth.asUser("1")))
                 .andExpect(status().isMethodNotAllowed());
+        // US-071 supersedes the former "no list route" rule: the collection is now a
+        // read-only member list, while edit/delete stay unsupported.
         mockMvc.perform(get("/api/trips").with(TestAuth.asUser("1")))
-                .andExpect(status().isMethodNotAllowed());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.trips").isArray());
     }
 
     @Test

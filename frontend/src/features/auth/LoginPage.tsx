@@ -3,6 +3,7 @@ import Icon from '../../Icons'
 import { useAuth } from './AuthProvider'
 
 const DEMO_PASSWORD = 'gogo-demo-2026'
+const LOGIN_EMAIL_KEY = 'gogo.login.email'
 const DEMO_ACCOUNTS = [
   { name: 'Alice', email: 'alice@example.com' },
   { name: 'Ben', email: 'ben@example.com' },
@@ -11,15 +12,40 @@ const DEMO_ACCOUNTS = [
   { name: 'Eve', email: 'eve@example.com' },
 ]
 
+/** Only a same-origin in-app path may be resumed after login. */
+function resumeTarget(): string | null {
+  const raw = new URLSearchParams(window.location.search).get('next')
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//')) return null
+  try {
+    const target = new URL(raw, window.location.origin)
+    if (target.origin !== window.location.origin) return null
+    if (target.pathname === '/login' || target.pathname === '/register') return null
+    return `${target.pathname}${target.search}${target.hash}`
+  } catch {
+    return null
+  }
+}
+
 export default function LoginPage() {
   const { status, pendingInvite, login } = useAuth()
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(LOGIN_EMAIL_KEY)
+      if (saved) {
+        sessionStorage.removeItem(LOGIN_EMAIL_KEY)
+        return saved
+      }
+    } catch {
+      /* storage unavailable */
+    }
+    return ''
+  })
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    if (status === 'signedIn' && !pendingInvite) window.location.assign('/')
+    if (status === 'signedIn' && !pendingInvite) window.location.assign(resumeTarget() ?? '/')
   }, [status, pendingInvite])
 
   async function submit(event: React.FormEvent) {
@@ -41,7 +67,7 @@ export default function LoginPage() {
       if (pendingInvite) {
         window.location.assign(`/#/join/${encodeURIComponent(pendingInvite)}`)
       } else {
-        window.location.assign('/')
+        window.location.assign(resumeTarget() ?? '/')
       }
     } catch {
       setError('无法连接服务器，请稍后重试。')
@@ -116,6 +142,9 @@ export default function LoginPage() {
                 {busy ? '正在登录…' : '登录'}
               </button>
             </form>
+            <p className="hint" style={{ marginTop: 12 }}>
+              还没有账号？<a href="/register">创建账号</a>
+            </p>
           </section>
           <p className="hint" style={{ marginTop: 14 }}>
             登录后会回到你的仪表盘；如果正在打开邀请，会先回到邀请预览，再由你确认加入。

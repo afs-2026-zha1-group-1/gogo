@@ -14,6 +14,7 @@ const TABS: Tab[] = [
   { id: 'trips', label: '行程', icon: 'list' },
   { id: 'split', label: '分队', icon: 'fork', href: '#/split' },
   { id: 'members', label: '成员', icon: 'users', href: '#/members' },
+  { id: 'account', label: '我的', icon: 'user', href: '#/account' },
 ]
 
 export default function TabBar({ active, tripsHref }: { active: TabId; tripsHref: string }) {

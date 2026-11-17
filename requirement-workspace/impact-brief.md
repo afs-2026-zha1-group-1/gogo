@@ -1202,6 +1202,127 @@ frontend bootstrap/login/guard → invitation resume + header-ignored verificati
 → full existing-acceptance re-run. Baseline: `origin/main` `f6419a5`, merged as
 `53bdcc6`. The story already exists as GitHub issue #38, so
 `/sdd:story-split` is Skipped.
+## 46. Requirement set
+
+REQ-009 — My Account、退出登录与注册（US-068 + US-069 + US-070，2026-11-16）
+
+| id | Path |
+|---|---|
+| REQ-009 | `requirement-workspace/requirements/REQ-009.md` |
+
+Supporting：`requirement-workspace/deep-dive.md` §REQ-009、
+`intents/2026-11-16-req-009.md`、`analysis/req-009-dor.md`、
+`acceptance-test-fixtures.md` §REQ-009。
+
+Mode：embedded at the end of `/sdd:pre-spec-req`（blocking OQs = 0，DoR
+BLOCKERs = 0）。Solution direction：在既有 `auth` 能力上 **add** 注册/资料
+读写/退出三类能力，**modify** `app-shell` 导航与身份展示；无新表、无新迁移。
+Deep-dive Phase 2.5 在范围内。
+
+## 47. As-is asset inventory (evidence paths)
+
+| Asset | Evidence | State |
+|---|---|---|
+| Living Spec — auth | `openspec/specs/auth/spec.md`（REQ-008 归档） | 仅凭据登录、会话、CSRF、受保护面；明确写"Registration, password change, reset and account creation SHALL NOT be exposed"与"Logout … belongs to US-069" |
+| Living Spec — app-shell | `openspec/specs/app-shell/spec.md` | 已登录姓名只读；无"我的"tab；右上角身份条/问候不在契约内 |
+| Backend auth | `backend/src/main/java/com/gogo/auth/{AuthController,SecurityConfig,AccountCredentialRepository,AccountPrincipal,AccountResponse,AuthErrorAdvice}.java` | login/me/csrf 三端点；logout 显式禁用；凭据仓库只读；无注册/改名 |
+| Database | `V2__create_trip.sql`、`V6__create_account_credential.sql` | `app_user(id,display_name)`；`account_credential(user_id,email UNIQUE,password_hash)`；迁移到 V6，V7 未占用 |
+| Frontend shell | `frontend/src/{App.tsx,TabBar.tsx,router.tsx}` | 4 个 tab；`AccountBar` 在 app-shell/main-plan 渲染；hash + React Router 双路由 |
+| Frontend auth | `frontend/src/features/auth/{AuthProvider,LoginPage,RequireAuth}.tsx` | login/refresh；无 register/logout/updateName；登录页无 Create account |
+| Name consumers | `frontend/src/pages/*`、`frontend/src/features/split/*` | 成员/邀请/偏好/路线标签显示姓名；split 有自己的"已登录 · 姓名"条 |
+| Tests | `backend/src/test/java/com/gogo/auth/*`、`.../{trip,invitation,mainplan}/**`、`.../hello/splits/**` | `TestAuth.asUser` 会话登录；auth 测试覆盖 login/me/csrf；无 register/logout/patch |
+| Fixtures | `acceptance-test-fixtures.md` §REQ-008 | 五个账号 + demo 密码 + 登录矩阵；无注册/退出/改名用例 |
+| Binding plan | `docs/knowledge/architecture/tech-stack-plan.md` §2、§14 | "MVP 不做账号体系/注册登录"；§14 记录 US-066 偏差 |
+| CI | `.github/workflows/ci.yml` | backend `mvn -B test`；frontend `npm ci && npm run build`；结构不变 |
+| Board | issues #40/#41/#43，Project #2 | 均 `Req Analysis`；#41/#43 → elian-jiang；#40 → DENGLU-OOCL |
+| Downstream | US-067（#39）、US-061、US-058/US-063 | 扫码、仪表盘聚合、行程完成/倒计时；本 change 不实现 |
+
+Baseline classification：brownfield account-lifecycle extension on top of the
+archived REQ-008 auth boundary；无第二 spec root。
+
+## 48. As-is → proposed delta
+
+| Touched asset | As-is (evidence) | Proposed delta |
+|---|---|---|
+| `openspec/specs/auth` | 登录/会话/CSRF；注册与退出被明确排除 | ADDED：注册账号（公开、统一隐私响应、事务写入）；账号资料读取/显示名更新；退出登录与会话失效 |
+| `openspec/specs/app-shell` | 4 tab；右上角只读姓名 | MODIFIED：新增"我的"tab；移除右上角身份条；仪表盘问候使用账号名且不追加"组织者"；注册页全屏；壳/dock/join 例外不变 |
+| Database | V6 凭据表；`app_user.display_name` | **无 schema 变更、无新迁移**；注册写两表同事务；改名写 `display_name` |
+| Backend auth | login/me/csrf；logout disabled；仓库只读 | ADD `POST /api/auth/register`、`POST /api/auth/logout`、`PATCH /api/auth/me`；仓库新增插入/改名；`SecurityConfig` permitAll 加 register、启用显式 logout |
+| Error contract | 扁平 `{code,message}`；auth advice 把不可读 JSON 统一映射 401 | 注册/改名校验 → 400 `INVALID_EMAIL`/`INVALID_NAME`/`INVALID_PASSWORD`；仍为扁平两字段；P3 调整 advice 作用域 |
+| Frontend API/auth | AuthProvider login/refresh | ADD register/logout/updateName；退出清状态；改名刷新账号；401 统一回登录 |
+| Frontend pages | 无注册页/My Account；登录页无注册入口 | ADD 全屏注册页（`#/register` + `/register`）、My Account（`#/account` + `/account`）；登录页 Create account |
+| Navigation | 4 tab；`AccountBar` 三处渲染 | ADD 第 5 个"我的"tab；REMOVE `AccountBar`；仪表盘问候读 `me`；split 身份条核对 |
+| Fixtures | REQ-008 账号/登录矩阵 | ADD §REQ-009：注册新账号、重复/并发、校验边界、改名、退出、邀请恢复 |
+| Tests | 无注册/退出/改名 | ADD auth 端点测试（注册成功/重复/并发/校验/改名/退出/CSRF/401）+ 名称联动断言；既有套件回归 |
+| Docs | README/workdir/stage reports | 补注册/退出/My Account 说明；归档时 tech-stack-plan 收敛注册偏差 |
+| CI | 两 job | 结构不变；后端测试数增加；前端 build 覆盖新页面 |
+
+## 49. Blast radius
+
+- 后端安全链：register 必须公开但受 CSRF；logout 需显式端点（当前被禁用）；
+  `PATCH /api/auth/me` 需会话 + CSRF。任何匹配器遗漏会表现为 401/403 而非业务错误。
+- 账号数据：注册在**同一事务**写 `app_user` + `account_credential`；唯一索引兜底
+  并发；改名只写 `display_name`；退出不写业务表。
+- 名称展示：所有既有姓名读取面自动生效（服务端读库）；前端需在改名后刷新
+  `me` 与相关查询，避免 React Query 缓存残留旧名。
+- 导航/壳：新增 tab 影响 430px 底部布局；移除 `AccountBar` 影响 app-shell、
+  main-plan、split 三处；仪表盘问候需账号名而非硬编码。
+- 数据库：零 schema 变更；V6 唯一索引与 BCrypt 种子不变；`app_user.id` 自增
+  rowid 依赖 SQLite 行为，测试需断言生成 id。
+- 测试：新增注册并发用例与退出会话断言；既有行程套件应不受影响（都通过会话登录）。
+- 协作：US-068 卡片当前在队友名下；页面/导航改动与其工作重叠，需在 P4 前对齐。
+
+## 50. Artifact impact
+
+- Specs：P2 在 `openspec/changes/us-068-070-account-register/specs/` 下新增
+  `auth` delta（ADDED 3 requirement）与 `app-shell` delta（MODIFIED 导航/身份；
+  可能按 P2 复核拆成两条 MODIFIED）。
+- Tests：新增注册/改名/退出端点测试与浏览器走查；既有 auth 测试扩展。
+- Fixtures：§REQ-009 账号、请求矩阵、边界值（1/30 名、5/6/72/73 字节密码、
+  重复/并发）。
+- Docs：README 运行说明（注册/退出/My Account）；workdir registry/handoff；
+  `docs/ai4se-plugins/` P1 报告。
+- KB：未配置；`scripts/kb-lint.sh` 保持文档化 SKIP。
+
+## 51. Dual-track notes
+
+三张 issue → 一个 change、一个垂直切片：账号记录 + My Account 表面 + 注册 +
+退出 + 名称联动。US-068 的页面是 US-069 退出动作与 US-070 新账号资料的共同
+载体；拆开会出现"有退出 API 无入口 / 有注册无资料页 / 有改名无页面"的半成品。
+`/sdd:story-split` Skipped：issue #40/#41/#43 已存在并在看板。
+US-068 卡片当前指派 `DENGLU-OOCL`；用户 2026-11-16 裁决并入本 change，
+P4 前确认卡片交接（流程事项，不改变需求）。
+
+## 52. Risks & blockers
+
+| id | Risk | Severity | Status |
+|---|---|---|---|
+| R48 | US-068 页面由队友卡片承载，本 change 实现会与其前端工作重叠 | collaboration, medium | 用户裁决并入；P4 前完成交接/协作确认。Owner IO/团队 |
+| R49 | 注册响应差异可能枚举邮箱 | security, accepted | 用户 2026-11-17 明确要求重复邮箱直接提示：新邮箱 `200 {"next":"login"}`、重复 `409 EMAIL_TAKEN`；接受邮箱枚举风险，记录为 G1 addendum 偏差，IO 复核待补。Owner IO/SA |
+| R50 | 并发注册产生重复账号 | data integrity, high | 单事务 + 唯一索引；冲突捕获映射为通用成功；夹具覆盖并发。Owner Dev |
+| R51 | BCrypt 只取前 72 字节，长密码被静默截断 | security, medium | 服务端按 72 字节拒绝；夹具覆盖 72/73 边界。Owner Dev |
+| R52 | 退出只清前端而未真正失效服务端会话 | security, high | 显式 `POST /api/auth/logout` 失效 session + 清 context/cookie；断言 `me` 401。Owner Dev |
+| R53 | `SecurityConfig` 当前禁用 logout，误启用 Spring 默认表单 logout 会改变错误面/重定向 | integration, medium | 自定义 JSON 端点，保持扁平错误；不启用 `formLogin`。Owner Dev/SA |
+| R54 | 注册/改名的不可读 JSON 被现有 advice 映射为 401 `INVALID_CREDENTIALS` | contract, medium | P3 调整 advice 作用域或新增处理，注册/改名返回 400 校验错误。Owner Dev |
+| R55 | 名称联动依赖前端缓存刷新，可能出现旧名残留 | UX, medium | 改名成功后以响应更新 auth 状态并失效相关查询；服务端姓名始终从库读取。Owner Dev |
+| R56 | 移除 `AccountBar` 影响 main-plan/split 页的头条与布局 | UI regression, medium | 统一替换；split 的"已登录 · 姓名"条一并核对；浏览器回归覆盖三处。Owner Dev |
+| R57 | issue 提到的 scan 控件当前不存在（US-067 未实现） | scope ambiguity, low | 本 change 只保留既有控件；不新增扫码；US-067 负责。Owner IO |
+| R58 | 新账号无成员关系，但行程页可能假设至少一个行程 | UX, low | 复用既有空态；US-070 AC8 明确无成员关系。Owner Dev |
+| R59 | 绑定计划写"MVP 不做注册登录" | doc/stack deviation | proposal 记录偏差；归档时按 `openspec/config.yaml` 收敛。Owner SA |
+| R60 | `app_user.id` 依赖 SQLite rowid 自增，测试/生产行为需一致 | implementation, low | 使用生成键读取；夹具断言唯一 id；不显式指定 id。Owner Dev |
+| R61 | 注册页在 CSRF 未 bootstrap 前提交会 403 | usability, medium | 沿用登录页的 `ensureCsrf`；表单提交前确保 token。Owner Dev |
+| R62 | 无注册限流/锁定，公开端点可被滥用 | security, deferred | 部署例外（OQ-13）；文档记录，不本 change 实现。Owner Dev/SA |
+| R63 | 改名后其他在线页面的姓名由下次渲染/刷新更新，非实时推送 | UX, low | 无实时通知需求；刷新即最新；AC 只要求展示使用最新名。Owner Dev |
+
+无 critical blocker 使 REQ-009 失效；split 可继续。
+
+## 53. Suggested split boundaries
+
+一个 change：`us-068-070-account-register`。`auth` ADDED 注册/资料读写/退出，
+`app-shell` MODIFIED 导航与身份展示。三张卡共享同一账号记录与 My Account
+表面，拆分会破坏独立可交付与端到端可验证；一个 change、一轮 G1/G2/G3 即可
+验证"改名/退出/注册"在既有行程域上的回归。
+
 # Impact brief — US-013 (appended 2026-11-16)
 
 - Mode: embedded at the end of `/sdd:pre-spec-req` (blocking OQs = 0, DoR

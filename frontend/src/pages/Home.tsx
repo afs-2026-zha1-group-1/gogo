@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../api'
 import Icon from '../Icons'
+import { useAuth } from '../features/auth/AuthProvider'
 import type { GreetingResponse } from '../types'
 
 export default function Home() {
+  const { account } = useAuth()
   const [greeting, setGreeting] = useState<string>('')
   const [error, setError] = useState<string>('')
 
@@ -22,7 +24,7 @@ export default function Home() {
         <div className="logo"><Icon name="branch" /></div>
         <div className="grow">
           <div className="title">我的行程</div>
-          <div className="sub">共享旅行，从这里开始</div>
+          <div className="sub">你好，{account?.name ?? '旅行者'}</div>
         </div>
         <a className="iconbtn" href="#/scan" aria-label="扫码加入行程"><Icon name="scan" /></a>
       </header>

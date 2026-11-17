@@ -387,6 +387,72 @@ hashes.
 | Login error message wording | Only `code = INVALID_CREDENTIALS` is contractual |
 | Exact idle timeout beyond the default | 30 minutes default; tests use a short configured timeout |
 | Demo password in UI | Never displayed; it is a fixture value documented here only |
+## REQ-009 — My Account, logout and registration (US-068 / US-069 / US-070)
+
+Reuses the five seeded accounts and the sample trip above. Registration fixtures
+below are **new test accounts only**; they are not seeded and must be created by
+the test run. All writes use one in-memory/isolated SQLite database per run.
+
+### Registration fixtures
+
+| field | valid value | boundary / invalid values |
+|---|---|---|
+| email | `nina@example.com` | `nina.example.com`（无 @）、``（空）、`  Nina@Example.COM  `（应归一化为成功） |
+| display name | `Nina` | `A`（1 字符，合法）、`123456789012345678901234567890`（30 字符，合法）、``（空）、`   `（纯空白）、`1234567890123456789012345678901`（31 字符） |
+| password | `nina2026`（8 字符） | `abcde`（5 字符）、6 字符（合法）、72 字节（合法）、73 字节（拒绝） |
+
+Duplicate-email sibling account: `alice@example.com` already exists (id 1).
+Concurrent case uses the same `nina@example.com` payload submitted twice in
+parallel.
+
+UI note (2026-11-17 reference): the registration page shows the name, email,
+password and confirmation password fields, a "至少 8 个字符" helper, a primary
+"创建账号" button and a secondary "已有账号？去登录" button. The UI requires at
+least 8 characters and a matching confirmation; the API keeps the 6–72 byte
+contract, so API fixtures may still use 6–7 byte passwords.
+
+### Requests
+
+| Case | Call | Expected |
+|---|---|---|
+| R1 register valid | `POST /api/auth/register` `{"email":"nina@example.com","name":"  Nina  ","password":"nina2026"}` + CSRF | 200, body exactly `{"next":"login"}`; exactly one new `app_user` with name `Nina` and one `account_credential`; hash is BCrypt (`$2`); no session cookie |
+| R2 duplicate email | R1 again, then with `"  NINA@Example.COM  "` | 409 with `code = EMAIL_TAKEN`; no second account row; registration page shows the duplicate dialog |
+| R3 concurrent duplicate | two parallel R1 submissions | one 200 `{"next":"login"}` and one 409 `EMAIL_TAKEN`; exactly one account row |
+| R4 invalid email | R1 with `nina.example.com` or missing email | 400 flat `{code,message}` (email-code); no row; no session |
+| R5 invalid name | R1 with `""`, `"   "`, or 31 chars | 400 flat `{code,message}` (name-code); no row |
+| R6 invalid password | R1 with 5 chars, then 73 bytes | 400 flat `{code,message}` (password-code); no row |
+| R7 service failure | force a persistence failure during registration | 5xx flat error; no partial `app_user`; retry creates exactly one account |
+| R8 register then login | R1, then `POST /api/auth/login` with the same email/password | 200 account projection; session established; dashboard opens; no verification step |
+| R9 new account profile | R1 + R8, then `GET /api/auth/me` and My Account | name `Nina`, email `nina@example.com`, zero trip memberships |
+| R10 invite resume | signed-out browser opens `#/join/<token>`, registers, then logs in | registration creates no session; after login the same preview resumes; no membership until explicit accept |
+| M1 profile read | signed-in `GET /api/auth/me` | 200 `{id,name,email}`; no password/hash |
+| M2 name update valid | `PATCH /api/auth/me` `{"name":"  Nina Chen  "}` + CSRF | 200 with name `Nina Chen`; `app_user.display_name` = `Nina Chen`; dashboard greeting/member/invitation/route labels show it; avatar initial (where rendered) is `N` |
+| M3 name boundary | 1-char name, then 30-char name | both 200 and persisted trimmed |
+| M4 name invalid | `""`, `"   "`, 31 chars | 400 flat error; stored name and all displays unchanged |
+| M5 other account | `PATCH /api/auth/me` with a body/path naming account 1 while signed in as Nina | no way to target account 1; Nina's own name is the only affected value; Alice unchanged |
+| M6 name update signed-out | `PATCH /api/auth/me` without a session | 401 `USER_REQUIRED`; no change |
+| M7 name update CSRF | M2 without `X-XSRF-TOKEN` | 403 `CSRF_INVALID`; name unchanged |
+| M8 name persistence | M2, then fresh `me` and a fresh login | latest name returned both times |
+| L1 logout | signed-in `POST /api/auth/logout` + CSRF | 204; no body; session cookie no longer authenticates; `GET /api/auth/me` → 401 `USER_REQUIRED`; protected page opens login |
+| L2 logout repeat/no session | repeat L1, and call logout without a session | 401 `USER_REQUIRED`; UI shows signed-out state without claiming a new success |
+| L3 logout CSRF | L1 without `X-XSRF-TOKEN` | 403 `CSRF_INVALID`; session still valid |
+| L4 logout failure | force a server failure during L1 | recoverable error shown; local auth state not falsely cleared |
+| L5 logout data intact | L1, then log in again | account, display name, memberships, organizer role, groups and trip data unchanged |
+| C1 navigation | signed-in shell | bottom nav has 我的; no top-right profile shortcut; existing info (i) control remains; no scan control added by this change |
+| C2 greeting | signed-in dashboard | greeting uses account name; no `组织者` suffix |
+| C3 account route guard | signed-out `#/account` and `/account` | login page; no profile data |
+| C4 already signed-in auth pages | signed-in `#/login`, `#/register`, `/login`, `/register` | dashboard `#/` opens |
+
+### Values deliberately not fixed (REQ-009)
+
+| Item | Why no value is set |
+|---|---|
+| Generated `app_user.id` for new accounts | Depends on prior rows in the isolated test DB; assert uniqueness/one-row, not a literal id |
+| BCrypt hash string | Salted per write; only the BCrypt format is contractual |
+| Session cookie value | Generated per session; tests capture it from the response |
+| Registered account's avatar color/style | No avatar upload; only the derived initial is contractual where an avatar exists |
+| Generic success message wording | Wire contract is `{"next":"login"}` at P1; exact UI copy is P3 |
+
 ## US-013 — members (US-013)
 
 Scope: the roster read for an existing trip. Reuses §Users and §Sample trip
@@ -443,3 +509,57 @@ contractual. Denial bodies contain no member identity, name or organizer value.
 | Trip id | Assigned by the database; tests read it from the create response or fixture |
 | Member display order beyond ascending `userId` | `userId` ascending is fixed for deterministic tests; visual grouping may vary |
 | Readiness, preference, budget or plan values | Out of scope; the projection must not contain them |
+
+## US-071 — 我的行程列表
+
+复用上面的 §Users 与 V2 种子行程（id=1）。除种子行外，再建三条 **test-only** 行程；不改产品迁移、不改种子行。
+
+| 行程 | id | organizer | 成员 | start | end | 用途 |
+|---|---|---|---|---|---|---|
+| `Singapore Friends Day`（种子） | 1 | Alice | Alice, Ben, Chloe, Daniel | 2026-12-05 | 2026-12-05 | 自建行、`organizer=true`、基准行 |
+| `Bali Weekend` | 测试创建 | Ben | Ben, Alice | 2026-12-08 | 2026-12-10 | 受邀行、`organizer=false` |
+| `Kyoto Autumn` | 测试创建 | Alice | Alice | 2026-11-01 | 2026-11-05 | 已结束（相对 2026-11-16）→ 排序最后 |
+| `Same-Day Start` | 测试创建 | Alice | Alice | 2026-12-05 | 2026-12-06 | 与种子行同日 → 按 id 升序 |
+
+Alice 的预期顺序（以 2026-11-16 为“今天”，2026-11-17 修订：**未结束在前、已结束最后**）：`Singapore Friends Day`(12-05, id=1) → `Same-Day Start`(12-05, id 更大) → `Bali Weekend`(12-08) → `Kyoto Autumn`(11-01，已结束)。同组内按 `start_date` 升序、同日按 `id` 升序。
+
+### Requests
+
+| Case | Call | Expected |
+|---|---|---|
+| L1 member list | `GET /api/trips` as Alice | `200`; `trips` 恰好 4 条，每行程一条，顺序同上 |
+| L2 same-day ordering | 同上（依赖种子行与 `Same-Day Start`） | 12-05 两条按 `id` 升序 |
+| L3 organizer flag | 同上 | 种子行 / `Kyoto Autumn` / `Same-Day Start` → `organizer=true`；`Bali Weekend` → `false` |
+| L4 empty account | `GET /api/trips` as Eve（无成员行） | `200`; `{"trips":[]}`；不虚构数据 |
+| L5 confirmed plan | 种子行 `main_plan_confirmed=1`（生产确认或 test-only） | 仍返回且 `mainPlanConfirmed=true`；不改变其他行 |
+| L6 finished trip | 同上（包含 `Kyoto Autumn`） | 仍返回同一字段集；**响应无 finished 字段**；邀请/主线/分队行为不变 |
+| L7 no session | `GET /api/trips` 无会话 | `401`; `code = USER_REQUIRED` |
+| L8 retired header | 仅 `X-User-Id: 1`，无会话 | `401`; `code = USER_REQUIRED` |
+| L9 read-only | `POST /api/trips`（合法 body） | `201`，仅新增一条；`PUT`/`DELETE /api/trips` 不改变数据 |
+| L10 outside trip still denied | `GET /api/trips/1` as Eve | 既有 `403 NOT_A_MEMBER`（回归，不进本变更断言） |
+
+### Wire projection
+
+| Projection | Fields |
+|---|---|
+| Trip list (`GET /api/trips`) | `trips` [{`id` (integer), `name` (string), `destination` (string), `startDate` (string `YYYY-MM-DD`), `endDate` (string `YYYY-MM-DD`), `organizer` (boolean), `mainPlanConfirmed` (boolean)}] ordered by ascending `startDate` then ascending `id` |
+
+`organizer` 表示当前调用者自己是否为该行程的创建者，不落库、不代表额外权限；成员名册的 `organizer` 语义不变。
+
+### Error contract
+
+| code | Status | Case |
+|---|---|---|
+| `USER_REQUIRED` | 401 | 无会话请求列表（L7、L8） |
+
+列表不新增其他错误码：不按 id 读取，故无 403/404 语义。
+
+### Values deliberately not fixed（US-071）
+
+| Item | Why no value is set |
+|---|---|
+| 列表页标题、“我创建的”/“已结束”徽标文案 | 展示层文案；契约是可见标题唯一 + 徽标可见性 |
+| 图标与行间距、徽标颜色 | 来自 `ui-design-reference` 与 `@theme` token，非 AC |
+| 测试创建的 id | 由数据库分配；断言从创建响应或 fixture 读取 |
+| 分页/搜索参数 | 本变更明确不做；传 `?page=1` 不得产生分页元信息 |
+| 错误 message 文本 | 只有 `code` 是契约 |

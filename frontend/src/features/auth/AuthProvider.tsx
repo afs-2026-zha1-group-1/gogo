@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../../api'
 import { ensureCsrf } from '../../lib/csrf'
 import type { ApiResult } from '../../types'
@@ -16,6 +17,9 @@ interface AuthValue {
   setPendingInvite: (token: string) => void
   clearPendingInvite: () => void
   login: (email: string, password: string) => Promise<ApiResult<Account>>
+  register: (email: string, name: string, password: string) => Promise<ApiResult<{ next: string }>>
+  logout: () => Promise<ApiResult<null>>
+  updateName: (name: string) => Promise<ApiResult<Account>>
   refresh: () => Promise<void>
 }
 
@@ -30,6 +34,7 @@ function readPending(): string | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient()
   const [status, setStatus] = useState<AuthStatus>('checking')
   const [account, setAccount] = useState<Account | null>(null)
   const [pendingInvite, setPendingInviteState] = useState<string | null>(readPending)
@@ -71,6 +76,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return result
   }, [])
 
+  const register = useCallback(async (email: string, name: string, password: string) => {
+    return api<{ next: string }>('/api/auth/register', {
+      method: 'POST',
+      body: { email, name, password },
+    })
+  }, [])
+
+  const logout = useCallback(async () => {
+    const result = await api<null>('/api/auth/logout', { method: 'POST' })
+    if (result.ok) {
+      setAccount(null)
+      setStatus('signedOut')
+    }
+    return result
+  }, [])
+
+  const updateName = useCallback(async (name: string) => {
+    const result = await api<Account>('/api/auth/me', {
+      method: 'PATCH',
+      body: { name },
+    })
+    if (result.ok && result.data) {
+      setAccount(result.data)
+      queryClient.invalidateQueries().catch(() => undefined)
+    }
+    return result
+  }, [queryClient])
+
   const setPendingInvite = useCallback((token: string) => {
     setPendingInviteState(token)
     try {
@@ -99,6 +132,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setPendingInvite,
         clearPendingInvite,
         login,
+        register,
+        logout,
+        updateName,
         refresh,
       }}
     >
