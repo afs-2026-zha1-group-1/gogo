@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../api'
 import Icon from '../Icons'
 import InvitationPanel from './InvitationPanel'
-import type { Trip } from '../types'
+import type { Trip, TripMemberList } from '../types'
 import { useAuth } from '../features/auth/AuthProvider'
 
 interface TripDetailsProps {
@@ -47,6 +47,8 @@ export default function TripDetails({ tripId }: TripDetailsProps) {
   }, [tripId])
 
   const [confirming, setConfirming] = useState(false)
+  const [splitNotice, setSplitNotice] = useState<string | null>(null)
+  const [enteringSplit, setEnteringSplit] = useState(false)
 
   async function confirmMain() {
     setConfirming(true)
@@ -58,8 +60,21 @@ export default function TripDetails({ tripId }: TripDetailsProps) {
     }
   }
 
-  function enterSplit() {
-    window.location.href = `/trips/${tripId}/split`
+  async function enterSplit() {
+    setSplitNotice(null)
+    setEnteringSplit(true)
+    try {
+      const { ok, data } = await api<TripMemberList>(`/api/trips/${tripId}/members`)
+      if (ok && data && data.members.length < 2) {
+        setSplitNotice(
+          `当前行程只有 ${data.members.length} 名成员。分队需要 A/B 两组各至少一人，至少两名成员才能进入分队规划。`,
+        )
+        return
+      }
+      window.location.href = `/trips/${tripId}/split`
+    } finally {
+      setEnteringSplit(false)
+    }
   }
 
   const appbar = (
@@ -202,9 +217,14 @@ export default function TripDetails({ tripId }: TripDetailsProps) {
           ) : (
             <div className="pill ok"><span className="dot" /> 主线已确认</div>
           )}
-          <button className="btn btn-primary" type="button" style={{ marginTop: 10 }} onClick={enterSplit}>
-            进入分队规划
+          <button className="btn btn-primary" type="button" style={{ marginTop: 10 }} onClick={enterSplit} disabled={enteringSplit}>
+            {enteringSplit ? '检查成员…' : '进入分队规划'}
           </button>
+          {splitNotice ? (
+            <p className="hint" style={{ marginTop: 8, color: '#b45309' }} role="alert">
+              {splitNotice}
+            </p>
+          ) : null}
         </section>
       </div>
     </div>

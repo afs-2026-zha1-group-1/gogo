@@ -77,6 +77,7 @@
 - [x] 11.1 Screen 15：终态（confirmed/cancelled）不再提供「去生成路线」，改为说明 + 「返回分队首页」；仅 active 且无路线时保留跳转
 - [x] 11.2 Screen 14：底部主按钮改为「前往复核并确认」；正文的「校验时间窗」降为 outline 次按钮（仅 active 显示）
 - [x] 11.3 404 诊断：无 envelope 的 404 映射为 `ENDPOINT_NOT_FOUND`，错误卡提示「后端需更新并重启」
+- [x] 11.4 成员不足前置拦截：行程详情「进入分队规划」点击时先查成员数（< 2 就地提示并阻止跳转）；Screen 11 与 Screen 13 同步阻断页并隐藏发起/生成按钮
 
 ## 对齐自检（Spec ↔ Design ↔ Tasks ↔ ATDD）
 | 检查项 | 结果 | 证据 |

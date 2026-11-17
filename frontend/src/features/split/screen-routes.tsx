@@ -30,6 +30,7 @@ export function ScreenRoutes() {
   const [notice, setNotice] = useState<string | null>(null)
   const detail = draft.data
   const myId = accountId == null ? null : String(accountId)
+  const tooFewMembers = membersQuery.data != null && membersQuery.data.length < 2
 
   const stopNames = new Map((detail?.mainPlanStops ?? []).map((stop) => [stop.id, stop.name]))
   const nameOf = (id: string | null) => (id ? (stopNames.get(id) ?? "未知节点") : "—")
@@ -37,7 +38,7 @@ export function ScreenRoutes() {
   const hasPair = routes.length === 2
   const boundariesSaved = detail?.windowMinutes != null
 
-  const action = (
+  const action = tooFewMembers ? null : (
     <>
       <Button
         variant="outline"
@@ -65,6 +66,23 @@ export function ScreenRoutes() {
         <LoadingState label="加载分组与路线…" />
       ) : draft.error ? (
         <ErrorState error={draft.error} onRetry={() => draft.refetch()} />
+      ) : tooFewMembers ? (
+        <EmptyState
+          icon={<IconUsers />}
+          title="无法分队：成员不足"
+          hint={`当前行程只有 ${membersQuery.data?.length ?? 0} 名成员。分队需要 A/B 两组各至少一人，至少两名成员才能继续。`}
+          action={
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                window.location.href = `/#/trips/${tripId}`
+              }}
+            >
+              返回行程详情
+            </Button>
+          }
+        />
       ) : !detail ? (
         <EmptyState
           icon={<IconBranch />}

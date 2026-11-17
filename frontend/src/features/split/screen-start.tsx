@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom"
-import { useSplitDraft, useStartDraft } from "./hooks"
+import { useSplitDraft, useStartDraft, useTripMembers } from "./hooks"
 import { SplitLayout } from "./split-layout"
 import { ErrorState, LoadingState } from "./states"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,10 +21,12 @@ export function ScreenStart() {
   const navigate = useNavigate()
   const draft = useSplitDraft(tripId)
   const start = useStartDraft(tripId)
+  const membersQuery = useTripMembers(tripId)
   const detail = draft.data
+  const tooFewMembers = membersQuery.data != null && membersQuery.data.length < 2
 
   const status = detail?.status
-  const action = status === "active" ? (
+  const action = tooFewMembers ? null : status === "active" ? (
     <Button className="flex-1" onClick={() => navigate(`/trips/${tripId}/split/boundaries`)}>
       下一步：选择边界 <IconArrowRight />
     </Button>
@@ -57,6 +59,30 @@ export function ScreenStart() {
         <ErrorState error={draft.error} onRetry={() => draft.refetch()} />
       ) : (
         <div className="flex flex-col gap-3">
+          {tooFewMembers ? (
+            <Card className="flex items-start gap-2.5 border-[#fde68a] bg-warn-soft p-3.5">
+              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-warn/15 text-warn [&_svg]:size-4">
+                <IconInfo />
+              </span>
+              <div className="min-w-0">
+                <div className="text-[13px] font-bold text-[#b45309]">无法分队：成员不足</div>
+                <p className="mt-0.5 text-[11.5px] leading-relaxed text-ink-2">
+                  当前行程只有 {membersQuery.data?.length ?? 0} 名成员。分队需要 A/B 两组各至少一人，请先在「成员」页邀请至少一名其他成员。
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-2"
+                  onClick={() => {
+                    window.location.href = `/#/trips/${tripId}`
+                  }}
+                >
+                  返回行程详情
+                </Button>
+              </div>
+            </Card>
+          ) : null}
+
           <Card className="flex items-start gap-2.5 border-brand-soft bg-brand-soft/40 p-3.5">
             <span className="grid size-7 shrink-0 place-items-center rounded-full bg-brand-soft text-brand-ink [&_svg]:size-4">
               <IconInfo />
