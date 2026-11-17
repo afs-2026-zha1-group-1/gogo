@@ -22,7 +22,7 @@
 | Command | Source | Exit | Summary |
 |---------|--------|------|---------|
 | 6 static/reverse checks (frontend no hard-coded greeting, no ORM/H2, lockfile host, CI jobs/triggers) | `docs/feedback/verification-commands.md` (probe runner) | 0 | 6/6 pass; runner log `20261117-090059-local-verify-run.log` |
-| `cd backend && mvn -B test` | `docs/feedback/verification-commands.md` Runtime | 0 | **238/238** tests pass (21 new auth tests + 3 validation UTs) |
+| `cd backend && mvn -B test` | `docs/feedback/verification-commands.md` Runtime | 0 | **279/279** tests pass after merging `origin/main` `7eafbcb` (includes 21 new auth tests + 3 validation UTs and main’s US-013/REQ-019 tests) |
 | `cd frontend && npm ci && npm run build` | `docs/feedback/verification-commands.md` Runtime | 0 | Clean install + `tsc --noEmit` + vite build pass in an isolated copy (in-place `npm ci` would hit the concurrent 5173 dev server's Windows file lock; `npm run build` also passed in place, including after both UI redesigns) |
 | `openspec validate us-068-070-account-register --strict` | OpenSpec | 0 | valid |
 | Browser E2E (registration, duplicate, rename, logout, invite resume, both UI references, neutral reminder) | `docs/feedback/e2e-us-068-070.md` | — | 18 Pass / 1 Skipped (accept click blocked by browser-use classifier; existing US-010 contract) |
@@ -113,4 +113,10 @@ N/A — no waiver. Overall Pass.
 - API: duplicate email now returns `409 EMAIL_TAKEN` (flat error); a new email still returns `200 {"next":"login"}`. The transaction rolls back the partial `app_user` row.
 - Frontend: the registration page shows a 注册成功 dialog for a new email and a 该邮箱已注册 dialog for a duplicate, each with 去登录; the duplicate dialog also offers 修改邮箱. The traveler stays on the registration page until choosing 去登录.
 - This overrides US-070's original non-disclosure AC at the user's explicit direction (2026-11-17); email enumeration is accepted and recorded in the G1 addendum. IO re-confirmation is pending.
-- Backend tests updated: duplicate now expects 409 `EMAIL_TAKEN`; concurrency expects one 200 and one 409. Full backend suite **238/238**; frontend build green; `openspec validate --strict` valid. Overall remains **Pass**.
+- Backend tests updated: duplicate now expects 409 `EMAIL_TAKEN`; concurrency expects one 200 and one 409. Full backend suite **279/279** after merging `origin/main`; frontend build green; `openspec validate --strict` valid. Overall remains **Pass**.
+
+## Merge sync (2026-11-17)
+
+- Merged `origin/main` `7eafbcb` (US-066 G3 archive, US-049/050 archive, US-013 members, REQ-019 travel preferences, US-071 docs, PR-only-main rule) into `US-068-070-account-register`.
+- Conflicts resolved by keeping both sides: main’s Scanner/Preferences/Members additions plus this change’s registration/My Account routes and styles; requirement docs keep both the REQ-009 sections and main’s new sections.
+- Re-ran after merge: backend **279/279**, frontend build green, `openspec validate --strict` valid. Overall remains **Pass**.

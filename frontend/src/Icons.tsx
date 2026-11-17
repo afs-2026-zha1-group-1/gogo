@@ -70,6 +70,9 @@ const PATHS = {
   ),
   left: <path d="M15 5l-7 7 7 7" />,
   right: <path d="M9 5l7 7-7 7" />,
+  star: (
+    <path d="M12 3.6l2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 9.9l6.1-.7L12 3.6z" />
+  ),
   plus: <path d="M12 5.5v13M5.5 12h13" />,
   arrow: (
     <>
@@ -111,6 +114,56 @@ const PATHS = {
     <>
       <path d="M11 3l1.7 4.6L17.5 9.3l-4.8 1.7L11 15.6l-1.7-4.6L4.5 9.3l4.8-1.7L11 3z" />
       <path d="M18 14.5l.7 1.9 1.9.7-1.9.7-.7 1.9-.7-1.9-1.9-.7 1.9-.7.7-1.9z" />
+    </>
+  ),
+  lock: (
+    <>
+      <rect x="5" y="11" width="14" height="9" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+      <path d="M12 14.5v2" />
+    </>
+  ),
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 2" />
+    </>
+  ),
+  route: (
+    <>
+      <circle cx="6" cy="18.5" r="2.4" />
+      <circle cx="18" cy="5.5" r="2.4" />
+      <path d="M8.4 18.5H14a3.5 3.5 0 0 0 0-7h-4a3.5 3.5 0 0 1 0-7h5.6" />
+    </>
+  ),
+  scan: (
+    <>
+      <path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8" />
+      <path d="M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8" />
+      <path d="M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16" />
+      <path d="M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16" />
+      <path d="M4 12h16" />
+    </>
+  ),
+  camera: (
+    <>
+      <path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" />
+      <circle cx="12" cy="13" r="3.5" />
+    </>
+  ),
+  image: (
+    <>
+      <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" />
+      <circle cx="8.5" cy="10" r="1.8" />
+      <path d="M4 18l4.5-4.6a2 2 0 0 1 2.8 0L20 18" />
+    </>
+  ),
+  qrcode: (
+    <>
+      <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" />
+      <rect x="13.5" y="3.5" width="7" height="7" rx="1.5" />
+      <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" />
+      <path d="M13.5 13.5h3v3M20.5 13.5v7h-4M13.5 20.5h.01" />
     </>
   ),
 } satisfies Record<string, ReactNode>

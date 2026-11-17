@@ -4,8 +4,8 @@
 
 Let an identified caller create one shared trip with its name, destination,
 valid dates and optional start/end locations, let members read the same saved
-details, and carry the trip's main-plan confirmation state that decides whether
-invitation joining is still open.
+details and the member roster, and carry the trip's main-plan confirmation state
+that decides whether invitation joining is still open.
 
 ## Requirements
 
@@ -165,3 +165,125 @@ read this state to decide whether joining is open.
 - **THEN** no endpoint accepts a main-plan confirmation operation
 - **AND** the state can change only through the future US-037 flow or the
   documented test-only setup
+
+### Requirement: Trip member list read
+
+The system SHALL expose read-only `GET /api/trips/{id}/members` to an
+authenticated member, identified by the US-066 session principal rather than
+the retired `X-User-Id` header. The roster SHALL list each member once with
+`userId`, `displayName` and `organizer`, ordered by ascending `userId`; only
+the organizer is flagged. Non-members SHALL be denied without member identity,
+unknown trips reported separately, and no readiness, preference, budget or
+main-plan value exposed.
+
+#### Scenario: A member reads the roster
+
+- **WHEN** Ben, authenticated as user 2, requests the member list of
+  `Singapore Friends Day`
+- **THEN** the response status is 200
+- **AND** `tripId` is the requested trip's id
+- **AND** the roster contains exactly Alice (1), Ben (2), Chloe (3) and
+  Daniel (4), each exactly once, in ascending `userId` order
+- **AND** every row carries `userId` and `displayName`
+
+#### Scenario: The organizer is identified
+
+- **WHEN** an authenticated member reads the roster of `Singapore Friends Day`
+- **THEN** Alice's row has `organizer` equal to true
+- **AND** every other row has `organizer` equal to false
+- **AND** the organizer row is included in the roster like any other member
+
+#### Scenario: A non-member is denied
+
+- **WHEN** Eve, authenticated as user 5, who is not a member, requests the
+  member list of the same trip
+- **THEN** the response status is 403
+- **AND** the response body carries `code` equal to `NOT_A_MEMBER`
+- **AND** the body contains no `userId`, `displayName` or organizer value
+
+#### Scenario: Caller identity is missing
+
+- **WHEN** a request for the member list carries no authenticated session
+- **THEN** the response status is 401
+- **AND** the response body carries `code` equal to `USER_REQUIRED`
+- **AND** no member data is returned
+
+#### Scenario: The retired identity header does not authenticate
+
+- **WHEN** a request for the member list carries only an `X-User-Id` header
+  (blank, non-numeric or a seeded id) without an authenticated session
+- **THEN** the response status is 401
+- **AND** the response body carries `code` equal to `USER_REQUIRED`
+- **AND** no member data is returned
+
+#### Scenario: An unknown trip id is reported separately
+
+- **WHEN** an authenticated member or non-member requests the member list of a
+  trip id that does not exist
+- **THEN** the response status is 404
+- **AND** the response body carries `code` equal to `TRIP_NOT_FOUND`
+- **AND** no member data is returned
+
+#### Scenario: A joined member appears exactly once
+
+- **WHEN** Eve is recorded as a member through the invitation flow or the
+  documented test-only membership setup and then reads the member list
+- **THEN** the response status is 200
+- **AND** Eve appears exactly once in the roster
+- **AND** Alice is still the only row with `organizer` equal to true
+- **AND** repeated acceptance by the same user does not duplicate the row
+
+#### Scenario: Personal preference data is not exposed
+
+- **WHEN** a member reads the roster
+- **THEN** no readiness, preference, budget or main-plan field or value is
+  present in the response
+- **AND** the endpoint performs no write
+
+### Requirement: Trip detail main-plan navigation entry
+
+The trip detail page at `#/trips/<id>` SHALL display a navigation entry to the
+trip's main-plan view, positioned after the invitation section and before the
+split-planning section. The entry SHALL be visible to every authenticated trip
+member regardless of whether a main plan exists or has been confirmed. Activating
+the entry SHALL navigate to `#/trips/<id>/main-plan` without triggering any
+server-side mutation (no POST, PUT or DELETE). The main-plan page itself SHALL
+handle all six states (loading, ready, empty, denied, missing, failed) unchanged;
+this requirement adds no new state, API endpoint or permission rule.
+
+#### Scenario: Member sees the entry on trip detail
+
+- **WHEN** an authenticated member opens `#/trips/1` for a trip they belong to
+- **THEN** the page renders a section titled "主线方案" between the "邀请朋友"
+  section and the "分队规划" section
+- **AND** the section contains a visible "查看主线方案" navigation control
+
+#### Scenario: Member activates the entry and reaches the plan
+
+- **WHEN** a member activates "查看主线方案" on the trip detail page for trip 1
+- **THEN** the route changes to `#/trips/1/main-plan` without a full page reload
+- **AND** the main-plan page loads and displays its current state (ready with
+  timeline, empty with guidance, or error) using existing logic
+- **AND** no POST, PUT or DELETE request is issued by the navigation itself
+
+#### Scenario: Entry visible when no plan exists
+
+- **WHEN** a member opens trip detail for a trip that has no main-plan draft
+- **THEN** the "查看主线方案" entry is still visible and clickable
+- **AND** activating it shows the existing empty state on the main-plan page
+
+#### Scenario: Non-member or unsigned-in user cannot reach the plan
+
+- **WHEN** a user who is not a member of trip 1 navigates directly to
+  `#/trips/1/main-plan`
+- **THEN** the main-plan page shows the existing denied state with no plan data
+- **WHEN** an unsigned-in user attempts to reach `#/trips/1/main-plan`
+- **THEN** the existing login guard redirects to the login page
+
+#### Scenario: Return to trip detail after viewing
+
+- **WHEN** a member arrives at the main-plan page from trip detail and then
+  activates the trip-detail info button in the main-plan appbar
+- **THEN** the route returns to `#/trips/1` (the same trip's detail page)
+- **AND** the trip detail page re-renders in its ready state with the main-plan
+  entry still visible

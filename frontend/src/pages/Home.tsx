@@ -26,6 +26,7 @@ export default function Home() {
           <div className="title">我的行程</div>
           <div className="sub">你好，{account?.name ?? '旅行者'}</div>
         </div>
+        <a className="iconbtn" href="#/scan" aria-label="扫码加入行程"><Icon name="scan" /></a>
       </header>
       <div className="body">
         <section className="hero">
