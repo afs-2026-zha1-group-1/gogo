@@ -52,7 +52,7 @@
 
 - [x] 7.1 G1：IO Johnson + SA Johnson Pass（用户 2026-11-17 指令代记）
 - [x] 7.2 G2：VL Leo Pass（用户告知已确认）
-- [ ] 7.3 P4 收尾：push 分支并开 PR（需用户授权；不得直推 main）
-- [ ] 7.4 G3 合并与 CI 双绿确认（需 push/PR 授权）
-- [ ] 7.5 P5：`sdd:living-merge`（splits 3 MODIFIED + trips 1 MODIFIED）并从 `openspec/changes/` 归档
-- [ ] 7.6 知识库对账：`docs/knowledge/architecture/tech-stack-plan.md` + `docs/knowledge/_LOG.md`
+- [x] 7.3 P4 收尾：push 分支并开 PR #138（用户 2026-11-17 授权）
+- [x] 7.4 G3 合并与 CI 双绿确认：run 44112482366 / 44112533101 全绿，merge `3fcfbfc`
+- [x] 7.5 P5：`sdd:living-merge`（splits 4 MODIFIED + trips 1 MODIFIED）并从 `openspec/changes/` 归档
+- [x] 7.6 知识库对账：`docs/knowledge/architecture/tech-stack-plan.md` + `docs/knowledge/_LOG.md`
