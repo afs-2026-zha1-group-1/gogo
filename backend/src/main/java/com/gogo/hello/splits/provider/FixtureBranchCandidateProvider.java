@@ -2,16 +2,19 @@ package com.gogo.hello.splits.provider;
 
 import com.gogo.hello.splits.domain.PlanStop;
 import com.gogo.hello.splits.domain.RouteCandidate;
+import com.gogo.hello.splits.domain.RouteStep;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.stereotype.Component;
 
 /**
- * Fixed in-process fixture provider (design D12). Candidates are keyed by destination so a demo selecting 香港
- * or 伦敦 gets branch activities that belong to that city; any other destination keeps the original Singapore
- * pair A -> National Gallery Singapore (60/[15,20]/10) and B -> Gardens by the Bay (60/[20,20]/10). No external
- * network call and no HTTP client dependency; the boundary stops are accepted for interface compatibility but
- * the MVP returns fixed values. The failing-provider double for G2-N replaces this bean in tests.
+ * Fixed in-process fixture provider (design D12, US-089). Group A keeps following the confirmed main plan, so its
+ * candidate is derived from the main-plan stops inside the boundary pair (names, scheduled durations and the gaps
+ * between them); group B receives a destination-keyed synthetic activity so the two lanes differ. No external
+ * network call; the failing-provider double for G2-N replaces this bean in tests.
  */
 @Component
 public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
@@ -25,11 +28,53 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
     private static final String LONDON = "伦敦";
 
     @Override
-    public RouteCandidate candidateFor(String groupLabel, PlanStop departure, PlanStop reunion, String destination) {
-        String city = cityOf(destination);
-        Branch branch = branchFor(city, groupLabel);
+    public RouteCandidate candidateFor(String groupLabel, PlanStop departure, PlanStop reunion, String destination,
+            List<PlanStop> mainPlanStops) {
+        if ("A".equals(groupLabel)) {
+            return mainLineCandidate(groupLabel, departure, reunion, mainPlanStops);
+        }
+        Branch branch = branchFor(cityOf(destination), groupLabel);
         return new RouteCandidate(groupLabel, branch.activityName(), branch.activityMinutes(),
-                branch.travelLegsMinutes(), branch.bufferMinutes());
+                branch.travelLegsMinutes(), branch.bufferMinutes(), List.of());
+    }
+
+    // Group A follows the confirmed itinerary: every main-plan stop from the departure (inclusive) to the reunion
+    // (exclusive), with the scheduled gaps as legs. The totals therefore equal the window exactly.
+    private static RouteCandidate mainLineCandidate(String groupLabel, PlanStop departure, PlanStop reunion,
+            List<PlanStop> mainPlanStops) {
+        int from = indexOf(mainPlanStops, departure.id());
+        int to = indexOf(mainPlanStops, reunion.id());
+        if (from < 0 || to <= from) {
+            throw new IllegalArgumentException("boundaries are not an ordered main-plan pair");
+        }
+        List<RouteStep> steps = new ArrayList<>();
+        List<Integer> legs = new ArrayList<>();
+        int activityMinutes = 0;
+        for (int index = from; index < to; index++) {
+            PlanStop stop = mainPlanStops.get(index);
+            int stayMinutes = minutes(stop.startAt(), stop.endAt());
+            steps.add(new RouteStep(stop.name(), stayMinutes));
+            activityMinutes += stayMinutes;
+            PlanStop next = index + 1 < to ? mainPlanStops.get(index + 1) : reunion;
+            legs.add(Math.max(0, minutes(stop.endAt(), next.startAt())));
+        }
+        return new RouteCandidate(groupLabel, "沿主线方案", activityMinutes, legs, 0, steps);
+    }
+
+    private static int indexOf(List<PlanStop> stops, String id) {
+        for (int index = 0; index < stops.size(); index++) {
+            if (stops.get(index).id().equals(id)) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    private static int minutes(Instant from, Instant to) {
+        if (from == null || to == null) {
+            return 0;
+        }
+        return (int) Duration.between(from, to).toMinutes();
     }
 
     private static Branch branchFor(String city, String groupLabel) {

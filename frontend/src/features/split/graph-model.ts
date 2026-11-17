@@ -23,6 +23,8 @@ export interface RouteInput {
   activityMinutes: number | null
   travelLegsMinutes: (number | null)[]
   bufferMinutes: number | null
+  /** Main-plan steps for the group that keeps the confirmed itinerary (backend RouteStep). */
+  steps?: { name: string; minutes: number }[] | null
 }
 
 export interface MainRow {
@@ -112,17 +114,24 @@ export function routeLabelsFor(routes: RouteInput[]): Record<RouteKey, string> {
   return labels
 }
 
-/** One route's branch nodes: activity -> travel (summed legs) -> buffer. Zero buffer is omitted. */
+/** One route's branch nodes: activity steps -> travel (summed legs) -> buffer. Zero buffer is omitted. */
 function branchRowsFor(route: RouteInput, key: RouteKey): BranchRow[] {
-  const rows: BranchRow[] = [
-    {
-      kind: "branch",
-      id: `${key}-activity`,
-      route: key,
-      title: route.activityName?.trim() || "活动",
-      meta: `活动 · ${formatMinutes(route.activityMinutes)}`,
-    },
-  ]
+  const steps = route.steps ?? []
+  const rows: BranchRow[] = steps.length > 0
+    ? steps.map((step, index) => ({
+        kind: "branch" as const,
+        id: `${key}-step-${index}`,
+        route: key,
+        title: step.name,
+        meta: `活动 · ${formatMinutes(step.minutes)}`,
+      }))
+    : [{
+        kind: "branch" as const,
+        id: `${key}-activity`,
+        route: key,
+        title: route.activityName?.trim() || "活动",
+        meta: `活动 · ${formatMinutes(route.activityMinutes)}`,
+      }]
   if (route.travelLegsMinutes.length > 0) {
     const missing = route.travelLegsMinutes.some((minutes) => minutes == null)
     const total = route.travelLegsMinutes.reduce<number>((sum, minutes) => sum + (minutes ?? 0), 0)

@@ -230,11 +230,12 @@ public class SplitDraftService {
                 .orElseThrow(() -> new ApiException(
                         ErrorCode.BOUNDARY_NOT_IN_MAIN_PLAN, "reunion stop is not in the confirmed main plan"));
         int capturedVersion = draft.draftVersion();
+        List<PlanStop> mainPlanStops = repository.findMainPlanStops(tripId, draft.mainPlanVersion());
         Map<String, RouteCandidate> candidates = new LinkedHashMap<>();
         try {
             for (String groupLabel : draft.groups().keySet()) {
                 candidates.put(groupLabel, provider.candidateFor(groupLabel, departure, reunion,
-                        repository.findDestination(tripId).orElse(null)));
+                        repository.findDestination(tripId).orElse(null), mainPlanStops));
             }
         } catch (RuntimeException ex) {
             throw new ApiException(ErrorCode.ROUTE_GENERATION_FAILED, "route generation failed for a group");
@@ -244,10 +245,11 @@ public class SplitDraftService {
         List<GroupRoute> routeViews = new ArrayList<>();
         for (Map.Entry<String, RouteCandidate> entry : candidates.entrySet()) {
             RouteCandidate candidate = entry.getValue();
-            durations.put(entry.getKey(), new RouteDurations(
-                    candidate.activityMinutes(), candidate.travelLegsMinutes(), candidate.bufferMinutes()));
+            durations.put(entry.getKey(), new RouteDurations(candidate.activityMinutes(),
+                    candidate.travelLegsMinutes(), candidate.bufferMinutes(), candidate.steps()));
             routeViews.add(new GroupRoute(entry.getKey(), candidate.activityName(), departure.id(), reunion.id(),
-                    candidate.activityMinutes(), candidate.travelLegsMinutes(), candidate.bufferMinutes()));
+                    candidate.activityMinutes(), candidate.travelLegsMinutes(), candidate.bufferMinutes(),
+                    candidate.steps()));
         }
         SplitDraftDocument updated = draft.withRoutes(durations, now);
         String updatedJson = toJson(updated);
@@ -318,7 +320,8 @@ public class SplitDraftService {
                 RouteDurations durations = entry.getValue();
                 String activityName = activities.get("split-" + label.toLowerCase(Locale.ROOT));
                 routes.add(new GroupRoute(label, activityName, departureStopId, reunionStopId,
-                        durations.activityMinutes(), durations.travelLegsMinutes(), durations.bufferMinutes()));
+                        durations.activityMinutes(), durations.travelLegsMinutes(), durations.bufferMinutes(),
+                        durations.steps()));
             }
         }
         return new SplitDraftDetailResponse(

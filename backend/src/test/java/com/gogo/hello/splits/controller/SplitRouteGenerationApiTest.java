@@ -41,10 +41,10 @@ class SplitRouteGenerationApiTest extends AbstractSplitApiTest {
 
     @BeforeEach
     void stubFixtureProvider() {
-        when(provider.candidateFor(eq("A"), any(), any(), any()))
-                .thenAnswer(inv -> fixture.candidateFor("A", inv.getArgument(1), inv.getArgument(2), inv.getArgument(3)));
-        when(provider.candidateFor(eq("B"), any(), any(), any()))
-                .thenAnswer(inv -> fixture.candidateFor("B", inv.getArgument(1), inv.getArgument(2), inv.getArgument(3)));
+        when(provider.candidateFor(eq("A"), any(), any(), any(), any()))
+                .thenAnswer(inv -> fixture.candidateFor("A", inv.getArgument(1), inv.getArgument(2), inv.getArgument(3), inv.getArgument(4)));
+        when(provider.candidateFor(eq("B"), any(), any(), any(), any()))
+                .thenAnswer(inv -> fixture.candidateFor("B", inv.getArgument(1), inv.getArgument(2), inv.getArgument(3), inv.getArgument(4)));
     }
 
     @Test
@@ -61,13 +61,13 @@ class SplitRouteGenerationApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.data.draftVersion").value(4))
                 .andExpect(jsonPath("$.data.routes.length()").value(2))
                 .andExpect(jsonPath("$.data.routes[0].groupLabel").value("A"))
-                .andExpect(jsonPath("$.data.routes[0].activityName").value("National Gallery Singapore"))
+                .andExpect(jsonPath("$.data.routes[0].activityName").value("沿主线方案"))
                 .andExpect(jsonPath("$.data.routes[0].departureStopId").value(cityHall))
                 .andExpect(jsonPath("$.data.routes[0].reunionStopId").value(merlion))
-                .andExpect(jsonPath("$.data.routes[0].activityMinutes").value(60))
-                .andExpect(jsonPath("$.data.routes[0].travelLegsMinutes[0]").value(15))
-                .andExpect(jsonPath("$.data.routes[0].travelLegsMinutes[1]").value(20))
-                .andExpect(jsonPath("$.data.routes[0].bufferMinutes").value(10))
+                .andExpect(jsonPath("$.data.routes[0].activityMinutes").value(75))
+                .andExpect(jsonPath("$.data.routes[0].travelLegsMinutes[0]").value(30))
+                .andExpect(jsonPath("$.data.routes[0].travelLegsMinutes[1]").value(30))
+                .andExpect(jsonPath("$.data.routes[0].bufferMinutes").value(0))
                 .andExpect(jsonPath("$.data.routes[1].groupLabel").value("B"))
                 .andExpect(jsonPath("$.data.routes[1].activityName").value("Gardens by the Bay"))
                 .andExpect(jsonPath("$.data.routes[1].departureStopId").value(cityHall))
@@ -79,7 +79,7 @@ class SplitRouteGenerationApiTest extends AbstractSplitApiTest {
         assertThat(mainStopCount()).isEqualTo(4);
         JsonNode draft = objectMapper.readTree(draftJson());
         assertThat(draft.get("draftVersion").asInt()).isEqualTo(4);
-        assertThat(draft.get("routes").get("A").get("activityMinutes").asInt()).isEqualTo(60);
+        assertThat(draft.get("routes").get("A").get("activityMinutes").asInt()).isEqualTo(75);
         assertThat(draft.get("routes").get("B").get("travelLegsMinutes").get(0).asInt()).isEqualTo(20);
     }
 
@@ -90,7 +90,7 @@ class SplitRouteGenerationApiTest extends AbstractSplitApiTest {
         saveBoundaries(1);
         assignAs("Chloe", "B", 2);
         postGenerate(memberId("Ben"), 3).andExpect(status().isOk());
-        when(provider.candidateFor(eq("B"), any(), any(), any())).thenThrow(new RuntimeException("provider failed for B"));
+        when(provider.candidateFor(eq("B"), any(), any(), any(), any())).thenThrow(new RuntimeException("provider failed for B"));
         postGenerate(memberId("Ben"), 4)
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.data").doesNotExist())
@@ -99,7 +99,7 @@ class SplitRouteGenerationApiTest extends AbstractSplitApiTest {
         assertThat(mainStopCount()).isEqualTo(4);
         JsonNode draft = objectMapper.readTree(draftJson());
         assertThat(draft.get("draftVersion").asInt()).isEqualTo(4);
-        assertThat(draft.get("routes").get("A").get("activityMinutes").asInt()).isEqualTo(60);
+        assertThat(draft.get("routes").get("A").get("activityMinutes").asInt()).isEqualTo(75);
     }
 
     @Test
@@ -108,10 +108,10 @@ class SplitRouteGenerationApiTest extends AbstractSplitApiTest {
         startDraft();
         saveBoundaries(1);
         assignAs("Chloe", "B", 2);
-        when(provider.candidateFor(eq("A"), any(), any(), any())).thenAnswer(inv -> {
+        when(provider.candidateFor(eq("A"), any(), any(), any(), any())).thenAnswer(inv -> {
             jdbc.update("UPDATE split_draft SET document = json_set(document, '$.draftVersion', 4), draft_version = 4 WHERE trip_id = ?",
                     sgfTripId());
-            return fixture.candidateFor("A", inv.getArgument(1), inv.getArgument(2), inv.getArgument(3));
+            return fixture.candidateFor("A", inv.getArgument(1), inv.getArgument(2), inv.getArgument(3), inv.getArgument(4));
         });
         postGenerate(memberId("Ben"), 3)
                 .andExpect(status().isConflict())

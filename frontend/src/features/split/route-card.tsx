@@ -63,7 +63,13 @@ export function RouteCard({
       </div>
 
       <div className="flex flex-col gap-1.5 px-4 py-3 text-[12px]">
-        <Row label="活动" value={`${route.activityMinutes} 分`} />
+        {route.steps && route.steps.length > 0 ? (
+          route.steps.map((step, index) => (
+            <Row key={`${route.groupLabel}-${index}-${step.name}`} label={step.name} value={`${step.minutes} 分`} />
+          ))
+        ) : (
+          <Row label="活动" value={`${route.activityMinutes} 分`} />
+        )}
         <Row label={`路程（${route.travelLegsMinutes.join(" + ")}）`} value={`${legsTotal} 分`} italic />
         <Row label="缓冲" value={`${route.bufferMinutes} 分`} />
         {total != null && (

@@ -71,13 +71,13 @@ class SplitDraftDetailApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.data.windowMinutes").value(150))
                 .andExpect(jsonPath("$.data.routes.length()").value(2))
                 .andExpect(jsonPath("$.data.routes[0].groupLabel").value("A"))
-                .andExpect(jsonPath("$.data.routes[0].activityName").value("National Gallery Singapore"))
+                .andExpect(jsonPath("$.data.routes[0].activityName").value("沿主线方案"))
                 .andExpect(jsonPath("$.data.routes[0].departureStopId").value(cityHall))
                 .andExpect(jsonPath("$.data.routes[0].reunionStopId").value(merlion))
-                .andExpect(jsonPath("$.data.routes[0].activityMinutes").value(60))
-                .andExpect(jsonPath("$.data.routes[0].travelLegsMinutes[0]").value(15))
-                .andExpect(jsonPath("$.data.routes[0].travelLegsMinutes[1]").value(20))
-                .andExpect(jsonPath("$.data.routes[0].bufferMinutes").value(10))
+                .andExpect(jsonPath("$.data.routes[0].activityMinutes").value(75))
+                .andExpect(jsonPath("$.data.routes[0].travelLegsMinutes[0]").value(30))
+                .andExpect(jsonPath("$.data.routes[0].travelLegsMinutes[1]").value(30))
+                .andExpect(jsonPath("$.data.routes[0].bufferMinutes").value(0))
                 .andExpect(jsonPath("$.data.routes[1].groupLabel").value("B"))
                 .andExpect(jsonPath("$.data.routes[1].activityName").value("Gardens by the Bay"))
                 .andExpect(jsonPath("$.data.routes[1].travelLegsMinutes[0]").value(20))
@@ -187,7 +187,7 @@ class SplitDraftDetailApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.data.status").value("confirmed"))
                 .andExpect(jsonPath("$.data.draftVersion").value(version))
                 .andExpect(jsonPath("$.data.routes.length()").value(2))
-                .andExpect(jsonPath("$.data.routes[0].activityName").value("National Gallery Singapore"));
+                .andExpect(jsonPath("$.data.routes[0].activityName").value("沿主线方案"));
     }
 
     @Test

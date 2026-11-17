@@ -49,6 +49,12 @@ export interface RouteDurations {
   bufferMinutes: number | null
 }
 
+/** One visible step of a branch route (backend RouteStep); group A follows the main-plan stops. */
+export interface RouteStep {
+  name: string
+  minutes: number
+}
+
 /** One group's route view (backend GroupRoute), shared by generation response and detail snapshot. */
 export interface GroupRoute {
   groupLabel: string
@@ -58,6 +64,7 @@ export interface GroupRoute {
   activityMinutes: number | null
   travelLegsMinutes: number[]
   bufferMinutes: number | null
+  steps?: RouteStep[] | null
 }
 
 /** Draft document returned by POST start (backend SplitDraftDocument). */

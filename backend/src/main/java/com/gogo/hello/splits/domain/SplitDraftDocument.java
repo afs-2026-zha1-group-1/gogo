@@ -28,7 +28,8 @@ public record SplitDraftDocument(
      * duration components are nullable so a missing estimate stays expressible (Jackson maps JSON null to null
      * rather than zero), letting confirmation report missing inputs instead of silently treating them as 0.
      */
-    public record RouteDurations(Integer activityMinutes, List<Integer> travelLegsMinutes, Integer bufferMinutes) {
+    public record RouteDurations(Integer activityMinutes, List<Integer> travelLegsMinutes, Integer bufferMinutes,
+            List<RouteStep> steps) {
     }
 
     /**
