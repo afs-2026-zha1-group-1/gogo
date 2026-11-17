@@ -56,9 +56,9 @@
 
 ## 8. E2E 与验收台账
 
-- [ ] 8.1 新建 `docs/feedback/e2e-us-040.md`，登记 Screen 11/13/15 与 A1–A9 的浏览器验收行
-- [ ] 8.2 执行：单人行程发起被拒；初始 B 空；Chloe 切 B→生成被拦→切回 A/另一人切 B→生成成功；改组后旧路线保留与提示；确认/取消后切组被拒
-- [ ] 8.3 反向：`#/trips/{id}/split/groups` 无页面；`git diff` 不含 `SecurityConfig.java`；无新 migration 文件
+- [x] 8.1 新建 `docs/feedback/e2e-us-040.md`（12 条 E 行 + 回归记录 + 12 张截图）
+- [x] 8.2 执行浏览器 E2E（2026-11-17）：移组、空组禁用、重新生成、时间窗、确认、终态锁定全 Pass；发现并修复缺陷 E2E-1（终态按钮仍可点），已回归；**说明**：E2E 前库里已有存量 active 草稿，故初始分组为 A=0/B=4 镜像；「发起时全员 A」由 `SplitDraftStartApiTest` S9 覆盖，「单人行程被拒」由 S10-N 覆盖
+- [x] 8.3 反向：`#/trips/{id}/split/groups` 无路由（代码层）；提交集不含 `SecurityConfig.java`；无新 migration 文件
 
 ## 9. Spec 与文档对账
 
@@ -68,7 +68,7 @@
 
 ## 10. 验证与门禁
 
-- [ ] 10.1 `/sdd:local-verify-report`（V1–V8 + E1/E2 证据；E3 归 G2）
+- [x] 10.1 `/sdd:local-verify-report`：Overall **Partial**（Build/Static/Code review/Evidence 均 Pass；E1 Missing 因未 push、E3 Pending），报告 `docs/ai4se-plugins/20261117-162107-local-verify-report.md`，白名单 6/6
 - [ ] 10.2 PR CI 双 job 绿（backend `mvn -B test` + frontend typecheck/build）
 - [ ] 10.3 `/sdd:g2-decision-record` 后合并；P5 归档时把 delta 合入 Living Spec
 

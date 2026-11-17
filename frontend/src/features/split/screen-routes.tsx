@@ -41,20 +41,22 @@ export function ScreenRoutes() {
   // CTAs instead of letting the user hit a 409 SPLIT_DRAFT_INCOMPLETE.
   const groupsComplete =
     (detail?.groups.A?.length ?? 0) > 0 && (detail?.groups.B?.length ?? 0) > 0
+  // A confirmed/cancelled draft is locked server-side (SPLIT_DRAFT_NOT_ACTIVE); mirror that in the CTAs.
+  const draftActive = detail?.status === "active"
 
   const action = tooFewMembers ? null : (
     <>
       <Button
         variant="outline"
         className="flex-1"
-        disabled={!boundariesSaved || !groupsComplete || generate.isPending}
+        disabled={!boundariesSaved || !groupsComplete || !draftActive || generate.isPending}
         onClick={() => detail && generate.mutate({ draftVersion: detail.draftVersion })}
       >
         {generate.isPending ? "生成中…" : hasPair ? "重新生成" : "生成两条路线"} <IconSparkle />
       </Button>
       <Button
         className="flex-1"
-        disabled={!hasPair || !groupsComplete}
+        disabled={!hasPair || !groupsComplete || !draftActive}
         onClick={() => navigate(`/trips/${tripId}/split/timing`)}
       >
         下一步 <IconArrowRight />
@@ -268,7 +270,9 @@ function GroupCard({
       {notice ? <p className="mt-1.5 text-[11px] font-semibold text-ok">{notice}</p> : null}
       {hasRoutes ? (
         <p className="mt-1.5 text-[11px] leading-relaxed text-ink-3">
-          路线为上次生成的版本，可点击「重新生成」按当前分组重做。
+          {assignable
+            ? "路线为上次生成的版本，可点击「重新生成」按当前分组重做。"
+            : "草稿已结束，以下为最终确认的路线与分组。"}
         </p>
       ) : null}
     </div>
