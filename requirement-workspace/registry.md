@@ -132,11 +132,21 @@ REQ-019 已过 G2（`g2-decision.md` = Pass，VL Sammi Ng 2026-11-16；PR #44 �
 - REQ-026 处置（用户裁定）：`change/req-026-submit-preferences` 保持现状——它还在 P1/P2 阶段、尚无 delta，`No deltas found` 属预期，不制造空 delta、也不设 `.openspec.yaml` 的 `skip_specs: true`；该项在台账登记为已知项，待其真正产出 delta spec 时一并解决。
 - 本轮未解决（不属本次指令）：`spec/app-shell`、`spec/auth`、`spec/invitations`、`spec/trips`、`change/us-067-qr-scanner` 五处存量告警，以及 REQ-026 的 `No deltas found`（处置见上一节）。
 
+## REQ-020 P3 完成：`design.md` + `tasks.md`（2026-11-17）
+
+- 产物：`openspec/changes/req-020-manage-must-do/design.md`（289 行，Decisions **MD1–MD14** + 偏离表 **TS-14…TS-17** + Risks）与 `tasks.md`（186 行，§1 红测 → §7 阶段产物 + 文末对齐自检），两者以已签署的 delta（3 req / 44 sc）与 `atdd-design.md`（MDS-1…MDS-19 / MDR-1…MDR-6 / PAGE-1…PAGE-20 / UT-1…UT-5）为唯一输入，沿用 REQ-019 归档包的结构与英文口径。
+- 设计要点（均以当前代码取证，非推断）：零迁移，`kind` 从 `PreferenceRepository` 的硬编码改为参数（MD1）；两个 `/must-dos` 端点落在 `PreferenceController` 内复用同一个 `caller(...)` 身份门（MD2）；七步校验顺序与六个错误码写前完成（MD5/MD6）；id 为 `max+1` 仅在本人列表内唯一（MD7，C1）；整表单语句覆盖写（MD8）；读取按 `userId` 升序且只出四键（MD9）；`name` 镜像由 codec 单点写入（MD4，R4）。
+- 本轮新发现并写进设计的两个事实（此前文档未记）：（1）`V5__create_main_plan.sql` 种子的 `must_do` 条目形状是 `{"name","location"}`——**无 `id`、无 `activity`**，故读取侧必须宽容（`activity` 回退 `name`、缺 `id`/`time` 读作 `null`）、写入侧仍严格，该不对称显式记为 MD10，否则开发库里一次 `GET` 就是 500；（2）delta 场景文本仍写 `X-User-Id: 2` 且 PAGE-10 写「顶栏身份选择器」，而 US-066 后代码用会话身份、`AccountBar` 只显示不改身份，已登记为 TS-14（按已合并行为实现，不改已签署文本，G2 时向 IO/SA 报告）。
+- 对齐自检结果：**Pass**（9 行表，逐 requirement/scenario 组映射到 MD 与 task 与 ATDD 行）。明确不阻塞但不得读成已完成的三项：§5/§6 全部属 P4；6.5 tech-stack-plan 回填按 `config.yaml` 规则**必须等到归档后**；TS-14 需人类在 G2 裁定。
+- 复跑：`openspec validate req-020-manage-must-do --strict` 仍 **exit 0**（新增两个文档不影响 delta）；两文件无 BOM、CRLF 一致、中文标识完整。
+- 阶段 DoV 检查（2026-11-17）：`/sdd:quality-checklist` stage **p3**（focus full-stage，范围 REQ-020）实跑，P3-1…P3-4 四条必需项全 **Pass**，Stage Overall **Pass**；checkpoint `docs/ai4se-plugins/20261117-100052-quality-checklist-checkpoints.md`，报告 `docs/ai4se-plugins/20261117-100305-quality-checklist-report.md`。报告不是门禁裁定；其 Gaps 表只转录了计划中已登记的开放项（§5/§6 属 P4、TS-14 待 G2、6.5 待归档、P3 产物尚未提交）。probe 为全仓扫描，`req-024`/`req-026`/`us-071` 缺 design/tasks 属各自阶段未到，不是本变更缺口。`tasks.md` 7.1/7.3 两个复选框据此勾上。
+
 ## condition 9 双角色签署与本轮提交（2026-11-17）
 
 - 签署事实：用户在本轮明确指示「两个 change 各自的 condition 9 IO 和 SA 都签署 pass」。代理只记录人类陈述：REQ-020 的 amendment (4)+(5) 与 REQ-024 的 strict 整改均获 **IO Emily + SA evelyn.huang Pass，无附加发现**，两份 `g1-decision.md` 的条件 9 改为 closed（保留原编号与原描述，只改 State 列），Approvers 行同步补 2026-11-17 日期。
 - 两项限制依旧登记：（1）签署为**转达而非亲笔评审文本**，仓库内不存在这两个角色针对本次整改的 findings 文字；（2）签署对象是当时的**工作区文本**，本轮提交就是把该文本原样入库，未再改动任何 delta 措辞（提交前后 delta 文本一致：020 = 345 行 / 3 req / 44 sc，024 = 433 行 / 3 req / 56 sc）。
 - 解锁范围：两个变更的 G1 均无开放条件，归档不再受 G1 阻挡；仍不允许的是在 019 → 020 → 024 顺序之外提前合入 `main`，以及把未做的 P4/G2/G3 读成已完成。REQ-020 已完成 P3 的 `atdd-design.md`，下一步 `/sdd:task-plan`；REQ-024 尚无 P3 产物（页面 rev3 的基线 020 rev2 已签署）。
+- 提交与推送事实（同日稍后）：本轮文档改动以 **`07fe89d`** 提交（11 个文件：020 五份、024 四份、`registry.md`、`handoff.md`，+442/−308，无源码），并推送至 `origin/feat/travel_preference`（`b3c5b92..07fe89d`）；用户明确指示解除「本轮不 commit / 不 push」约束后执行，推送前的 L3 深度安全评审选项由用户选择跳过，因此**不存在本次推送的安全扫描结论**，不得声称为其留档。签署文本自此不再是未提交工作区内容，上述第二项限制对 `07fe89d` 起的提交生效（内容一致，已核对 345 / 433 行）。REQ-020 的 P3 已于同日以 `design.md` + `tasks.md` 完成，见上一节；REQ-024 的 P3 仍未开始。
 
 ## US-031-037 product review update (2026-11-15)
 
