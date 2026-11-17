@@ -1,9 +1,9 @@
-# G1 decision — us-040-split-grouping（草稿，待签核）
+# G1 decision — us-040-split-grouping（SA Pass，待 IO 补签）
 
 - Gate: G1 (Align)
-- Timestamp: 2026-11-17（草稿创建时间，+08:00）
+- Timestamp: 2026-11-17（SA 签核时间，+08:00）；IO 复核补签待记
 - Branch: `US-040-split-grouping-p0`（PR #117，含 P0/P1/P2 文档产物）
-- 状态：**DRAFT / Decision = OPEN** —— 本文件不含任何签核，不构成门禁结论；由具名 IO + SA 复核后自行择一填写 Pass / Fail / Conditional
+- 状态：**SA 已签 Pass（Leo，2026-11-17）**；**IO 待复核补签**；G1 Decision = **Conditional**（条件 C1 未关闭，门禁尚未达成）
 
 ## Inputs
 
@@ -29,29 +29,33 @@
 | Verifiability | 37 条场景（ADDED 10 + MODIFIED 27），全部为可观察结果：HTTP 状态、`groups` 键与元素、`draftVersion` 增量、`error.code`、`error.details.missing` 字面项（`groups.A` / `groups.B` / `groups.unassigned` / `groups.duplicate`）、`plan_node` 行数、页面成员名与提示文案。三条 MODIFIED 均保留 Living Spec 原有全部场景标题，仅新增 S9 / G6-N / CF8-N 三条 |
 | Residual | 见下方「Residual notes」，均为非阻塞承接项 |
 
-## Approvers（待具名签署，代理不自填）
+## Approvers
 
 | Role | Name | Decision | Date |
 |---|---|---|---|
-| SA | | | |
-| IO | | | |
+| SA | Leo | **Pass** | 2026-11-17 |
+| IO | （待复核补签） | | |
 
-## Decision: OPEN
+SA 的 Pass 按用户 2026-11-17 指令代记（用户本人担任 SA，签核名 Leo）；代理不独立核实签署人身份，也不代替签署人判断。IO 的签核必须由 IO 本人复核后填写，代理不代签。
 
-草稿阶段不填写结论。请具名复核人基于上述输入择一勾选：
+## Decision: Conditional
+
+SA（Leo）已于 2026-11-17 具名 Pass，覆盖 proposal、三份 MODIFIED delta、`dov-ac-review.md` 与两项契约取舍（初始分组全员 A、改组保留 routes）。**IO 尚未签署**，按 G1 双签核约定门禁尚未达成，记 **Conditional**；条件 C1 关闭后升 `Pass`。
+
+IO 复核时请在下列位置勾选其一（代理不代填）：
 
 - [ ] **Pass** —— delta 与既有能力无未解冲突，可进入 P3
 - [ ] **Conditional** —— 允许进入 P3，但须列明整改项与 owner（无整改项/owner 的 Conditional 视为无效）
 - [ ] **Fail** —— 退回 `/sdd:delta-craft` 或需求澄清
 
-填写后请同时更新本文件的「状态」行与 `requirement-workspace/registry.md` 的 US-040 行。
+填写后请同时更新本文件的「状态」行、上方 Approvers 表与 `requirement-workspace/registry.md` 的 US-040 行。
 
 ## Conditions（拟议，签核人可增删）
 
 | # | Condition | Owner | Deadline | Status |
 |---|---|---|---|---|
-| C1 | IO 对本期 delta 与 `dov-ac-review.md` 具名签核 | Emily（IO） | P3 开工前 | draft |
-| C2 | SA 复核「初始分组全员 A」与「改组保留 routes」两项契约取舍 | Leo（SA） | P3 开工前 | draft |
+| C1 | IO 对本期 delta 与 `dov-ac-review.md` 具名复核并签核（push 后补签） | Emily（IO） | P3 开工前 | **open**（2026-11-17 push 后待签） |
+| C2 | SA 复核「初始分组全员 A」与「改组保留 routes」两项契约取舍 | Leo（SA） | P3 开工前 | **closed 2026-11-17**（SA Pass 已签） |
 | C3 | P3 定稿 OQ-9 错误码与 OQ-10 幂等语义，并写入 `acceptance-test-fixtures.md` §US-040 | P3 设计者 | ATDD 设计完成前 | draft |
 
 ## Residual notes（非阻塞，承接至 P3/P4）
@@ -63,10 +67,10 @@
 - **IO**：OQ-9 / OQ-10 会直接影响 `SplitAssignmentApiTest` 的断言写法，P3 定稿前不得在测试中固化相反断言（delta A3 已写明）。
 - **IO**：`groups` 空数组与「缺键」必须区分——detail 投影恒返回 A/B 两个键，前端不得把缺键当空组。
 - **存量警告**：`openspec validate --specs --strict` 仍 exit 1，原因是 5 个既有 Living Spec 的「requirement >500 字符」WARNING（`splits` 也在其中）；本变更未改动 Living Spec，属存量问题，不阻塞 G1。
-- **过程说明**：本记录以草稿形式随 PR #117 合入，合入时 Decision 为 `OPEN`；不得据此认为 G1 已通过。
+- **过程说明**：本记录随 PR #117 合入，合入时 SA 已签 Pass、IO 待补签，整体为 Conditional；不得据此认为 G1 已通过。
 
 ## Closure path
 
-- Decision = **Pass** → 进入 `/sdd:atdd-design`（补 `acceptance-test-fixtures.md` §US-040）+ `/sdd:task-plan`，再进 P4。
-- Decision = **Conditional** → 按 Conditions 整改后关闭，再进 P3；Conditions 未关闭不得声称 G1 通过。
-- Decision = **Fail** → 回到 `/sdd:delta-craft` 修补 delta 或回 P1 澄清，重开本记录。
+- 当前 **Conditional** → IO 复核后关闭 C1：签 Pass 则 G1 升 `Pass`，进入 `/sdd:atdd-design`（补 `acceptance-test-fixtures.md` §US-040）+ `/sdd:task-plan`，再进 P4。
+- IO 若签 Conditional → 按 IO 列明的整改项与 owner 关闭后再进 P3；Conditions 未关闭不得声称 G1 通过。
+- IO 若签 Fail → 回到 `/sdd:delta-craft` 修补 delta 或回 P1 澄清，重开本记录。
