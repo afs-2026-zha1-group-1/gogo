@@ -125,7 +125,7 @@ export default function RegisterPage() {
     <div className="app register-app">
       <div className="register-page">
         <header className="register-top">
-          <a className="iconbtn" href="/#/login" aria-label="返回登录">
+          <a className="iconbtn" href="/login" aria-label="返回登录">
             <Icon name="left" />
           </a>
           <div className="register-top-title">创建 GoGo 账号</div>
@@ -219,7 +219,7 @@ export default function RegisterPage() {
             </button>
           </form>
 
-          <a className="btn btn-ghost register-login" href="/#/login">已有账号？去登录</a>
+          <a className="btn btn-ghost register-login" href="/login">已有账号？去登录</a>
         </div>
       </div>
 

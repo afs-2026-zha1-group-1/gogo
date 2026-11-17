@@ -149,7 +149,7 @@ export default function MainPlan({ tripId }: MainPlanProps) {
   const inTrip = state.kind === 'ready' || state.kind === 'empty'
   const appbar = (
     <header className="appbar">
-      <a className="iconbtn" href="#/" aria-label="Back"><Icon name="left" /></a>
+      <a className="iconbtn" href={`#/trips/${tripId}`} aria-label="Back"><Icon name="left" /></a>
       <div className="grow">
         <div className="title">主线方案</div>
         <div className="sub">US-037 · 校验通过后方可确认</div>

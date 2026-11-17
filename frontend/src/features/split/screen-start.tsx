@@ -43,7 +43,7 @@ export function ScreenStart() {
     <SplitLayout
       title="智能分队"
       subtitle="US-038 · 本次行程仅一次分队"
-      backTo="/"
+      backTo={`/#/trips/${tripId}`}
       right={
         <Badge variant="brand">
           <IconBranch /> Fork
