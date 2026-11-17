@@ -1,0 +1,38 @@
+===== CMD: ! grep -rn "Hello World" frontend/src =====
+cwd: /d/study/gogo
+started: 2026-11-17T16:20:11+0800
+exit: 0
+ended: 2026-11-17T16:20:13+0800
+
+===== CMD: ! grep -inE "jpa|hibernate" backend/pom.xml =====
+cwd: /d/study/gogo
+started: 2026-11-17T16:20:13+0800
+exit: 0
+ended: 2026-11-17T16:20:15+0800
+
+===== CMD: ! grep -rinE "h2database|org\.h2|jdbc:h2" backend/pom.xml backend/src =====
+cwd: /d/study/gogo
+started: 2026-11-17T16:20:16+0800
+exit: 0
+ended: 2026-11-17T16:20:17+0800
+
+===== CMD: ! grep -q "artifact.oocl.com" frontend/package-lock.json =====
+cwd: /d/study/gogo
+started: 2026-11-17T16:20:18+0800
+exit: 0
+ended: 2026-11-17T16:20:20+0800
+
+===== CMD: python -c "import yaml; d=yaml.safe_load(open('.github/workflows/ci.yml')); j=sorted(d['jobs']); assert j==['backend','frontend'], j; print('ci jobs:', j)" =====
+cwd: /d/study/gogo
+started: 2026-11-17T16:20:21+0800
+ci jobs: ['backend', 'frontend']
+exit: 0
+ended: 2026-11-17T16:20:22+0800
+
+===== CMD: python -c "import yaml; d=yaml.load(open('.github/workflows/ci.yml'), Loader=yaml.BaseLoader); p=d['on']['push']; assert p is None or 'branches' not in p, p; assert 'main' in d['on']['pull_request']['branches']; print('ci triggers: any-branch push + pull request to main')" =====
+cwd: /d/study/gogo
+started: 2026-11-17T16:20:23+0800
+ci triggers: any-branch push + pull request to main
+exit: 0
+ended: 2026-11-17T16:20:25+0800
+

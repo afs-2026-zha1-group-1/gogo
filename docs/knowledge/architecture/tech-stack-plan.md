@@ -523,3 +523,15 @@ US-083/084/085（PR #127，merge `d2708f3`）已归档。单 change：`trips` +3
 - 后端/数据：本 change 零变更（零端点、零迁移、零新依赖）；合并 main 带入 V9（偏好默认兴趣，属 REQ-026）。
 - 验证：前端 37/37（C1–C11/P1–P11 + 日期 helper + team-route）、tsc/build 绿、后端 337/337、CI run 44051875289 双绿；浏览器七轮 + R9 分流轮全 PASS。
 - 残留：D-2 时区=设备本地、组活动段居中派生、「免费」固定文案、current trip 上下文不一致（范围外跟踪）。
+
+## 24. Landed reconciliation — US-040 成员分组（待合并 2026-11-17）
+
+US-040（issue #84；PR #117）G2 Pass（VL Leo），待 G1 Revision C8（IO）与 G3 后归档。单 change：`splits` 1 ADDED（Member group assignment）+ 3 MODIFIED（Split draft start / Group route generation / Split confirmation）。
+
+- 后端：新增 `PUT /api/trips/{tripId}/split-draft/assignment`（body `{memberId?, groupLabel, draftVersion}`，返回 draft detail 投影）；**任意行程成员可移动任意行程成员**（2026-11-17 用户修订，对齐原型头像切组），目标非本行程 → `403 NOT_A_MEMBER`；仅 `active` 可写，同组提交幂等不递增版本，变更后 `draftVersion + 1` 且**保留 boundaries/routes**。
+- 完整性门禁：`SplitDraftService.groupProblems` 固定顺序 `groups.A → groups.B → groups.unassigned → groups.duplicate`，`routes:generate` 与 `:confirm` 共用；`SPLIT_DRAFT_INCOMPLETE.details.missing` 新增 `groups.*` 项。
+- 初始分组：`partitionGroups` 删除，改为 `initialGroups`（全员 A、B 空）；发起/重建新增成员数 ≥ 2 前置，否则 `409 SPLIT_MEMBERS_INSUFFICIENT`（新码）。另新增 `INVALID_GROUP_LABEL`（400）。
+- 前端：Screen 13 分组卡按原型 `.route` 重绘（彩色 A/B 头 + 成员胶囊，点击切组）；分组不完整或终态时禁用生成/下一步；Screen 15 成员名 + 陈旧路线提示；`states.tsx` 的 `details.missing` 中文化。
+- 后端/数据：**零迁移、零新依赖，未改 `SecurityConfig`**（splits 维持 `permitAll` + `MemberGuard`）。
+- 验证：后端 356/356（合并 main 后）、前端 typecheck/build 绿、E2E 12 行 Pass、E1 run 44046339433 双绿。
+- 残留：TS-1 陈旧路线提示为常驻（未记录路线生成版本）；存量单人 active 草稿仍不可生成/确认。
