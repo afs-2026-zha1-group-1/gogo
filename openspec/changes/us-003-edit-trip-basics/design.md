@@ -13,6 +13,7 @@
 - 组织者可在主线确认前整表单更新行程基本信息；确认后任何修改被拒绝且数据不变。
 - 非组织者（含直接 API 请求）无法修改共享信息（US-016）；确认后的锁定对全部成员生效（US-017）。
 - 编辑入口与编辑页在 UI 层按角色/状态收敛，后端仍是权威守卫。
+- 组织者可在未确认草稿上编辑单个 stop 的地点名与起止时间；可行性由既有确认校验把关，确认后编辑被拒。
 - My Account 名字编辑改为按钮触发的原位展开，API 契约与校验不变。
 
 **Non-Goals:**
@@ -36,7 +37,7 @@
 顺序：404 `TRIP_NOT_FOUND`（行程存在）→ 403 `NOT_A_MEMBER`（成员）→ 403 `NOT_ORGANIZER`（组织者，新码）→ 409 `MAIN_PLAN_CONFIRMED`（未确认，新码）→ 400 字段校验。任何拒绝零写入。
 
 - 403 vs 409 分界：权限不够（身份/角色）用 403，时机已过（状态冲突）用 409，前端可给出「只有组织者可修改」与「主线已确认，信息已锁定」两种准确提示。与 main-plan 既有 409 用法（`ALREADY_CONFIRMED` / `STALE_DRAFT`）同族。
-- 新码 `NOT_ORGANIZER`、`MAIN_PLAN_CONFIRMED` 需 IO 在 G1 确认（cross-change-scan 轴 4）。
+- 错误码 `NOT_ORGANIZER` 为 main-itinerary 既有码（`MainPlanService` 已使用），trips 端点复用；`MAIN_PLAN_CONFIRMED` 与 mainplan 新增的 `STOP_NOT_FOUND` / `INVALID_TIME` / `INVALID_TIME_RANGE` 为新码，需 IO 在 G1 确认（cross-change-scan 轴 4）。
 - 备选：锁定也用 403。否决：混淆权限与状态，成员被锁定时会误以为自己权限不足。
 
 ### D3 条件写防确认竞态
@@ -80,6 +81,38 @@ WHERE id=? AND main_plan_confirmed=0
 - 前端已有 node:test 纯逻辑 runner（US-071 followups 落地，`npm run test:unit`）：日期校验等可提取的纯函数走 UT；编辑页与 AccountPage 组件交互由浏览器 E2E 覆盖：入口可见性矩阵（组织者×确认态）、预填、日期校验、保存回详情、拒绝态、名字编辑展开/保存/取消、错误文案。
 - 夹具沿用 V2 种子（Alice 组织者 trip 1，Ben 成员，Eve 非成员）；锁定态用既有 `main-plan:confirm` 或测试库 setup，与 trips spec 既有口径一致。
 
+### D9 主线 stop 编辑：端点与可编辑面
+
+`PUT /api/trips/{id}/main-plan/stops/{seq}`，请求体 `{name, startTime, endTime}`，响应复用 `PlanResponse`（与草稿读同一投影，客户端保存后可直接替换视图）。
+
+- 可编辑：`name`（地点/活动名）、`startTime`、`endTime`（`HH:MM`，与 `ScheduleValidator` 现有解析口径一致）。
+- 不可编辑：`seq`（顺序）、`travelMinutesToNext`（交通时长由提供商给出，可行性属确认校验职责）、`interests_json`（兴趣标签属生成输入）。请求中出现这些字段一律忽略，不落写。
+- 原位改当前草稿（`main_plan_stop` 对应行），不 bump `version`、不改 `input_revisions`；版本语义保持「只在生成时递增」。
+- 备选：整草稿 PUT（一次提交全部 stops）。否决：单 stop 编辑是自然交互，整草稿 PUT 扩大冲突面且要处理 seq 重排；MVP 不做增删 stop、不做拖拽重排。
+
+### D10 stop 编辑守卫与错误码
+
+顺序：404 `TRIP_NOT_FOUND` → 403 `NOT_A_MEMBER` → 403 `NOT_ORGANIZER`（复用既有码）→ 404 `NO_DRAFT`（复用）→ 409 `ALREADY_CONFIRMED`（复用，确认后冻结）→ 404 `STOP_NOT_FOUND`（新码，seq 不存在）→ 400 校验：空白名 `NAME_REQUIRED`（复用）、时间不可解析 `INVALID_TIME`（新码）、结束≤开始 `INVALID_TIME_RANGE`（新码）。任何拒绝零写入。
+
+- 与 trips 端点的 `MAIN_PLAN_CONFIRMED` 并存：trips 用描述性新码，main-itinerary 复用其族内既有 `ALREADY_CONFIRMED`；两者都是 409，理由在 G1 轴 4 记录（不强行统一，避免改动已归档契约）。
+- 备选：编辑也不做字段校验、全部交给确认。否决：`endTime <= startTime` 与坏时间格式是录入错误，应立即反馈；跨 stop 的间隔/重叠才属于确认校验。
+
+### D11 先存后验：编辑与确认校验的接缝
+
+- 编辑只做单 stop 自洽校验；跨 stop 的 `OUT_OF_ORDER` / `OVERLAP` / `MISSING_LEG` / `TRAVEL_EXCEEDS_GAP` / `OUT_OF_DAY` 仍由既有 `ScheduleValidator` 在确认时计算，类型与场景（C3）不变。
+- 手动编辑不改 `input_revisions`，`stale` 仍只由成员偏好 revision 驱动；编辑后的草稿即使变「不可行」也只在确认时被 422 拦截，草稿本身可继续修。
+- 重生成（G5）整份替换当前草稿，**手动编辑随之丢弃**；前端在重生成入口提示「重新生成将丢弃手动修改」。备选：把编辑合并进新草稿。否决：与 US-036 的「替换」语义冲突，且合并规则需逐 stop 匹配，MVP 不值。
+
+### D12 主线页交互（`MainPlan.tsx`）
+
+- 仅 `organizer && draft && !confirmed` 渲染 per-stop 编辑入口；展开为 name + 开始 + 结束三字段表单 + 保存/取消。
+- 保存 → PUT → 用响应替换整份投影；失败按 code 文案（400 字段错、409 已确认），保留输入。
+- 成员只读；确认后只读；无草稿时无入口。重生成按钮旁的一行提示：重新生成会丢弃手动修改。
+
+### D13 stop 编辑并发
+
+条件写 `UPDATE main_plan_stop SET name=?, start_local=?, end_local=? WHERE draft_id=? AND seq=? AND EXISTS (SELECT 1 FROM main_plan_draft WHERE id=draft_id AND status='draft')`（实现可等价为先条件更新 draft 行或子查询），影响行数 0 → 409 `ALREADY_CONFIRMED`（草稿已确认）或 404 `STOP_NOT_FOUND`（seq 不存在），二次查询区分。与 D3 同族：确认与编辑竞态不允许半写。
+
 ## Risks / Trade-offs
 
 - [确认与编辑竞态] → D3 条件写兜底；E2E 无法稳定复现竞态，由后端测试直接置 `main_plan_confirmed=1` 后断言 409 与数据不变。
@@ -87,6 +120,8 @@ WHERE id=? AND main_plan_confirmed=0
 - [auth MODIFIED 丢细节] → delta 携带整条 requirement 全文（含全部既有 scenario），仅改布局句与 layout scenario、新增编辑交互 scenario；`openspec validate --strict` + G2 对规格逐条审。
 - [编辑页 hash 被详情正则吞掉] → D5 匹配顺序 + E2E 直达 `#/trips/1/edit` 验证。
 - [旧需求文件口径冲突] → issue #60 为权威；story-detail-iteration-1.md 旧拆分文本留作历史，G1 扫描轴 1 记录。
+- [手动编辑被重生成静默丢弃] → 重生成入口常驻提示「重新生成将丢弃手动修改」；E2E 断言提示存在与重生成后值回退。
+- [编辑产生的时间冲突被误认为已保存即有效] → 确认校验仍拦 422 `scheduleErrors`；E2E 造重叠场景断言确认被阻止。
 
 ## Migration Plan
 
@@ -94,5 +129,5 @@ WHERE id=? AND main_plan_confirmed=0
 
 ## Open Questions
 
-- 新错误码 `NOT_ORGANIZER` / `MAIN_PLAN_CONFIRMED` 的 IO 批准（G1 轴 4，预期通过：与既有 409 族一致）。
+- 新错误码 `MAIN_PLAN_CONFIRMED`（trips）、`STOP_NOT_FOUND` / `INVALID_TIME` / `INVALID_TIME_RANGE`（mainplan）的 IO 批准（G1 轴 4；`NOT_ORGANIZER` / `ALREADY_CONFIRMED` / `NO_DRAFT` 均为复用，仅 `code` 契约不变）。
 - 本 change 的 IO / SA / VL 具名角色分配（角色按 change 轮换，G1 前由用户确认）。

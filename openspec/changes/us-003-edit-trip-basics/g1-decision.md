@@ -8,23 +8,24 @@
 ## Inputs
 
 - Proposal: `openspec/changes/us-003-edit-trip-basics/proposal.md`
-- Design: `openspec/changes/us-003-edit-trip-basics/design.md`（D1–D8）
+- Design: `openspec/changes/us-003-edit-trip-basics/design.md`（D1–D13）
 - Delta Spec: `openspec/changes/us-003-edit-trip-basics/specs/trips/spec.md`（2 ADDED requirements / 27 场景）
 - Delta Spec: `openspec/changes/us-003-edit-trip-basics/specs/auth/spec.md`（1 MODIFIED requirement / 13 场景，全文携带）
-- Cross-change scan: `openspec/changes/us-003-edit-trip-basics/cross-change-scan.md` — 脚本 BLOCKER 3 / WARNING 1；SA 复核 A1–A3 判为启发式误报（auth delta 纯 UI），W1 待签；A4 既有漂移不在范围
-- OpenSpec 校验：`openspec validate us-003-edit-trip-basics --strict` = valid（deltaCount = 2）
-- Requirement source: GitHub issue #60（US-003 合并版 AC 为权威；US-004 #61 / US-005 #62 / US-006 #63 / US-007 #64 已作重复项关闭）；本地 `requirement-workspace/requirements/story-detail-iteration-1.md` §US-003–US-007 为旧拆分口径，留作历史
-- 用户裁决（2026-11-17）：① 编辑方案按推荐（整表单 PUT、403/409 分界、起终点可清空、详情页条件入口）；② 我的页名字编辑改按钮触发；③ 方案 B：两件事合并为一个 change
-- 相邻锁定语义：US-016（仅组织者可改）/ US-017（确认后锁定）未单独立项，由本 change 守卫场景覆盖
+- Delta Spec: `openspec/changes/us-003-edit-trip-basics/specs/main-itinerary/spec.md`（1 ADDED / 16 场景 + 1 MODIFIED / 4 场景）
+- Cross-change scan: `openspec/changes/us-003-edit-trip-basics/cross-change-scan.md` — 脚本 BLOCKER 2 / WARNING 1；SA 复核 A1–A2 判为启发式误报（auth delta 纯 UI），W1 待签；A3 既有漂移不在范围
+- OpenSpec 校验：`openspec validate us-003-edit-trip-basics --strict` = valid（deltaCount = 3）
+- Requirement source: GitHub issue #60（US-003 合并版 AC 为权威；2026-11-17 用户裁决扩写「主线地点/时间编辑」并同步更新 issue 描述；US-004 #61 / US-005 #62 / US-006 #63 / US-007 #64 已作重复项关闭）；本地 `requirement-workspace/requirements/story-detail-iteration-1.md` §US-003–US-007 为旧拆分口径，留作历史
+- 用户裁决（2026-11-17）：① 编辑方案按推荐（整表单 PUT、403/409 分界、起终点可清空、详情页条件入口）；② 我的页名字编辑改按钮触发；③ 方案 B：合并为一个 change；④ 范围扩写：主线方案生成后的活动地点与时间可编辑，并入同一 story
+- 相邻锁定语义：US-016（仅组织者可改）/ US-017（确认后锁定）未单独立项，由本 change 守卫场景覆盖；US-075 的延迟/跳过/替换与通知仍不在范围
 
 ## Check conclusions
 
 | Dimension | Finding |
 |---|---|
-| Scope | 对齐：`trips` +2 ADDED（更新端点 + 详情页编辑入口）；`auth` 1 MODIFIED（仅 My Account 布局句与 layout scenario，API/会话/CSRF/校验逐字保留）。零迁移、零新依赖、不改 SecurityConfig、不改既有端点语义；organizerId 与确认态不可经本端点修改 |
-| Ambiguity | 用户已裁决四项取舍（PUT 整表单 / 409 锁定语义 / 起终点可清空 / 条件入口）与方案 B 合并；design D1–D8 固化。开放项仅剩角色具名与新码批准（见 Conditions） |
-| Conflict | ① auth Living 明文锁定常驻名字表单 → 已以 MODIFIED 全文收敛，非静默改代码。② Living trips 两处历史措辞漂移（确认操作禁令、列表 read-only 场景）→ 记录于 proposal 与扫描轴 6，不在本 change 修。③ 旧需求文件拆分口径与 issue #60 合并口径 → 以 issue 为准，扫描轴 1 登记 |
-| Verifiability | 40 条场景（trips 27 + auth 13）全部为可观察结果（HTTP 状态/码、字段集、路由、入口可见性、编辑态开合、文案）；后端 API 测试先红后绿，前端纯逻辑 node:test + 浏览器 E2E |
+| Scope | 对齐：`trips` +2 ADDED（更新端点 + 详情页编辑入口）；`auth` 1 MODIFIED（仅 My Account 布局句与 layout scenario，API/会话/CSRF/校验逐字保留）；`main-itinerary` +1 ADDED（stop 地点名/起止时间编辑，先存后验）+1 MODIFIED（写操作范围含 stop 编辑）。零迁移、零新依赖、不改 SecurityConfig；organizerId、确认态、stop 顺序/交通时长/兴趣标签不可改；US-075 的延迟/跳过/替换+通知不在范围 |
+| Ambiguity | 用户已裁决五项取舍（PUT 整表单 / 409 锁定语义 / 起终点可清空 / 条件入口 / 主线 stop 编辑并入）+ 方案 B 合并；design D1–D13 固化。开放项仅剩角色具名与新码批准（见 Conditions） |
+| Conflict | ① auth Living 明文锁定常驻名字表单 → 已以 MODIFIED 全文收敛，非静默改代码。② main-itinerary 确认校验是 stop 可行性的唯一权威 → 编辑只做单 stop 自洽校验，跨 stop 冲突留待确认 422，既有 C3 场景不变。③ 重生成整份替换草稿与手动编辑冲突 → 明确「重生成丢弃手动编辑」并加 UI 提示，US-036/G5 语义不改。④ Living trips 两处历史措辞漂移（确认操作禁令、列表 read-only 场景）→ 记录于 proposal 与扫描轴 6，不在本 change 修。⑤ 旧需求文件拆分口径与 issue #60 合并口径 → 以 issue 为准，扫描轴 1 登记 |
+| Verifiability | 60 条场景（trips 27 + auth 13 + main-itinerary 20）全部为可观察结果（HTTP 状态/码、字段集、路由、入口可见性、编辑态开合、草稿投影、确认 422 明细）；后端两组 API 测试先红后绿，前端纯逻辑 node:test + 浏览器 E2E |
 | Residual | App.tsx parseRoute 与 us-067 共享，后合者负责路由顺序 rebase（扫描轴 7）；registry.md US-003 行待 tasks 6.2 登记 |
 
 ## Approvers
@@ -44,7 +45,8 @@ Rationale：产物与扫描输入齐备、strict 校验通过；G1 达成尚缺 
 
 | # | Condition | Owner | Deadline | Status |
 |---|---|---|---|---|
-| C1 | 新错误码 `NOT_ORGANIZER` 403 / `MAIN_PLAN_CONFIRMED` 409 批准（扫描轴 4） | IO（待具名） | G1 签署时 | open |
-| C2 | W1 签署：auth delta 纯 UI，豁免 main-itinerary/preferences/splits 身份横切覆盖（扫描 A1–A3 误报）；delta 触及身份/API 契约即失效 | SA（待具名） | G1 签署时 | open |
+| C1 | 新错误码批准（扫描轴 4）：`MAIN_PLAN_CONFIRMED` 409（trips）、`STOP_NOT_FOUND` 404 / `INVALID_TIME` 400 / `INVALID_TIME_RANGE` 400（mainplan）；复用码 `NOT_ORGANIZER` / `ALREADY_CONFIRMED` / `NO_DRAFT` 仅登记不新批 | IO（待具名） | G1 签署时 | open |
+| C2 | W1 签署：auth delta 纯 UI，豁免 preferences/splits 身份横切覆盖（扫描 A1–A2 误报）；delta 触及身份/API 契约即失效 | SA（待具名） | G1 签署时 | open |
 | C3 | IO / SA / VL 具名角色分配（角色按 change 轮换） | 用户 | G1 签署前 | open |
-| C4 | IO 对 trips 2 ADDED + auth MODIFIED 全文与 issue #60 AC 逐条复核签署 | IO（待具名） | G1 签署时 | open |
+| C4 | IO 对三份 delta（trips 2 ADDED / auth 1 MODIFIED / main-itinerary 1 ADDED + 1 MODIFIED）全文与 issue #60 AC 逐条复核签署 | IO（待具名） | G1 签署时 | open |
+| C5 | issue #60 描述已按 2026-11-17 裁决扩写（主线地点/时间编辑 + AC），与 delta 一致 | 代理已执行，IO 复核 | G1 签署时 | done（待 IO 复核） |
