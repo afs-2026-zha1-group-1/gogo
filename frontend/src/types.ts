@@ -102,7 +102,6 @@ export type Route =
   | { page: 'my-trips' }
   | { page: 'trips-current' }
   | { page: 'create' }
-  | { page: 'split' }
   | { page: 'members' }
   | { page: 'details'; tripId: number }
   | { page: 'join'; token: string }
@@ -110,6 +109,7 @@ export type Route =
   | { page: 'main-plan-inputs'; tripId: number; dashboardOrigin?: boolean }
   | { page: 'scan'; from: string | null }
   | { page: 'preferences'; tripId: number; dashboardOrigin?: boolean }
+  | { page: 'my-preferences' }
 
 // login, registration, join, main-plan, preference and scan screens are
 // full-page flows without the bottom TabBar. 'scan' additionally owns its own
@@ -117,5 +117,5 @@ export type Route =
 // (Record<InAppPage, TabId>).
 export type InAppPage = Exclude<
   Route['page'],
-  'join' | 'login' | 'register' | 'main-plan' | 'main-plan-inputs' | 'scan' | 'preferences'
+  'join' | 'login' | 'register' | 'main-plan' | 'main-plan-inputs' | 'scan' | 'preferences' | 'my-preferences'
 >

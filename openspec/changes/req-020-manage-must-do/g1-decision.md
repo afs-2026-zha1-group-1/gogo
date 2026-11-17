@@ -2,14 +2,29 @@
 
 - Change id: `req-020-manage-must-do`
 - Gate: G1 (Align)
-- Status: **RECORDED — Pass; gate closed 2026-11-16**. SA evelyn.huang re-reviewed the
-  revised confirmation contract and signed Pass, relayed by the change author on
-  2026-11-16; IO Emily approved the revised three-requirement / 42-scenario package
-  on 2026-11-15 per explicit user instruction. `openspec validate --strict` still
-  exits 1 and is carried as a follow-up, not as a passed check.
+- Status: **RECORDED — Pass; gate closed 2026-11-16, re-review of the two P3 amendments signed
+  2026-11-16, and condition 9 signed 2026-11-17**. SA evelyn.huang re-reviewed the revised confirmation contract and signed Pass,
+  relayed by the change author on 2026-11-16; IO Emily approved the revised three-requirement /
+  42-scenario package on 2026-11-15 per explicit user instruction. Both roles then passed the two
+  amendments made at the start of P3 (page re-basing and the R4 storage mirror), relayed by the
+  change author on 2026-11-16 per explicit user instruction, so condition 8 is closed and the signed
+  package is now **3 requirements / 44 scenarios**. `openspec validate req-020-manage-must-do
+  --strict` ran **exit 0 on 2026-11-17** with the CLI at `%APPDATA%\npm\openspec.cmd`, so condition 6
+  is closed on machine evidence rather than a local measurement. Remedying it required amendment (4)
+  — five scenario titles restored to the archived Living Spec's names, and the delta preamble plus
+  its `## Clarifications` table relocated to `proposal.md` — and amendment (5) compressed the
+  MODIFIED `Preferences page` body from 3,247 to 478 characters to match the house 500-character
+  limit. Both wording changes were carried to condition 9 and **IO Emily and SA evelyn.huang signed
+  that re-confirmation Pass on 2026-11-17**, relayed by the change author per explicit user
+  instruction, so the signed package is the current delta: 3 requirements / 44 scenarios.
 - Provenance: the SA's Pass is **relayed**, not documented. No SA-authored review text, finding
   or condition is on file for this change, so anything the SA said that was not relayed is not
-  recorded here and must be supplied before this file is treated as final.
+  recorded here and must be supplied before this file is treated as final. The 2026-11-16 signature
+  on the two P3 amendments is relayed the same way, and it was given on the **uncommitted working-tree
+  text** (the user instructed that this round not be committed or pushed, to avoid colliding with
+  REQ-019's open G2 / PR #44). Whoever commits it must not alter the signed wording afterwards; if the
+  committed text differs from what was reviewed, condition 8 has to be reopened.
+  The agent records human statements only and signs on behalf of no role.
 
 ## Push verification update (2026-11-16)
 
@@ -20,6 +35,12 @@ therefore closed; `eca9abe` was the tip quoted before the later commits
 `658ba42`, `3c120ac` and `27b09e6`. The SA re-review and the validation follow-up
 are settled in the closure section below.
 
+Branch state moved again after that paragraph was written: `origin/main` has since been merged into
+`feat/travel_preference` several times on 2026-11-16 (the REQ-019 records note a fourth and a sixth
+merge), so the quoted tip `27b09e6` and the "thirteen commits ahead" count are stale. The push itself
+is still verified — the branch tip is on `origin/feat/travel_preference` — but the exact tip and
+ahead/behind count must be re-read when G2 takes its evidence, not quoted from here.
+
 ## G1 closure (2026-11-16)
 
 SA evelyn.huang re-reviewed the revised contract, including the confirmation and
@@ -28,19 +49,113 @@ The Pass is relayed by the change author and carries no findings. With the IO
 approval already recorded on 2026-11-15, both required roles have signed and G1 is
 closed.
 
-Recorded limitation, deliberately not presented as a pass: `openspec validate
---strict` still exits 1 on two overlong ADDED bodies, so the gate was closed with
-that item outstanding; it blocks archive, not P4 start. Condition 1 is an
+Recorded limitation, deliberately not presented as a pass at the time: `openspec
+validate --strict` exited 1, so the gate was closed with that item outstanding; it blocked archive,
+not P4 start. **Closed 2026-11-17**: `openspec validate req-020-manage-must-do --strict` now exits 0
+and `openspec validate preferences --type spec --strict` exits 0. What it took: the two ADDED bodies
+shortened on 2026-11-16 (493 / 432 characters, no longer reported), then amendment (4) on 2026-11-17
+— five interest-path scenario titles restored to the names the archived Living Spec still asserts,
+and the delta preamble and `## Clarifications` table relocated to `proposal.md`, which is the house
+standard for all 18 archived delta files. Amendment (4) altered wording the two roles had signed, so
+it is carried as condition 9, which the two roles signed on 2026-11-17. The same day, amendment (5) compressed
+the MODIFIED `Preferences page` body from 3,247 to 478 characters: the CLI does not flag length on a
+MODIFIED block, but the block becomes the Living Spec text at archive, and 3,247 would have re-longed
+`spec/preferences` on the first check after merge. Every removed clause is asserted by an existing
+scenario, and the 44-scenario total is unchanged. Condition 1 is an
 implementation prerequisite rather than an alignment condition: REQ-019's G1 is
-closed too, but its `V4` migration and preferences page are still absent from the
-tree, so this change remains unbuildable and unmergeable until they land.
+closed and its `V6` migration and preferences page are on this branch (see
+*Implementation prerequisite update*), so what still keeps this change from `main`
+is REQ-019's G2 and PR #44, not the delta text.
+
+## Implementation prerequisite update (2026-11-16)
+
+REQ-019 reached P4 on this branch, so the factual premise of condition 1 and of the
+retained risks below has changed. This section re-checks it and **supersedes** the
+"still absent from the tree" sentence in *G1 closure*:
+
+- The table is on disk at `V6__create_member_preference.sql`, not `V4`: `main` took `V4`
+  for splits, and `V5__create_main_plan.sql` already declares `member_preference` with
+  `IF NOT EXISTS`, so `V6` is a no-op there. The shape this change relies on is unchanged:
+  `(trip_id, user_id, kind, payload TEXT, updated_at)` with `UNIQUE(trip_id, user_id,
+  kind)`, which is exactly what the `kind='must_do'` single-row upsert needs.
+- The preferences page exists as `frontend/src/pages/PreferencesPage.tsx`, at revision 1
+  (one interest section plus one page-level `.actionbar` save button, React Query cache
+  keyed `['preferences', tripId, userId]`). Revision 2 adds the must-do section on top of
+  that shell.
+- `PreferenceErrorAdvice` is already scoped to `com.gogo.preference`
+  (`@RestControllerAdvice(basePackages = "com.gogo.preference")`), so `INVALID_REQUEST` and
+  the `MUST_DO_*` codes are producible without touching `TripErrorAdvice`.
+- Reuse is **not** free at code level: `PreferenceRepository` hard-codes `kind='interest'`
+  in both `save` and `membersOf`, and `PreferencePayload` is a single `{codes: [...]}`
+  shape. This change must parameterise the kind and add its own `{"items": [...]}` payload
+  codec; `PreferenceService` and the controller's `caller()` identity → trip → membership
+  sequence are reusable as-is.
+- REQ-019 stands at G2 (record prepared, named VL unsigned) with PR #44 open against
+  `main`. This change is therefore implementable and locally verifiable **on the branch**,
+  while merging to `main` still waits behind REQ-019.
+
+## Revision re-review (2026-11-16) — Pass
+
+Two amendments landed after this gate closed, both found while starting P3. **Both are signed**:
+IO Emily and SA evelyn.huang passed them on 2026-11-16, relayed by the change author per explicit
+user instruction, with no finding and no condition attached. Condition 8 is closed on that basis.
+
+**(1) The MODIFIED `Preferences page` requirement was re-based.** It had been written against
+REQ-019's page requirement **before** that revision, so it still said "seven predefined interests"
+with `Art` / `Nature` examples and carried no layout paragraph, while the signed REQ-019 revision
+and the code shipped on this branch have ten Chinese labels, emoji chips and the
+`screen-08-preferences.png` layout. Left as it was, archiving this delta would have dropped
+revision 1's layout paragraph out of the Living Spec, and the E2E rows would have asserted labels
+that do not exist.
+
+- Re-based text (in `specs/preferences/spec.md`, under its "Revision (2026-11-16, P3)" note): ten
+  interests in catalogue order; a layout paragraph covering both sections (app bar `我的偏好` /
+  `<display name> · US-019~020` / save-state badge, `兴趣（US-019 · 预设列表、不重复）` chips and hint
+  line, the bottom action bar, `必做项（US-020 · 可增删改）` rows with pin and clock markers,
+  `添加必做项`, the `活动名称` / `地点` / `固定时间` form with `取消` / `保存`); the badge scoped to the
+  interests section; and the corrected `Loading` scenario (one interest save action, not two).
+- Rulings R1–R3 were added to the delta's Clarifications: the subtitle range (which changes a
+  shipped string), the must-do strings taken from screen-08, and the badge scope. C1–C6 are
+  untouched.
+
+**(2) A storage-only `name` mirror was added (R4).** `MainPlanService.mustDoItems`, already merged
+to `main`, reads `item.path("name")`, and `V5__create_main_plan.sql` seeds `must_do` rows for the
+fixture trip in that shape (`name`, no `id`). This change's contract writes `activity`, so without a
+ruling every item saved here would reach main-plan generation as an empty string while
+`MainPlanApiTest` — which asserts only `$.mustDo.length()` — stayed green. The user chose the
+storage mirror over the two alternatives (making that reader take `activity` first with a `name`
+fallback, or a `V7` rewrite of the seeds), so this change stays inside its own package and touches
+neither `com.gogo.mainplan` nor the seeds.
+
+- The payload becomes `{"items": [{id, activity, name, location, time}]}`; `name` equals `activity`,
+  is written on create, updated on edit, disappears with its item, and never appears in a response.
+  Two scenarios were added to make both halves observable ("The stored payload mirrors the activity
+  under `name`", "The storage mirror never reaches a response", the latter also asserting that
+  `GET /api/trips/{tripId}/main-plan/inputs` still lists the activity).
+- The seeded legacy rows are handled by REQ-019's DD1 precedent rather than by a tolerance branch:
+  the seeds stay, the API tests clear `member_preference` per case, and the development database is
+  re-seeded by hand at P4.
+- **The signed totals changed**: 3 requirements / 44 scenarios (19 + 6 + 19), not 42. Both ADDED
+  requirements are affected by R4, which is why the re-review was opened at all; it is now signed, so
+  P4 may start on the 44-scenario package. The 42-scenario counts kept in *Inputs* and in
+  `dov-ac-review.md` §1 remain as the record of the earlier signature and are not rewritten.
+- Unchanged: both endpoints and their paths, the whole-list replace semantics, server-issued ids,
+  the seven-step validation order, the five `MUST_DO_*` codes, the four-key response items, zero
+  migration, and C1–C7.
+- Signatures: **IO Emily — Pass, 2026-11-16** and **SA evelyn.huang — Pass, 2026-11-16**, both on
+  the two amendments above, both relayed by the change author under explicit user instruction. No
+  finding or condition was relayed with either signature. The agent did not sign for either role.
+  Recorded limitation: the reviewed text is the uncommitted working-tree version — see *Provenance*.
 
 ## Inputs
 
 - Delta Spec: `specs/preferences/spec.md` — 3 requirements over the existing capability
   `preferences` (2 ADDED: `Save member must-do items`, 18 scenarios; `Read member must-do
   items`, 5 scenarios; 1 MODIFIED: `Preferences page`, revision 2, 19 scenarios),
-  42 scenarios in total. The declared baseline is the unarchived delta of
+  42 scenarios in total. **Superseded 2026-11-16**: the delta now reads 19 + 6 + 19 = 44 scenarios
+  after the page re-basing and the R4 storage mirror (revision re-review above); the counts in this
+  bullet and in `dov-ac-review.md` §1 are the ones the IO and the SA signed.
+  The declared baseline is the unarchived delta of
   `req-019-save-interests`; identity, trip existence and membership are inherited from its
   `Preference caller identity and membership` requirement and deliberately not restated.
 - Proposal: `proposal.md`; change metadata `.openspec.yaml`
@@ -57,12 +172,21 @@ tree, so this change remains unbuildable and unmergeable until they land.
 - Baseline at drafting time: branch `feat/travel_preference`; `V3__create_invitation.sql` is
   on `main` (PR #31), `member_preference` and its `V4__create_member_preference.sql` are owned
   by REQ-019 and are **not** on disk yet, so this change remains zero-migration but not
-  independently runnable
-- Structural check: `spec.md` follows `# Spec Delta` → `## ADDED Requirements` →
-  `## MODIFIED Requirements` → `## Clarifications`, with 3 `### Requirement:` blocks and
-  42 `#### Scenario:` blocks. Current strict validation exited 1: two ADDED bodies
-  exceed 500 characters; preamble/Clarifications are not archived. Archive also
-  needs REQ-019 to establish the Living Spec first. Strict validation is not passed.
+  independently runnable (superseded 2026-11-16: both are on the branch, the migration as
+  `V6` — see *Implementation prerequisite update*)
+- Structural check at G1: `spec.md` followed `# Spec Delta` → `## ADDED Requirements` →
+  `## MODIFIED Requirements` → `## Clarifications`, with 3 `### Requirement:` blocks and 42
+  `#### Scenario:` blocks (44 after the R4 mirror; see condition 8).
+- Strict validation: first run 2026-11-15, exit 1 (two ADDED bodies over 500 characters,
+  preamble and `Clarifications` not carried by archive). Those two bodies were shortened to 493 and
+  432 characters on 2026-11-16. Re-run **2026-11-17 with the CLI available: exit 1 on one ERROR —
+  MODIFIED `Preferences page` omitted five scenario titles the archived Living Spec still asserts —
+  plus the two archive-carry warnings.** After amendment (4) (five titles restored, preamble and
+  Clarifications relocated to `proposal.md`): `openspec validate req-020-manage-must-do --strict`
+  → `Change 'req-020-manage-must-do' is valid`, **exit 0**. Amendment (5) then compressed the
+  MODIFIED page body to 478 characters and the run was repeated: still **exit 0**, with the delta now
+  345 lines, 3 requirements / 44 scenarios, only the `ADDED` and `MODIFIED` sections, and all three
+  requirement bodies under the 500-character house limit (493 / 432 / 478).
 - AC/DoV review: `dov-ac-review.md` — AC 4/4 Pass, DoV 5/5 Pass (DoV-3 carries non-blocking
   IO/SA concerns), blocking ambiguities 0, contract details C1–C7 and 16 reviewed edge
   scenarios recorded there. The page requirement is reviewed at revision 2.
@@ -98,17 +222,20 @@ tree, so this change remains unbuildable and unmergeable until they land.
   `TRIP_NOT_FOUND` are not restated as scenarios in this delta. They are defined once in
   REQ-019's identity requirement and apply unchanged to both new endpoints. Reviewers should
   confirm that inheritance is acceptable instead of expecting local copies.
-- **Retained risks (recorded, not conditions of the delta itself):** (a) `TripErrorAdvice`
-  covers `com.gogo.trip` only, so the preference package needs its own advice or a widened
-  scope, otherwise `INVALID_REQUEST` and the `MUST_DO_*` codes cannot be produced; (b) the
-  change cannot be built or merged before REQ-019's `V4` and page exist; (c) `docs/knowledge/
+- **Retained risks (recorded, not conditions of the delta itself):** (a) **closed
+  2026-11-16** — `PreferenceErrorAdvice` is already scoped to `com.gogo.preference`, so
+  `INVALID_REQUEST` and the `MUST_DO_*` codes need no change to `TripErrorAdvice`; (b)
+  **narrowed 2026-11-16** — REQ-019's table and page are on the branch (the migration as
+  `V6`), so only the merge to `main` still depends on REQ-019's G2 and PR #44; (c) `docs/knowledge/
   architecture/tech-stack-plan.md` §5/§6 still describes envelopes, `X-Member-Id`,
   `JdbcClient` and Ant Design 5 while the merged code uses bare DTOs, `X-User-Id`,
   `JdbcTemplate` and hand-written CSS (REQ-020 OQ-14, team-owned).
-- **Current review outcome:** both roles have signed the revised package. Emily's IO
-  approval (2026-11-15) covers confirmation/cancellation behavior; the SA re-reviewed
-  the revised contract and passed it on 2026-11-16, relayed by the change author, so
-  the earlier reservation about the historical Pass no longer applies.
+- **Current review outcome:** both roles have signed the revised package **and** the two P3
+  amendments. Emily's IO approval (2026-11-15) covers confirmation/cancellation behavior; the SA
+  re-reviewed the revised contract and passed it on 2026-11-16, relayed by the change author, so
+  the earlier reservation about the historical Pass no longer applies. On 2026-11-16 both roles also
+  passed the page re-basing (R1–R3) and the R4 storage mirror, relayed the same way, which closes
+  condition 8 and makes 44 scenarios the signed total.
 
 ## Decision
 
@@ -123,39 +250,60 @@ tree, so this change remains unbuildable and unmergeable until they land.
 
 | # | Condition | Owner | State |
 |---|---|---|---|
-| 1 | `req-019-save-interests` reaches a closed G1 and lands `V4__create_member_preference.sql` plus the preferences page on the branch; until then this change cannot be implemented, verified or merged | evelyn.huang (SA) / Dev | open as an implementation prerequisite, not a G1 condition — REQ-019's G1 closed 2026-11-16, but `V4` and the page are still absent |
+| 1 | `req-019-save-interests` reaches a closed G1 and lands the `member_preference` migration plus the preferences page on the branch; until then this change cannot be implemented, verified or merged | evelyn.huang (SA) / Dev | closed 2026-11-16 — G1 closed and P4 landed on the branch at `V6__create_member_preference.sql` (renumbered from `V4`) plus `PreferencesPage.tsx`; only the merge to `main` still waits on REQ-019's G2 and PR #44 |
 | 2 | Push current revised delta and approval record on `feat/travel_preference` | Dev | closed 2026-11-16; `origin/feat/travel_preference` at `27b09e6` |
 | 3 | IO approval of revised three-requirement / 42-scenario package | Emily (IO) | closed 2026-11-15; explicit user instruction |
 | 4 | Re-review the revised confirmation contract and sign G1 for this version | evelyn.huang (SA) | closed 2026-11-16 — Pass on the revised confirmation contract, relayed by the change author; no findings |
 | 5 | Fold any IO/SA finding into `specs/preferences/spec.md` (and `proposal.md` if a ruling changes) before P4 implementation | author of this change | closed 2026-11-16 — no IO/SA findings relayed with either signature |
-| 6 | Resolve strict warnings and rerun `openspec validate req-020-manage-must-do --strict` | Dev | carried open past G1 closure: exit 1 at closure time; blocks archive, not P4 start |
+| 6 | Resolve strict warnings and rerun `openspec validate req-020-manage-must-do --strict` | Dev | closed 2026-11-17 — run with the real CLI at `%APPDATA%\npm\openspec.cmd`: `openspec validate req-020-manage-must-do --strict` → `Change 'req-020-manage-must-do' is valid`, **exit 0**, and `openspec validate preferences --type spec --strict` → **exit 0**. Remediation chain: the two ADDED bodies shortened 2026-11-16 (493 / 432 characters), then amendment (4) 2026-11-17 (five MODIFIED scenario titles restored to the archived Living Spec's names; delta preamble and `## Clarifications` relocated to `proposal.md`). The earlier "no `openspec` CLI exists in this environment" premise no longer holds |
 | 7 | Confirm the C1 id-reuse ruling, or record the opposite ruling and amend the payload shape before P4 | evelyn.huang (SA) | closed with the SA's Pass — C1 is written in the delta the SA approved; no separate minute exists, so an opposing ruling must still be recorded before P4 |
+| 8 | Re-review and sign both 2026-11-16 amendments: the re-based MODIFIED `Preferences page` requirement (ten interests, the screen-08 layout paragraph, R1–R3) and the R4 storage mirror with its two new scenarios (44 in total) | Emily (IO) / evelyn.huang (SA) | closed 2026-11-16 — both roles Pass, relayed by the change author per explicit user instruction, no finding; signed on the uncommitted working-tree text, so the commit must not alter the signed wording. Note: that signed wording was subsequently altered by amendment (4) on 2026-11-17, which is not claimed as covered here — see condition 9 |
+| 9 | Re-confirm amendments (4) and (5) on the signed delta wording: (4) the five MODIFIED `Preferences page` scenario titles restored to the names the archived Living Spec asserts (`Empty state`, `Switching identity reloads for the new identity`, `Saving disables duplicate submissions`, `A successful save follows the response`, `A rejected save shows an inline error and rolls back`) and the relocation of the delta preamble and its `## Clarifications` table (C1–C6, R1–R4) verbatim into `proposal.md`; (5) the MODIFIED `Preferences page` body compressed from 3,247 to 478 characters, keeping only what no scenario asserts. Scenario bodies, assertions and the 44-scenario total are unchanged in both | Emily (IO) / evelyn.huang (SA) | **closed 2026-11-17 — both roles Pass, relayed by the change author per explicit user instruction, no finding.** Raised the same day because amendments (4) and (5) touched text condition 8 signed. Two limits stand as recorded for condition 8: the Pass is relayed rather than documented, and it was given on the working-tree text, so the commit that carries it must reproduce this wording exactly |
 
-- Approvers: **IO = Emily — Pass (2026-11-15)**, **SA = evelyn.huang — Pass (2026-11-16,
-  revised contract)**.
+- Approvers: **IO = Emily — Pass (2026-11-15; 2026-11-16 for the two P3 amendments; 2026-11-17 for
+  amendments (4) and (5))**, **SA = evelyn.huang — Pass (2026-11-16, revised contract; 2026-11-16 for
+  the two P3 amendments; 2026-11-17 for amendments (4) and (5))**. The 2026-11-17 Pass is relayed by the
+  change author per explicit user instruction and carries no finding; no role-authored review text for
+  those amendments is on file.
 - IO sign-off: **Emily — Pass**, 2026-11-15; revised three-requirement / 42-scenario
   package including confirmation dialogs and cancellation, per explicit user instruction.
 - SA sign-off: **evelyn.huang — Pass**. The Pass on the previous contract was relayed
   2026-11-15; the Pass on the revised confirmation contract was relayed by the change
   author on 2026-11-16. Neither statement carried a condition. The SA's earlier Pass
   on `req-019-save-interests` is scoped to that change and is not counted again here.
+- Page re-basing and R4 sign-off: **IO Emily — Pass (2026-11-16)**, **SA evelyn.huang — Pass
+  (2026-11-16)**, both relayed; see "Revision re-review (2026-11-16) — Pass" and condition 8.
 - Timestamp: 2026-11-15 (draft, authored by the agent). The agent records human statements
   only; it does not verify identities and does not sign on behalf of either role.
 
 ## What this draft does and does not allow
 
-- Allowed: P3 design, and P4 implementation of this change once REQ-019's `V4` and the
-  preferences page exist; presenting `preferences` as G1-aligned in the registry.
-- Not allowed: building, verifying or merging this change before `V4` and the page
-  land, reporting strict validation as passed, or archiving before that rerun succeeds.
+- Allowed: P3 completion (`design.md`, `tasks.md` via `/sdd:task-plan`) **and P4 implementation** of
+  the whole change on this branch, now that condition 8 is signed and REQ-019's `V6` table and the
+  preferences page exist; citing this gate in G2 for what the signatures covered (44 scenarios);
+  and citing the 2026-11-17 strict run as machine evidence for condition 6.
+- Not allowed: merging this change to `main` before REQ-019 merges (PR #44, G2 pending); altering
+  the signed delta wording further at commit time — the signature covers the uncommitted text as it
+  stands, and the commit must reproduce the reviewed wording exactly. Archive is no longer blocked by
+  a G1 condition: condition 9 is signed, and what remains ahead of archive is this change's own P4
+  implementation, G2 evidence and G3.
 
 ## Next
 
-1. Wait for REQ-019's `V4__create_member_preference.sql` and the preferences page; this
-   change cannot be built, verified or merged before they land.
-2. The revised delta and approval records are pushed at `27b09e6`; no further push is
-   outstanding for review.
-3. Start P3 while waiting: settle how the must-do section reuses the page shell and the
-   preference error-advice package scope.
-4. Before archive, fix the two overlong ADDED bodies and rerun
-   `openspec validate req-020-manage-must-do --strict`.
+1. P3 continues: the page requirement has been re-based and signed, `atdd-design.md` is written, and
+   `/sdd:task-plan` next writes `design.md` and `tasks.md`. The design must own the
+   `{"items": [...]}` payload codec and the kind parameter in `PreferenceRepository`, and settle
+   how the must-do section reuses the existing page shell (`.appbar` / `.pick` / `.actionbar`
+   idiom, one save action for interests and per-action persistence for items).
+2. Condition 8 is closed, so P4 is unblocked. Part of the signed text has since been committed and
+   pushed (the header amendments, the R4 mirror and its two scenarios, the shortened ADDED bodies);
+   the re-based page requirement and Clarifications R1–R4 are still uncommitted in the working tree.
+   Amendment (1) is therefore not yet on the branch, so the commit that carries it must reproduce the
+   reviewed wording exactly, and the reviewers should be able to re-read it there.
+3. Strict validation is settled: `openspec validate req-020-manage-must-do --strict` exits 0 and
+   `openspec validate preferences --type spec --strict` exits 0 as of 2026-11-17, so condition 6 is
+   closed on CLI evidence. Both follow-ups recorded that day are now closed: the MODIFIED page body was
+   compressed to 478 characters under the house 500-character limit (amendment (5)), and **condition 9
+   is signed Pass by IO Emily and SA evelyn.huang (2026-11-17, relayed)**. No G1 condition stays open;
+   the change is aligned end to end and its remaining work is P4 and the merge order in item 4.
+4. Merge order to `main` is 019 → 020 → 024; REQ-019's G2 is the first link.

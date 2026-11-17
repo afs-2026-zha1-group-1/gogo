@@ -502,3 +502,13 @@ US-071（PR #102，merge `b07f4c1`）已归档。单 change：`trips` +2 ADDED�
 §6 清单为 MVP 计划口径；实际端点以本节与 §13–§20 为准。
 
 **残余承接（2026-11-17 followups）**：F2 已修复——`gogo.db` 的 V2 校验和与代码一致，默认启动 `No migration necessary`；F3 已落地——`src/lib/trip-date.ts` 纯函数 + `tests/trip-date.test.ts`（node:test，6 例，零新依赖）+ CI `test:unit` step；F4 评估维持接受——排序 UTC 与徽标本地日期的凌晨边界不引入时区协商或前端重排（避免破坏 API 排序契约），若出现客诉再立独立变更。
+
+## 22. Landed reconciliation — US-086 队伍路线页（archived 2026-11-17）
+
+US-086（PR #119，merge `f5b6297`）已归档。单 change：`splits` 1 MODIFIED（Screen 11 展示契约）。
+
+- 前端：Screen 11 重写为 `screen-start.tsx` 队伍路线；新增 `graph-model.ts`（纯函数）+ `team-route-graph.tsx`（只读 SVG）；`useMainPlan` 仅在无草稿/已取消时读取 `GET /main-plan`。
+- 入口：分队 tab 直达 `/trips/{currentTripId}/split`；删除 `#/split` 分队规划占位页与 TripDetails 分队规划区块。
+- Chrome：SplitLayout 去掉身份条；confirmed 复核页无左上返回；confirmed 队伍路线页无重复提示卡。
+- 后端/数据：无变更（零端点、零迁移、零新依赖）；节点详情弹层/任务/费用/地点不在范围。
+- 验证：前端 node:test 12/12、tsc/build 绿、后端 296/296、CI 双绿；E2E E1–E13。

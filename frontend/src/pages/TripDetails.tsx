@@ -46,22 +46,6 @@ export default function TripDetails({ tripId }: TripDetailsProps) {
     }
   }, [tripId])
 
-  const [confirming, setConfirming] = useState(false)
-
-  async function confirmMain() {
-    setConfirming(true)
-    try {
-      const { ok, data } = await api<Trip>(`/api/trips/${tripId}/main-plan:confirm`, { method: 'POST' })
-      if (ok && data) setState({ kind: 'ready', trip: data })
-    } finally {
-      setConfirming(false)
-    }
-  }
-
-  function enterSplit() {
-    window.location.href = `/trips/${tripId}/split`
-  }
-
   const appbar = (
     <header className="appbar">
       <a className="iconbtn" href="#/" aria-label="Back"><Icon name="left" /></a>
@@ -188,23 +172,6 @@ export default function TripDetails({ tripId }: TripDetailsProps) {
           <a className="btn btn-primary" href={`#/trips/${trip.id}/main-plan`}>
             查看主线方案
           </a>
-        </section>
-
-        <div className="sec-title" style={{ marginTop: 18 }}>分队规划</div>
-        <section className="card pad">
-          <p className="hint" style={{ marginBottom: 12 }}>
-            主线方案确认后，可发起分队：A/B 两组分头游玩、到点会合。
-          </p>
-          {!trip.mainPlanConfirmed ? (
-            <button className="btn btn-ghost" type="button" onClick={confirmMain} disabled={confirming}>
-              {confirming ? '确认中…' : '确认主线方案'}
-            </button>
-          ) : (
-            <div className="pill ok"><span className="dot" /> 主线已确认</div>
-          )}
-          <button className="btn btn-primary" type="button" style={{ marginTop: 10 }} onClick={enterSplit}>
-            进入分队规划
-          </button>
         </section>
       </div>
     </div>

@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -55,6 +56,8 @@ class MainPlanApiTest {
         jdbcTemplate.update("UPDATE trip_member SET ready = 1, preference_revision = 1 "
                 + "WHERE trip_id = ? AND user_id IN (1, 2, 3, 4)", tripId);
         jdbcTemplate.update("DELETE FROM member_preference WHERE trip_id = ? AND kind = 'budget'", tripId);
+        // A submission row now also projects readiness, so it must not leak between tests.
+        jdbcTemplate.update("DELETE FROM member_preference WHERE trip_id = ? AND kind = 'submission'", tripId);
         jdbcTemplate.update("UPDATE trip SET start_location = 'City Hall MRT', "
                 + "end_location = 'Merlion Park', main_plan_confirmed = 0 WHERE id = ?", tripId);
         jdbcTemplate.update("DELETE FROM trip_invitation WHERE trip_id = ?", tripId);
@@ -137,11 +140,11 @@ class MainPlanApiTest {
                 revision, tripId, userId);
     }
 
-    private void insertBudget(long userId, int amountCents, String limitType) {
+    private void insertBudget(long userId, int amountYuan, String limitType) {
         jdbcTemplate.update("INSERT INTO member_preference (trip_id, user_id, kind, payload, updated_at) "
                 + "VALUES (?, ?, 'budget', ?, datetime('now'))",
                 tripId, userId,
-                "{\"amount\":" + amountCents + ",\"currency\":\"SGD\",\"limitType\":\"" + limitType + "\"}");
+                "{\"amount\":" + amountYuan + ",\"currency\":\"SGD\",\"limitType\":\"" + limitType + "\"}");
     }
 
     private void nullLocations() {
@@ -306,6 +309,26 @@ class MainPlanApiTest {
         org.junit.jupiter.api.Assertions.assertEquals(0, draftCount());
     }
 
+    // US-026 projection: the real submission action is what marks a member ready for generation,
+    // and a member who chose "no preference" is ready while contributing no personal values.
+    @Test
+    void submissionProjectsReadinessIntoInputs() throws Exception {
+        jdbcTemplate.update("UPDATE trip_member SET ready = 0, preference_revision = 0 "
+                + "WHERE trip_id = ? AND user_id = 1", tripId);
+        mockMvc.perform(withIdentity(put("/api/trips/" + tripId + "/preferences/submission")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"noPreference\":true}"), "1"))
+                .andExpect(status().isOk());
+        mockMvc.perform(withIdentity(get("/api/trips/" + tripId + "/main-plan/inputs"), "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.members[0].userId").value(1))
+                .andExpect(jsonPath("$.members[0].ready").value(true))
+                .andExpect(jsonPath("$.members[0].noPreference").value(true))
+                .andExpect(jsonPath("$.members[0].preferenceRevision").value(1))
+                .andExpect(jsonPath("$.budgets[0].userId").value(1))
+                .andExpect(jsonPath("$.budgets[0].amount").doesNotExist());
+    }
+
     // M8/I3: a non-member is denied the inputs summary.
     @Test
     void nonMemberDeniedInputs() throws Exception {
@@ -408,7 +431,8 @@ class MainPlanApiTest {
     @Test
     void hardBudgetOverrunBlocksConfirmation() throws Exception {
         generateOk();
-        insertBudget(1, 4000, "hard");
+        // The member stores 40 SGD (major units); the draft costs 50 SGD = 5000 cents.
+        insertBudget(1, 40, "hard");
         mockMvc.perform(post("/api/trips/" + tripId + "/main-plan/confirm").with(TestAuth.asUser("1")))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
@@ -633,10 +657,13 @@ class MainPlanApiTest {
     @Test
     void softBudgetDoesNotBlockConfirmation() throws Exception {
         generateOk();
-        insertBudget(2, 1000, "soft");
+        insertBudget(2, 10, "soft");
         mockMvc.perform(get("/api/trips/" + tripId + "/main-plan/inputs").with(TestAuth.asUser("2")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.budgets[1].userId").value(2))
+                .andExpect(jsonPath("$.budgets[1].amount").value(10))
+                .andExpect(jsonPath("$.budgets[1].currency").value("SGD"))
+                .andExpect(jsonPath("$.budgets[1].limitType").value("soft"))
                 .andExpect(jsonPath("$.budgets[1].hardBudgetCents").doesNotExist())
                 .andExpect(jsonPath("$.softBudget").doesNotExist())
                 .andExpect(jsonPath("$.softBudgets").doesNotExist());

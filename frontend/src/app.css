@@ -103,6 +103,10 @@ body {
   width: 20px;
   height: 20px;
   flex: none;
+  /* Tailwind Preflight blockifies svg; keep the icon in the text flow so a marker such as the
+     location pin sits left of its label instead of on the line above. */
+  display: inline-block;
+  vertical-align: -2px;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.75;
@@ -843,7 +847,162 @@ body {
   cursor: not-allowed;
 }
 
+/* US-027 no-preference switch: reads as a switch, so the control is not mistaken for a chip */
+.switch {
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 99px;
+  background: var(--line);
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: var(--sh-1);
+  transition: 0.2s;
+}
+
+.switch.on {
+  background: var(--brand);
+}
+
+.switch.on::after {
+  transform: translateX(18px);
+}
+
+.switch:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.switch-row .txt {
+  flex: 1;
+  min-width: 0;
+}
+
+.switch-row .txt b {
+  font-size: 13.5px;
+  font-weight: 650;
+}
+
+.switch-row .txt p {
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+/* US-024 limit type: a segmented control keeps both options visible at the same weight */
+.seg {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-3);
+}
+
+.seg button {
+  flex: 1;
+  padding: 8px 6px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: 0.16s;
+}
+
+.seg button.on {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--sh-1);
+}
+
+.seg button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 /* Inline feedback on the preferences page (formerly antd Alert; keeps the dependency list flat) */
+
+/* US-020 must-do item row: a lead marker tile, the activity and its place/time markers, actions right */
+.mustdo-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mustdo-row .grow {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Metadata markers (place, time) stay on one line with their icon on the left */
+.meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.meta-line .meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mustdo-lead {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+}
+
+.row-actions {
+  display: flex;
+  gap: 8px;
+  flex: none;
+}
+
+/* Equal-width action buttons (e.g. save vs cancel) without the stacked .btn+.btn offset */
+.btnrow {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.btnrow .btn {
+  flex: 1;
+  margin-top: 0;
+}
+
 .notice {
   border: 1px solid #f0c0bd;
   background: #fdf3f2;
@@ -870,6 +1029,99 @@ body {
   font-size: 12px;
   font-weight: 650;
   color: var(--brand-ink);
+}
+
+/* Screen 9 (US-031): shared interests read as the plan's spine, so the on state is the ink chip */
+.chip.on {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #fff;
+}
+
+/* Screen 9: the ready-member stack that summarises who the plan is built from */
+.avstack {
+  display: flex;
+  flex: none;
+}
+
+.avstack .av {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.avstack .av + .av {
+  margin-left: -9px;
+}
+
+.av-teal {
+  background: #0d9488;
+}
+
+.av-blue {
+  background: #2563eb;
+}
+
+.av-amber {
+  background: #d97706;
+}
+
+.av-rose {
+  background: #e11d48;
+}
+
+/* Screen 9: must-do summary card, one row per activity with its owners and place */
+.mustdo {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin-bottom: 9px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+}
+
+.mustdo .md-i {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+}
+
+.mustdo .md-b {
+  flex: 1;
+  min-width: 0;
+}
+
+.mustdo .md-t {
+  font-size: 13.5px;
+  font-weight: 650;
+}
+
+.mustdo .md-m {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+.mustdo .md-m span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .pill.warn {

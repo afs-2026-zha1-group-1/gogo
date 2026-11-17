@@ -29,6 +29,11 @@ public final class InterestCatalogue {
         return index < 0 ? Optional.empty() : Optional.of(CODES.get(index));
     }
 
+    public static Optional<String> labelOf(String code) {
+        int index = CODES.indexOf(code);
+        return index < 0 ? Optional.empty() : Optional.of(LABELS.get(index));
+    }
+
     static List<String> labelsOf(List<String> codes) {
         List<String> labels = new ArrayList<>();
         for (String code : codes) {

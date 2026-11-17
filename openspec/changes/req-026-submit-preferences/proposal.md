@@ -58,11 +58,15 @@ has no row or no `amount` key; `constraint` has no row. A `budget` of `0` counts
 carries no `code`/`message`, and both the failed-save acceptance criterion and the page's error
 state need one.
 
-**Frontend.** The preferences page gains a submission section: submit button, no-preference
-switch, readiness pill, inline error area, and the "save something first or choose no preference"
-guard. The no-preference switch disables the form fields rather than hiding them, and it no
-longer performs a save. The members view (screen 7) renders its readiness ring and its three pill
-variants from `readiness`.
+**Frontend.** The preferences page is restructured around a single save: the no-preference switch
+moves to a top card, the sticky bottom bar holds the only action (“提交并标记就绪”), and that
+action writes the interest set, the budget (or its cleared state) and then the readiness row. The
+switch disables the interest and budget fields rather than hiding them, and turning it on clears
+the current interest selection and budget first; turning it back off restores them. The appbar
+pill reports submission (`未提交` / `待提交` / `已就绪`) and the inline error area replaces the
+retired per-section saves, while the "save something first or choose no preference" guard stays.
+The members view (screen 7) renders its readiness ring and its three pill variants from
+`readiness`.
 
 ## Capabilities
 
@@ -75,8 +79,8 @@ variants from `readiness`.
 - **ADDED** `Read effective preference inputs`: the projection contract, ready-only membership,
   and the replacement rule for explicit no-preference.
 - **MODIFIED** `Preferences page`: fourth revision of the page requirement. The page now has four
-  sections with four different persistence moments — interests (section save), must-dos (per
-  action), budget (section save), and readiness (page-level submit).
+  sections with two persistence moments — must-dos (per action) and everything else (one bottom
+  submit that writes interests, budget and readiness in that order).
 
 `greeting`, `trips`, `invitations` — unchanged. No endpoint, response shape or migration of those
 capabilities is touched.
@@ -127,9 +131,29 @@ one capability, no story backlog needed.
 - **Plan §6 has no such endpoints.** It describes a single `PUT /preferences` that submits all
   four preference kinds. This change keeps the per-kind sub-resource route that REQ-019/020/024
   already established, and submits readiness separately.
-- **Prototype `submitPref()` is redefined.** In the prototype one click saves all four field
-  groups and flips the badge to "ready"; here it only submits readiness. The four groups keep
-  their own persistence moments. This removes the conflict recorded as R8 by REQ-024.
+- **Owner revision (2026-11-17) of the persistence moments.** The single bottom submit now writes
+  interests and budget before the readiness row, and the explicit "no preference" choice clears
+  both instead of only flagging the row; the earlier split (interests and budget each owned by
+  their own button) left stale values that the planner had to ignore. Must-dos keep their
+  per-action persistence, because staging them into the submit would contradict REQ-020's
+  contract. Turning the switch off restores the cleared values so an accidental tap loses nothing.
+- **Prototype `submitPref()` is followed, not redefined (revised 2026-11-17).** One click writes
+  interests and budget and then submits readiness, matching the prototype. The earlier draft made
+  the action submit readiness only and kept two per-section saves; that draft is superseded, and
+  the R8 conflict recorded by REQ-024 is closed by this page owning the write order.
+- **Generation projection follows the submission (2026-11-17).** `trip_member.ready` and
+  `preference_revision` are scaffold columns the main-plan read projection still consumes, so the
+  submission action now projects onto them, and the members query prefers the submission row when
+  one exists — a row saved before this projection still counts as ready. The inputs projection also
+  gained the fields screen 9 needs: `members[].noPreference`, `budgets[].amount/currency/limitType`,
+  `commonInterestLabels`, and `mustDoItems` with owner names. A member with `noPreference = true`
+  is excluded from the common-interest intersection, the must-do union and the budget summary, but
+  still counts as ready. `openspec/specs/main-itinerary/spec.md` documents the older input shape
+  and still needs a delta for these fields.
+- **Budget units are 元 storage, 分 arithmetic (2026-11-17).** `budgets[].amount` stays the stored
+  major-unit value and is what the page shows; every cents-based comparison (hard-budget filtering
+  and the overrun report) now converts once in `MainPlanService.hardBudgets`, so a 40 SGD hard
+  budget yields `hardBudgetCents` 4000. The main-plan tests seed major units to match.
 - **Prototype `noPrefSw` only hides fields.** The implementation must disable the fields and write
   the server-side flag, because hiding a form does not stop saved values from contributing.
 - **Empty submission rejection is new.** No acceptance criterion states it; it is the direct

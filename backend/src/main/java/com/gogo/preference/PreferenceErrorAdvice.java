@@ -17,6 +17,14 @@ public class PreferenceErrorAdvice {
                 .body(Map.of("code", cause.code(), "message", cause.getMessage()));
     }
 
+    // REQ-020 (MD2, MD6): the only advice edit this change makes — one more branch, mirroring
+    // the preference family, so MUST_DO_* codes keep their own type without widening the scope.
+    @ExceptionHandler(MustDoApiException.class)
+    public ResponseEntity<Map<String, String>> mustDoError(MustDoApiException cause) {
+        return ResponseEntity.status(cause.status())
+                .body(Map.of("code", cause.code(), "message", cause.getMessage()));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> invalidBody(MethodArgumentNotValidException cause) {
         return ResponseEntity.badRequest()
