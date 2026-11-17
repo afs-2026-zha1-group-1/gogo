@@ -2,7 +2,7 @@
 
 - Gate: G1 (Align)
 - Timestamp: 2026-11-17（草稿，+08:00）
-- Branch: `US-003-edit-trip-basics`（基于 `group1/main` `42a9239`；PR 未开，推送待授权）
+- Branch: `US-003-edit-trip-basics`（基于 `group1/main` `42a9239`；PR #120 已开，当前仅含规划产物）
 - **Status: Pending — 待 IO / SA 具名签署，本记录尚不构成 G1 Pass**
 
 ## Inputs

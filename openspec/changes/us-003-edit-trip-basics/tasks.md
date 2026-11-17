@@ -6,8 +6,8 @@
 
 ## 1. 分支与 PR（P4 起手）
 
-- [ ] 1.1 从最新 `main` 建分支 `US-003-edit-trip-basics`
-- [ ] 1.2 推送分支并开 PR 到 `main`（标题 `US-003: 修改行程基本信息 + 我的页名字编辑按钮化`，正文链接本 change 的 proposal/design/specs，注明 Spec ID: us-003-edit-trip-basics）
+- [x] 1.1 从最新 `main` 建分支 `US-003-edit-trip-basics`（基于 group1/main `42a9239`）
+- [x] 1.2 推送分支并开 PR 到 `main`（PR #120，标题 `US-003: 修改行程基本信息 + 我的页名字编辑按钮化`，正文链接本 change 的 proposal/design/specs，注明 Spec ID: us-003-edit-trip-basics）
 
 ## 2. Fixtures 与红先行
 
