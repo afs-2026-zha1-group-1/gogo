@@ -1,9 +1,12 @@
+import { useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { useMainPlan, useSplitDraft, useStartDraft } from "./hooks"
 import { SplitLayout } from "./split-layout"
 import { ErrorState, LoadingState } from "./states"
 import { TeamRouteGraph } from "./team-route-graph"
-import { actionForStatus, buildGraphRows, formatTime, type StopInput } from "./graph-model"
+import { NodeDetailSheet } from "./node-detail-sheet"
+import { buildNodeDetail } from "./node-detail"
+import { actionForStatus, buildGraphRows, formatTime, type GraphRow, type StopInput } from "./graph-model"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
@@ -25,6 +28,7 @@ export function ScreenStart() {
   const noDraft = !draftQuery.isPending && !draftQuery.error && (detail == null || status === "cancelled")
   const mainPlanQuery = useMainPlan(tripId, noDraft)
   const start = useStartDraft(tripId)
+  const [selectedNode, setSelectedNode] = useState<GraphRow | null>(null)
 
   const loading = draftQuery.isPending || (noDraft && mainPlanQuery.isPending)
   const loadError = draftQuery.error ?? (noDraft ? mainPlanQuery.error : null)
@@ -53,6 +57,15 @@ export function ScreenStart() {
   const routes = withDraft ? detail.routes ?? [] : []
   const model = buildGraphRows({ stops, departureStopId, reunionStopId, routes })
 
+  const groupCounts = {
+    a: detail?.groups.A?.length ?? 0,
+    b: detail?.groups.B?.length ?? 0,
+  }
+  const totalMembers = Object.values(detail?.groups ?? {}).reduce((sum, ids) => sum + ids.length, 0)
+  const selectedDetail = selectedNode
+    ? buildNodeDetail(selectedNode, { groupCounts, totalMembers })
+    : null
+
   const hasBoundaries = model.forkRow != null && model.joinRow != null
   const awaitingBoundaries = status === "active" && !hasBoundaries
   const awaitingRoutes = status === "active" && hasBoundaries && routes.length === 0
@@ -79,7 +92,8 @@ export function ScreenStart() {
   }
 
   return (
-    <SplitLayout
+    <>
+      <SplitLayout
       title="队伍路线"
       subtitle="本次行程仅一次分队"
       showTabBar
@@ -160,7 +174,7 @@ export function ScreenStart() {
                 </div>
               ) : null}
 
-              <TeamRouteGraph model={model} />
+              <TeamRouteGraph model={model} onNodeClick={setSelectedNode} />
 
               {awaitingBoundaries ? (
                 <HintCard title="待选择分头 / 会合边界" hint="选好边界后会显示分头、会合节点和中间暂停的主线。" />
@@ -185,6 +199,8 @@ export function ScreenStart() {
         </div>
       )}
     </SplitLayout>
+      <NodeDetailSheet detail={selectedDetail} onClose={() => setSelectedNode(null)} />
+    </>
   )
 }
 

@@ -41,6 +41,7 @@ export interface JunctionRow {
 
 export interface BranchRow {
   kind: "branch"
+  id: string
   route: RouteKey
   title: string
   meta: string
@@ -109,6 +110,7 @@ function branchRowsFor(route: RouteInput, key: RouteKey): BranchRow[] {
   const rows: BranchRow[] = [
     {
       kind: "branch",
+      id: `${key}-activity`,
       route: key,
       title: route.activityName?.trim() || "活动",
       meta: `活动 · ${formatMinutes(route.activityMinutes)}`,
@@ -119,6 +121,7 @@ function branchRowsFor(route: RouteInput, key: RouteKey): BranchRow[] {
     const total = route.travelLegsMinutes.reduce<number>((sum, minutes) => sum + (minutes ?? 0), 0)
     rows.push({
       kind: "branch",
+      id: `${key}-travel`,
       route: key,
       title: "前往会合点",
       meta: missing ? `路程 · ${PENDING_LABEL}` : `路程 · ${total} 分钟`,
@@ -127,6 +130,7 @@ function branchRowsFor(route: RouteInput, key: RouteKey): BranchRow[] {
   if (route.bufferMinutes !== 0) {
     rows.push({
       kind: "branch",
+      id: `${key}-buffer`,
       route: key,
       title: "缓冲",
       meta: `缓冲 · ${formatMinutes(route.bufferMinutes)}`,
