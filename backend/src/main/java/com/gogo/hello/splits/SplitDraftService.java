@@ -22,6 +22,7 @@ import com.gogo.hello.splits.dto.RouteGenerationResponse;
 import com.gogo.hello.splits.dto.SaveBoundariesRequest;
 import com.gogo.hello.splits.dto.SplitDraftDetailResponse;
 import com.gogo.hello.splits.provider.BranchCandidateProvider;
+import com.gogo.mainplan.MainPlanProjection;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -46,22 +47,26 @@ public class SplitDraftService {
     private final SplitDraftRepository repository;
     private final ObjectMapper objectMapper;
     private final BranchCandidateProvider provider;
+    private final MainPlanProjection mainPlanProjection;
     private final TransactionTemplate transactionTemplate;
     private final ReunionTimingCalculator calculator = new ReunionTimingCalculator();
 
     public SplitDraftService(MemberGuard guard, SplitDraftRepository repository, ObjectMapper objectMapper,
-            BranchCandidateProvider provider, PlatformTransactionManager transactionManager) {
+            BranchCandidateProvider provider, MainPlanProjection mainPlanProjection,
+            PlatformTransactionManager transactionManager) {
         this.guard = guard;
         this.repository = repository;
         this.objectMapper = objectMapper;
         this.provider = provider;
+        this.mainPlanProjection = mainPlanProjection;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
     /**
      * Starts the trip's unique active draft (spec REQ-004, design D8/D9/D16). Guards identity/trip/membership,
-     * requires a confirmed main plan, then conditionally inserts the draft only while {@code split_draft IS NULL};
-     * a lost race maps to 409 SPLIT_DRAFT_CONFLICT.
+     * requires a confirmed main plan, projects that plan into the main-line nodes, then conditionally inserts the
+     * draft only while {@code split_draft IS NULL}; a lost race maps to 409 SPLIT_DRAFT_CONFLICT. The draft pins the
+     * confirmed plan's real version, so its boundaries come from the same stops the members approved.
      */
     public SplitDraftDocument startDraft(String tripId, String memberId) {
         guard.requireMember(memberId, tripId);
@@ -72,29 +77,39 @@ public class SplitDraftService {
         String now = Instant.now().toString();
 
         String existingJson = repository.findDraftJson(tripId);
+        SplitDraftDocument existing = null;
         if (existingJson != null) {
-            SplitDraftDocument existing = fromJson(existingJson);
+            existing = fromJson(existingJson);
             if (!"cancelled".equals(existing.status())) {
                 throw new ApiException(ErrorCode.SPLIT_DRAFT_CONFLICT, "an active split draft already exists");
             }
-            requireSplittableMembers(memberIds);
-            repository.ensureMainPlanStops(tripId);
-            SplitDraftDocument rebuilt = SplitDraftDocument.initialRebuilt(
-                    memberId, 1, SplitDraftDocument.initialGroups(memberIds), now);
-            if (repository.rebuildIfCancelled(tripId, toJson(rebuilt), now) == 0) {
-                throw new ApiException(ErrorCode.SPLIT_DRAFT_CONFLICT, "a concurrent request replaced the draft");
-            }
-            return rebuilt;
         }
-
         requireSplittableMembers(memberIds);
-        repository.ensureMainPlanStops(tripId);
-        SplitDraftDocument draft = SplitDraftDocument.initial(
-                memberId, 1, SplitDraftDocument.initialGroups(memberIds), now);
-        if (repository.createDraftIfAbsent(tripId, toJson(draft)) == 0) {
-            throw new ApiException(ErrorCode.SPLIT_DRAFT_CONFLICT, "an active split draft already exists");
+        int mainPlanVersion = confirmedMainPlanVersion(tripId);
+        if (existing == null) {
+            SplitDraftDocument draft = SplitDraftDocument.initial(
+                    memberId, mainPlanVersion, SplitDraftDocument.initialGroups(memberIds), now);
+            if (repository.createDraftIfAbsent(tripId, toJson(draft)) == 0) {
+                throw new ApiException(ErrorCode.SPLIT_DRAFT_CONFLICT, "an active split draft already exists");
+            }
+            return draft;
         }
-        return draft;
+        SplitDraftDocument rebuilt = SplitDraftDocument.initialRebuilt(
+                memberId, mainPlanVersion, SplitDraftDocument.initialGroups(memberIds), now);
+        if (repository.rebuildIfCancelled(tripId, toJson(rebuilt), now) == 0) {
+            throw new ApiException(ErrorCode.SPLIT_DRAFT_CONFLICT, "a concurrent request replaced the draft");
+        }
+        return rebuilt;
+    }
+
+    /**
+     * Projects the confirmed main plan into plan_node and returns its version. A confirmation flag without a
+     * confirmed draft cannot provide boundary stops, so it is rejected instead of falling back to synthetic nodes.
+     */
+    private int confirmedMainPlanVersion(String tripId) {
+        return mainPlanProjection.projectConfirmed(Long.parseLong(tripId))
+                .orElseThrow(() -> new ApiException(
+                        ErrorCode.MAIN_PLAN_NOT_CONFIRMED, "the main plan must be confirmed"));
     }
 
     /**

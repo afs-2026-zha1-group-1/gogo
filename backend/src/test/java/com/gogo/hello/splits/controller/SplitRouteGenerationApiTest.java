@@ -76,7 +76,7 @@ class SplitRouteGenerationApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.data.routes[1].travelLegsMinutes[1]").value(20))
                 .andExpect(jsonPath("$.data.routes[1].bufferMinutes").value(10));
         assertThat(splitRouteCount()).isEqualTo(2);
-        assertThat(mainStopCount()).isEqualTo(2);
+        assertThat(mainStopCount()).isEqualTo(4);
         JsonNode draft = objectMapper.readTree(draftJson());
         assertThat(draft.get("draftVersion").asInt()).isEqualTo(4);
         assertThat(draft.get("routes").get("A").get("activityMinutes").asInt()).isEqualTo(60);
@@ -96,7 +96,7 @@ class SplitRouteGenerationApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.data").doesNotExist())
                 .andExpect(jsonPath("$.error.code").value("ROUTE_GENERATION_FAILED"));
         assertThat(splitRouteCount()).isEqualTo(2);
-        assertThat(mainStopCount()).isEqualTo(2);
+        assertThat(mainStopCount()).isEqualTo(4);
         JsonNode draft = objectMapper.readTree(draftJson());
         assertThat(draft.get("draftVersion").asInt()).isEqualTo(4);
         assertThat(draft.get("routes").get("A").get("activityMinutes").asInt()).isEqualTo(60);
