@@ -30,10 +30,12 @@ harness. Current frontend has no test framework installed.
 | I-9 | Cross-origin link rejected (invitations) | **E2E** | URL parsing edge case; asserts no external navigation |
 | I-10 | Scanner follows design basis (invitations) | **E2E** | Layout/visual assertion via screenshot |
 | S-1 | In-app route renders inside frame (app-shell) | **E2E** | Existing behavior; regression only |
-| S-2 | Identity switcher scaffold (app-shell) | **E2E** | Existing behavior; regression only |
+| S-2 | No shell-wide identity bar / profile shortcut (app-shell; re-baselined 2026-11-17 to US-068-070 living wording, supersedes scaffold-switcher scenario) | **E2E** | Existing behavior; regression only |
 | S-3 | Existing contracts unchanged (app-shell) | **E2E + API regression** | `InvitationApiTest` re-run proves backend untouched |
 | S-4 | Scanner renders full-screen without dock (app-shell) | **E2E** | Visual assertion |
-| S-5 | Closing scanner restores origin (app-shell) | **E2E** | Navigation-state assertion |
+| S-5 | Closing scanner returns to home `#/` (app-shell, 2026-11-17 revision of restore-origin) | **E2E** | Navigation-state assertion from non-home origin and direct visit |
+| S-6 | Signed-in existing member opens invite via scan/link → direct already-in-team notice (invitations, 2026-11-17 revision) | **E2E + API** | `viewerMember=true` preview; no accept button; enter-trip/back-to-scan actions |
+| S-7 | Organizer sees organizer wording on the same notice (invitations, 2026-11-17 revision) | **E2E** | Wording assertion; participants keep member wording |
 
 **Deferred to `/sdd:atdd-apply` (unit-level TDD, if UT harness is added)**:
 `matchesInvitationJoinHash(text, appOrigin) → {ok: true, token} | {ok: false,

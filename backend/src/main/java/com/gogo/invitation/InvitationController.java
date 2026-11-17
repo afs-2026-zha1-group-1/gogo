@@ -25,8 +25,12 @@ public class InvitationController {
     }
 
     @GetMapping("/api/invitations/{token}")
-    public InvitationPreview preview(@PathVariable String token) {
-        return repository.preview(token);
+    public InvitationPreview preview(
+            @AuthenticationPrincipal AccountPrincipal principal,
+            @PathVariable String token) {
+        // Guest preview stays public; a signed-in viewer additionally learns
+        // whether they are already a member (user ruling 2026-11-17).
+        return repository.preview(token, principal == null ? null : principal.id());
     }
 
     @PostMapping("/api/invitations/{token}/accept")

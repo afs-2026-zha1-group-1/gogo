@@ -162,6 +162,22 @@ exists.
 - [x] 10.2 Append a one-row entry to `docs/knowledge/_LOG.md` for the
       US-067 stack-plan reconciliation with the date and change id.
 
+## Group 11 - 2026-11-17 scan-flow revisions (user rulings, post-P4)
+
+- [x] 11.1 Scanner × always returns to `#/`; remove `from` prop / Route scan
+      `from` field / App `lastNonScanHash` tracker (supersedes D2/S-5)
+- [x] 11.2 Backend preview additive `tripId` + `viewerMember` (signed-in viewer
+      only; membership probe after query release); controller optional principal
+- [x] 11.3 Join page: signed-in member lands directly on already-in-team notice;
+      organizer wording variant; re-accept path reuses the notice
+- [x] 11.4 `InvitationApiTest.memberPreviewReportsViewerMember` (member true /
+      pre-join false / guest false); backend 364/364; frontend build green
+- [x] 11.5 Doc sync: delta specs (app-shell close scenario, invitations member
+      notice scenario), atdd S-5 revision + S-6/S-7, design D11, dov/proposal
+      revision notes, e2e revision rows, registry/handoff/_LOG/tech-stack §16
+- [x] 11.6 User manual re-check of organizer wording passed (2026-11-17); committed
+      on lumi_dev and landed via PR (see registry/e2e RV-3)
+
 ## Workflow follow-up
 
 - Push `US-067-invitation-planning` and open a PR into `main`; the PR is the

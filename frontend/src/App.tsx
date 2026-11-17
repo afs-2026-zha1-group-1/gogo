@@ -25,9 +25,8 @@ import { useAuth } from './features/auth/AuthProvider'
 function parseRoute(hash: string): Route {
   const path = hash.replace(/^#/, '') || '/'
   // Scanner owns its top-level hash and must be matched before the
-  // generic `/trips/<id>` regex (design D1); `from` is filled in by the
-  // App state tracker below, so parseRoute only signals the shape here.
-  if (path === '/scan') return { page: 'scan', from: null }
+  // generic `/trips/<id>` regex (design D1).
+  if (path === '/scan') return { page: 'scan' }
   const joinMatch = path.match(/^\/join\/([^/]+)$/)
   if (joinMatch) return { page: 'join', token: decodeURIComponent(joinMatch[1]) }
   if (path === '/login') return { page: 'login' }
@@ -137,18 +136,9 @@ export default function App() {
     explicitTripContext.current = true
     setLastTripId(tripId)
   }, [account?.id])
-  // Tracks the last non-scanner hash so closing the scanner can restore
-  // the originating route (spec S-5 / design D2). Falls back to `#/` via
-  // the Scanner close handler when this is null (user typed `#/scan`).
-  const [lastNonScanHash, setLastNonScanHash] = useState<string | null>(() => {
-    const initial = window.location.hash
-    return initial && initial.replace(/^#/, '') !== '/scan' ? initial : null
-  })
-
   useEffect(() => {
     const onHash = () => {
-      const next = window.location.hash
-      const parsed = parseRoute(next)
+      const parsed = parseRoute(window.location.hash)
       if (isDashboardRoute(parsed)) {
         setDashboardContext(true)
         if (parsed.page === 'dashboard-trip' || parsed.page === 'invitation'
@@ -163,16 +153,11 @@ export default function App() {
         setDashboardContext(false)
         setDashboardSelectionAttempted(false)
       }
-      if (parsed.page === 'scan') {
-        setRoute({ ...parsed, from: lastNonScanHash })
-      } else {
-        setLastNonScanHash(next || '#/')
-        setRoute(parsed)
-      }
+      setRoute(parsed)
     }
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
-  }, [lastNonScanHash])
+  }, [])
 
   useEffect(() => {
     setLastTripId(null)
@@ -288,7 +273,7 @@ export default function App() {
   if (route.page === 'scan') {
     return (
       <div className="app">
-        <Scanner from={route.from} />
+        <Scanner />
       </div>
     )
   }

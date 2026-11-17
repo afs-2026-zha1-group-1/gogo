@@ -447,7 +447,7 @@ for (const email of ['alice@example.com', 'ben@example.com']) {
     await expect(page.getByText('扫码加入行程', { exact: true })).toBeVisible()
     expect(persistedState()).toBe(before)
     await page.getByRole('button', { name: '关闭扫码' }).click()
-    await expect(page.getByRole('heading', { name: 'Stale draft trip' })).toBeVisible()
+    await expect(page).toHaveURL(/#\/$/)
     await page.evaluate(() => { window.location.hash = '#/trips/9001/main-plan' })
     await expect(page.getByText('草稿', { exact: false }).first()).toBeVisible()
     await page.getByRole('link', { name: '仪表盘', exact: true }).click()
