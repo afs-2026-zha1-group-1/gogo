@@ -62,11 +62,13 @@ export type ApiResult<T> =
       data: (ApiError & Partial<T>) | null
     }
 
-export type TabId = 'dashboard' | 'trips' | 'split' | 'members'
+export type TabId = 'dashboard' | 'trips' | 'split' | 'members' | 'account'
 
 export type Route =
   | { page: 'home' }
   | { page: 'login' }
+  | { page: 'register' }
+  | { page: 'account' }
   | { page: 'trips-empty' }
   | { page: 'create' }
   | { page: 'split' }
@@ -76,5 +78,8 @@ export type Route =
   | { page: 'main-plan'; tripId: number }
   | { page: 'main-plan-inputs'; tripId: number }
 
-// main-plan/login screens are full-page flows (like join) without the bottom TabBar.
-export type InAppPage = Exclude<Route['page'], 'join' | 'login' | 'main-plan' | 'main-plan-inputs'>
+// main-plan/login/register screens are full-page flows (like join) without the bottom TabBar.
+export type InAppPage = Exclude<
+  Route['page'],
+  'join' | 'login' | 'register' | 'main-plan' | 'main-plan-inputs'
+>

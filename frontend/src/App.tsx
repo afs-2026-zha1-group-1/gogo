@@ -10,6 +10,8 @@ import Join from './pages/Join'
 import MainPlan from './pages/MainPlan'
 import MainPlanInputs from './pages/MainPlanInputs'
 import LoginPage from './features/auth/LoginPage'
+import RegisterPage from './features/auth/RegisterPage'
+import AccountPage from './features/auth/AccountPage'
 import { useAuth } from './features/auth/AuthProvider'
 
 function parseRoute(hash: string): Route {
@@ -17,6 +19,8 @@ function parseRoute(hash: string): Route {
   const joinMatch = path.match(/^\/join\/([^/]+)$/)
   if (joinMatch) return { page: 'join', token: decodeURIComponent(joinMatch[1]) }
   if (path === '/login') return { page: 'login' }
+  if (path === '/register') return { page: 'register' }
+  if (path === '/account') return { page: 'account' }
   const mainPlanInputsMatch = path.match(/^\/trips\/(\d+)\/main-plan\/inputs$/)
   if (mainPlanInputsMatch) return { page: 'main-plan-inputs', tripId: Number(mainPlanInputsMatch[1]) }
   const mainPlanMatch = path.match(/^\/trips\/(\d+)\/main-plan$/)
@@ -37,14 +41,7 @@ const TAB_FOR_PAGE: Record<InAppPage, TabId> = {
   create: 'trips',
   split: 'split',
   members: 'members',
-}
-
-function AccountBar({ name }: { name: string }) {
-  return (
-    <div className="scaffold-bar">
-      <span className="scaffold-label">已登录 · {name}</span>
-    </div>
-  )
+  account: 'account',
 }
 
 export default function App() {
@@ -65,6 +62,7 @@ export default function App() {
   const tripsHref = lastTripId != null ? `#/trips/${lastTripId}` : '#/trips'
 
   if (route.page === 'login') return <LoginPage />
+  if (route.page === 'register') return <RegisterPage />
 
   if (route.page === 'join') {
     return (
@@ -89,7 +87,6 @@ export default function App() {
   if (route.page === 'main-plan') {
     return (
       <div className="app">
-        <AccountBar name={account.name} />
         <MainPlan tripId={route.tripId} />
       </div>
     )
@@ -98,7 +95,6 @@ export default function App() {
   if (route.page === 'main-plan-inputs') {
     return (
       <div className="app">
-        <AccountBar name={account.name} />
         <MainPlanInputs tripId={route.tripId} />
       </div>
     )
@@ -106,7 +102,6 @@ export default function App() {
 
   return (
     <div className="app">
-      <AccountBar name={account.name} />
       <div className="shell-content">
         {route.page === 'home' && <Home />}
         {route.page === 'create' && <CreateTrip backHref={tripsHref} />}
@@ -148,6 +143,7 @@ export default function App() {
         {route.page === 'members' && (
           <Placeholder title="成员" tripsHref={tripsHref} />
         )}
+        {route.page === 'account' && <AccountPage />}
       </div>
       <TabBar active={TAB_FOR_PAGE[route.page]} tripsHref={tripsHref} />
     </div>
