@@ -2,221 +2,170 @@
 
 ## Purpose
 
-Give authenticated trip members a reliable, read-only view of their member
-trips and available destinations without changing trip state.
+Give an authenticated trip member an overview of the selected trip using
+authorized source data, with access to existing trip-planning destinations.
 
 ## ADDED Requirements
 
-### Requirement: Prototype-inspired mobile overview
+### Requirement: Current-trip dashboard selection
 
-The selected-trip dashboard SHALL follow the supplied screenshot and release-2
-HTML prototype for its mobile hero, seven milestone slots and two-column grid
-of four status cards. Values SHALL come from authorized reads or be explicitly
-unknown or unavailable, not prototype demo data. The next-step card SHALL
-follow the source-backed next-step requirement.
+The dashboard SHALL read the signed-in traveler's persisted current trip and
+show its authorized overview. When no current trip is selected, it SHALL
+offer the existing My Trips picker and trip creation instead of inventing a
+trip. A direct selected-trip dashboard route SHALL NOT change the persisted
+current trip.
 
-#### Scenario: Selected overview at a mobile viewport
+#### Scenario: An explicitly selected trip survives reload
 
-- **GIVEN** an authorized member opens a selected-trip dashboard
-- **WHEN** the required reads succeed
-- **THEN** the trip hero, seven milestone slots and four status cards follow
-  the reference's mobile layout and display the actual authorized values
-- **AND** unavailable reunion and completion state is identified as unknown
-- **AND** the five-tab dock preserves access to My Account
+- **GIVEN** a member selects a trip in My Trips
+- **WHEN** the member opens or reloads the dashboard
+- **THEN** the selected trip's overview is shown
+- **AND** other member trips are not presented as dashboard cards
 
-### Requirement: Member-trip listing
+#### Scenario: No selected trip
 
-The dashboard SHALL show all and only trips in which the authenticated
-traveler is a member. Until US-058 integration is delivered, completed trips
-may appear; the dashboard SHALL NOT label the list or cards active or infer
-completion from dates or other trip statuses. Each card SHALL show the saved
-name, destination, start date and end date and open the corresponding trip
-dashboard.
+- **GIVEN** the current-trip read succeeds with no selection
+- **WHEN** the dashboard loads
+- **THEN** it shows an empty-selection state and links to My Trips and create
 
-#### Scenario: Only member trips are listed
+#### Scenario: Current-trip read fails
 
-- **GIVEN** Ben belongs to trips A, B and C, and is not a member of trip D
-- **WHEN** Ben opens the dashboard after signing in
-- **THEN** exactly A, B and C are listed, each with its saved name, destination
-  and start and end dates
-- **AND** D and its private information are not shown
-- **AND** none of the cards is presented as confirmed active
-- **AND** selecting B opens B's trip dashboard
+- **WHEN** the current-trip read fails or returns invalid data
+- **THEN** the dashboard displays an error and retry rather than a trip
 
-#### Scenario: No member trips
+#### Scenario: Direct selection does not persist
 
-- **GIVEN** the authenticated traveler has no member trips
-- **WHEN** the member-trip list is successfully loaded
-- **THEN** an empty state is shown without fabricated trip information
-
-#### Scenario: Completion is not integrated
-
-- **GIVEN** US-058 completion state is not integrated
-- **WHEN** the dashboard loads the member-trip list
-- **THEN** it includes all member trips regardless of possible completion
-- **AND** it does not infer or display completion or active status
+- **GIVEN** the traveler has a different saved current trip
+- **WHEN** the traveler opens an authorized `#/dashboard/trips/<id>` directly
+- **THEN** the requested overview is shown without changing the saved selection
+- **AND** a late current-trip response does not replace that overview
 
 ### Requirement: Authorized trip overview
 
-The selected-trip dashboard SHALL show the saved trip summary, member count,
-ready count, main-plan status and split status using the owning capabilities'
-authorized reads and readiness rules. It SHALL show a reported stale main plan
-as stale and SHALL NOT create separate persisted dashboard progress state.
+The selected dashboard SHALL show the saved trip summary, member and ready
+counts, main-plan status and split status using authorized owning reads. It
+SHALL distinguish valid absence from failure and SHALL NOT persist separate
+dashboard progress.
 
 #### Scenario: Overview reflects a stale draft
 
-- **GIVEN** Ben belongs to a trip with four members, three ready members, a
-  stale main-plan draft and no split draft
-- **WHEN** Ben opens its dashboard and all required reads succeed
-- **THEN** the saved name, destination, dates and available start/end locations
-  are shown with member count 4 and ready count 3
-- **AND** the main-plan draft is identified as stale and the split as absent
+- **GIVEN** an authorized trip has four members, three ready members, a stale
+  main-plan draft and no split draft
+- **WHEN** the required reads succeed
+- **THEN** the overview shows those values and the saved trip details
 
-#### Scenario: Overview reflects an active split
+#### Scenario: Inconsistent or failed source
 
-- **GIVEN** Ben belongs to a trip with a confirmed main plan and an active
-  split draft
-- **WHEN** Ben opens its dashboard and all required reads succeed
-- **THEN** the main plan is identified as confirmed and the split as active
-
-#### Scenario: Inconsistent main plan and split
-
-- **GIVEN** the owning reads report an active split with an unconfirmed main
-  plan
-- **WHEN** Ben opens its dashboard
-- **THEN** the inconsistent status information is shown as unavailable
-- **AND** no recommendation is inferred from it
+- **WHEN** required source data is invalid, inconsistent or unavailable
+- **THEN** it is not represented as a verified count or absent draft
 
 #### Scenario: Successful absent drafts
 
-- **GIVEN** the owning reads successfully report no main-plan draft and no
-  split draft
-- **WHEN** an authorized member opens the trip dashboard
-- **THEN** it shows the main plan and split as absent rather than as failures
+- **GIVEN** the authorized reads report no main-plan or split draft
+- **WHEN** the overview loads
+- **THEN** each is displayed as absent rather than as a failed read
 
-#### Scenario: Source data changes
+#### Scenario: Changed source data
 
-- **GIVEN** the member count, readiness or a plan status changes in its owning
-  capability
-- **WHEN** the dashboard successfully reads the updated state
-- **THEN** the displayed values reflect that state without a dashboard write
+- **WHEN** the overview rereads changed membership, readiness, plan or split
+  data successfully
+- **THEN** it displays the updated source values without persisting progress
 
-### Requirement: Source-backed journey milestones
+### Requirement: Role-specific journey milestones
 
-The selected dashboard SHALL display a seven-stage strip in the prototype's
-order: setup, invitations, preferences, main plan, split, reunion and
-completion. It SHALL describe the first five as independently verified
-planning milestones rather than claiming the current stage of the entire
-journey. The final two SHALL be visibly unknown until their owning state is
-available. It SHALL NOT infer trip completion or active status from dates,
-split status or missing data.
+The dashboard SHALL show setup, preferences, invitations, main plan, split,
+reunion and completion to organizers, and preferences, main plan, split,
+reunion and completion to other members. Planning milestone details and
+done/active/pending presentation SHALL derive from the existing readiness,
+membership, main-plan and split data. Reunion and completion SHALL remain
+unknown; dates and split state SHALL NOT establish trip completion.
 
-#### Scenario: Verified planning milestones
+#### Scenario: Organizer and member milestones
 
-- **GIVEN** a selected trip and its required authorized reads are valid
-- **WHEN** the milestone strip is displayed
-- **THEN** setup is shown as created, invitation joining as open or closed
-  according to the trip's main-plan-confirmed flag, and preferences as the
-  verified ready count out of the member count
-- **AND** the main-plan milestone distinguishes absent, draft, stale draft and
-  confirmed state, and the split milestone distinguishes absent, active,
-  confirmed and cancelled state
-- **AND** reunion and completion are marked unknown rather than completed,
-  current or upcoming
+- **GIVEN** the source reads are valid
+- **WHEN** an organizer views the dashboard
+- **THEN** the seven organizer milestones appear in the specified order
+- **WHEN** another member views it
+- **THEN** the five member milestones appear in the specified order
+- **AND** reunion and completion remain unknown
 
-#### Scenario: Milestone source unavailable or inconsistent
+#### Scenario: Planning state changes
 
-- **WHEN** a required source is pending, invalid, inconsistent or fails
-- **THEN** affected milestones are loading or unavailable, not inferred or
-  displayed as verified
+- **GIVEN** valid readiness, membership, plan and split data
+- **WHEN** the dashboard renders the progress strip
+- **THEN** it shows the viewer's readiness and ready/member count
+- **AND** it distinguishes absent, draft, stale and confirmed main plans and
+  absent, active, confirmed and cancelled splits
+- **AND** organizers see invitation joining status and membership context
 
-### Requirement: Source-backed next step
+### Requirement: Source-backed next step and quick links
 
-The dashboard SHALL show a next-step card only when verified information
-supports a suggestion and its destination has been verified to be authorized
-and read-only on navigation. Suggestions SHALL navigate to an owning page
-without performing its actions. Failed, pending or invalid data SHALL NOT
-produce a recommendation.
+After valid required reads, the dashboard SHALL provide a source-backed next
+step and links to invitation, preferences and main plan. It SHALL preserve
+existing destination authorization and SHALL NOT itself generate or confirm
+a plan or split.
 
-#### Scenario: Next step for preferences
+#### Scenario: Guidance depends on role and planning state
 
-- **GIVEN** a valid inputs response identifies the signed-in member as not
-  ready and the trip's main plan is not confirmed
-- **WHEN** the preferences destination is verified safe
-- **THEN** the card suggests reviewing that member's preferences and links to
-  that destination
+- **GIVEN** the main plan is confirmed
+- **WHEN** the dashboard selects the next step
+- **THEN** it offers the split destination
+- **WHEN** the main plan is unconfirmed and the viewer is not ready
+- **THEN** it offers preferences
+- **WHEN** a ready organizer is the only member and no plan exists
+- **THEN** it offers invitations
+- **WHEN** a ready viewer has no plan in other cases
+- **THEN** it offers main-plan inputs
+- **WHEN** a draft or stale plan exists
+- **THEN** it offers the main-plan view
 
-#### Scenario: Next step for the main plan
+#### Scenario: Required source is unavailable
 
-- **GIVEN** the signed-in member is ready or the main plan is confirmed
-- **WHEN** the main-plan destination is verified safe and the applicable
-  source reads are valid
-- **THEN** the card suggests viewing the main plan without generating,
-  confirming or changing it
+- **WHEN** required source reads are pending, invalid or failed
+- **THEN** the dashboard does not present a source-backed recommendation
 
-#### Scenario: No supported recommendation
+#### Scenario: Quick links
 
-- **GIVEN** the required source or safe destination cannot be verified
-- **WHEN** the dashboard is displayed
-- **THEN** it does not invent a next step or link to an unsafe destination
+- **WHEN** an authorized member views the selected dashboard
+- **THEN** invitation, preferences and main-plan links target the selected trip
+- **AND** the destination applies its existing access rules and behavior
 
 ### Requirement: Explicit dashboard read and access states
 
-The dashboard SHALL distinguish pending, empty, missing, denied and failed
-reads from successful data. It SHALL enforce the existing authenticated
-membership boundary and SHALL NOT substitute zero or absent drafts for
-invalid, incomplete or failed responses.
-
-#### Scenario: Loading and failed overview reads
-
-- **GIVEN** an authorized member opens a selected trip
-- **WHEN** a required trip, readiness, plan or split read is pending
-- **THEN** the relevant information is shown as loading, not as actual values
-- **WHEN** any required read fails or returns invalid or incomplete data
-- **THEN** the affected information is shown as unavailable or in error
-- **AND** the failure is not displayed as zero counts or an absent draft
+The dashboard SHALL distinguish pending, no selection, invalid, missing,
+denied and failed reads from successful data. Existing authentication and
+membership boundaries SHALL apply; no other trip SHALL be substituted.
 
 #### Scenario: Missing and denied trips
 
-- **GIVEN** a signed-in traveler requests an unknown or malformed trip
-  identifier, or a trip of which the traveler is not a member
-- **WHEN** the selected-trip dashboard is opened
-- **THEN** it shows the applicable invalid/missing or denied outcome
-- **AND** no other trip is substituted and no private trip data is disclosed
+- **WHEN** a signed-in traveler requests a malformed, missing or unauthorized
+  selected-trip dashboard
+- **THEN** the applicable state is shown without disclosing another trip
 
 #### Scenario: Signed-out visitor
 
-- **WHEN** a signed-out or expired-session traveler opens a dashboard
-- **THEN** the existing authentication boundary applies
-- **AND** no private trip data is displayed
+- **WHEN** a signed-out traveler opens a dashboard
+- **THEN** the authentication boundary applies before private data is shown
 
-### Requirement: Read-only dashboard navigation
+#### Scenario: Account or trip changes during a read
 
-The dashboard SHALL provide navigation to available destinations subject to
-their existing authorization rules. A destination not yet developed SHALL
-show coming soon rather than a broken link. Navigation alone SHALL NOT change
-persisted state or perform actions owned by destination pages.
+- **WHEN** an earlier request completes after the account or trip changes
+- **THEN** it does not replace the new selection with the earlier private data
 
-#### Scenario: An available destination is opened
+### Requirement: Dashboard destination side effects
 
-- **GIVEN** an authorized member views the selected-trip dashboard
-- **WHEN** the member follows an available destination link or dashboard tab
-- **THEN** the destination opens under its existing access rules
-- **AND** dashboard navigation alone does not change saved trip, invitation,
-  preference, plan, split or completion state
+The dashboard overview SHALL read existing state without persisting progress.
+Destinations SHALL retain their existing permissions and side effects.
+Opening invitation or trip-details pages as organizer invokes the existing
+invitation POST; navigation to those destinations is not write-free.
 
-#### Scenario: Destination unavailable
+#### Scenario: Organizer opens invitations
 
-- **GIVEN** a destination has not been developed
-- **WHEN** an authorized member views its dashboard entry
-- **THEN** the entry says it is coming soon and does not navigate to a broken
-  page
+- **GIVEN** the viewer is the trip organizer
+- **WHEN** the invitation destination loads
+- **THEN** its existing invitation panel requests an invitation
 
-#### Scenario: Trip details is temporarily blocked
+#### Scenario: Non-member opens invitations
 
-- **GIVEN** the separately owned trip-details fix preventing automatic
-  invitation issuance on page load has not been delivered
-- **WHEN** a member uses a dashboard entry or tab for trip details
-- **THEN** the destination is presented as coming soon
-- **AND** navigation does not open the unsafe details page or issue an
-  invitation
+- **WHEN** a non-member opens the invitation destination
+- **THEN** the existing trip authorization denies access

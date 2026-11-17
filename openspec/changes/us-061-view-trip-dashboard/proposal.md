@@ -2,105 +2,69 @@
 
 ## Why
 
-Trip members need a reliable, read-only view of their trips without visiting
-several pages. The current dashboard shows home content rather than
-member-trip aggregation.
+Trip members need a reliable view of their selected trip's planning state and
+access to related pages.
 
 ## What Changes
 
-- Replace the dashboard landing content with cards for all trips in which the
-  signed-in user is a member. Each card shows the saved trip name,
-  destination, and start/end dates and opens that trip's dashboard. Until
-  US-058 is integrated, completed trips may appear and cards are not labelled
-  active. Reuse the member-scoped list delivered by US-071.
-- Show an authorized per-trip overview with the trip summary, member and ready
-  counts, and main-plan and split statuses. Present a seven-stage progress
-  strip based on verified planning data, with reunion and completion marked
-  unknown until their authoritative state is available.
-  Follow the supplied screenshot and release-2 prototype for the mobile hero,
-  milestones and four status cards. Reuse owning capabilities' data and
-  authorization; do not persist progress or show prototype demo values.
-- Show navigation to available pages without changing saved state. Pages not
-  yet developed say they are coming soon. The existing trip-details
-  destination also says coming soon until its organizer page-load invitation
-  write is fixed separately; dashboard tabs must not bypass this restriction.
-  Dashboard selection is ephemeral; the separate US-071 picker continues to
-  persist an explicitly chosen current trip.
-- Show a next-step recommendation only when supported by verified source data
-  and an authorized, read-only destination. Do not execute actions belonging
-  to other pages. Active-only filtering and the separately delivered archive
-  remain follow-up work. The interim member-trip scope supersedes the earlier
-  active-only dashboard decision; tracker reconciliation remains with its
-  owner.
-- Distinguish loading, empty, missing, denied and read-failure states from
-  real data. Do not infer completion or active status from dates, split state
-  or missing data.
+- The authenticated dashboard at `#/` reads the caller's persisted current
+  trip and shows its overview. If no trip is selected, it offers My Trips and
+  trip creation. The separate My Trips picker lists member trips and persists
+  an explicitly selected trip. A direct `#/dashboard/trips/<id>` overview
+  remains available without persisting that selection.
+- Compose authorized trip, readiness, main-plan and split reads into a
+  source-backed overview. Show role-specific planning milestones, suggestions,
+  and quick links. Reunion and completion remain unknown; do not infer
+  completion or active-trip status from dates or split state.
+- Offer invitation, preference, main-plan and split destinations using
+  existing access rules. The organizer's invitation page and trip-details
+  page invoke the existing invitation POST on load. The dashboard overview
+  itself is read-only, but navigation to those destinations is not guaranteed
+  to be write-free.
+- Show loading, empty-selection, missing, denied and failed states without
+  fabricating trip facts. Completion filtering and archive remain deferred.
 
 ## Non-Goals
 
-- Implement completion, archive, invitation issuance, or other destination-page
-  actions; those remain owned by their respective capabilities.
-- Persist dashboard progress or infer reunion or completion state.
-- Change destination permissions or reconcile the original tracker issue as
-  part of this change.
+- Implement completion, archive, dashboard-owned persisted progress, or new
+  destination permissions.
+- Change existing destination operations, including invitation issuance.
+- Represent earlier human approval or CI as approval or verification of the
+  current, uncommitted implementation.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `trip-dashboard`: authenticated member-trip listing and read-only trip
-  overview, source-backed planning milestones, safe recommendations and honest
-  unknown states.
+- `trip-dashboard`: authenticated current-trip overview, direct trip overview,
+  role-specific planning progress, recommendations and explicit error states.
 
 ### Modified Capabilities
 
-- `app-shell`: dashboard tab placement and navigation now accommodate the
-  member-trip list and selected-trip dashboard rather than home-only content;
-  preserve the existing five-tab shell, account access and authenticated
-  access boundary.
+- `app-shell`: dashboard and trip navigation within the existing authenticated
+  five-tab shell, including the persisted My Trips picker.
 
 ## Impact
 
-- **Self:** this change proposes the interim member-trip list, overview,
-  source-backed planning milestones, safe recommendations and navigation
-  described above. Reunion and completion remain unknown.
-- **Upstream:** authentication, membership, readiness, main-plan and split
-  reads, plus the separately delivered trip-details fix, supply or constrain
-  dashboard behavior. Reuse the session authentication already present in the
-  codebase; US-066 need not be archived before US-061. US-058 is deferred.
-- **Downstream:** authenticated trip members and the shell consume the
-  dashboard views; completed trips may appear until completion integration.
-- **Frontend:** `frontend/src/App.tsx`, dashboard/home content, navigation and
-  related tests. Existing destination operations and permissions remain owned
-  by their respective pages.
-- **Backend/data:** reuse US-071's authenticated, membership-filtered trip
-  list and its existing response envelope, plus authorized readiness,
-  main-plan and split reads. Do not add a duplicate list API, completion
-  writer, archive, or duplicate business state.
-- **Prerequisites:** archive delivery is separate, and the trip-details
-  automatic invitation issuance must be fixed separately before that
-  destination is linked. US-058 and active-only filtering are deferred, not
-  required to implement or accept the interim member-trip scope. Applicable
-  authentication and navigation behavior still require verification. US-066
-  coordination is outside this change; the existing authenticated shell and
-  dashboard behavior remain in scope.
-- **Existing contracts:** `openspec/specs/app-shell/spec.md` says there is no
-  dashboard aggregation and contains historical identity-scaffold language.
-  Update the applicable shell requirements without restoring that scaffold.
-  US-071 has since added its list and current-trip APIs to the binding
-  tech-stack plan; reconcile US-061's actually shipped behavior at archive.
-- **Verification:** cover authorized membership isolation, actual counts and
-  statuses, source-backed progress and recommendations, safe and unavailable navigation, an empty
-  membership list, error handling and no navigation writes.
-- **Effort and ordering:** medium-to-large full-stack vertical slice.
-  Completion filtering and completion-aware progress require a separately
-  planned US-058 follow-up. The archive and trip-details fix remain separate
-  deliverables; applicable prerequisites must be met before acceptance.
-  The revised scope's reported G1 Pass is recorded in
-  [g1-decision.md](g1-decision.md); the remaining acceptance and coordination
-  checks still apply.
+- **Self:** the current implementation replaces the previously approved
+  member-trip dashboard list with the selected-current-trip overview and adds
+  role-specific milestones and destination links.
+- **Upstream:** existing authentication, membership, current-trip, readiness,
+  plan, split and invitation capabilities remain authoritative.
+- **Downstream:** organizers may issue an invitation by opening the invitation
+  or trip-details page; the former blanket no-navigation-write boundary no
+  longer describes the implementation and requires renewed IO/SA alignment.
+- **Frontend:** the dashboard, shell routes, destination return paths and
+  associated tests change; existing destination permissions remain in force.
+- **Backend/data:** reuse existing APIs and current-trip persistence; no
+  dashboard progress schema or completion writer is added.
+- **Verification:** validate access, current selection, progress, destination
+  behavior, errors and invitation side effects. CI for a prior commit is not
+  evidence for subsequent local changes.
+- **Outstanding:** the prior [G1 decision](g1-decision.md) covers the earlier
+  scope only. Obtain a new human decision for this reconciliation; reconcile
+  issue #26 and the overlapping shell change separately. At archive, reconcile
+  the tech-stack plan with what actually ships.
 
-Source: `requirement-workspace/requirements/US-061.md`,
-`requirement-workspace/analysis/us-061-deep-dive.md`, and the US-061 section of
-`requirement-workspace/impact-brief.md`. The user confirmed the single-change
-split on 2026-11-16.
+Source: [US-061 requirement](../../../requirement-workspace/requirements/US-061.md)
+and the current implementation and tests.

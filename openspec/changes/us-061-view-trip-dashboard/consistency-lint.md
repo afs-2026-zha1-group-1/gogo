@@ -1,5 +1,14 @@
 # US-061 consistency lint
 
+## Current implementation reconciliation — 2026-11-17
+
+The earlier lint below is historical. The current proposal, deltas, design
+and ATDD record the selected-current-trip dashboard and role-specific
+milestones, and explicitly disclose the organizer invitation POST on
+destination load. Earlier G1 approval and CI evidence do not cover this
+revision. Renew human alignment and validate the reconciled artifacts; the
+US-066 shell overlap and tracker reconciliation remain separately owned.
+
 - Phase: P2; scope: proposal, delta specs and related living specs.
 - Reviewed: 2026-11-16 23:08 +08:00; reviewer: AI; human sign-off pending.
 - Artifact level: proposal + specs; design and tasks absent.

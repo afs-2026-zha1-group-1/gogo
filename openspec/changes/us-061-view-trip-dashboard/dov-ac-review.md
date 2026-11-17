@@ -1,5 +1,14 @@
 # US-061 AC / DoV review
 
+## Current implementation reconciliation — 2026-11-17
+
+The reviews below are historical and do not assess the current scope.
+Current changes replace the dashboard list with the persisted current-trip
+overview, introduce role-specific milestones and destination links, and allow
+organizer invitation POSTs on invitation or details page load. The prior
+no-navigation-write AC no longer matches implementation. Revised acceptance,
+destination-side-effect verification and a new IO/SA decision remain open.
+
 ## Revised-scope review — 2026-11-17
 
 Reviewer: AI. This review is planning evidence, not a gate decision or proof

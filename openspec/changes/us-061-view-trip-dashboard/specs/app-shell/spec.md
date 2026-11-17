@@ -4,22 +4,23 @@
 
 ### Requirement: Mobile shell frame
 
-The frontend SHALL render every signed-in in-app route inside a centered column
+The frontend SHALL render shell-hosted signed-in routes inside a centered column
 at most 430 px wide and 100 dvh tall, with the page content scrolling above a
 fixed bottom dock and safe-area padding applied. The shell SHALL use the
 project's existing UI component language and tokens. The shell SHALL NOT expose
 a shell-wide identity bar, identity switcher, seeded-user list or top-right
 profile shortcut. The authenticated account's display name SHALL be shown on
 My Account and in the dashboard greeting; account actions SHALL remain on My
-Account. Login, registration and guest join surfaces SHALL render outside the
-shell without the dock. The shell itself
+Account. Login, registration, guest join, scanner, preferences and
+invitation-only surfaces SHALL render outside the shell without the dock.
+The shell itself
 SHALL NOT change create validation, trip-details permission, invitation or join
 behavior, or main-plan behavior; authentication and session ownership belong
 to the `auth` capability.
 
 #### Scenario: An in-app route renders inside the frame
 
-- **WHEN** an authenticated traveler opens the member-trip list, a selected
+- **WHEN** an authenticated traveler opens the current-trip dashboard, a selected
   trip dashboard, the no-trip 行程 route, `#/trips/<id>`, `#/create`, `#/split`
   `#/members` or `#/account`
 - **THEN** the content is inside a centered column at most 430 px wide and
@@ -51,10 +52,11 @@ to the `auth` capability.
 
 The shell SHALL show a bottom dock with exactly five tabs in the order
 仪表盘 / 行程 / 分队 / 成员 / 我的, each with an icon and text label. The active tab
-SHALL identify the current area, including both dashboard views. Activating an
-available tab SHALL update the hash route without a full reload, retain the
-authenticated account, and preserve browser back/forward behavior. Every tab
-SHALL have a unique visible heading or state.
+SHALL identify the current area, including dashboard views. Activating an
+hash-routed tab SHALL update the hash without a full reload; the split tab may
+use its existing path route. Navigation SHALL retain the authenticated
+account and preserve browser back/forward behavior. Every tab SHALL have a
+unique visible heading or state.
 
 #### Scenario: The dock shows five ordered tabs with an active highlight
 
@@ -62,11 +64,11 @@ SHALL have a unique visible heading or state.
 - **THEN** the dock shows 仪表盘, 行程, 分队, 成员, 我的 in that order, each with an
   icon and a text label
 - **AND** exactly the tab owning the current route is visibly highlighted
-- **AND** 仪表盘 is active for both dashboard list and selected-trip overview
+- **AND** 仪表盘 is active for the current-trip and direct selected-trip overview
 
 #### Scenario: Tab switching updates the hash without reload and keeps identity
 
-- **WHEN** a traveler authenticated as Alice activates an available dock tab
+- **WHEN** a traveler authenticated as Alice activates a hash-routed dock tab
 - **THEN** the hash route changes without a full page reload
 - **AND** Alice remains authenticated and the newly active tab is highlighted
 
@@ -80,8 +82,7 @@ SHALL have a unique visible heading or state.
 
 - **WHEN** the traveler activates the tabs in order 仪表盘 → 行程 → 分队 → 成员 → 我的
   and then in reverse
-- **THEN** every activation yields a unique visible heading or state,
-  including a coming-soon state for a blocked destination
+- **THEN** every activation yields a unique visible heading or state
 - **AND** no demo data is required
 
 #### Scenario: Browser back/forward follows tab history
@@ -93,25 +94,25 @@ SHALL have a unique visible heading or state.
 
 #### Scenario: Trip tab cannot bypass the details restriction
 
-- **GIVEN** the trip-details page still issues an invitation automatically
-  when an organizer loads it
-- **WHEN** the traveler selects the 行程 tab from either dashboard view, even
-  with a previously selected trip
-- **THEN** the tab does not open that unsafe details page
-- **AND** its trip-details destination is presented as coming soon without
-  issuing an invitation
+The historical scenario name is retained for MODIFIED-requirement
+compatibility; the current behavior is described below.
+
+- **WHEN** the traveler selects the 行程 tab from a dashboard view
+- **THEN** the trip-entry page offers an ID lookup
+- **AND** opening a trip can reach its existing details page, whose organizer
+  invitation panel posts on load
 
 ### Requirement: Dashboard tab placement
 
 The 仪表盘 tab SHALL target `#/`, the authenticated default route, showing the
-member-trip list. Selecting a card SHALL show its trip dashboard with
-仪表盘 active. A signed-out visitor SHALL be sent to login before either view
-renders. Dashboard content and read boundaries belong to `trip-dashboard`.
+persisted current-trip overview or its empty/error state. A direct selected-trip
+dashboard SHALL also retain 仪表盘 active. Signed-out visitors SHALL be sent
+to login. Dashboard read boundaries belong to `trip-dashboard`.
 
 #### Scenario: The default route shows the existing home under the shell
 
 - **WHEN** an authenticated traveler opens the default route `#/`
-- **THEN** the member-trip list or its applicable state renders inside
+- **THEN** the current-trip overview or its applicable state renders inside
   the shell
 - **AND** the 仪表盘 tab is active
 
@@ -131,7 +132,10 @@ renders. Dashboard content and read boundaries belong to `trip-dashboard`.
 
 #### Scenario: No aggregation is introduced
 
-- **WHEN** an authenticated member selects a listed member trip
+The historical scenario name is retained for MODIFIED-requirement
+compatibility; the current dashboard composes authorized reads.
+
+- **WHEN** an authenticated member opens an authorized selected trip
 - **THEN** the selected-trip overview and source-backed milestone strip render under the shell
 - **AND** 仪表盘 remains active and the account remains authenticated
 
@@ -142,10 +146,10 @@ as cards without a trailing arrow. Activating a picker card SHALL persist the
 current trip, highlight it and show 已选择 without navigating. Outside
 dashboard-origin navigation, the 行程 tab SHALL target `#/trips`, rendering the
 current trip's details or an empty state linking to `#/my-trips`.
-`#/trips/<id>` SHALL keep opening details directly. Until the separate
-invitation-write fix is delivered, dashboard-origin navigation SHALL instead
-use `#/dashboard/trip-entry`, showing a coming-soon details state with disabled
-open-by-id entry, even after reload.
+`#/trips/<id>` SHALL keep opening details directly. Dashboard-origin trip-tab
+navigation SHALL use `#/dashboard/trip-entry`, whose ID lookup can open the
+existing details page. For organizers, loading details invokes the existing
+invitation POST.
 
 #### Scenario: The account page exposes the my-trips entry
 
@@ -209,7 +213,7 @@ open-by-id entry, even after reload.
 #### Scenario: Create is reachable and returns to the trips tab
 
 - **WHEN** the traveler opens `#/create` from the shell and uses the back action
-- **THEN** the app returns to the applicable trip tab, guarded for dashboard-origin navigation
+- **THEN** the app returns to the applicable trip tab, including the dashboard-origin entry
 - **AND** a successful create still navigates to `#/trips/<id>`
 
 #### Scenario: No second list source is introduced
@@ -220,17 +224,16 @@ open-by-id entry, even after reload.
 
 #### Scenario: Dashboard selection is not a persisted picker selection
 
-- **WHEN** a traveler selects a trip on the dashboard
-- **THEN** the selection does not update the stored current trip
-- **AND** a pending or failed selection does not reuse a saved trip
-- **AND** a late current-trip response cannot replace the selected dashboard trip
+- **WHEN** a traveler opens a direct trip dashboard
+- **THEN** that direct route does not update the stored current trip
+- **AND** a late current-trip response cannot replace the direct selection
 
 ### Requirement: Trip-context return links
 
 The split start screen and the non-dashboard main plan screen SHALL provide
 explicit back actions to their trip's details at `#/trips/<id>`, without
 depending on browser history. Dashboard-origin main-plan and split navigation
-SHALL instead return to `#/dashboard/trips/<id>` while details are unsafe.
+SHALL instead return to `#/dashboard/trips/<id>`.
 Returning to details SHALL re-establish the resolved trip context.
 
 #### Scenario: Split start back returns to the trip details
