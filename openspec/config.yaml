@@ -13,6 +13,7 @@ rules:
     - Add a final task before archive to reconcile docs/knowledge/architecture/tech-stack-plan.md with what this change actually shipped (implemented capabilities, API list, data model).
     - "Reconcile only features completed by an archived change. Do not sync planned or still-unarchived work into the plan."
     - Append a row to docs/knowledge/_LOG.md whenever the plan is updated.
+    - "Add a first P4 task: push the change branch and open a pull request; never push directly to main. Do not merge origin/main into the change branch just to stay current unless the change needs new code from main."
 
 # Per-operation guidance.
 operations:

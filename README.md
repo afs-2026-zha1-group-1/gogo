@@ -11,9 +11,12 @@ Cloning does not require access to the author's machine or another private repos
    coding agent.
 2. Install Node.js 20.19 or later and Git. For OpenSpec commands, install the
    matching CLI: `npm install -g @fission-ai/openspec@1.16.1`.
-3. Run `node --test scripts/portability.test.mjs` to check the bundled files.
+3. Run `bash scripts/setup-dev.sh` once per clone. It points Git at
+   `.githooks/pre-push`, which blocks direct pushes to `main`; land changes
+   through pull requests.
+4. Run `node --test scripts/portability.test.mjs` to check the bundled files.
    Run `openspec --version` to check the separately installed CLI.
-4. Read [AGENTS.md](AGENTS.md) and the
+5. Read [AGENTS.md](AGENTS.md) and the
    [SDD command catalog](vendor/ai4se-plugins/commands/catalog.md).
    Project skills and custom agents are under `.agents/`. In an existing Qoder
    session, use `/skills reload` and `/agents reload`.
