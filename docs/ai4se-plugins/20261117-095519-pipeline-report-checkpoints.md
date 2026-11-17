@@ -25,7 +25,8 @@
 
 - data_source: API (gh)
 - phases_covered: ci
-- upstream_urls: run 43999371283, run 43999380196 (both on 8de0883)
+- upstream_urls: run 43999371283, run 43999380196 (8de0883); final docs head cb4b06c runs 43999674160, 43999680155 green
+- note: the pipeline report cites the code head 8de0883; final head cb4b06c is docs-only and its CI is green
 
 ## Report
 
