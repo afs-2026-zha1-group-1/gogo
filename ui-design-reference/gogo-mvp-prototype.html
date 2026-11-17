@@ -6,7 +6,7 @@
 <title>GoGo · 共享旅行 MVP — 前端高保真原型</title>
 <style>
 /* ============================================================
-   GoGo 共享旅行 App — MVP 前端高保真原型（覆盖 21 条 story + 仪表盘）
+  GoGo 共享旅行 App — MVP 前端高保真原型（覆盖 27 条 story + 仪表盘）
    设计语言：shadcn/ui（中性暖灰底 / 圆角卡片 / 细描边 / 柔和阴影 / 克制留白）
    零外部依赖：系统字体 + 内联 SVG + 原生 JS，离线双击即开，仅 UI 不连后端
    ============================================================ */
@@ -269,6 +269,25 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
 .forkjoin{width:100%;height:auto;display:block}
 .toast{position:absolute;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;font-size:12.5px;font-weight:600;padding:10px 16px;border-radius:99px;box-shadow:var(--sh-3);opacity:0;transition:.28s;z-index:80;pointer-events:none;white-space:nowrap;display:flex;align-items:center;gap:8px}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.login-brand{display:flex;align-items:center;gap:12px;margin:18px 0 28px}
+.login-brand h2{font-size:26px;letter-spacing:0}
+.login-form{display:grid;gap:16px}.login-form .field{margin:0}
+.login-form[hidden]{display:none}
+.login-form .btn{margin-top:8px}
+.flow-message{font-size:13px;line-height:1.6;margin:12px 0;color:var(--ink-2);overflow-wrap:anywhere}
+.flow-message.error{color:var(--err)}
+.scan-frame{position:relative;aspect-ratio:1;max-height:290px;width:100%;background:#172522;border-radius:8px;overflow:hidden;display:grid;place-items:center;color:#fff}
+.scan-frame video{position:absolute;width:100%;height:100%;object-fit:cover}
+.scan-frame>.ic{width:64px;height:64px;opacity:.5}
+.scan-frame::after{content:"";position:absolute;inset:18%;border:2px solid #5eead4;border-radius:8px;pointer-events:none}
+.scan-actions{display:flex;gap:8px;margin-top:12px}.scan-actions .btn{flex:1;padding:11px 8px}
+.scan-file{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+.iconbtn:focus-visible{outline:3px solid var(--brand);outline-offset:3px}
+.tabbutton{border:0;background:transparent;font-family:inherit;min-width:0}
+.profile-heading{display:flex;align-items:center;gap:14px;margin:12px 0 28px}
+.profile-heading h2{font-size:20px;letter-spacing:0;overflow-wrap:anywhere}
+.phone-wrap{min-width:0;width:100%}
+@media(max-width:440px){.phone{min-width:0}.appbar .row{gap:8px}}
 
 @media (max-width:960px){
   .workspace{grid-template-columns:1fr;gap:24px}
@@ -336,7 +355,7 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
       <div class="logo"><svg class="ic"><use href="#i-branch"/></svg></div>
       <div><h1>GoGo · 共享旅行 MVP</h1><p>Better trips, stronger friendships — 公平地一起规划，谈不拢就分头玩再会合</p></div>
     </div>
-    <div class="tag"><svg class="ic sm"><use href="#i-grid"/></svg> 前端高保真原型 · 21 stories + 仪表盘</div>
+    <div class="tag"><svg class="ic sm"><use href="#i-grid"/></svg> 前端高保真原型 · 27 stories + 仪表盘</div>
   </div>
 
   <div class="workspace">
@@ -346,12 +365,56 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
         <div class="viewport" id="viewport">
 
           <!-- ========== 1 · 仪表盘 Dashboard ========== -->
-          <section class="screen is-active" id="s1" data-screen="1">
+          <section class="screen is-active" id="s19" data-screen="19">
+            <div class="appbar"><div class="row"><div class="title">登录 GoGo</div><button class="iconbtn" onclick="go(20)" title="Scan invitation" aria-label="Scan invitation"><svg class="ic"><use href="#i-camera"/></svg></button></div></div>
+            <div class="body">
+              <div class="login-brand"><div class="logo"><svg class="ic"><use href="#i-branch"/></svg></div><div><h2>GoGo</h2><p class="hint">一起出发，各有所爱</p></div></div>
+              <h3 style="font-size:20px;margin-bottom:20px">欢迎回来</h3>
+              <form class="login-form" onsubmit="login(event)">
+                <div class="field"><label class="label" for="loginEmail">邮箱</label><input class="input" id="loginEmail" type="email" autocomplete="username" placeholder="you@example.com" required /></div>
+                <div class="field"><label class="label" for="loginPassword">密码</label><input class="input" id="loginPassword" type="password" autocomplete="current-password" required minlength="6" /></div>
+                <p id="loginMessage" class="flow-message" role="status" aria-live="polite"></p>
+                <button class="btn btn-primary" type="submit"><svg class="ic sm"><use href="#i-lock"/></svg> 登录</button>
+                <button class="btn btn-ghost" type="button" onclick="demoLogin()">使用演示账号</button>
+                <button class="btn btn-ghost" type="button" onclick="go(22)">创建账号</button>
+              </form>
+            </div>
+          </section>
+          <section class="screen" id="s22" data-screen="22">
+            <div class="appbar"><div class="row"><button class="iconbtn" onclick="go(19)" title="返回登录" aria-label="返回登录"><svg class="ic"><use href="#i-left"/></svg></button><div class="title">创建 GoGo 账号</div></div></div>
+            <div class="body">
+              <div class="login-brand"><div class="logo"><svg class="ic"><use href="#i-branch"/></svg></div><div><h2>GoGo</h2><p class="hint">一起出发，各有所爱</p></div></div>
+              <form class="login-form" id="registerForm" onsubmit="registerAccount(event)">
+                <div class="field"><label class="label" for="registerName">名字</label><input class="input" id="registerName" autocomplete="nickname" required maxlength="30" /></div>
+                <div class="field"><label class="label" for="registerEmail">邮箱</label><input class="input" id="registerEmail" type="email" autocomplete="username" placeholder="you@example.com" required /></div>
+                <div class="field"><label class="label" for="registerPassword">密码</label><input class="input" id="registerPassword" type="password" autocomplete="new-password" required minlength="8" aria-describedby="registerPasswordHint" /><p class="hint" id="registerPasswordHint">至少 8 个字符</p></div>
+                <div class="field"><label class="label" for="registerConfirm">确认密码</label><input class="input" id="registerConfirm" type="password" autocomplete="new-password" required minlength="8" /></div>
+                <button class="btn btn-primary" type="submit"><svg class="ic sm"><use href="#i-users"/></svg> 创建账号</button>
+              </form>
+              <p id="registerMessage" class="flow-message" role="status" aria-live="polite"></p>
+              <button class="btn btn-ghost" onclick="go(19)">已有账号？去登录</button>
+            </div>
+          </section>
+          <section class="screen" id="s20" data-screen="20">
+            <div class="appbar"><div class="row"><button class="iconbtn" onclick="go(signedIn?1:19)" title="关闭扫描" aria-label="关闭扫描"><svg class="ic"><use href="#i-x"/></svg></button><div class="title">扫码加入行程</div></div></div>
+            <div class="body">
+              <div class="scan-frame"><svg class="ic"><use href="#i-camera"/></svg><video id="scanVideo" muted playsinline aria-label="相机预览"></video></div>
+              <p id="scanMessage" class="flow-message" role="status" aria-live="polite">对准朋友分享的行程二维码</p>
+              <div class="scan-actions"><button class="btn btn-primary" id="cameraButton" onclick="startCamera()"><svg class="ic sm"><use href="#i-camera"/></svg> 开启相机</button><button class="btn btn-ghost" onclick="stopCamera();$('scanImage').click()"><svg class="ic sm"><use href="#i-plus"/></svg> 选择图片</button></div>
+              <input class="scan-file" id="scanImage" type="file" accept="image/*" aria-label="选择二维码图片" onchange="scanImage(this)" />
+              <form style="margin-top:24px" onsubmit="event.preventDefault();openInvitation($('scanLink').value)">
+                <div class="field"><label class="label" for="scanLink">邀请链接</label><input class="input" id="scanLink" type="text" inputmode="url" placeholder="https://gogo.app/j/…" required /></div>
+                <button class="btn btn-ghost" type="submit"><svg class="ic sm"><use href="#i-link"/></svg> 预览邀请</button>
+              </form>
+            </div>
+          </section>
+          <section class="screen" id="s1" data-screen="1">
             <div class="appbar">
               <div class="row">
                 <div class="logo" style="width:36px;height:36px;border-radius:11px"><svg class="ic" style="width:20px;height:20px"><use href="#i-branch"/></svg></div>
-                <div style="flex:1;min-width:0"><div class="title">我的行程</div><div class="sub">你好，小明 · 组织者</div></div>
-                <button class="iconbtn" onclick="go(3)"><svg class="ic"><use href="#i-info"/></svg></button>
+                <div style="flex:1;min-width:0"><div class="title">我的行程</div><div class="sub" id="dashboardGreeting" style="overflow-wrap:anywhere">你好，<span data-account-name>小明</span></div></div>
+                <button class="iconbtn" onclick="go(20)" title="Scan invitation · 扫码加入" aria-label="Scan invitation"><svg class="ic"><use href="#i-camera"/></svg></button>
+                <button class="iconbtn" onclick="go(3)" title="行程信息" aria-label="行程信息"><svg class="ic"><use href="#i-info"/></svg></button>
               </div>
             </div>
             <div class="body">
@@ -406,15 +469,69 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
             </div>
             <div class="tabbar">
               <div class="tab on"><svg class="ic"><use href="#i-home"/></svg>仪表盘</div>
-              <div class="tab" onclick="go(10)"><svg class="ic"><use href="#i-list"/></svg>行程</div>
+              <button class="tab tabbutton" onclick="go(23)"><svg class="ic"><use href="#i-list"/></svg>行程</button>
               <div class="tab" onclick="go(11)"><svg class="ic"><use href="#i-branch"/></svg>分队</div>
               <div class="tab" onclick="go(7)"><svg class="ic"><use href="#i-users"/></svg>成员</div>
+              <button class="tab tabbutton" onclick="go(21)"><svg class="ic"><use href="#i-user"/></svg>我的</button>
             </div>
           </section>
           <!-- ========== 2 · 创建行程 US-001 ========== -->
+          <section class="screen" id="s21" data-screen="21">
+            <div class="appbar"><div class="row"><button class="iconbtn" onclick="go(1)" title="返回仪表盘" aria-label="返回仪表盘"><svg class="ic"><use href="#i-left"/></svg></button><div class="title">我的</div></div></div>
+            <div class="body">
+              <div class="profile-heading"><div class="av av-teal lg" id="profileAvatar">小</div><div style="min-width:0"><h2 id="profileName">小明</h2><p class="hint" id="profileEmail" style="overflow-wrap:anywhere">demo@gogo.app</p></div></div>
+              <form onsubmit="saveProfile(event)" novalidate>
+                <div class="field"><label class="label" for="displayName">名字</label><input class="input" id="displayName" value="小明" maxlength="30" autocomplete="nickname" aria-describedby="profileMessage" /></div>
+                <p id="profileMessage" class="flow-message" role="status" aria-live="polite"></p>
+                <button class="btn btn-primary" type="submit"><svg class="ic sm"><use href="#i-check"/></svg> 保存名字</button>
+              </form>
+              <button class="btn btn-danger" style="margin-top:28px" onclick="signOut()"><svg class="ic sm"><use href="#i-left"/></svg> 退出登录</button>
+            </div>
+            <div class="tabbar">
+              <button class="tab tabbutton" onclick="go(1)"><svg class="ic"><use href="#i-home"/></svg>仪表盘</button>
+              <button class="tab tabbutton" onclick="go(23)"><svg class="ic"><use href="#i-list"/></svg>行程</button>
+              <button class="tab tabbutton" onclick="go(11)"><svg class="ic"><use href="#i-branch"/></svg>分队</button>
+              <button class="tab tabbutton" onclick="go(7)"><svg class="ic"><use href="#i-users"/></svg>成员</button>
+              <button class="tab tabbutton on" aria-current="page" onclick="go(21)"><svg class="ic"><use href="#i-user"/></svg>我的</button>
+            </div>
+          </section>
+          <section class="screen" id="s23" data-screen="23">
+            <div class="appbar"><div class="row"><div style="flex:1"><div class="title">我的行程</div><div class="sub" id="tripListCount"></div></div></div></div>
+            <div class="body"><div id="myTripList"></div><button class="btn btn-ghost" style="margin-top:16px" onclick="go(2)"><svg class="ic sm"><use href="#i-plus"/></svg> 创建行程</button></div>
+            <div class="tabbar">
+              <button class="tab tabbutton" onclick="go(1)"><svg class="ic"><use href="#i-home"/></svg>仪表盘</button>
+              <button class="tab tabbutton on" aria-current="page" onclick="go(23)"><svg class="ic"><use href="#i-list"/></svg>行程</button>
+              <button class="tab tabbutton" onclick="go(11)"><svg class="ic"><use href="#i-branch"/></svg>分队</button>
+              <button class="tab tabbutton" onclick="go(7)"><svg class="ic"><use href="#i-users"/></svg>成员</button>
+              <button class="tab tabbutton" onclick="go(21)"><svg class="ic"><use href="#i-user"/></svg>我的</button>
+            </div>
+          </section>
+          <section class="screen" id="s24" data-screen="24">
+            <div class="appbar"><div class="row"><button class="iconbtn" onclick="go(23)" title="返回行程列表" aria-label="返回行程列表"><svg class="ic"><use href="#i-left"/></svg></button><div style="flex:1"><div class="title">行程详情</div><div class="sub">US-002 · 全员可见</div></div></div></div>
+            <div class="body">
+              <div class="hero"><div class="htop"><svg class="ic sm"><use href="#i-cal"/></svg> <span id="selectedTripDates"></span></div><h2 id="selectedTripName"></h2><div class="hdest"><svg class="ic sm"><use href="#i-pin"/></svg> <span id="selectedTripDestination"></span></div></div>
+              <div class="card pad" style="margin-top:14px"><div class="valid">
+                <div class="valid-item"><span class="valid-ic" style="background:var(--surface-3);color:var(--ink-2)"><svg class="ic"><use href="#i-cal"/></svg></span><div><div class="vt">日期</div><div class="vd" id="selectedTripDatesDetail"></div></div></div>
+                <div class="valid-item"><span class="valid-ic" style="background:var(--surface-3);color:var(--ink-2)"><svg class="ic"><use href="#i-nav"/></svg></span><div><div class="vt">出发地</div><div class="vd" id="selectedTripFrom"></div></div></div>
+                <div class="valid-item"><span class="valid-ic" style="background:var(--surface-3);color:var(--ink-2)"><svg class="ic"><use href="#i-flag"/></svg></span><div><div class="vt">返程地</div><div class="vd" id="selectedTripTo"></div></div></div>
+                <div class="valid-item"><span class="valid-ic" style="background:var(--brand-soft);color:var(--brand-ink)"><svg class="ic"><use href="#i-user"/></svg></span><div><div class="vt">组织者</div><div class="vd" id="selectedTripOrganizer"></div></div></div>
+              </div></div>
+              <div class="sec-title"><svg class="ic sm"><use href="#i-users"/></svg> 同行成员</div>
+              <div class="card pad" style="display:flex;align-items:center;gap:12px"><div class="av av-teal" id="selectedTripAvatar"></div><div style="flex:1"><div style="font-size:13.5px;font-weight:650">1 位成员</div><div class="tiny muted">等待朋友加入</div></div></div>
+              <div style="margin-top:16px"><button class="btn btn-ghost" onclick="toast('新行程邀请功能尚未在原型中实现')"><svg class="ic sm"><use href="#i-link"/></svg> 邀请更多朋友</button></div>
+              <div class="sec-title"><svg class="ic sm"><use href="#i-list"/></svg> 主线方案</div>
+              <button class="btn btn-ghost" onclick="go(25)"><svg class="ic sm"><use href="#i-list"/></svg> 查看主线方案</button>
+              <div class="sec-title"><svg class="ic sm"><use href="#i-branch"/></svg> 分队规划</div>
+              <button class="btn btn-primary" onclick="toast('新行程分队规划尚未在原型中实现')"><svg class="ic sm"><use href="#i-branch"/></svg> 进入分队规划</button>
+            </div>
+          </section>
+          <section class="screen" id="s25" data-screen="25">
+            <div class="appbar"><div class="row"><button class="iconbtn" onclick="go(24)" title="返回行程详情" aria-label="返回行程详情"><svg class="ic"><use href="#i-left"/></svg></button><div class="title">主线方案</div></div></div>
+            <div class="body"><div class="card pad"><h3>还没有主线方案</h3><p class="hint" style="margin-top:8px">新行程的主线方案生成尚未在原型中实现。</p></div></div>
+          </section>
           <section class="screen" id="s2" data-screen="2">
             <div class="appbar"><div class="row">
-              <button class="iconbtn" onclick="go(1)"><svg class="ic"><use href="#i-left"/></svg></button>
+              <button class="iconbtn" onclick="go(23)" title="返回行程列表" aria-label="返回行程列表"><svg class="ic"><use href="#i-left"/></svg></button>
               <div style="flex:1"><div class="title">创建行程</div><div class="sub">US-001 · 建立一个共享空间</div></div>
             </div></div>
             <div class="body">
@@ -457,7 +574,7 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
           <!-- ========== 3 · 行程详情 US-002 ========== -->
           <section class="screen" id="s3" data-screen="3">
             <div class="appbar"><div class="row">
-              <button class="iconbtn" onclick="go(1)"><svg class="ic"><use href="#i-left"/></svg></button>
+              <button class="iconbtn" onclick="go(23)" title="返回行程列表" aria-label="返回行程列表"><svg class="ic"><use href="#i-left"/></svg></button>
               <div style="flex:1"><div class="title">行程详情</div><div class="sub">US-002 · 全员可见</div></div>
               <button class="iconbtn" onclick="go(2)"><svg class="ic"><use href="#i-edit"/></svg></button>
             </div></div>
@@ -472,7 +589,7 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
                   <div class="valid-item" style="border-color:var(--line-2)"><span class="valid-ic" style="background:var(--surface-3);color:var(--ink-2)"><svg class="ic"><use href="#i-cal"/></svg></span><div><div class="vt">日期</div><div class="vd">11月14日（周六）→ 11月15日（周日）· 共 2 天</div></div></div>
                   <div class="valid-item"><span class="valid-ic" style="background:var(--surface-3);color:var(--ink-2)"><svg class="ic"><use href="#i-nav"/></svg></span><div><div class="vt">出发地</div><div class="vd">青岛站 · 11月14日 09:00 集合</div></div></div>
                   <div class="valid-item"><span class="valid-ic" style="background:var(--surface-3);color:var(--ink-2)"><svg class="ic"><use href="#i-flag"/></svg></span><div><div class="vt">返程地</div><div class="vd">青岛北站 · 11月15日 18:00 解散</div></div></div>
-                  <div class="valid-item"><span class="valid-ic" style="background:var(--brand-soft);color:var(--brand-ink)"><svg class="ic"><use href="#i-user"/></svg></span><div><div class="vt">组织者</div><div class="vd">小明 · 管理共享决策</div></div></div>
+                  <div class="valid-item"><span class="valid-ic" style="background:var(--brand-soft);color:var(--brand-ink)"><svg class="ic"><use href="#i-user"/></svg></span><div><div class="vt">组织者</div><div class="vd"><span data-account-name>小明</span> · 管理共享决策</div></div></div>
                 </div>
               </div>
               <div class="sec-title"><svg class="ic sm"><use href="#i-users"/></svg> 同行成员</div>
@@ -482,6 +599,10 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
                 <button class="btn btn-ghost sm" onclick="go(7)">查看</button>
               </div>
               <div style="margin-top:16px"><button class="btn btn-ghost" onclick="go(4)"><svg class="ic sm"><use href="#i-link"/></svg> 邀请更多朋友</button></div>
+              <div class="sec-title"><svg class="ic sm"><use href="#i-list"/></svg> 主线方案</div>
+              <button class="btn btn-ghost" onclick="go(10)"><svg class="ic sm"><use href="#i-list"/></svg> 查看主线方案</button>
+              <div class="sec-title"><svg class="ic sm"><use href="#i-branch"/></svg> 分队规划</div>
+              <button class="btn btn-primary" onclick="go(11)"><svg class="ic sm"><use href="#i-branch"/></svg> 进入分队规划</button>
             </div>
           </section>
 
@@ -501,7 +622,7 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
               <div class="sec-title"><svg class="ic sm"><use href="#i-link"/></svg> 邀请链接</div>
               <div class="linkbox">
                 <svg class="ic sm" style="color:var(--ink-3)"><use href="#i-link"/></svg>
-                <span class="url" id="inviteUrl">gogo.app/j/8f3k-海边游-2q9x</span>
+                <span class="url" id="inviteUrl">https://gogo.app/j/8f3k-海边游-2q9x</span>
                 <button class="iconbtn" style="width:30px;height:30px" onclick="copyInvite()"><svg class="ic sm"><use href="#i-copy"/></svg></button>
               </div>
               <div class="two" style="margin-top:12px">
@@ -529,15 +650,15 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
             <div class="body">
               <div class="card pad" style="text-align:center;background:linear-gradient(135deg,#f0fdfa,#fff);border-color:#99f6e4">
                 <div class="av av-teal lg" style="margin:0 auto 10px">明</div>
-                <div style="font-size:12px;color:var(--ink-2)">小明 邀请你加入</div>
+                <div style="font-size:12px;color:var(--ink-2)"><span data-account-name>小明</span> 邀请你加入</div>
                 <div style="font-size:21px;font-weight:780;margin:5px 0 3px">周末海边游</div>
                 <div class="tiny muted" style="display:flex;align-items:center;justify-content:center;gap:6px"><svg class="ic sm"><use href="#i-pin"/></svg> 青岛 · 黄金海岸 · 11月14–15日</div>
               </div>
               <div id="joinForm">
                 <div class="field" style="margin-top:18px">
-                  <label class="label"><svg class="ic sm"><use href="#i-user"/></svg> 你的昵称（即身份）</label>
-                  <input class="input" id="f-nick" placeholder="例如：阿强" value="阿强" />
-                  <p class="help">MVP 无账号体系，昵称即身份；同一身份仅能加入一次，不会重复。</p>
+                  <label class="label" for="f-nick"><svg class="ic sm"><use href="#i-user"/></svg> 当前登录身份</label>
+                  <input class="input" id="f-nick" value="小明" readonly />
+                  <p class="help">接受邀请后加入，同一账号不会重复加入。</p>
                 </div>
                 <div class="card pad" style="background:var(--surface-2)">
                   <p class="hint"><svg class="ic sm" style="vertical-align:-3px;color:var(--brand)"><use href="#i-shield"/></svg> 接受邀请后才会看到完整行程与成员。当前主线<b>尚未确认</b>，你可以加入。</p>
@@ -595,7 +716,7 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
               <div class="card pad">
                 <div class="member-row">
                   <div class="av av-teal">明</div>
-                  <div class="mi"><div class="mn">小明 <span class="pill brand" style="padding:2px 8px"><svg class="ic sm" style="width:12px;height:12px"><use href="#i-star"/></svg> 组织者</span></div><div class="md">水上运动 · 摄影 · 潜水</div></div>
+                  <div class="mi"><div class="mn"><span data-account-name>小明</span> <span class="pill brand" style="padding:2px 8px"><svg class="ic sm" style="width:12px;height:12px"><use href="#i-star"/></svg> 组织者</span></div><div class="md">水上运动 · 摄影 · 潜水</div></div>
                   <span class="pill ok"><svg class="ic sm" style="width:12px;height:12px"><use href="#i-check"/></svg> 就绪</span>
                 </div>
                 <div class="member-row">
@@ -625,7 +746,7 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
           <section class="screen" id="s8" data-screen="8">
             <div class="appbar"><div class="row">
               <button class="iconbtn" onclick="go(1)"><svg class="ic"><use href="#i-left"/></svg></button>
-              <div style="flex:1"><div class="title">我的偏好</div><div class="sub">小明 · US-019~027</div></div>
+              <div style="flex:1"><div class="title">我的偏好</div><div class="sub"><span data-account-name>小明</span> · US-019~027</div></div>
               <span class="pill" id="readyPill">未提交</span>
             </div></div>
             <div class="body">
@@ -711,9 +832,9 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
                   <div class="label" style="margin-bottom:8px">共同兴趣</div>
                   <div class="chips"><span class="chip on" style="cursor:default">📷 摄影</span><span class="chip on" style="cursor:default">🍜 美食</span><span class="chip on" style="cursor:default">🏞️ 自然风景</span><span class="chip on" style="cursor:default">🌊 水上运动</span></div>
                   <div class="label" style="margin:14px 0 8px">必做项汇总</div>
-                  <div class="mustdo" style="margin-bottom:0"><span class="md-i"><svg class="ic sm"><use href="#i-waves"/></svg></span><div class="md-b"><div class="md-t">体验一次潜水</div><div class="md-m">阿强 / 小明 · 黄金海岸潜水中心</div></div></div>
+                  <div class="mustdo" style="margin-bottom:0"><span class="md-i"><svg class="ic sm"><use href="#i-waves"/></svg></span><div class="md-b"><div class="md-t">体验一次潜水</div><div class="md-m">阿强 / <span data-account-name>小明</span> · 黄金海岸潜水中心</div></div></div>
                   <div class="label" style="margin:14px 0 8px">约束 / 预算</div>
-                  <p class="hint">小红：人均全程 <b>¥600 硬上限</b> · 小明：¥1200 软上限 · 其余不设预算。</p>
+                  <p class="hint">小红：人均全程 <b>¥600 硬上限</b> · <span data-account-name>小明</span>：¥1200 软上限 · 其余不设预算。</p>
                 </div>
                 <div class="sec-title"><svg class="ic sm"><use href="#i-route"/></svg> 生成规则（可解释）</div>
                 <div class="card pad">
@@ -746,7 +867,7 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
           <!-- ========== 10 · 主线审阅与确认 US-037 ========== -->
           <section class="screen" id="s10" data-screen="10">
             <div class="appbar"><div class="row">
-              <button class="iconbtn" onclick="go(1)"><svg class="ic"><use href="#i-left"/></svg></button>
+              <button class="iconbtn" onclick="go(planBackScreen)" title="返回" aria-label="返回"><svg class="ic"><use href="#i-left"/></svg></button>
               <div style="flex:1"><div class="title">主线方案</div><div class="sub">US-037 · 校验通过后方可确认</div></div>
               <span class="pill warn" id="planStatus">草稿 v1</span>
             </div></div>
@@ -862,14 +983,14 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
                 <p class="tiny muted" style="flex:1">已按偏好<b>自动分组</b>。点击成员可在两条路线间调整。</p>
               </div>
               <div class="two" style="margin-top:14px">
-                <div class="route a"><div class="rhead" style="padding:11px 12px"><span class="rcode">A</span><h3 style="font-size:13.5px">海岸冒险</h3></div><div class="rbody" style="padding:11px 12px"><div class="chips" id="groupA" style="gap:6px"><button class="chip on a" data-m="小明" style="padding:5px 9px">明</button><button class="chip on a" data-m="阿强" style="padding:5px 9px">强</button></div><div class="tiny muted" style="margin-top:9px">水上运动 · 潜水</div></div></div>
+                <div class="route a"><div class="rhead" style="padding:11px 12px"><span class="rcode">A</span><h3 style="font-size:13.5px">海岸冒险</h3></div><div class="rbody" style="padding:11px 12px"><div class="chips" id="groupA" style="gap:6px"><button class="chip on a" data-account-member data-m="小明" style="padding:5px 9px">明</button><button class="chip on a" data-m="阿强" style="padding:5px 9px">强</button></div><div class="tiny muted" style="margin-top:9px">水上运动 · 潜水</div></div></div>
                 <div class="route b"><div class="rhead" style="padding:11px 12px"><span class="rcode">B</span><h3 style="font-size:13.5px">老城慢游</h3></div><div class="rbody" style="padding:11px 12px"><div class="chips" id="groupB" style="gap:6px"><button class="chip on b" data-m="小红" style="padding:5px 9px">红</button><button class="chip on b" data-m="小美" style="padding:5px 9px">美</button></div><div class="tiny muted" style="margin-top:9px">咖啡 · 美食 · 慢游</div></div></div>
               </div>
               <button class="btn btn-primary" style="margin-top:16px" id="genRoutesBtn" onclick="genRoutes()"><svg class="ic sm"><use href="#i-sparkle"/></svg> 生成两条路线</button>
 
               <div id="routesResult" style="display:none">
                 <div class="sec-title"><svg class="ic sm"><use href="#i-route"/></svg> 路线 A · 海岸冒险</div>
-                <div class="route a"><div class="rhead"><span class="rcode">A</span><div style="flex:1"><h3>海岸冒险</h3><div class="rsub">小明 · 阿强</div></div><div class="avstack"><div class="av sm av-teal">明</div><div class="av sm av-blue">强</div></div></div>
+                <div class="route a"><div class="rhead"><span class="rcode">A</span><div style="flex:1"><h3>海岸冒险</h3><div class="rsub"><span data-account-name>小明</span> · 阿强</div></div><div class="avstack"><div class="av sm av-teal">明</div><div class="av sm av-blue">强</div></div></div>
                   <div class="rbody">
                     <div class="mini"><span class="mt">13:30</span><div><div class="mn">潜水体验（必做）</div><div class="mm">黄金海岸潜水中心 · ¥200</div></div></div>
                     <div class="mini"><span class="mt">15:00</span><div><div class="mn">摩托艇 & 水上</div><div class="mm">黄金海岸 · ¥120</div></div></div>
@@ -1005,7 +1126,7 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
             <div class="appbar" style="background:linear-gradient(135deg,#1e40af,#2563eb);border-bottom:0">
               <div class="row">
                 <button class="iconbtn" style="background:rgba(255,255,255,.16);border-color:transparent;color:#fff" onclick="go(1)"><svg class="ic"><use href="#i-left"/></svg></button>
-                <div style="flex:1;color:#fff"><div class="title">Route A · 海岸冒险</div><div class="sub" style="color:rgba(255,255,255,.8)">小明 · 阿强 · 分队进行中</div></div>
+                <div style="flex:1;color:#fff"><div class="title">Route A · 海岸冒险</div><div class="sub" style="color:rgba(255,255,255,.8)"><span data-account-name>小明</span> · 阿强 · 分队进行中</div></div>
                 <span class="pill" style="background:rgba(255,255,255,.2);color:#fff;border-color:transparent"><span class="dot live"></span> 进行中</span>
               </div>
             </div>
@@ -1052,6 +1173,7 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
               <div class="tab on"><svg class="ic"><use href="#i-branch"/></svg>分队</div>
               <div class="tab" onclick="go(17)"><svg class="ic"><use href="#i-nav"/></svg>会合</div>
               <div class="tab" onclick="go(7)"><svg class="ic"><use href="#i-users"/></svg>成员</div>
+              <button class="tab tabbutton" onclick="go(21)"><svg class="ic"><use href="#i-user"/></svg>我的</button>
             </div>
           </section>
 
@@ -1144,13 +1266,13 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
           <div class="toast" id="toast"><svg class="ic sm"><use href="#i-check"/></svg><span id="toastMsg">已复制</span></div>
         </div>
       </div>
-      <div class="phone-caption"><svg class="ic sm"><use href="#i-info"/></svg> 点击右侧列表或界面内按钮切换屏幕 · <b>共 18 屏覆盖 21 条 story</b></div>
+      <div class="phone-caption"><svg class="ic sm"><use href="#i-info"/></svg> 点击右侧列表或界面内按钮切换屏幕 · <b>共 25 屏覆盖 27 条 story</b></div>
     </div>
 
     <aside class="panel">
       <div class="card pad">
         <h2><svg class="ic sm" style="color:var(--brand)"><use href="#i-grid"/></svg> 原型导航</h2>
-        <p class="lead">按最终 MVP 的 8 大类组织。从仪表盘出发，可直达任意 story 对应的界面。</p>
+        <p class="lead">按最终 MVP 的 9 大类组织。登录后可从仪表盘进入各行程页面。</p>
         <div id="navlist"></div>
       </div>
       <div class="card pad">
@@ -1165,20 +1287,26 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
       </div>
       <div class="card pad">
         <h2><svg class="ic sm" style="color:var(--ink-3)"><use href="#i-shield"/></svg> 范围与约定</h2>
-        <p class="note"><b>只含 UI</b>，不连后端；数据为演示用「周末海边游」。已覆盖最终 MVP 全部 21 条 story，含<b>单次分队</b>、就绪门控、校验后确认、<b>会合导航不追踪他人</b>等关键约束。</p>
+        <p class="note"><b>只含 UI</b>，不连后端；数据为演示用「周末海边游」。覆盖 27 条 story。注册与登录均为本地模拟，无需验证邮箱；账号、密码和行程列表仅保存在当前页面内存，刷新即清除，请勿输入真实密码。演示邮箱 demo@gogo.app / 密码 gogo-demo。其他行程页面为固定演示数据，不代表真实成员资格；扫描仅预览，不自动加入。相机及图片识码需浏览器支持 BarcodeDetector；不支持时可粘贴链接。邀请状态为本地示例，非服务器校验。</p>
         <p class="note" style="margin-top:9px">快捷键 <span class="kbd">←</span> <span class="kbd">→</span> 翻屏 · <span class="kbd">1</span>–<span class="kbd">9</span> 直达前 9 屏。</p>
       </div>
     </aside>
   </div>
 </div>
 <script>
-/* ---------- 导航数据（按最终 MVP 8 大类） ---------- */
+/* ---------- 导航数据（按最终 MVP 9 大类） ---------- */
 const NAV=[
+  {g:'0 · 登录与身份'},
+  {n:19,t:'登录',d:'US-066 · 本地模拟'},
+  {n:22,t:'注册账号',d:'US-070 · 本地模拟'},
+  {n:21,t:'我的',d:'US-068 / 069 · 修改名字 · 退出登录'},
   {n:1,t:'仪表盘 Dashboard',d:'旅程总览 · 快捷入口'},
+  {n:23,t:'我的行程',d:'US-071 · 本地列表'},
   {g:'1 · 行程创建与基础信息'},
   {n:2,t:'创建行程',d:'US-001'},
   {n:3,t:'行程详情',d:'US-002'},
   {g:'2 · 邀请与加入'},
+  {n:20,t:'扫码加入',d:'US-067'},
   {n:4,t:'分享邀请',d:'US-008'},
   {n:5,t:'加入行程',d:'US-010'},
   {n:6,t:'邀请失效',d:'US-012'},
@@ -1201,7 +1329,19 @@ const NAV=[
   {g:'10 · 完成与记录'},
   {n:18,t:'完成行程',d:'US-058'}
 ];
-let cur=1;
+let cur=19;
+let planBackScreen=1;
+let signedIn=false;
+let displayName='小明';
+let pendingScreen=1;
+let cameraStream=null;
+let scanTimer=null;
+let cameraRequest=0;
+let membershipJoined=false;
+let activeEmail='demo@gogo.app';
+const demoTrip={name:'周末海边游',destination:'青岛 · 黄金海岸',start:'2026-11-14',end:'2026-11-15',from:'青岛站',to:'青岛北站'};
+const accounts=new Map([['demo@gogo.app',{name:'小明',password:'gogo-demo',joined:false,trips:[demoTrip]}]]);
+const demoInvite='https://gogo.app/j/8f3k-海边游-2q9x';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
@@ -1214,7 +1354,12 @@ function buildNav(){
   box.innerHTML=h;
 }
 function go(n){
-  n=Math.max(1,Math.min(18,n));cur=n;
+  n=Math.max(1,Math.min(25,n));
+  if(!signedIn&&![5,6,19,20,22].includes(n)){pendingScreen=n;n=19;}
+  if(n===10)planBackScreen=cur===3?3:1;
+  if(cur===22&&n!==22){$('registerPassword').value='';$('registerConfirm').value='';}
+  if(n!==20)stopCamera();
+  cur=n;
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('is-active'));
   const sc=$('s'+n);if(sc)sc.classList.add('is-active');
   document.querySelectorAll('.navitem').forEach(b=>b.classList.toggle('on',+b.dataset.nav===n));
@@ -1225,7 +1370,122 @@ function go(n){
   if(n===15)resetSplit();
   if(n===16){duringView('mine',document.querySelector('#duringSeg button'));}
   if(n===18)resetComplete();
+  if(n===21){$('displayName').value=displayName;$('profileMessage').textContent='';$('displayName').removeAttribute('aria-invalid');}
+  if(n===23)renderMyTrips();
+  if(n===19){$('loginMessage').textContent=pendingScreen===5?'登录后继续查看邀请，不会自动加入。':'';$('loginPassword').value='';}
+  if(n===5){$('joinForm').style.display=membershipJoined?'none':'block';$('joinDone').style.display=membershipJoined?'block':'none';}
 }
+function finishLogin(){
+  signedIn=true;$('loginPassword').value='';syncProfile();
+  const destination=pendingScreen;pendingScreen=1;go(destination);
+}
+function selectAccount(email){
+  activeEmail=email;const account=accounts.get(email);displayName=account.name;membershipJoined=account.joined;finishLogin();
+}
+function demoLogin(){selectAccount('demo@gogo.app');}
+function login(event){
+  event.preventDefault();
+  const email=$('loginEmail').value.trim().toLowerCase();
+  const account=accounts.get(email);
+  const valid=account&&$('loginPassword').value===account.password;
+  if(!valid){$('loginMessage').textContent='无法登录，请检查账号信息后重试。';$('loginMessage').classList.add('error');$('loginPassword').value='';return;}
+  $('loginMessage').classList.remove('error');selectAccount(email);
+}
+function registerAccount(event){
+  event.preventDefault();
+  if(!$('registerForm').reportValidity())return;
+  const name=$('registerName').value.trim();
+  const email=$('registerEmail').value.trim().toLowerCase();
+  const password=$('registerPassword').value;
+  $('registerMessage').classList.add('error');
+  if(!name||name.length>30){$('registerMessage').textContent='请输入 1–30 个字符的名字。';return;}
+  if(password!==$('registerConfirm').value){$('registerMessage').textContent='两次输入的密码不一致。';return;}
+  if(!accounts.has(email))accounts.set(email,{name,password,joined:false,trips:[]});
+  $('registerPassword').value='';$('registerConfirm').value='';
+  $('registerMessage').classList.remove('error');$('registerMessage').textContent='';
+  $('registerForm').reset();$('loginEmail').value=email;
+  go(19);$('loginMessage').classList.remove('error');$('loginMessage').textContent='请使用账号信息登录以继续。';
+}
+function signOut(){accounts.get(activeEmail).joined=membershipJoined;signedIn=false;pendingScreen=1;go(19);toast('已退出登录');}
+function syncProfile(){
+  document.querySelectorAll('[data-account-name]').forEach(label=>{label.textContent=displayName;});
+  $('f-nick').value=displayName;
+  $('profileName').textContent=displayName;
+  $('profileEmail').textContent=activeEmail;
+  const initial=Array.from(displayName)[0];
+  document.querySelectorAll('.av-teal').forEach(avatar=>{avatar.textContent=initial;avatar.title=displayName;});
+  document.querySelectorAll('[data-account-member]').forEach(member=>{member.dataset.m=displayName;member.textContent=initial;member.title=displayName;});
+}
+function saveProfile(event){
+  event.preventDefault();
+  const name=$('displayName').value.trim();
+  const invalid=!name||name.length>30;
+  $('profileMessage').classList.toggle('error',invalid);
+  $('displayName').setAttribute('aria-invalid',String(invalid));
+  if(invalid){$('profileMessage').textContent='请输入 1–30 个字符的名字。';return;}
+  displayName=name;accounts.get(activeEmail).name=name;$('displayName').value=name;syncProfile();
+  $('profileMessage').textContent='名字已保存';
+}
+function scanStatus(message,error=false){$('scanMessage').textContent=message;$('scanMessage').classList.toggle('error',error);}
+function stopCamera(){
+  cameraRequest++;clearTimeout(scanTimer);scanTimer=null;
+  if(cameraStream)cameraStream.getTracks().forEach(track=>track.stop());
+  cameraStream=null;
+  const video=$('scanVideo');if(video){video.pause();video.srcObject=null;}
+  if($('cameraButton'))$('cameraButton').disabled=false;
+}
+function openInvitation(value){
+  let url;
+  try{url=new URL(value.trim().startsWith('gogo.app/')?'https://'+value.trim():value.trim());}catch{scanStatus('链接无法识别，请重新扫描或粘贴完整邀请链接。',true);return;}
+  if(url.protocol!=='https:'||url.host!=='gogo.app'||url.username||url.password||url.search||url.hash||!/^\/j\/[^/]+$/.test(url.pathname)){scanStatus('这不是 GoGo 行程邀请，请重试。',true);return;}
+  if(url.href!==new URL(demoInvite).href){go(6);return;}
+  pendingScreen=5;go(5);
+}
+async function qrDetector(){
+  if(!('BarcodeDetector' in window))throw new Error('此浏览器不支持识码，请粘贴邀请链接。');
+  const formats=await BarcodeDetector.getSupportedFormats();
+  if(!formats.includes('qr_code'))throw new Error('此浏览器不支持二维码，请粘贴邀请链接。');
+  return new BarcodeDetector({formats:['qr_code']});
+}
+async function startCamera(){
+  stopCamera();const request=cameraRequest;
+  $('cameraButton').disabled=true;scanStatus('正在准备相机…');
+  try{
+    const detector=await qrDetector();
+    if(!navigator.mediaDevices?.getUserMedia)throw new Error('相机不可用，请选择二维码图片或粘贴邀请链接。');
+    if(request!==cameraRequest||cur!==20)return;
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+    if(request!==cameraRequest||cur!==20){stream.getTracks().forEach(track=>track.stop());return;}
+    cameraStream=stream;const video=$('scanVideo');video.srcObject=stream;await video.play();
+    scanStatus('正在扫描，关闭页面可停止相机。');
+    const detect=async()=>{
+      if(request!==cameraRequest||cur!==20)return;
+      try{
+        const codes=await detector.detect(video);
+        if(request!==cameraRequest||cur!==20)return;
+        if(codes.length){stopCamera();openInvitation(codes[0].rawValue);return;}
+        scanTimer=setTimeout(detect,250);
+      }catch{stopCamera();scanStatus('无法读取画面，请重试或粘贴邀请链接。',true);}
+    };detect();
+  }catch(error){
+    if(request!==cameraRequest||cur!==20)return;
+    stopCamera();scanStatus(error.name==='NotAllowedError'?'未获得相机权限，请允许访问后重试，或粘贴邀请链接。':error.message,true);
+  }
+}
+async function scanImage(input){
+  const file=input.files[0];input.value='';if(!file)return;
+  const request=cameraRequest;scanStatus('正在读取图片…');let bitmap;
+  try{
+    const detector=await qrDetector();bitmap=await createImageBitmap(file);
+    const codes=await detector.detect(bitmap);
+    if(cur!==20||request!==cameraRequest)return;
+    if(!codes.length){scanStatus('未找到二维码，请更换清晰图片或粘贴邀请链接。',true);return;}
+    openInvitation(codes[0].rawValue);
+  }catch(error){if(cur===20&&request===cameraRequest)scanStatus(error.message||'图片无法读取，请重试。',true);}
+  finally{if(bitmap)bitmap.close();}
+}
+window.addEventListener('pagehide',stopCamera);
+document.addEventListener('visibilitychange',()=>{if(document.hidden){stopCamera();if(cur===20)scanStatus('扫描已暂停，可重新开启相机。');}});
 let toastT;
 function toast(msg){
   const t=$('toast');$('toastMsg').textContent=msg;t.classList.add('show');
@@ -1234,12 +1494,30 @@ function toast(msg){
 function markPass(id,desc){const el=$(id);if(!el)return;el.classList.add('pass');const ic=el.querySelector('.valid-ic');ic.style.background='';ic.style.color='';ic.innerHTML='<svg class="ic"><use href="#i-check"/></svg>';if(desc)el.querySelector('.vd').textContent=desc;}
 function markWait(id,desc){const el=$(id);if(!el)return;el.classList.remove('pass');const ic=el.querySelector('.valid-ic');ic.style.background='var(--surface-3)';ic.style.color='var(--ink-3)';ic.innerHTML='<svg class="ic"><use href="#i-clock"/></svg>';if(desc)el.querySelector('.vd').textContent=desc;}
 
+function renderMyTrips(){
+  const trips=accounts.get(activeEmail).trips;
+  $('tripListCount').textContent=trips.length?`${trips.length} 个行程`:'还没有行程';
+  $('myTripList').innerHTML=trips.length?trips.map((trip,index)=>`<button class="qcard" style="width:100%;margin-bottom:10px;text-align:left" onclick="openMyTrip(${index})"><span class="qi"><svg class="ic"><use href="#i-pin"/></svg></span><span style="min-width:0;flex:1"><span class="qt" style="display:block;overflow-wrap:anywhere">${esc(trip.name)}</span><span class="qd" style="display:block;overflow-wrap:anywhere">${esc(trip.destination)} · ${esc(trip.start)} – ${esc(trip.end)}</span></span><svg class="ic sm"><use href="#i-arrow"/></svg></button>`).join(''):'<div class="empty"><svg class="ic"><use href="#i-list"/></svg><p>还没有行程</p><p class="hint">创建行程或接受朋友的邀请</p></div>';
+}
+function openMyTrip(index){
+  const trip=accounts.get(activeEmail).trips[index];if(!trip)return;
+  if(trip===demoTrip){go(3);return;}
+  $('selectedTripName').textContent=trip.name;$('selectedTripDestination').textContent=trip.destination;
+  $('selectedTripDates').textContent=`${trip.start} – ${trip.end}`;
+  $('selectedTripDatesDetail').textContent=`${trip.start} – ${trip.end}`;
+  $('selectedTripFrom').textContent=trip.from||'未填写';$('selectedTripTo').textContent=trip.to||'未填写';
+  $('selectedTripOrganizer').textContent=displayName+' · 管理共享决策';$('selectedTripAvatar').textContent=Array.from(displayName)[0];
+  go(24);
+}
 /* ---------- US-001 创建行程 ---------- */
 function createTrip(){
   const s=$('f-start').value,e=$('f-end').value;
+  const name=$('f-name').value.trim(),destination=$('f-dest').value.trim();
+  if(!name||!destination||!s||!e){toast('请填写行程名称、目的地和日期');return;}
   if(s&&e&&e<s){$('fld-end').classList.add('invalid');toast('结束日期不能早于开始日期');return;}
   $('fld-end').classList.remove('invalid');
-  toast('行程已创建，你是组织者');go(3);
+  accounts.get(activeEmail).trips.push({name,destination,start:s,end:e,from:$('f-from').value.trim(),to:$('f-to').value.trim()});
+  toast('行程已创建，你是组织者');go(23);
 }
 /* ---------- US-008 邀请 ---------- */
 function copyInvite(){
@@ -1248,21 +1526,19 @@ function copyInvite(){
   toast('邀请链接已复制');
 }
 function buildQR(){
-  const el=$('qr');if(!el)return;const N=21;
-  let s='<svg viewBox="0 0 21 21" width="100%" height="100%" shape-rendering="crispEdges"><rect width="21" height="21" fill="#fff"/>';
-  const fin=(x,y)=>{s+=`<rect x="${x}" y="${y}" width="7" height="7" fill="#1c1917"/><rect x="${x+1}" y="${y+1}" width="5" height="5" fill="#fff"/><rect x="${x+2}" y="${y+2}" width="3" height="3" fill="#1c1917"/>`;};
-  fin(0,0);fin(14,0);fin(0,14);let seed=17;
-  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
-    if((x<8&&y<8)||(x>12&&y<8)||(x<8&&y>12))continue;
-    seed=(seed*1103515245+12345)&0x7fffffff;
-    if((seed>>9)%3===0)s+=`<rect x="${x}" y="${y}" width="1" height="1" fill="#1c1917"/>`;
-  }
-  el.innerHTML=s+'</svg>';
+  const image=document.createElement('img');
+  image.src='invite-demo-qr.png';image.alt='周末海边游邀请二维码';
+  image.style.cssText='width:100%;height:100%;image-rendering:pixelated';
+  $('qr').replaceChildren(image);
 }
 /* ---------- US-010 加入 ---------- */
 function joinTrip(){
+  if(!signedIn){pendingScreen=5;go(19);return;}
+  if(membershipJoined){toast('你已加入此行程');return;}
   const nick=$('f-nick').value.trim();
   if(!nick){toast('请先填写昵称');return;}
+  membershipJoined=true;
+  const trips=accounts.get(activeEmail).trips;if(!trips.includes(demoTrip))trips.push(demoTrip);
   $('joinForm').style.display='none';$('joinDone').style.display='block';
   toast('已以「'+nick+'」身份加入（仅一次）');
 }
@@ -1386,7 +1662,7 @@ function init(){
     if(e.key==='ArrowRight')go(cur+1);else if(e.key==='ArrowLeft')go(cur-1);
     else if(/^[1-9]$/.test(e.key))go(+e.key);
   });
-  tick();setInterval(tick,1000);go(1);
+  tick();setInterval(tick,1000);go(19);
 }
 document.addEventListener('DOMContentLoaded',init);
 </script>
