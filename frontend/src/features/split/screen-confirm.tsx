@@ -108,7 +108,7 @@ export function ScreenConfirm() {
           <Card className="p-3.5">
             <div className="flex items-center justify-between gap-2">
               <div className="text-[13px] font-bold text-ink">
-                时间窗 {formatClock(detail.departureAt)} → {formatClock(detail.reunionAt)}
+                时间窗 {formatClock(detail.departureAt, detail.destination)} → {formatClock(detail.reunionAt, detail.destination)}
               </div>
               <Badge variant="brand">
                 <IconClock /> {detail.windowMinutes != null ? `共 ${detail.windowMinutes} 分钟` : "窗口未知"}

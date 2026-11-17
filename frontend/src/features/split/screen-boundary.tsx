@@ -16,7 +16,7 @@ import { formatClock, formatWindow } from "@/lib/format"
  * returned by the snapshot; departure shows each stop's scheduled end, reunion its scheduled start.
  * The window card reflects the backend-saved departure/reunion/window (never a client computation).
  * Save wires PUT boundaries; non-positive window / out-of-main / non-initiator / stale rejections
- * surface from the backend. Next is enabled only once a window has actually been saved.
+ * surface from the backend. Next saves a changed pair first, so stale boundaries never win.
  */
 export function ScreenBoundary() {
   const { tripId = "" } = useParams()
@@ -39,8 +39,31 @@ export function ScreenBoundary() {
   }, [detail, ready])
 
   const stops = detail?.mainPlanStops ?? []
+  const departureIndex = stops.findIndex((stop) => stop.id === departure)
+  const reunionIndex = stops.findIndex((stop) => stop.id === reunion)
   const canSave = departure != null && reunion != null && !save.isPending
-  const saved = detail?.windowMinutes != null
+  const dirty = detail != null && (departure !== detail.departureStopId || reunion !== detail.reunionStopId)
+
+  // "下一步" saves the current pick first, so a changed pair can never be silently ignored in favour of
+  // the previously saved boundaries.
+  async function next() {
+    if (!detail) return
+    if (!dirty) {
+      navigate(`/trips/${tripId}/split/routes`)
+      return
+    }
+    if (departure == null || reunion == null) return
+    try {
+      await save.mutateAsync({
+        departureStopId: departure,
+        reunionStopId: reunion,
+        draftVersion: detail.draftVersion,
+      })
+      navigate(`/trips/${tripId}/split/routes`)
+    } catch {
+      // save.error renders below; stay on this screen.
+    }
+  }
 
   const action = (
     <>
@@ -54,8 +77,8 @@ export function ScreenBoundary() {
       >
         {save.isPending ? "保存中…" : "保存边界"}
       </Button>
-      <Button className="flex-1" disabled={!saved} onClick={() => navigate(`/trips/${tripId}/split/routes`)}>
-        下一步 <IconArrowRight />
+      <Button className="flex-1" disabled={!canSave} onClick={next}>
+        {save.isPending ? "保存中…" : dirty ? "保存并下一步" : "下一步"} <IconArrowRight />
       </Button>
     </>
   )
@@ -86,7 +109,8 @@ export function ScreenBoundary() {
       ) : (
         <div className="flex flex-col gap-3">
           <p className="text-[11.5px] leading-relaxed text-ink-3">
-            出发时刻取所选节点的结束时间，会合时刻取所选节点的开始时间；窗口由后端派生并校验为正。
+            出发时刻取所选站点的开始时间（即在该站开始分头），会合时刻取所选站点的开始时间。会合站必须排在出发站之后，
+            窗口 = 会合开始 − 出发开始，由后端校验为正；不满足的选项已置灰。
           </p>
 
           <Card className="p-4">
@@ -94,9 +118,15 @@ export function ScreenBoundary() {
               <IconNav className="text-a" /> 分头节点（出发）
             </div>
             <div className="flex flex-wrap gap-2">
-              {stops.map((stop) => (
-                <Chip key={stop.id} tone="a" selected={departure === stop.id} onClick={() => setDeparture(stop.id)}>
-                  {formatClock(stop.endAt)} · {stop.name}
+              {stops.map((stop, index) => (
+                <Chip
+                  key={stop.id}
+                  tone="a"
+                  selected={departure === stop.id}
+                  disabled={departure !== stop.id && reunionIndex >= 0 && index >= reunionIndex}
+                  onClick={() => setDeparture(departure === stop.id ? null : stop.id)}
+                >
+                  {formatClock(stop.startAt, detail.destination)} · {stop.name}
                 </Chip>
               ))}
             </div>
@@ -107,9 +137,15 @@ export function ScreenBoundary() {
               <IconFlag className="text-ok" /> 会合节点（截止）
             </div>
             <div className="flex flex-wrap gap-2">
-              {stops.map((stop) => (
-                <Chip key={stop.id} tone="b" selected={reunion === stop.id} onClick={() => setReunion(stop.id)}>
-                  {formatClock(stop.startAt)} · {stop.name}
+              {stops.map((stop, index) => (
+                <Chip
+                  key={stop.id}
+                  tone="b"
+                  selected={reunion === stop.id}
+                  disabled={reunion !== stop.id && departureIndex >= 0 && index <= departureIndex}
+                  onClick={() => setReunion(reunion === stop.id ? null : stop.id)}
+                >
+                  {formatClock(stop.startAt, detail.destination)} · {stop.name}
                 </Chip>
               ))}
             </div>
@@ -119,7 +155,14 @@ export function ScreenBoundary() {
             departureAt={detail.departureAt}
             reunionAt={detail.reunionAt}
             windowMinutes={detail.windowMinutes}
+            destination={detail.destination}
           />
+
+          {dirty && departure != null && reunion != null && (
+            <p className="text-[11px] leading-relaxed text-ink-3">
+              边界已修改但尚未保存：点“保存并下一步”会先保存，之前生成的分队路线将作废，需要重新生成。
+            </p>
+          )}
 
           <p className="text-[11px] leading-relaxed text-ink-3">
             会合截止为硬性时间：两组须在会合节点开始时刻前集合。窗口合法性由后端判定，前端不自行落库。
@@ -136,17 +179,19 @@ function WindowCard({
   departureAt,
   reunionAt,
   windowMinutes,
+  destination,
 }: {
   departureAt: string | null
   reunionAt: string | null
   windowMinutes: number | null
+  destination?: string | null
 }) {
   return (
     <Card className="border-brand-soft bg-gradient-to-br from-brand-soft/50 to-surface p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="text-center">
           <div className="text-[10.5px] font-semibold tracking-wide text-ink-3 uppercase">出发</div>
-          <div className="mt-0.5 text-[19px] font-extrabold text-ink">{formatClock(departureAt)}</div>
+          <div className="mt-0.5 text-[19px] font-extrabold text-ink">{formatClock(departureAt, destination)}</div>
         </div>
         <div className="flex flex-1 flex-col items-center gap-1">
           <span className="text-[10.5px] font-semibold text-brand-ink">分头行动</span>
@@ -154,7 +199,7 @@ function WindowCard({
         </div>
         <div className="text-center">
           <div className="text-[10.5px] font-semibold tracking-wide text-ink-3 uppercase">会合</div>
-          <div className="mt-0.5 text-[19px] font-extrabold text-ink">{formatClock(reunionAt)}</div>
+          <div className="mt-0.5 text-[19px] font-extrabold text-ink">{formatClock(reunionAt, destination)}</div>
         </div>
       </div>
       <div className="mt-3 flex justify-center">

@@ -7,8 +7,11 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+
+import com.gogo.trip.TripZones;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -20,15 +23,13 @@ import org.springframework.transaction.annotation.Transactional;
  * plan_node rows: the splits capability reads them instead of synthesizing boundary stops, so a trip's split
  * boundaries always come from the plan its members actually confirmed.
  *
- * Local HH:MM stop times are placed on the trip start date in the trip timezone (Asia/Singapore, the same zone
- * the preference submission timestamps use), so ISO consumers need no locale knowledge. Rows of other versions
+ * Local HH:MM stop times are placed on the trip start date in the trip's own zone (香港/伦敦/新加坡 default, see
+ * {@link TripZones}), so ISO consumers need no locale knowledge. Rows of other versions
  * are left untouched (history stays readable); only the confirmed version is rewritten, which makes the
  * projection idempotent and self-healing for plans confirmed before the projection existed.
  */
 @Component
 public class MainPlanProjection {
-
-    static final ZoneId TRIP_ZONE = ZoneId.of("Asia/Singapore");
 
     private final JdbcTemplate jdbc;
     private final MainPlanRepository plans;
@@ -49,7 +50,9 @@ public class MainPlanProjection {
             return Optional.empty();
         }
         MainPlanRepository.DraftRow draft = confirmed.get();
-        String startDate = tripStartDate(tripId);
+        Map<String, Object> trip = tripFacts(tripId);
+        String startDate = (String) trip.get("start_date");
+        ZoneId zone = TripZones.of((String) trip.get("destination"));
         List<MainPlanRepository.StopRow> stops = plans.stopsForDraft(draft.id());
         String now = Instant.now().toString();
         jdbc.update("DELETE FROM plan_node WHERE trip_id = ? AND branch_id = 'main' AND plan_version = ?",
@@ -59,24 +62,25 @@ public class MainPlanProjection {
                             + "start_at, end_at, location_name, lat, lng, sort_order, created_at) "
                             + "VALUES (?, ?, ?, NULL, 'main', 'stop', ?, ?, ?, ?, NULL, NULL, ?, ?)",
                     UUID.randomUUID().toString(), tripId, draft.version(), stop.name(),
-                    instant(startDate, stop.startLocal()), instant(startDate, stop.endLocal()),
+                    instant(startDate, stop.startLocal(), zone), instant(startDate, stop.endLocal(), zone),
                     stop.name(), stop.seq(), now);
         }
         return Optional.of(draft.version());
     }
 
-    private String tripStartDate(long tripId) {
-        List<String> dates = jdbc.queryForList("SELECT start_date FROM trip WHERE id = ?", String.class, tripId);
-        return dates.isEmpty() ? null : dates.get(0);
+    private Map<String, Object> tripFacts(long tripId) {
+        List<Map<String, Object>> trips = jdbc.queryForList(
+                "SELECT start_date, destination FROM trip WHERE id = ?", tripId);
+        return trips.isEmpty() ? Map.of() : trips.get(0);
     }
 
-    /** Local HH:MM on the trip start date in the trip timezone -> ISO-8601 instant (null when unparseable). */
-    static Instant instant(String startDate, String clock) {
+    /** Local HH:MM on the trip start date in the given zone -> ISO-8601 instant (null when unparseable). */
+    static Instant instant(String startDate, String clock, ZoneId zone) {
         if (startDate == null || clock == null) {
             return null;
         }
         try {
-            return LocalDateTime.of(LocalDate.parse(startDate), LocalTime.parse(clock)).atZone(TRIP_ZONE).toInstant();
+            return LocalDateTime.of(LocalDate.parse(startDate), LocalTime.parse(clock)).atZone(zone).toInstant();
         } catch (DateTimeParseException ex) {
             return null;
         }

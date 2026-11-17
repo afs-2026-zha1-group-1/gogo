@@ -50,6 +50,7 @@ function detail(overrides: Partial<SplitDraftDetail> = {}): SplitDraftDetail {
     reunionAt: iso(12, 0),
     windowMinutes: 120,
     routes: [route('A'), route('B')],
+    destination: 'Singapore',
     ...overrides,
   }
 }

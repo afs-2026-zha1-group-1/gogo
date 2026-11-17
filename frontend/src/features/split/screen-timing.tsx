@@ -113,7 +113,7 @@ export function ScreenTiming() {
           <Card className="border-brand-soft bg-gradient-to-br from-brand-soft/50 to-surface p-4">
             <div className="flex items-center justify-between gap-2">
               <div className="text-[13px] font-bold text-ink">
-                时间窗 {formatClock(detail.departureAt)} → {formatClock(detail.reunionAt)}
+                时间窗 {formatClock(detail.departureAt, detail.destination)} → {formatClock(detail.reunionAt, detail.destination)}
               </div>
               <Badge variant="brand">
                 <IconClock /> 共 {windowMinutes} 分钟
@@ -161,7 +161,7 @@ export function ScreenTiming() {
                     input={input}
                     tone={res.groupLabel === "B" ? "b" : "a"}
                     windowMinutes={result.windowMinutes}
-                    reunionClock={formatClock(detail.reunionAt)}
+                    reunionClock={formatClock(detail.reunionAt, detail.destination)}
                   />
                 )
               })}

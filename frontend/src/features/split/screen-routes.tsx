@@ -139,6 +139,13 @@ export function ScreenRoutes() {
             }}
           />
 
+          {detail.windowMinutes != null && (
+            <p className="text-[11.5px] leading-relaxed text-ink-3">
+              时间窗 {formatClock(detail.departureAt, detail.destination)} → {formatClock(detail.reunionAt, detail.destination)}
+              （共 {detail.windowMinutes} 分钟），由你在上一步选的出发/会合站决定；两条路线的合计都需不超过它。
+            </p>
+          )}
+
           {hasPair ? (
             <div className="flex flex-col gap-3">
               {routes.map((route) => (
@@ -148,8 +155,9 @@ export function ScreenRoutes() {
                   tone={route.groupLabel === "B" ? "b" : "a"}
                   departureName={nameOf(route.departureStopId)}
                   reunionName={nameOf(route.reunionStopId)}
-                  reunionClock={formatClock(detail.reunionAt)}
+                  reunionClock={formatClock(detail.reunionAt, detail.destination)}
                   stale={(detail.groups[route.groupLabel] ?? []).length === 0}
+                  windowMinutes={detail.windowMinutes}
                 />
               ))}
             </div>
@@ -160,6 +168,16 @@ export function ScreenRoutes() {
               hint="点击下方“生成两条路线”，后端将成对原子生成 A/B 路线（失败整对回滚）。"
             />
           )}
+
+          {hasPair && detail.windowMinutes != null && routes.some((route) => {
+            const legs = route.travelLegsMinutes
+            if (route.activityMinutes == null || route.bufferMinutes == null || legs.some((minutes) => minutes == null)) return false
+            return route.activityMinutes + legs.reduce((sum, minutes) => sum + (minutes ?? 0), 0) + route.bufferMinutes > detail.windowMinutes!
+          }) ? (
+            <p className="text-[11px] leading-relaxed text-ink-3">
+              有路线超出当前窗口：回上一步把「会合站」往后选，窗口会按新站点重新计算。
+            </p>
+          ) : null}
 
           {generate.error ? <ErrorState error={generate.error} /> : null}
           {assign.error ? <ErrorState error={assign.error} /> : null}

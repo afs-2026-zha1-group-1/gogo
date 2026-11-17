@@ -41,10 +41,10 @@ class SplitRouteGenerationApiTest extends AbstractSplitApiTest {
 
     @BeforeEach
     void stubFixtureProvider() {
-        when(provider.candidateFor(eq("A"), any(), any()))
-                .thenAnswer(inv -> fixture.candidateFor("A", inv.getArgument(1), inv.getArgument(2)));
-        when(provider.candidateFor(eq("B"), any(), any()))
-                .thenAnswer(inv -> fixture.candidateFor("B", inv.getArgument(1), inv.getArgument(2)));
+        when(provider.candidateFor(eq("A"), any(), any(), any()))
+                .thenAnswer(inv -> fixture.candidateFor("A", inv.getArgument(1), inv.getArgument(2), inv.getArgument(3)));
+        when(provider.candidateFor(eq("B"), any(), any(), any()))
+                .thenAnswer(inv -> fixture.candidateFor("B", inv.getArgument(1), inv.getArgument(2), inv.getArgument(3)));
     }
 
     @Test
@@ -90,7 +90,7 @@ class SplitRouteGenerationApiTest extends AbstractSplitApiTest {
         saveBoundaries(1);
         assignAs("Chloe", "B", 2);
         postGenerate(memberId("Ben"), 3).andExpect(status().isOk());
-        when(provider.candidateFor(eq("B"), any(), any())).thenThrow(new RuntimeException("provider failed for B"));
+        when(provider.candidateFor(eq("B"), any(), any(), any())).thenThrow(new RuntimeException("provider failed for B"));
         postGenerate(memberId("Ben"), 4)
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.data").doesNotExist())
@@ -108,10 +108,10 @@ class SplitRouteGenerationApiTest extends AbstractSplitApiTest {
         startDraft();
         saveBoundaries(1);
         assignAs("Chloe", "B", 2);
-        when(provider.candidateFor(eq("A"), any(), any())).thenAnswer(inv -> {
+        when(provider.candidateFor(eq("A"), any(), any(), any())).thenAnswer(inv -> {
             jdbc.update("UPDATE split_draft SET document = json_set(document, '$.draftVersion', 4), draft_version = 4 WHERE trip_id = ?",
                     sgfTripId());
-            return fixture.candidateFor("A", inv.getArgument(1), inv.getArgument(2));
+            return fixture.candidateFor("A", inv.getArgument(1), inv.getArgument(2), inv.getArgument(3));
         });
         postGenerate(memberId("Ben"), 3)
                 .andExpect(status().isConflict())

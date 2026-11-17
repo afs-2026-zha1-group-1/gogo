@@ -21,8 +21,11 @@ const ERROR_LABELS: Record<string, string> = {
   OUT_OF_DAY: '超出一日时间窗',
 }
 
-function sgd(cents: number) {
-  return `S$${cents / 100}`
+// Per-person cost is stored in the destination's currency (cents); the symbol follows the trip.
+function money(cents: number, destination?: string | null) {
+  const value = destination ?? ''
+  const symbol = /香港|hong\s*kong/i.test(value) ? 'HK$' : /伦敦|london/i.test(value) ? '£' : 'S$'
+  return `${symbol}${cents / 100}`
 }
 
 function errorMessage(cause: unknown) {
@@ -300,7 +303,7 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
           <div className="valid-item" style={{ borderBottom: 0 }}>
             <span className="valid-ic"><Icon name="shield" className="sm" /></span>
             <div>
-              <div className="vt">人均费用 {sgd(plan.costPerPersonCents)}</div>
+              <div className="vt">人均费用 {money(plan.costPerPersonCents, trip.destination)}</div>
               <div className="vd">版本 v{plan.version} · {plan.confirmed ? '已确认，全员共享' : '草稿，待组织者确认'}</div>
             </div>
           </div>
@@ -334,7 +337,7 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
                     <div>
                       <div className="vt">{overrun.displayName} 超出硬预算</div>
                       <div className="vd">
-                        硬预算 {sgd(overrun.hardBudgetCents)} · 人均费用 {sgd(plan.costPerPersonCents)} · 超出 {sgd(overrun.overrunCents)}
+                        硬预算 {money(overrun.hardBudgetCents, trip.destination)} · 人均费用 {money(plan.costPerPersonCents, trip.destination)} · 超出 {money(overrun.overrunCents, trip.destination)}
                       </div>
                     </div>
                   </div>

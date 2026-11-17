@@ -66,9 +66,9 @@ class SplitDraftDetailApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.data.mainPlanStops[3].endAt").value("2026-12-05T04:00:00Z"))
                 .andExpect(jsonPath("$.data.departureStopId").value(cityHall))
                 .andExpect(jsonPath("$.data.reunionStopId").value(merlion))
-                .andExpect(jsonPath("$.data.departureAt").value("2026-12-05T01:30:00Z"))
+                .andExpect(jsonPath("$.data.departureAt").value("2026-12-05T01:00:00Z"))
                 .andExpect(jsonPath("$.data.reunionAt").value("2026-12-05T03:30:00Z"))
-                .andExpect(jsonPath("$.data.windowMinutes").value(120))
+                .andExpect(jsonPath("$.data.windowMinutes").value(150))
                 .andExpect(jsonPath("$.data.routes.length()").value(2))
                 .andExpect(jsonPath("$.data.routes[0].groupLabel").value("A"))
                 .andExpect(jsonPath("$.data.routes[0].activityName").value("National Gallery Singapore"))
@@ -105,8 +105,8 @@ class SplitDraftDetailApiTest extends AbstractSplitApiTest {
     }
 
     @Test
-    @DisplayName("getDetail_afterBoundariesBeforeGeneration_returns200Window120AndEmptyRoutes")
-    void getDetail_afterBoundariesBeforeGeneration_returns200Window120AndEmptyRoutes() throws Exception {
+    @DisplayName("getDetail_afterBoundariesBeforeGeneration_returns200Window150AndEmptyRoutes")
+    void getDetail_afterBoundariesBeforeGeneration_returns200Window150AndEmptyRoutes() throws Exception {
         startDraft();
         saveBoundaries(1);
         getDetail(memberId("Chloe"))
@@ -115,7 +115,7 @@ class SplitDraftDetailApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.data.draftVersion").value(2))
                 .andExpect(jsonPath("$.data.departureStopId").value(stopId("City Hall MRT")))
                 .andExpect(jsonPath("$.data.reunionStopId").value(stopId("Merlion Park")))
-                .andExpect(jsonPath("$.data.windowMinutes").value(120))
+                .andExpect(jsonPath("$.data.windowMinutes").value(150))
                 .andExpect(jsonPath("$.data.routes.length()").value(0));
     }
 

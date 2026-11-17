@@ -130,7 +130,7 @@
 
 ### Requirement: Split boundary selection
 
-系统 SHALL 提供 `PUT /api/trips/{tripId}/split-draft/boundaries`（认证会话，body 含 `departureStopId`、`reunionStopId`、`draftVersion`），仅允许草稿发起人成对保存出发与会合边界（不开放半边界）。`active` 之外的草稿状态 SHALL 拒绝写入。两 stop SHALL 均属已确认主线；出发时刻 = 出发 stop 的 `end_at`（scheduled end），会合时刻 = 会合 stop 的 `start_at`（scheduled start），窗口 = 会合 − 出发（分钟）且 SHALL 为正。保存 SHALL 以 draftVersion 条件更新写入草稿文档边界字段并使 draftVersion+1；任何拒绝 SHALL 不改动已保存边界与版本。草稿详情 SHALL 返回当前边界 stop、对应时刻与窗口分钟数。
+系统 SHALL 提供 `PUT /api/trips/{tripId}/split-draft/boundaries`（认证会话，body 含 `departureStopId`、`reunionStopId`、`draftVersion`），仅允许草稿发起人成对保存出发与会合边界（不开放半边界）。`active` 之外的草稿状态 SHALL 拒绝写入。两 stop SHALL 均属已确认主线；出发时刻 = 出发 stop 的 `start_at`（scheduled start），会合时刻 = 会合 stop 的 `start_at`（scheduled start），窗口 = 会合 − 出发（分钟）且 SHALL 为正。保存 SHALL 以 draftVersion 条件更新写入草稿文档边界字段并使 draftVersion+1；任何拒绝 SHALL 不改动已保存边界与版本。草稿详情 SHALL 返回当前边界 stop、对应时刻与窗口分钟数。
 
 #### Scenario: 正窗口成对保存（B1）
 

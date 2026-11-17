@@ -5,6 +5,8 @@
  * GroupRoute fields only (activity name/minutes, travel legs, buffer); nothing is invented.
  */
 
+import { tripZone } from "../../lib/trip-zone.ts"
+
 export type RouteKey = "a" | "b"
 export type LabelSide = "left" | "right"
 
@@ -72,7 +74,11 @@ export function truncateLabel(text: string, maxUnits: number): string {
 }
 
 /** ISO timestamps (draft snapshot) and local HH:MM (main-plan stops) are formatted separately, never converted. */
-export function formatTime(value: string | null | undefined, source: "iso" | "local"): string {
+export function formatTime(
+  value: string | null | undefined,
+  source: "iso" | "local",
+  destination?: string | null,
+): string {
   if (value == null || value === "") return PENDING_LABEL
   if (source === "local") return value
   const date = new Date(value)
@@ -81,6 +87,7 @@ export function formatTime(value: string | null | undefined, source: "iso" | "lo
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
+    timeZone: tripZone(destination),
   }).format(date)
 }
 
@@ -202,7 +209,7 @@ export function buildGraphRows(input: {
     kind: "fork",
     id: fork.id,
     title: fork.name,
-    meta: `${fork.endLabel} · 分头`,
+    meta: `${fork.startLabel} · 分头`,
     side: "right",
   })
 

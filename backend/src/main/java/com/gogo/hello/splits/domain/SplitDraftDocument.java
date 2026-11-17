@@ -73,12 +73,13 @@ public record SplitDraftDocument(
 
     /**
      * Returns a new document with the saved boundary stop ids and {@code draftVersion + 1} (design D7/D9): any
-     * draft change bumps the version. Groups, routes, initiator and createdAt are preserved; updatedAt advances.
+     * draft change bumps the version. Route durations are cleared because they were computed against the
+     * previous window; the pair must be regenerated for the new boundaries.
      */
     public SplitDraftDocument withBoundaries(String departureStopId, String reunionStopId, String now) {
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion + 1, status,
-                departureStopId, reunionStopId, groups, routes, createdAt, now);
+                departureStopId, reunionStopId, groups, null, createdAt, now);
     }
 
     /**

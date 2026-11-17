@@ -90,6 +90,8 @@ export interface SplitDraftDetail {
   reunionAt: string | null
   windowMinutes: number | null
   routes: GroupRoute[]
+  /** Trip destination; the screens use it to render instants in the trip's own zone. */
+  destination: string | null
 }
 
 /** Boundary save response (backend BoundaryResponse). */

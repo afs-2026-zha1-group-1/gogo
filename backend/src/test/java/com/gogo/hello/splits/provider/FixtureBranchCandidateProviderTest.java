@@ -9,12 +9,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit test for the fixed in-process branch candidate provider (design D12, task 4.2). Verifies the fixture
- * candidates A -> National Gallery Singapore (60/[15,20]/10) and B -> Gardens by the Bay (60/[20,20]/10) with
- * no external network dependency. The boundary stops are accepted for the replaceable interface (R2 seam) but
- * the MVP fixture returns fixed values.
+ * Unit test for the fixed in-process branch candidate provider (design D12, task 4.2). Verifies the Singapore
+ * fixture candidates A -> National Gallery Singapore (60/[15,20]/10) and B -> Gardens by the Bay
+ * (60/[20,20]/10) plus the destination-keyed 香港/伦敦 pairs used by the demo. The boundary stops are accepted
+ * for the replaceable interface (R2 seam) but the MVP fixture returns fixed values.
  */
 class FixtureBranchCandidateProviderTest {
+
+    private static final String SINGAPORE = "Singapore";
 
     private final FixtureBranchCandidateProvider provider = new FixtureBranchCandidateProvider();
     private final PlanStop departure = new PlanStop(
@@ -25,7 +27,7 @@ class FixtureBranchCandidateProviderTest {
     @Test
     @DisplayName("candidateFor_groupA_nationalGalleryFixedDurations")
     void candidateFor_groupA_nationalGalleryFixedDurations() {
-        RouteCandidate candidate = provider.candidateFor("A", departure, reunion);
+        RouteCandidate candidate = provider.candidateFor("A", departure, reunion, SINGAPORE);
         assertThat(candidate.groupLabel()).isEqualTo("A");
         assertThat(candidate.activityName()).isEqualTo("National Gallery Singapore");
         assertThat(candidate.activityMinutes()).isEqualTo(60);
@@ -36,11 +38,29 @@ class FixtureBranchCandidateProviderTest {
     @Test
     @DisplayName("candidateFor_groupB_gardensByTheBayFixedDurations")
     void candidateFor_groupB_gardensByTheBayFixedDurations() {
-        RouteCandidate candidate = provider.candidateFor("B", departure, reunion);
+        RouteCandidate candidate = provider.candidateFor("B", departure, reunion, SINGAPORE);
         assertThat(candidate.groupLabel()).isEqualTo("B");
         assertThat(candidate.activityName()).isEqualTo("Gardens by the Bay");
         assertThat(candidate.activityMinutes()).isEqualTo(60);
         assertThat(candidate.travelLegsMinutes()).containsExactly(20, 20);
         assertThat(candidate.bufferMinutes()).isEqualTo(10);
+    }
+
+    @Test
+    @DisplayName("candidateFor_hongKong_returnsCitySpecificPair")
+    void candidateFor_hongKong_returnsCitySpecificPair() {
+        assertThat(provider.candidateFor("A", departure, reunion, "香港").activityName())
+                .isEqualTo("PMQ 元创方（手作市集）");
+        assertThat(provider.candidateFor("B", departure, reunion, "香港").activityName())
+                .isEqualTo("香港故宫文化博物馆");
+    }
+
+    @Test
+    @DisplayName("candidateFor_london_returnsCitySpecificPair")
+    void candidateFor_london_returnsCitySpecificPair() {
+        assertThat(provider.candidateFor("A", departure, reunion, "伦敦").activityName())
+                .isEqualTo("泰特现代美术馆");
+        assertThat(provider.candidateFor("B", departure, reunion, "伦敦").activityName())
+                .isEqualTo("博罗市场美食探索");
     }
 }
