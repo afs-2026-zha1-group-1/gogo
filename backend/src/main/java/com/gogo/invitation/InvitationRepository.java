@@ -49,11 +49,11 @@ public class InvitationRepository {
 
     public InvitationPreview preview(String token) {
         List<InvitationPreview> rows = jdbc.query(
-                "SELECT t.name, t.destination, t.start_date, t.end_date, t.main_plan_confirmed "
+                "SELECT t.name, t.destination, t.start_date, t.end_date, t.main_plan_confirmed, t.joining_closed "
                         + "FROM trip_invitation i JOIN trip t ON t.id = i.trip_id WHERE i.token = ?",
                 (rs, rowNum) -> new InvitationPreview(rs.getString("name"), rs.getString("destination"),
                         rs.getString("start_date"), rs.getString("end_date"),
-                        rs.getInt("main_plan_confirmed") != 0),
+                        rs.getInt("main_plan_confirmed") != 0, rs.getInt("joining_closed") != 0),
                 token);
         return rows.stream().findFirst()
                 .orElseThrow(() -> new InvitationApiException(404, "INVITATION_NOT_FOUND",
@@ -68,7 +68,7 @@ public class InvitationRepository {
         if (trips.isMember(tripId, userId)) {
             return new JoinResult(true, true, tripId);
         }
-        if (isMainPlanConfirmed(tripId)) {
+        if (isJoiningClosed(tripId)) {
             throw new InvitationApiException(403, "JOINING_CLOSED",
                     "Joining is closed after the main plan is confirmed");
         }
@@ -89,10 +89,10 @@ public class InvitationRepository {
         return ids.stream().findFirst();
     }
 
-    private boolean isMainPlanConfirmed(long tripId) {
-        Integer confirmed = jdbc.queryForObject(
-                "SELECT main_plan_confirmed FROM trip WHERE id = ?", Integer.class, tripId);
-        return confirmed != null && confirmed != 0;
+    private boolean isJoiningClosed(long tripId) {
+        Integer closed = jdbc.queryForObject(
+                "SELECT joining_closed FROM trip WHERE id = ?", Integer.class, tripId);
+        return closed != null && closed != 0;
     }
 
     private static IssuedInvitation issued(String token, TripResponse trip) {

@@ -3,6 +3,7 @@ import type { CurrentTripResponse, InAppPage, Route, TabId } from './types'
 import TabBar from './TabBar'
 import Home from './pages/Home'
 import CreateTrip from './pages/CreateTrip'
+import EditTrip from './pages/EditTrip'
 import TripDetails from './pages/TripDetails'
 import TripsList from './pages/TripsList'
 import CurrentTrip from './pages/CurrentTrip'
@@ -41,6 +42,10 @@ function parseRoute(hash: string): Route {
   // US-083 R4: the invitation page is trip-scoped; match before the generic `/trips/<id>`.
   const invitationMatch = path.match(/^\/trips\/(\d+)\/invitation$/)
   if (invitationMatch) return { page: 'invitation', tripId: Number(invitationMatch[1]) }
+  // US-003: the edit route must match before the generic `/trips/<id>` regex
+  // (US-067 D1 lesson), otherwise it is swallowed by the details route.
+  const tripEditMatch = path.match(/^\/trips\/(\d+)\/edit$/)
+  if (tripEditMatch) return { page: 'trip-edit', tripId: Number(tripEditMatch[1]) }
   const tripMatch = path.match(/^\/trips\/(\d+)$/)
   if (tripMatch) return { page: 'details', tripId: Number(tripMatch[1]) }
   if (path === '/my-trips') return { page: 'my-trips' }
@@ -55,6 +60,7 @@ const TAB_FOR_PAGE: Record<InAppPage, TabId> = {
   'my-trips': 'account',
   'trips-current': 'trips',
   details: 'trips',
+  'trip-edit': 'trips',
   create: 'trips',
   members: 'members',
   account: 'account',
@@ -183,6 +189,7 @@ export default function App() {
         {route.page === 'home' && <Home />}
         {route.page === 'create' && <CreateTrip backHref={tripsHref} />}
         {route.page === 'details' && <TripDetails tripId={route.tripId} />}
+        {route.page === 'trip-edit' && <EditTrip tripId={route.tripId} backHref={tripsHref} />}
         {/* US-031/037: the main plan lives inside the shell so the bottom
             navigation stays visible when users arrive from the "行程" tab. */}
         {route.page === 'main-plan' && <MainPlan tripId={route.tripId} />}

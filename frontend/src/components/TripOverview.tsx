@@ -38,6 +38,9 @@ export default function TripOverview({ state }: { state: ReadyState }) {
           <div className="title">行程详情</div>
           <div className="sub">US-002 · 全员可见</div>
         </div>
+        <a className="iconbtn" href={`#/trips/${state.trip.id}/edit`} aria-label="编辑行程信息">
+          <Icon name="edit" />
+        </a>
         <a className="iconbtn" href={`#/trips/${state.trip.id}/invitation`} aria-label="邀请朋友">
           <Icon name="user" />
         </a>

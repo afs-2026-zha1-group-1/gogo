@@ -1,6 +1,7 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { useCancelDraft, useConfirmDraft, useSplitDraft } from "./hooks"
+import { useCancelConfirmedSplit, useCancelDraft, useConfirmDraft, useSplitDraft, useTripOrganizer } from "./hooks"
+import ConfirmDialog from "@/components/ui/confirm-dialog"
 import { useAuth } from "../auth/AuthProvider"
 import { SplitLayout } from "./split-layout"
 import { EmptyState, ErrorState, LoadingState } from "./states"
@@ -26,11 +27,15 @@ export function ScreenConfirm() {
   const draft = useSplitDraft(tripId)
   const confirm = useConfirmDraft(tripId)
   const cancel = useCancelDraft(tripId)
+  const cancelConfirmed = useCancelConfirmedSplit(tripId)
+  const trip = useTripOrganizer(tripId)
   const { accountId } = useAuth()
   const detail = draft.data
   const status: SplitDraftStatus | undefined = detail?.status
   const isInitiator = detail != null && accountId != null && detail.initiatorMemberId === accountId
-  const busy = confirm.isPending || cancel.isPending
+  const isOrganizer = trip.data?.organizerId != null && String(trip.data.organizerId) === accountId
+  const busy = confirm.isPending || cancel.isPending || cancelConfirmed.isPending
+  const [cancelPrompt, setCancelPrompt] = useState<"active" | "confirmed" | null>(null)
 
   // US-084 AC1: a successful confirmation returns to the same trip's detail page,
   // where the confirmed personal route is derived. Cross-router-space navigation
@@ -41,8 +46,14 @@ export function ScreenConfirm() {
 
   const onCancel = () => {
     if (!detail) return
-    if (!window.confirm("确认取消该拆分草稿？主线方案不会改变，取消后可重新发起。")) return
-    cancel.mutate(detail.draftVersion)
+    setCancelPrompt("active")
+  }
+
+  // US-051: organizer may cancel a confirmed split before departure; the server
+  // enforces the departure instant and restores the main plan on success.
+  const onCancelConfirmed = () => {
+    if (!detail) return
+    setCancelPrompt("confirmed")
   }
 
   const action =
@@ -61,6 +72,17 @@ export function ScreenConfirm() {
           {confirm.isPending ? "确认中…" : "确认分队"} <IconCheck />
         </Button>
       </>
+    ) : status === "confirmed" ? (
+      <>
+        {isOrganizer ? (
+          <Button variant="outline" className="flex-1" disabled={busy} onClick={onCancelConfirmed}>
+            {cancelConfirmed.isPending ? "取消中…" : "取消已确认分队"}
+          </Button>
+        ) : null}
+        <Button className="flex-1" onClick={() => navigate(`/trips/${tripId}/split`)}>
+          返回分队首页
+        </Button>
+      </>
     ) : (
       <Button className="flex-1" onClick={() => navigate(`/trips/${tripId}/split`)}>
         返回分队首页
@@ -68,7 +90,8 @@ export function ScreenConfirm() {
     )
 
   return (
-    <SplitLayout
+    <>
+      <SplitLayout
       title="复核并确认分队"
       subtitle="服务端重校验通过后成对生效"
       step={4}
@@ -134,7 +157,7 @@ export function ScreenConfirm() {
               <div className="min-w-0">
                 <div className="text-[13px] font-bold text-[#047857]">拆分已确认</div>
                 <p className="mt-0.5 text-[11.5px] leading-relaxed text-ink-2">
-                  两条路线、分组与边界已作为唯一方案成对生效，草稿不可再编辑或取消。
+                  两条路线、分组与边界已作为唯一方案成对生效，草稿不可再编辑；组织者可在出发前取消。
                 </p>
               </div>
             </Card>
@@ -156,13 +179,38 @@ export function ScreenConfirm() {
 
           {confirm.error ? <ErrorState error={confirm.error} /> : null}
           {cancel.error ? <ErrorState error={cancel.error} /> : null}
+          {cancelConfirmed.error ? <ErrorState error={cancelConfirmed.error} /> : null}
 
           <p className="text-[10.5px] leading-relaxed text-ink-3">
             确认由服务端从草稿复算时间窗，客户端声明不参与判定；失败时下方明细来自 error.details。
           </p>
         </div>
       )}
-    </SplitLayout>
+      </SplitLayout>
+      <ConfirmDialog
+        open={cancelPrompt != null}
+        title={cancelPrompt === "confirmed" ? "取消已确认分队？" : "取消拆分草稿？"}
+        lines={cancelPrompt === "confirmed"
+          ? ["取消后恢复主线方案，分队路线不再生效；", "出发后不能取消，取消后可重新发起。"]
+          : ["主线方案不会改变，取消后可重新发起。"]}
+        confirmLabel={cancelPrompt === "confirmed" ? "取消已确认分队" : "取消草稿"}
+        cancelLabel="返回"
+        tone="warn"
+        onConfirm={() => {
+          if (!detail) {
+            setCancelPrompt(null)
+            return
+          }
+          if (cancelPrompt === "confirmed") {
+            cancelConfirmed.mutate(detail.draftVersion)
+          } else {
+            cancel.mutate(detail.draftVersion)
+          }
+          setCancelPrompt(null)
+        }}
+        onCancel={() => setCancelPrompt(null)}
+      />
+    </>
   )
 }
 

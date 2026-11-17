@@ -106,6 +106,7 @@ export default function InvitationPage({ tripId }: InvitationPageProps) {
         <InvitationPanel
           tripId={tripId}
           isOrganizer={isOrganizer}
+          joiningClosed={state.trip.joiningClosed === true}
           showTitle={false}
           onReadyChange={setInvitationReady}
         />

@@ -107,3 +107,11 @@ export function cancelSplitDraft(tripId: string, draftVersion: number): Promise<
     body: JSON.stringify({ draftVersion }),
   })
 }
+
+/** POST cancel a confirmed split before departure (US-051); organizer only. */
+export function cancelConfirmedSplit(tripId: string, draftVersion: number): Promise<SplitDraftDetail> {
+  return request<SplitDraftDetail>(`/${tripId}/split:cancel`, {
+    method: "POST",
+    body: JSON.stringify({ draftVersion }),
+  })
+}

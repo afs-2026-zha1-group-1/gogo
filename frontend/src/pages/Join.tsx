@@ -173,7 +173,9 @@ export default function Join({ token }: JoinProps) {
   }
 
   const preview = state.preview
-  const closed = state.kind === 'closed' || preview.mainPlanConfirmed
+  // US-003 D8: joining closes on the first confirmation and stays closed even
+  // after a planning edit resets mainPlanConfirmed.
+  const closed = state.kind === 'closed' || preview.joiningClosed === true
 
   return (
     <Screen>
@@ -213,7 +215,7 @@ export default function Join({ token }: JoinProps) {
         <p className="hint">
           <Icon name="shield" className="sm" />{' '}
           {closed
-            ? '主线方案已确认，新的成员不能再加入。'
+            ? '加入已关闭：主线方案曾经确认，新成员不能再加入。'
             : '接受邀请后才会看到完整行程与成员。当前主线尚未确认，你可以加入。'}
         </p>
       </section>
