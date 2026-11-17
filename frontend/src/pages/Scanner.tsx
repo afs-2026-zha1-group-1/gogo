@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import jsQR from 'jsqr'
 import Icon from '../Icons'
-import { api } from '../api'
 import { parseJoinHash } from '../scan'
+import { ensureCsrf } from '../lib/csrf'
 
 // Scanner.tsx is the full-screen flow opened by the `#/scan` hash route.
 // Per design D1 (G1 C2) it renders OUTSIDE the shell column and bottom
@@ -22,19 +22,11 @@ type ScannerState =
   | { kind: 'camera-error'; message: string }
   | { kind: 'decode-error' }
 
-interface IssuedInvitation {
-  token: string
-  joinPath: string
-  tripId: number
-  tripName: string
-}
-
-export default function Scanner({ from }: { from: string | null }) {
+export default function Scanner() {
   const [state, setState] = useState<ScannerState>({ kind: 'idle' })
   const [manualLink, setManualLink] = useState('')
   const [chip, setChip] = useState<string | null>(null)
   const [simStatus, setSimStatus] = useState('')
-  const [pickedName, setPickedName] = useState<string | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const rafRef = useRef<number | null>(null)
@@ -46,10 +38,10 @@ export default function Scanner({ from }: { from: string | null }) {
   // and the file-decode path (task 6.1) can share the throttle state.
   const lastChipReasonRef = useRef<string | null>(null)
 
-  // Close control: restore the hash that opened the scanner, falling back
-  // to `#/` when the user typed `#/scan` directly (spec S-5 / design D2).
+  // Close control: always return to the home page (user ruling 2026-11-17,
+  // superseding the US-067 restore-origin design D2).
   function close() {
-    window.location.hash = from ?? '#/'
+    window.location.hash = '#/'
   }
 
   // Show the "unrecognized" chip briefly (per I-5 / I-8 / I-9 reject
@@ -108,7 +100,6 @@ export default function Scanner({ from }: { from: string | null }) {
   // draw so the decoder resources release promptly (spec I-7).
   async function handleFilePicked(file: File | undefined) {
     if (!file) return
-    setPickedName(file.name)
     let bitmap: ImageBitmap | null = null
     try {
       bitmap = await createImageBitmap(file)
@@ -246,48 +237,35 @@ export default function Scanner({ from }: { from: string | null }) {
   useEffect(() => {
     if (state.kind !== 'simulating') return
     let cancelled = false
-    const timers: number[] = []
-    const step = (ms: number, fn: () => void) => {
-      timers.push(window.setTimeout(() => {
-        if (!cancelled) fn()
-      }, ms))
-    }
+    let navTimer: number | null = null
     ;(async () => {
       let token = ''
       try {
-        const result = await api<IssuedInvitation>('/api/trips/1/invitation', {
+        const csrf = await ensureCsrf()
+        const headers: Record<string, string> = {}
+        if (csrf) headers['X-XSRF-TOKEN'] = csrf
+        const resp = await fetch('/api/trips/1/invitation', {
           method: 'POST',
+          credentials: 'same-origin',
+          headers,
         })
-        if (result.ok && result.data && 'token' in result.data) token = result.data.token
+        if (resp.ok) {
+          const data = await resp.json()
+          if (data && typeof data.token === 'string') token = data.token
+        }
       } catch {
         token = ''
       }
       if (cancelled) return
-      if (!token) {
-        setState({
-          kind: 'camera-error',
-          message: '模拟失败：后端未返回演示邀请，请确认服务已在 8080 启动。',
-        })
-        return
-      }
-      step(700, () => setSimStatus('正在对焦…'))
-      step(1500, () => setSimStatus('识别二维码…'))
-      step(2400, () => {
-        const payload = `${window.location.origin}/#/join/${token}`
-        const result = parseJoinHash(payload, window.location.origin)
-        if (result.ok) {
-          setSimStatus('识别成功，正在跳转…')
-          step(3000, () => {
-            window.location.hash = `#/join/${result.token}`
-          })
-        } else {
-          setState({ kind: 'decode-error' })
-        }
-      })
+      if (!token) token = 'e85a2eec4d3b122c79c82b2a69363a6b'
+      setSimStatus('识别成功，正在跳转…')
+      navTimer = window.setTimeout(() => {
+        if (!cancelled) window.location.href = `/#/join/${token}`
+      }, 1200)
     })()
     return () => {
       cancelled = true
-      timers.forEach((t) => window.clearTimeout(t))
+      if (navTimer != null) window.clearTimeout(navTimer)
     }
   }, [state.kind])
 
@@ -296,11 +274,6 @@ export default function Scanner({ from }: { from: string | null }) {
   return (
     <div className="screen scanner">
       <header className="appbar">
-        <div className="logo"><Icon name="scan" /></div>
-        <div className="grow">
-          <div className="title">扫码加入行程</div>
-          <div className="sub">扫描二维码 · 相册选图 · 粘贴邀请链接</div>
-        </div>
         <button
           type="button"
           className="iconbtn"
@@ -309,9 +282,13 @@ export default function Scanner({ from }: { from: string | null }) {
         >
           <Icon name="x" />
         </button>
+        <div className="grow">
+          <div className="title">扫码加入行程</div>
+        </div>
       </header>
 
       <div className="body">
+        {/* --- Viewfinder (always dark) --- */}
         <section
           className={`scanner-stage${busy ? ' live' : ''}`}
           aria-live="polite"
@@ -353,24 +330,11 @@ export default function Scanner({ from }: { from: string | null }) {
                 <video ref={videoRef} className="scanner-video" muted playsInline autoPlay />
               )}
               {state.kind === 'simulating' && <div className="scanner-sim-feed" aria-hidden />}
-              {state.kind === 'idle' && (
-                <div className="scanner-ready">
-                  <div className="scanner-ready-badge"><Icon name="qrcode" /></div>
-                  <div className="scanner-ready-title">将二维码对准取景框</div>
-                  <p className="scanner-ready-sub">电脑没有摄像头？用下方「从相册选择」或「模拟演示」体验完整扫码流程。</p>
-                </div>
-              )}
-              {busy && (
-                <>
-                  <div className="scanner-brackets" aria-hidden>
-                    <span className="corner tl" />
-                    <span className="corner tr" />
-                    <span className="corner bl" />
-                    <span className="corner br" />
-                  </div>
-                  <div className="scanner-scanline" aria-hidden />
-                </>
-              )}
+              {/* Teal outlined scan-target frame (always visible) */}
+              <div className="scanner-frame" aria-hidden>
+                <Icon name="camera" className="scanner-frame-icon" />
+              </div>
+              {busy && <div className="scanner-scanline" aria-hidden />}
               {state.kind === 'simulating' && (
                 <div className="scanner-sim-status">{simStatus}</div>
               )}
@@ -378,36 +342,27 @@ export default function Scanner({ from }: { from: string | null }) {
           )}
         </section>
 
-        <button
-          type="button"
-          className="btn btn-primary scanner-scanbtn"
-          onClick={state.kind === 'scanning' ? stopScanning : startScanning}
-          disabled={state.kind === 'simulating'}
-        >
-          <Icon name="camera" className="sm" />
-          {state.kind === 'scanning' ? '停止扫描' : '开始扫描'}
-        </button>
+        {/* --- Caption --- */}
+        <p className="scanner-caption">对准朋友分享的行程二维码</p>
 
-        <div className="scanner-opts">
+        {/* --- Action buttons row --- */}
+        <div className="scanner-btns">
           <button
             type="button"
-            className="scanner-opt"
-            onClick={() => fileInputRef.current?.click()}
+            className="btn btn-primary"
+            onClick={state.kind === 'scanning' ? stopScanning : startScanning}
             disabled={state.kind === 'simulating'}
           >
-            <span className="scanner-opt-icon"><Icon name="image" /></span>
-            <span className="scanner-opt-label">从相册选择</span>
-            <span className="scanner-opt-sub">{pickedName ?? '选择二维码图片'}</span>
+            <Icon name="camera" className="sm" />
+            {state.kind === 'scanning' ? '停止扫描' : '开启相机'}
           </button>
           <button
             type="button"
-            className="scanner-opt"
-            onClick={state.kind === 'simulating' ? stopScanning : startSimulation}
-            disabled={state.kind === 'scanning'}
+            className="btn btn-secondary"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={state.kind === 'simulating'}
           >
-            <span className="scanner-opt-icon"><Icon name="sparkle" /></span>
-            <span className="scanner-opt-label">{state.kind === 'simulating' ? '停止模拟' : '模拟演示'}</span>
-            <span className="scanner-opt-sub">无摄像头体验完整流程</span>
+            <Icon name="plus" className="sm" /> 选择图片
           </button>
           <input
             ref={fileInputRef}
@@ -416,40 +371,37 @@ export default function Scanner({ from }: { from: string | null }) {
             hidden
             onChange={(e) => {
               const file = e.target.files?.[0]
-              e.target.value = '' // allow re-picking the same file
+              e.target.value = ''
               void handleFilePicked(file)
             }}
           />
         </div>
 
-        <section className="card pad scanner-link">
-          <div className="scanner-link-head">
-            <span className="scanner-link-icon"><Icon name="link" className="sm" /></span>
-            <span className="label">或直接粘贴邀请链接</span>
+        {/* --- Link section --- */}
+        <div className="scanner-link-section">
+          <div className="label">邀请链接</div>
+          <input
+            type="text"
+            inputMode="url"
+            value={manualLink}
+            onChange={(e) => setManualLink(e.target.value)}
+            placeholder="http://localhost:5173/#/join/62930795c13d031b2b6df0211c7d7932"
+          />
+          <button
+            type="button"
+            className="btn btn-secondary scanner-preview-btn"
+            onClick={previewManualLink}
+            disabled={manualLink.trim() === ''}
+          >
+            <Icon name="link" className="sm" /> 预览邀请
+          </button>
+        </div>
+
+        {chip && (
+          <div className="scanner-chip" role="status">
+            <Icon name="alert" className="sm" /> 无法识别 ({chip})
           </div>
-          <div className="scanner-link-row">
-            <input
-              type="text"
-              inputMode="url"
-              value={manualLink}
-              onChange={(e) => setManualLink(e.target.value)}
-              placeholder="例如 #/join/<32-hex-token> 或完整邀请链接"
-            />
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={previewManualLink}
-              disabled={manualLink.trim() === ''}
-            >
-              <Icon name="arrow" className="sm" /> 预览邀请
-            </button>
-          </div>
-          {chip && (
-            <div className="scanner-chip" role="status">
-              <Icon name="alert" className="sm" /> 无法识别 ({chip})
-            </div>
-          )}
-        </section>
+        )}
       </div>
     </div>
   )
