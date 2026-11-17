@@ -1,6 +1,34 @@
 # US-061 P3 alignment self-check
 
+## Revised-scope update — 2026-11-17
+
+This is a planning check, not a gate decision or proof of implementation.
+Result: **Partial** pending renewed IO/SA G1 assessment. The current
+[G1 decision](g1-decision.md) remains Conditional, and its prior four-tab
+condition predates the user's choice to retain five tabs.
+
+| Delta area | Design | ATDD | Tasks |
+|---|---|---|---|
+| All member trips, isolation, empty and no completion inference | D1 | member list and deferred completion boundary | 1.1, 2.1–2.3 |
+| Authorized overview, stale/absent drafts, refreshed data | D2 | overview sources | 3.1 |
+| Source-backed planning milestones, unknown reunion/completion and safe recommendations | D3 | planning milestones, next step and reverse cases | 3.2 |
+| Loading, invalid/missing/denied/failure and signed-out | D2/D3 | errors and access | 3.3 |
+| Read-only links, safe details block, unavailable pages | D3 | shell/navigation and reverse cases | 4.1–4.2 |
+| Prototype-inspired overview and five-tab shell, including account access | Goals and D3 | prototype layout and shell/navigation | 3.1–3.2, 4.1 |
+| Owner dependencies, tracker drift, overlapping US-066 | risks | real integration gate | 1.1–1.2, 4.3 |
+| Binding API-plan deviation | D1, deployment | no dashboard-owned state | 5.1 |
+
+Strict OpenSpec validation passes. The local requirement, AC/DoV review and
+ATDD describe the revised scope; ATDD remains provisional until the applicable
+human gate decision. Real source and destination behavior, browser E2E,
+no-write evidence and CI execution are implementation/acceptance work, not
+proof provided by this planning check. US-058 integration remains deferred;
+US-066 shell and external tracker reconciliation remain separately owned.
+
 ## Interim-scope update — 2026-11-17
+
+This section and the earlier assessment below are retained as historical
+records of the superseded unavailable-progress scope.
 
 The [local requirement](../../../requirement-workspace/requirements/US-061.md),
 proposal, deltas, design, ATDD and tasks now describe the interim all-member

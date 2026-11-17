@@ -5,9 +5,10 @@ Inputs: [proposal](proposal.md), [dashboard delta](specs/trip-dashboard/spec.md)
 This is a test design, not implementation or a gate decision.
 
 **Status:** Provisional for the revised milestone and recommendation scope.
-The [G1 decision](g1-decision.md) is Conditional, and the shell delta and
-acceptance-review reconciliation remain open. This draft is not an accepted
-ATDD baseline and does not authorize implementation.
+The [G1 decision](g1-decision.md) is Conditional. The revised shell delta
+passes strict structural validation, but the revised scope and five-tab
+decision still require IO/SA reassessment. This draft is not an accepted ATDD
+baseline and does not authorize implementation.
 
 ## Layers and red-first examples
 
@@ -24,9 +25,9 @@ establishes or simulates that integration.
 | Overview sources | E2E | Four members, three ready, stale main draft and active split display real values; successful no-draft outcomes show absent; source changes appear on refresh. | Integration recommended |
 | Planning milestones | E2E | In prototype order, setup is created; invitations reflect the trip's main-plan-confirmed flag; preferences show the verified ready/member count; main plan distinguishes absent, draft, stale and confirmed; split distinguishes absent, active, confirmed and cancelled. Reunion and completion are unknown, not completed/current/upcoming. | Defer pure logic checks to apply-time TDD |
 | Next step | E2E | An unready signed-in member with an unconfirmed main plan is offered a safe preferences destination; a ready member or a confirmed main plan is offered a safe main-plan view. No suggestion appears when its required source is invalid, pending, failed or inconsistent, or its destination is not verified safe. | Integration recommended |
-| Prototype layout | E2E | At a mobile viewport, the selected overview has the prototype-inspired trip hero, seven-stage strip, four status cards, eligible next-step card and four-tab dock; actual trip data and truthful unknown states replace demo values. | Visual comparison recommended |
+| Prototype layout | E2E | At a mobile viewport, the selected overview has the prototype-inspired trip hero, seven-stage strip, four status cards, eligible next-step card and five-tab dock; actual trip data and truthful unknown states replace demo values. Compare against the screenshot and release-2 HTML while preserving the fifth account tab. | Visual comparison recommended |
 | Errors and access | API + E2E | Pending, invalid/incomplete or failed responses are not zero, absent or active; malformed, missing, denied, signed-out and expired requests show their proper state without private data or another trip. | Security review recommended |
-| Shell and navigation | E2E | Four ordered tabs; dashboard active on both views; history and account retained; safe destinations, coming-soon destinations and blocked trip-details entry/tab/open-by-id; no full reload for available dock tabs. | Compatibility review recommended |
+| Shell and navigation | E2E | Five ordered tabs including 我的; dashboard active on both views; history, account and account actions retained; safe destinations, coming-soon destinations and blocked trip-details entry/tab/open-by-id; no full reload for available dock tabs. | Compatibility review recommended |
 | Read-only reverse cases | E2E | Compare relevant persisted trip, membership, invitation, preference, plan, split and completion state before/after dashboard load and navigation. No invitation issuance, completion, archive operation or destination action occurs merely by navigation. | Integration recommended |
 | No dashboard-owned state | E2E | Refresh reflects changed source state without dashboard writes or persisted progress; recommendations navigate without executing destination actions. | — |
 | No new permission or tracker change | API + E2E / process | Existing destination authorization still applies; no dashboard role bypass; tracker reconciliation remains the named owner's separate action. | Security review recommended |
