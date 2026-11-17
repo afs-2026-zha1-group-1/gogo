@@ -61,3 +61,28 @@
 
 结论：**对齐自检 Pass**，可进入 P4。
 
+## 8. Revision 实现（2026-11-17，当前行程模型）
+
+- [x] 8.1 迁移 `V8__add_current_trip.sql`；`CurrentTripResponse`/`CurrentTripRequest` record；`TripRepository` 读/写 current；`TripController` `GET/PUT /api/trips/current`（DD14–DD15）
+- [x] 8.2 `CurrentTripApiTest` 8 例（红→绿，对应 delta「Current trip selection」）
+- [x] 8.3 `TripsList.tsx` 增 `title`/`subtitle`/`selectable` props；`#/my-trips` 装配：点卡片 PUT current 后仅打「已选择」tag（右上），**不导航**；mount 回显服务端 current
+- [x] 8.4 新组件 `CurrentTrip.tsx`（`#/trips`：current 详情 / 空态引导 / loading / failed+retry）；`AccountPage.tsx` 加「我的行程」入口；视觉对齐原型 `.qcard`/`.empty`（app.css 新增类）
+- [x] 8.5 `App.tsx`：`my-trips`/`trips-current` 路由与 `TAB_FOR_PAGE`；mount/账号/路由变化时从 current 初始化 `lastTripId`
+- [x] 8.6 `mvn -B test` 全绿 + `npm run build` 绿
+
+## 9. Revision 验证与门禁
+
+- [x] 9.1 E2E Revision 段：account 入口、my-trips 点卡片打 tag 不跳转、tag 回显、切「行程」tab 看详情、reload/重登保留、换账号隔离、无 current 空态、原型视觉比对（`e2e-us-071.md`）
+- [x] 9.2 `openspec validate us-071-my-trips --strict` = valid
+- [x] 9.3 local-verify 报告补 Revision 段；提交推送分支
+- [ ] 9.4 G1 Revision 复审（IO/SA 补签，C4）→ G2 → 合并 PR → living-merge + G3
+
+## Revision 对齐自检（2026-11-17）
+
+| 维度 | 结果 | 证据 |
+|---|---|---|
+| Spec → Design | Pass | delta「Current trip selection」8 场景 → DD15；app-shell ADDED 10 场景 → DD16/DD17 |
+| Design → Tasks | Pass | DD14–DD15 → 8.1/8.2；DD16 → 8.3/8.4；DD17 → 8.5；DD18 → 8.2/9.1 |
+| 契约一致性 | Pass | REMOVED 旧条的 Reason/Migration 指向新条与 `trips` 列表读；深链/返回/创建路径保留 |
+
+

@@ -73,10 +73,10 @@ class TripListApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.trips.length()").value(4))
                 .andExpect(jsonPath("$.trips[*].name").value(contains(
-                        "Kyoto Autumn", "Singapore Friends Day", "Same-Day Start", "Bali Weekend")))
-                .andExpect(jsonPath("$.trips[0].destination").value("Kyoto"))
-                .andExpect(jsonPath("$.trips[0].startDate").value("2026-11-01"))
-                .andExpect(jsonPath("$.trips[0].endDate").value("2026-11-05"))
+                        "Singapore Friends Day", "Same-Day Start", "Bali Weekend", "Kyoto Autumn")))
+                .andExpect(jsonPath("$.trips[0].destination").value("Singapore"))
+                .andExpect(jsonPath("$.trips[0].startDate").value("2026-12-05"))
+                .andExpect(jsonPath("$.trips[0].endDate").value("2026-12-05"))
                 .andExpect(jsonPath("$.trips[0].id").isNumber())
                 .andExpect(jsonPath("$.trips[0].mainPlanConfirmed").value(false));
     }
@@ -92,19 +92,20 @@ class TripListApiTest {
         mockMvc.perform(get("/api/trips").with(TestAuth.asUser("1")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.trips[*].startDate").value(contains(
-                        "2026-11-01", "2026-12-05", "2026-12-05", "2026-12-08")))
-                .andExpect(jsonPath("$.trips[1].id").value(seededId))
-                .andExpect(jsonPath("$.trips[2].id").value(sameDayId));
+                        "2026-12-05", "2026-12-05", "2026-12-08", "2026-11-01")))
+                .andExpect(jsonPath("$.trips[0].id").value(seededId))
+                .andExpect(jsonPath("$.trips[1].id").value(sameDayId))
+                .andExpect(jsonPath("$.trips[3].name").value("Kyoto Autumn"));
     }
 
     @Test
     void organizerFlagIdentifiesCreator() throws Exception {
         mockMvc.perform(get("/api/trips").with(TestAuth.asUser("1")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.trips[0].organizer").value(true))   // Kyoto (created by Alice)
-                .andExpect(jsonPath("$.trips[1].organizer").value(true))   // seeded (created by Alice)
-                .andExpect(jsonPath("$.trips[2].organizer").value(true))   // same-day (created by Alice)
-                .andExpect(jsonPath("$.trips[3].organizer").value(false)); // Bali (created by Ben)
+                .andExpect(jsonPath("$.trips[0].organizer").value(true))   // seeded (created by Alice)
+                .andExpect(jsonPath("$.trips[1].organizer").value(true))   // same-day (created by Alice)
+                .andExpect(jsonPath("$.trips[2].organizer").value(false))  // Bali (created by Ben)
+                .andExpect(jsonPath("$.trips[3].organizer").value(true));  // Kyoto (created by Alice)
     }
 
     @Test
@@ -120,9 +121,9 @@ class TripListApiTest {
 
         mockMvc.perform(get("/api/trips").with(TestAuth.asUser("1")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.trips[1].name").value(SEEDED_TRIP))
-                .andExpect(jsonPath("$.trips[1].mainPlanConfirmed").value(true))
-                .andExpect(jsonPath("$.trips[0].mainPlanConfirmed").value(false))
+                .andExpect(jsonPath("$.trips[0].name").value(SEEDED_TRIP))
+                .andExpect(jsonPath("$.trips[0].mainPlanConfirmed").value(true))
+                .andExpect(jsonPath("$.trips[1].mainPlanConfirmed").value(false))
                 .andExpect(jsonPath("$.trips.length()").value(4));
     }
 
@@ -130,11 +131,11 @@ class TripListApiTest {
     void finishedTripStillReturnedWithoutServerStatus() throws Exception {
         mockMvc.perform(get("/api/trips").with(TestAuth.asUser("1")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.trips[0].name").value("Kyoto Autumn"))
-                .andExpect(jsonPath("$.trips[0].endDate").value("2026-11-05"))
-                .andExpect(jsonPath("$.trips[0].finished").doesNotExist())
-                .andExpect(jsonPath("$.trips[0].ended").doesNotExist())
-                .andExpect(jsonPath("$.trips[0].status").doesNotExist());
+                .andExpect(jsonPath("$.trips[3].name").value("Kyoto Autumn"))
+                .andExpect(jsonPath("$.trips[3].endDate").value("2026-11-05"))
+                .andExpect(jsonPath("$.trips[3].finished").doesNotExist())
+                .andExpect(jsonPath("$.trips[3].ended").doesNotExist())
+                .andExpect(jsonPath("$.trips[3].status").doesNotExist());
     }
 
     @Test

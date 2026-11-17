@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
-import type { InAppPage, Route, TabId } from './types'
+import type { CurrentTripResponse, InAppPage, Route, TabId } from './types'
 import TabBar from './TabBar'
 import Home from './pages/Home'
 import CreateTrip from './pages/CreateTrip'
 import TripDetails from './pages/TripDetails'
 import TripsList from './pages/TripsList'
+import CurrentTrip from './pages/CurrentTrip'
+import { api } from './api'
 import Join from './pages/Join'
 import MainPlan from './pages/MainPlan'
 import MainPlanInputs from './pages/MainPlanInputs'
@@ -35,7 +37,8 @@ function parseRoute(hash: string): Route {
   if (preferencesMatch) return { page: 'preferences', tripId: Number(preferencesMatch[1]) }
   const tripMatch = path.match(/^\/trips\/(\d+)$/)
   if (tripMatch) return { page: 'details', tripId: Number(tripMatch[1]) }
-  if (path === '/trips') return { page: 'trips-list' }
+  if (path === '/my-trips') return { page: 'my-trips' }
+  if (path === '/trips') return { page: 'trips-current' }
   if (path === '/create') return { page: 'create' }
   if (path === '/split') return { page: 'split' }
   if (path === '/members') return { page: 'members' }
@@ -44,7 +47,8 @@ function parseRoute(hash: string): Route {
 
 const TAB_FOR_PAGE: Record<InAppPage, TabId> = {
   home: 'dashboard',
-  'trips-list': 'trips',
+  'my-trips': 'account',
+  'trips-current': 'trips',
   details: 'trips',
   create: 'trips',
   split: 'split',
@@ -84,6 +88,21 @@ export default function App() {
       setLastTripId(route.tripId)
     }
   }, [route])
+
+  // US-071 revision: the current trip is server-side; seed lastTripId from it so the
+  // split tab and roster back links follow the account's selection.
+  useEffect(() => {
+    if (status !== 'signedIn' || !account) return
+    let active = true
+    api<CurrentTripResponse>('/api/trips/current')
+      .then((result) => {
+        if (active && result.ok && result.data?.tripId != null) setLastTripId(result.data.tripId)
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [status, account?.id, route.page])
 
   // US-071: the bottom "行程" tab always opens the caller's trip list; trip-scoped
   // pages (roster back, main plan) still use their own `#/trips/<id>` links.
@@ -143,7 +162,8 @@ export default function App() {
             navigation stays visible when users arrive from the "行程" tab. */}
         {route.page === 'main-plan' && <MainPlan tripId={route.tripId} />}
         {route.page === 'main-plan-inputs' && <MainPlanInputs tripId={route.tripId} />}
-        {route.page === 'trips-list' && <TripsList />}
+        {route.page === 'my-trips' && <TripsList selectable />}
+        {route.page === 'trips-current' && <CurrentTrip />}
         {route.page === 'split' && (
           <div className="screen">
             <header className="appbar">

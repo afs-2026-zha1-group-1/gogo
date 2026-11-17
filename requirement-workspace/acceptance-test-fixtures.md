@@ -518,10 +518,10 @@ contractual. Denial bodies contain no member identity, name or organizer value.
 |---|---|---|---|---|---|---|
 | `Singapore Friends Day`（种子） | 1 | Alice | Alice, Ben, Chloe, Daniel | 2026-12-05 | 2026-12-05 | 自建行、`organizer=true`、基准行 |
 | `Bali Weekend` | 测试创建 | Ben | Ben, Alice | 2026-12-08 | 2026-12-10 | 受邀行、`organizer=false` |
-| `Kyoto Autumn` | 测试创建 | Alice | Alice | 2026-11-01 | 2026-11-05 | 已结束（相对 2026-11-16）+ 排序首屏 |
+| `Kyoto Autumn` | 测试创建 | Alice | Alice | 2026-11-01 | 2026-11-05 | 已结束（相对 2026-11-16）→ 排序最后 |
 | `Same-Day Start` | 测试创建 | Alice | Alice | 2026-12-05 | 2026-12-06 | 与种子行同日 → 按 id 升序 |
 
-Alice 的预期顺序（以 2026-11-16 为“今天”）：`Kyoto Autumn`(11-01) → `Singapore Friends Day`(12-05, id=1) → `Same-Day Start`(12-05, id 更大) → `Bali Weekend`(12-08)。
+Alice 的预期顺序（以 2026-11-16 为“今天”，2026-11-17 修订：**未结束在前、已结束最后**）：`Singapore Friends Day`(12-05, id=1) → `Same-Day Start`(12-05, id 更大) → `Bali Weekend`(12-08) → `Kyoto Autumn`(11-01，已结束)。同组内按 `start_date` 升序、同日按 `id` 升序。
 
 ### Requests
 

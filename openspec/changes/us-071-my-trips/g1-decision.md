@@ -74,3 +74,23 @@ C1–C3 全部关闭，Decision = `Pass`；后续任何 delta 语义变化都需
 ## Closure path
 
 G1 **Pass** → 进入 `/sdd:atdd-design` + `/sdd:task-plan`（P3），再进 P4 实现。若实现阶段发现 delta 需要语义变化，回到 `/sdd:delta-craft` 修补后重开本记录；不得以已关闭的 C1–C3 覆盖新增业务级问题。
+
+## Revision re-review（2026-11-17，当前行程模型）
+
+- 触发：用户 2026-11-17 范围修订（裁决 R2-1…R2-4，见 `requirements/US-071.md` §Revision）。
+- delta 变化：`trips` 新增 ADDED「Current trip selection」（8 场景）；`app-shell` 由 MODIFIED 改为 **REMOVED「Trips tab placement and no-trip empty state」+ ADDED「Current trip tab and my-trips list」**（10 场景）；新增迁移 V8。
+- 原 G1 Pass（SA Leo 2026-11-16、IO Emily 2026-11-17）**仅覆盖原范围**；Revision 部分记 **Conditional**，待复审补签。
+- 已完成的 Revision 规格工作：`requirements/US-071.md` §Revision、`proposal.md` §Revision、`design.md` DD14–DD19、`tasks.md` 组 8/9 + Revision 对齐自检 Pass；`openspec validate --strict` = valid。
+
+| # | Condition | Owner | Deadline | Status |
+|---|---|---|---|---|
+| C4 | IO Emily + SA Leo 对 Revision delta / design 复审并具名签核 | Emily（IO）/ Leo（SA） | 合并 PR 前 | **open** |
+
+### Revision 签核区
+
+| Role | Name | Decision | Date |
+|---|---|---|---|
+| SA | Leo | （待签） | — |
+| IO | Emily | （待签） | — |
+
+C4 关闭后本段 Decision 记 Pass，与原 G1 Pass 合并生效；在此之前 Revision 的实现可先行（用户 2026-11-17 指令授权），但**合并与归档必须等 C4 关闭**。

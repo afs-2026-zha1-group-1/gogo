@@ -125,3 +125,62 @@ public TripListResponse list(@AuthenticationPrincipal AccountPrincipal principal
 | 列表页与 Home 标题撞名 | 列表页用「行程」，Home 不改；不触发 us-067 delta 变更 |
 | 无分页的极端账号 | OQ-5 已知限制；超预算另立变更 |
 | `TripsEmpty` 删除后残留引用 | 实施前 grep 确认（当前仅 `App.tsx`） |
+
+## Revision 设计（2026-11-17，当前行程模型）
+
+### DD14 迁移 V8
+
+```sql
+ALTER TABLE app_user ADD COLUMN current_trip_id INTEGER REFERENCES trip(id);
+```
+
+可空、无默认值；单行按主键读取，不需索引。文件名 `V8__add_current_trip.sql`（V7 已被 member_preference 占用）。
+
+### DD15 端点与 DTO
+
+| 项 | 决定 |
+|---|---|
+| `GET /api/trips/current` | `CurrentTripResponse(Long tripId)`；读 `app_user.current_trip_id`；若该 trip 不存在或调用者非成员 → 返回 `null`（不暴露他人数据） |
+| `PUT /api/trips/current` | body `CurrentTripRequest(Long tripId)`；`tripId` 缺失 → `400 TRIP_REQUIRED`；trip 不存在 → `404 TRIP_NOT_FOUND`；非成员 → `403 NOT_A_MEMBER`；成功 → `UPDATE app_user SET current_trip_id = ? WHERE id = ?` → `200 {tripId}` |
+| 路由优先级 | `/api/trips/current` 为精确路径，Spring 优先于 `/{id}` 模板匹配；`/{id}` 仍只接受数字 |
+| 鉴权 | 沿用 `/api/** authenticated()`，不改 `SecurityConfig` |
+| DTO | `com.gogo.trip` 新增 `CurrentTripResponse`、`CurrentTripRequest` record |
+
+### DD16 前端路由与页面
+
+- `parseRoute`：`#/my-trips` → `my-trips`；`#/trips` → `trips-current`；`#/trips/<id>` 保持 `details`。
+- `TAB_FOR_PAGE`：`my-trips: 'account'`（入口来源）、`trips-current: 'trips'`。
+- `TripsList.tsx` 增加 props：`title`（默认「我的行程」）、`subtitle`（默认按数量生成）与 `selectable?: boolean`；`#/my-trips` 传 `selectable`：mount 时 GET current 回显 `selectedId`，点卡片 PUT current 后仅更新 `selectedId`（**不导航**），卡片右上渲染「已选择」tag；非 selectable 时卡片仍为详情链接。
+- 新组件 `CurrentTrip.tsx`（`#/trips`）：GET current → `null` → 空态 + 「去我的行程」；有 id → 渲染 `<TripDetails tripId={id} />`；自带 loading / failed+retry。
+- `AccountPage.tsx`：profile 与名字表单之间加入口卡片「我的行程」→ `#/my-trips`。
+
+### DD17 当前行程与 lastTripId
+
+- App mount 与账号变化时 GET `/api/trips/current`，结果写入 `lastTripId`（供分队 tab 与成员名册返回）。
+- 选择行程 PUT 成功后 `setLastTripId(id)` 并跳 `#/trips`。
+- 深链 `#/trips/<id>` **不**改写 current（仅查看）；「当前行程」只由显式选择改变。
+
+### DD18 测试
+
+- 新增 `CurrentTripApiTest`（8 例，对应 delta「Current trip selection」8 场景）；`TripListApiTest` 不变。
+- E2E 增补：account 入口、my-trips 选择跳详情、reload/重登保留、换账号隔离、无 current 空态；`e2e-us-071.md` 增 Revision 段。
+
+### DD19 偏离
+
+| id | 偏离 | 处置 |
+|---|---|---|
+| TS-4 | `#/trips` 语义二次变更（列表 → 当前行程详情） | 旧 E2E E2/E3/E9/E11 的部分断言按新语义重写；`app-shell` delta 用 REMOVED+ADDED 而非 MODIFIED，避免矛盾场景名 |
+
+### DD20 选择交互与原型视觉（2026-11-17 二次修订）
+
+- 选择**不导航**：`TripsList selectable` 内部维护 `selectedId`（初值来自 GET current）；`pick()` PUT 成功后 `setSelectedId`，失败显示组件内 error；App 不再持有选择/导航逻辑。
+- 「已选择」tag：`span.pill.ok.qtag` 占据卡片右缘槽位（flex 末尾、垂直居中，**取代原右箭头**，2026-11-17 三次修订）；选中卡片加 `.selected`（`#5eead4` 描边 + `0 0 0 3px var(--brand-soft)` 光晕 + 渐变底）。
+- 视觉对齐原型 screen 23：新增 `.qcard/.qi/.qt/.qd`（flex 卡片 + 34px 图标块 + 13px 标题 + 10.5px 描述 + hover 上浮）与 `.empty`（居中空态）到 `app.css`，变量复用现有 `--r/--sh-1/--sh-2/--surface-3/--ink-3`。
+- `AccountPage` 入口与 `CurrentTrip` 空态同样改用 `.qcard` / `.empty`。
+- `lastTripId` seeding effect 依赖加 `route.page`：用户选择后切 tab 时重读 current，保证分队/成员返回与当前行程一致。
+
+### DD21 排序：已结束最后（2026-11-17 三次修订）
+
+- SQL：`ORDER BY (t.end_date < date('now')) ASC, t.start_date ASC, t.id ASC`；SQLite 布尔 0/1，未结束（0）在前。
+- `date('now')` 为 **UTC**；前端「已结束」徽标仍用本地日期。两者在 +08:00 的 00:00–08:00 可能差一天（边界日徽标与分组不一致），MVP 接受并记录。
+- `TripListApiTest` 的 A1/A2/A3/A5/A6 断言按新顺序重写：未结束 [seeded, same-day, Bali] + 已结束 [Kyoto] 最后。

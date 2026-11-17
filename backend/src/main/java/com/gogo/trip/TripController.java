@@ -9,6 +9,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -52,6 +53,21 @@ public class TripController {
     @GetMapping
     public TripListResponse list(@AuthenticationPrincipal AccountPrincipal principal) {
         return repository.findTripsForUser(principal.id());
+    }
+
+    @GetMapping("/current")
+    public CurrentTripResponse currentTrip(@AuthenticationPrincipal AccountPrincipal principal) {
+        return repository.findCurrentTrip(principal.id());
+    }
+
+    @PutMapping("/current")
+    public CurrentTripResponse selectCurrentTrip(
+            @AuthenticationPrincipal AccountPrincipal principal,
+            @RequestBody(required = false) CurrentTripRequest request) {
+        if (request == null || request.tripId() == null) {
+            throw new TripApiException(400, "TRIP_REQUIRED", "tripId is required");
+        }
+        return repository.selectCurrentTrip(principal.id(), request.tripId());
     }
 
     @GetMapping("/{id}")

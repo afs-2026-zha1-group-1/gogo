@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../api'
 import Icon from '../Icons'
-import type { TripListItem, TripListResponse } from '../types'
+import type { CurrentTripResponse, TripListItem, TripListResponse } from '../types'
 
 /** Local-date comparison: both sides are `YYYY-MM-DD`, so lexical order is date order. */
 export function isEnded(endDate: string, today: string): boolean {
@@ -20,8 +20,21 @@ type ListState =
   | { kind: 'ready'; trips: TripListItem[] }
   | { kind: 'failed'; message: string }
 
-export default function TripsList() {
+interface TripsListProps {
+  title?: string
+  subtitle?: string
+  /** Picker mode: tapping a row stores it as the current trip and tags the card; no navigation. */
+  selectable?: boolean
+}
+
+export default function TripsList({
+  title = '我的行程',
+  subtitle,
+  selectable = false,
+}: TripsListProps) {
   const [state, setState] = useState<ListState>({ kind: 'loading' })
+  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [selectError, setSelectError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
@@ -47,12 +60,39 @@ export default function TripsList() {
     }
   }, [reloadKey])
 
+  useEffect(() => {
+    if (!selectable) return
+    let active = true
+    api<CurrentTripResponse>('/api/trips/current')
+      .then((result) => {
+        if (active && result.ok && result.data) setSelectedId(result.data.tripId)
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [selectable, reloadKey])
+
+  async function pick(trip: TripListItem) {
+    setSelectError('')
+    const result = await api<CurrentTripResponse>('/api/trips/current', {
+      method: 'PUT',
+      body: { tripId: trip.id },
+    })
+    if (result.ok && result.data?.tripId != null) {
+      setSelectedId(result.data.tripId)
+      return
+    }
+    setSelectError(result.ok ? '设置当前行程失败' : result.data?.message ?? `请求失败（HTTP ${result.status}）`)
+  }
+
+  const count = state.kind === 'ready' ? state.trips.length : 0
   const appbar = (
     <header className="appbar">
       <div className="logo"><Icon name="list" /></div>
       <div className="grow">
-        <div className="title">行程</div>
-        <div className="sub">我创建和加入的行程</div>
+        <div className="title">{title}</div>
+        <div className="sub">{subtitle ?? (state.kind === 'ready' ? (count ? `${count} 个行程` : '还没有行程') : '我创建和加入的行程')}</div>
       </div>
     </header>
   )
@@ -71,13 +111,14 @@ export default function TripsList() {
       <div className="screen">
         {appbar}
         <div className="body">
-          <section className="card pad empty-state">
-            <h2>行程加载失败</h2>
+          <div className="empty">
+            <Icon name="alert" />
+            <p>行程加载失败</p>
             <p className="hint" role="alert">{state.message}</p>
-            <button className="btn btn-primary" type="button" onClick={() => setReloadKey((key) => key + 1)}>
+            <button className="btn btn-ghost" type="button" style={{ marginTop: 12 }} onClick={() => setReloadKey((key) => key + 1)}>
               重试
             </button>
-          </section>
+          </div>
         </div>
       </div>
     )
@@ -88,14 +129,15 @@ export default function TripsList() {
       <div className="screen">
         {appbar}
         <div className="body">
-          <section className="card pad empty-state">
-            <h2>还没有行程</h2>
-            <p className="hint">创建一个新行程，或通过邀请链接加入朋友的行程。</p>
-            <a className="btn btn-primary" href="#/create">
-              <Icon name="plus" className="sm" />
-              创建行程
-            </a>
-          </section>
+          <div className="empty">
+            <Icon name="list" />
+            <p>还没有行程</p>
+            <p className="hint">创建行程或接受朋友的邀请</p>
+          </div>
+          <a className="btn btn-ghost" href="#/create">
+            <Icon name="plus" className="sm" />
+            创建行程
+          </a>
         </div>
       </div>
     )
@@ -106,18 +148,45 @@ export default function TripsList() {
     <div className="screen">
       {appbar}
       <div className="body">
-        {state.trips.map((trip) => (
-          <a key={trip.id} className="card pad" href={`#/trips/${trip.id}`} style={{ display: 'block' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontWeight: 700 }}>{trip.name}</span>
-              {trip.organizer && <span className="pill brand">我创建的</span>}
-              {isEnded(trip.endDate, today) && <span className="pill warn">已结束</span>}
-            </div>
-            <div className="hint" style={{ marginTop: 4 }}>
-              {trip.destination} · {trip.startDate} – {trip.endDate}
-            </div>
-          </a>
-        ))}
+        {selectError && <p role="alert" className="error" style={{ marginBottom: 10 }}>{selectError}</p>}
+        {state.trips.map((trip) => {
+          const selected = selectable && selectedId === trip.id
+          const body = (
+            <>
+              <span className="qi"><Icon name="pin" /></span>
+              <span style={{ minWidth: 0, flex: 1 }}>
+                <span className="qt" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', overflowWrap: 'anywhere' }}>
+                  {trip.name}
+                  {trip.organizer && <span className="pill brand">我创建的</span>}
+                  {isEnded(trip.endDate, today) && <span className="pill warn">已结束</span>}
+                </span>
+                <span className="qd" style={{ display: 'block', overflowWrap: 'anywhere' }}>
+                  {trip.destination} · {trip.startDate} – {trip.endDate}
+                </span>
+              </span>
+              {selected && <span className="pill ok qtag">已选择</span>}
+            </>
+          )
+          return selectable ? (
+            <button
+              key={trip.id}
+              type="button"
+              className={`qcard${selected ? ' selected' : ''}`}
+              aria-pressed={selected}
+              onClick={() => pick(trip)}
+            >
+              {body}
+            </button>
+          ) : (
+            <a key={trip.id} className="qcard" href={`#/trips/${trip.id}`}>
+              {body}
+            </a>
+          )
+        })}
+        <a className="btn btn-ghost" style={{ marginTop: 16 }} href="#/create">
+          <Icon name="plus" className="sm" />
+          创建行程
+        </a>
       </div>
     </div>
   )
