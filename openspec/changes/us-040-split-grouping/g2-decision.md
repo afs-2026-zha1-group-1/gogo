@@ -102,4 +102,4 @@ delta 39 场景实现与回归全绿、E1 在两个 head 均机读双绿、E2E 1
 - Delta 场景：main 的 US-086 把 `Split draft start` 扩到 13 场景；delta 已逐字补入 3 条（「无草稿或已取消只显示主线」「活跃草稿的边界与路线状态」「状态分支的右上动作」），总数 **39 → 41**；`openspec validate --strict` = valid。
 - 验证：后端 **356/356**、前端 `typecheck + build` 绿。
 - 已关闭：F2（冲突）、F4（注释）、F5（提示文案）、知识库对账（§24 + A24）。
-- 仍开放：**G1 Revision C8（IO Emily 补签）**；push 后需确认新 head CI 双绿并更新 `ci-report.md`。
+- 仍开放：**G1 Revision C8（IO Emily 补签）**。push 后新 head `3d4cf28` CI 双绿（run 44062093032 / 44062087362）、PR `MERGEABLE / CLEAN`，`ci-report.md` 已更新。
