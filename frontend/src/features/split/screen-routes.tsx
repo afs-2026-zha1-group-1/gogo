@@ -6,7 +6,6 @@ import { SplitLayout } from "./split-layout"
 import { EmptyState, ErrorState, LoadingState } from "./states"
 import { RouteCard } from "./route-card"
 import type { TripMember } from "../../types"
-import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { IconArrowRight, IconBranch, IconRoute, IconSparkle, IconUsers } from "@/components/icons"
 import { formatClock, shortId } from "@/lib/format"
@@ -135,6 +134,7 @@ export function ScreenRoutes() {
                   departureName={nameOf(route.departureStopId)}
                   reunionName={nameOf(route.reunionStopId)}
                   reunionClock={formatClock(detail.reunionAt)}
+                  stale={(detail.groups[route.groupLabel] ?? []).length === 0}
                 />
               ))}
             </div>
@@ -155,10 +155,10 @@ export function ScreenRoutes() {
 }
 
 /**
- * Group card (US-040 DD13/DD14 + revision 2026-11-17): members are avatar chips grouped by A/B. Clicking a chip
- * moves that member into the other group (any trip member may adjust the split, matching the prototype). An emptied
- * group that still has saved routes is flagged "需重新生成"; any saved pair carries the stale-route notice because
- * the document does not record which group version produced the routes.
+ * Group cards (US-040 DD13/DD14 + revision 2026-11-17), styled after the prototype Screen 13 `.route` block:
+ * a colored A/B header (code badge + group name + headcount) above a chips body. Clicking a member chip moves that
+ * member into the other group (any trip member may adjust the split). The stale-route marker lives on the route
+ * cards, never inside an empty group.
  */
 function GroupCard({
   groups,
@@ -185,26 +185,35 @@ function GroupCard({
   const hasEmptyGroup = Object.values(groups).some((ids) => ids.length === 0)
 
   return (
-    <Card className="p-4">
+    <div>
       <div className="mb-2 flex items-center gap-1.5 text-[13px] font-bold text-ink">
         <IconUsers className="text-brand" /> 分组
       </div>
       <div className="grid grid-cols-2 gap-2.5">
         {Object.entries(groups).map(([label, ids]) => {
-          const box =
-            label === "A" ? "border-a-line bg-a-soft" : label === "B" ? "border-b-line bg-b-soft" : "border-line bg-surface-3"
-          const ink = label === "A" ? "text-a" : label === "B" ? "text-b" : "text-ink"
-          const avatar = label === "A" ? "bg-a-soft text-a" : label === "B" ? "bg-b-soft text-b" : "bg-surface-3 text-ink"
+          const isA = label === "A"
+          const head = isA ? "from-a to-[#1e40af]" : label === "B" ? "from-b to-[#9a3412]" : "from-ink-3 to-ink-3"
+          const border = isA ? "border-a-line" : label === "B" ? "border-b-line" : "border-line"
+          const chipOn = isA ? "border-a bg-a" : label === "B" ? "border-b bg-b" : "border-ink bg-ink"
           const target: "A" | "B" = label === "B" ? "A" : "B"
           return (
-            <div key={label} className={cn("rounded-card border p-3", box)}>
-              <div className={cn("flex items-center justify-between gap-1 text-[13px] font-extrabold", ink)}>
-                <span>{label} 组</span>
-                <span className="text-[11px] font-semibold text-ink-2">{ids.length} 人</span>
+            <div
+              key={label}
+              className={cn(
+                "overflow-hidden rounded-card border bg-surface shadow-[0_1px_3px_rgba(28,25,23,0.06)]",
+                border,
+              )}
+            >
+              <div className={cn("flex items-center gap-2 bg-gradient-to-br px-3 py-2.5 text-white", head)}>
+                <span className="grid size-6 shrink-0 place-items-center rounded-[7px] bg-white/25 text-[12px] font-extrabold">
+                  {label}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-[13px] font-bold">{label} 组</span>
+                <span className="shrink-0 text-[11px] font-medium text-white/85">{ids.length} 人</span>
               </div>
-              <div className="mt-2 flex flex-wrap gap-1.5">
+              <div className="flex min-h-[58px] flex-wrap content-start gap-2 p-3">
                 {ids.length === 0 ? (
-                  <span className="text-[11px] text-ink-3">暂无成员</span>
+                  <span className="text-[11.5px] leading-relaxed text-ink-3">暂无成员</span>
                 ) : (
                   ids.map((id) => {
                     const isMe = id === myId
@@ -216,25 +225,22 @@ function GroupCard({
                         onClick={() => onAssign(id, target)}
                         title={assignable ? `点击移到 ${target} 组` : undefined}
                         className={cn(
-                          "flex items-center gap-1.5 rounded-full border px-1.5 py-1 text-[11px] font-semibold transition-colors",
-                          isMe ? "border-brand bg-surface text-ink" : "border-line bg-surface/80 text-ink-2",
-                          assignable && "hover:border-brand hover:text-ink",
-                          !assignable && "cursor-default opacity-80",
+                          "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[12px] font-semibold text-white transition",
+                          chipOn,
+                          assignable && "hover:brightness-105 active:scale-[0.98]",
+                          !assignable && "cursor-default opacity-90",
                         )}
                       >
-                        <span className={cn("grid size-5 shrink-0 place-items-center rounded-full text-[10px] font-bold", avatar)}>
+                        <span className="grid size-[18px] shrink-0 place-items-center rounded-full bg-white/25 text-[10px] font-bold">
                           {initialOf(id)}
                         </span>
-                        <span className="max-w-[72px] truncate">{nameOf(id)}</span>
-                        {isMe ? <span className="text-[9.5px] font-bold text-brand">我</span> : null}
+                        <span className="max-w-[64px] truncate">{nameOf(id)}</span>
+                        {isMe ? <span className="text-[9.5px] font-bold text-white/85">我</span> : null}
                       </button>
                     )
                   })
                 )}
               </div>
-              {hasRoutes && ids.length === 0 ? (
-                <div className="mt-1.5 text-[10.5px] font-semibold text-warn">需重新生成</div>
-              ) : null}
             </div>
           )
         })}
@@ -245,16 +251,14 @@ function GroupCard({
         </p>
       ) : null}
       {hasEmptyGroup ? (
-        <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
-          至少一名成员加入另一组后才能生成路线与确认。
-        </p>
+        <p className="mt-1.5 text-[11px] leading-relaxed text-ink-3">两组都有成员后才能生成路线与确认。</p>
       ) : null}
       {notice ? <p className="mt-1.5 text-[11px] font-semibold text-ok">{notice}</p> : null}
       {hasRoutes ? (
-        <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
+        <p className="mt-1.5 text-[11px] leading-relaxed text-ink-3">
           路线为上次生成的版本，可点击「重新生成」按当前分组重做。
         </p>
       ) : null}
-    </Card>
+    </div>
   )
 }
