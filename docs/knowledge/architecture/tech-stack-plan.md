@@ -446,3 +446,17 @@ REQ-019 在 US-066 会话认证基线上落地 `preferences` 能力的兴趣段�
 
 §3 技术栈表与 §7 关键实现约定无需改动；§5/§6 中计划期的 `member_id`、普通索引与
 `X-Member-Id` 口径以本节为准。本 change 未修改其他数据模型或其他 API。
+
+## 18. Landed reconciliation - US-049-050 split confirm/cancel (archived 2026-11-17)
+
+US-049（确认拆分，issue #21）+ US-050（取消未确认草稿，issue #22）已实现并归档，补齐 B 拆分链收口；单 change / 2 ADDED + 5 MODIFIED requirement，`main` 直开发（无 PR）。
+
+- **API 增量**：`POST /api/trips/{tripId}/split-draft:confirm` 与 `POST /api/trips/{tripId}/split-draft:cancel`，body 均为 `{draftVersion}`，成功 `200` 返回既有草稿详情投影（`status` 分别为 `confirmed` / `cancelled`，取消时 `routes=[]`）。身份取自认证会话（US-066），与既有 splits 端点一致；`SecurityConfig` 的 split-draft `permitAll` 匹配器同步补入 `:confirm` / `:cancel`，匿名请求仍由控制器守卫返回 `401 MEMBER_REQUIRED`。
+- **错误契约 +3**（累计 16 码）：`NOT_SPLIT_ORGANIZER 403`（非组织者确认）、`SPLIT_TIMING_INFEASIBLE 409`（服务端复算超窗或输入缺失）、`SPLIT_DRAFT_INCOMPLETE 409`（边界/路线不齐）。包封套扩展可选 `error.details`：`SPLIT_TIMING_INFEASIBLE` → `details.routes[]`（定长 2，`{groupLabel,totalMinutes,overrunMinutes,missingInputs}`）；`SPLIT_DRAFT_INCOMPLETE` → `details.missing[]`。`code` 仍是唯一契约字段。
+- **数据模型**：无新表、无新迁移（沿用 V4 `split_draft` / `plan_node`）。`split_draft.document.status` 为单一行真源，状态机 `active → confirmed / cancelled`、`cancelled → active`（同行重建，列 `draft_version` 重置 1）；确认/取消不改列版本，写操作走 `json_extract(document,'$.status')` + 版本 CAS。取消在单事务内清空 `document.routes` 并删除 `split-a/b` 节点，`main` 行逐行不变。
+- **可空时长模型**：`SplitDraftDocument.RouteDurations` 与 `GroupRoute` 的时长改为可空 `Integer`，使「缺输入」可表达并复用 `ReunionTimingCalculator` 的 `missingInputs`。
+- **前端**：新增 Screen 15 `#/trips/:tripId/split/confirm`（复核/确认/取消 + error/empty/loading/permission 四态 + `error.details` 逐路线渲染）；Screen 11 按 `status` 分支（无草稿/cancelled → 发起替换、active → 下一步、confirmed → 查看已确认分队）；Screen 14 终态只读并提供同一入口。
+- **已登记偏差**：本节同时覆盖归档时对 Living `splits` Purpose 的纠正（身份改为会话、草稿载体为 `split_draft` 表、迁移编号 V4、状态机与 `error.details`）——`openspec archive` 不替换既有 Purpose，已手工同步；场景中的 `X-User-Id: N` 仅作夹具简写。
+- **验证**：后端 `mvn -B test` **214/214**；前端 build 绿；E2E 10 Pass / 1 N/A（logout 属 US-069）；CI `43839036207` / `43833884672` 双 job 绿；local-verify Pass。
+
+§5/§6 之外无其他数据模型或 API 变化；确认后不可再拆/不可编辑属产品契约（版本化重拆需新需求）。
