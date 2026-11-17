@@ -2,18 +2,7 @@ import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../api'
 import Icon from '../Icons'
 import type { CurrentTripResponse, TripListItem, TripListResponse } from '../types'
-
-/** Local-date comparison: both sides are `YYYY-MM-DD`, so lexical order is date order. */
-export function isEnded(endDate: string, today: string): boolean {
-  return endDate < today
-}
-
-export function todayIso(): string {
-  const now = new Date()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-  return `${now.getFullYear()}-${month}-${day}`
-}
+import { isEnded, todayIso } from '../lib/trip-date'
 
 type ListState =
   | { kind: 'loading' }
