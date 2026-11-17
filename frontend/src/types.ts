@@ -107,13 +107,14 @@ export type Route =
   | { page: 'main-plan-inputs'; tripId: number }
   | { page: 'scan'; from: string | null }
   | { page: 'preferences'; tripId: number }
+  | { page: 'invitation'; tripId: number }
   | { page: 'my-preferences' }
 
-// login, registration, join, main-plan, preference and scan screens are
-// full-page flows without the bottom TabBar. 'scan' additionally owns its own
+// login, registration, join, main-plan, preference, scan and invitation screens
+// are full-page flows without the bottom TabBar. 'scan' additionally owns its own
 // app-bar close control, so it must not appear in TAB_FOR_PAGE
 // (Record<InAppPage, TabId>).
 export type InAppPage = Exclude<
   Route['page'],
-  'join' | 'login' | 'register' | 'main-plan' | 'main-plan-inputs' | 'scan' | 'preferences' | 'my-preferences'
+  'join' | 'login' | 'register' | 'main-plan' | 'main-plan-inputs' | 'scan' | 'preferences' | 'invitation' | 'my-preferences'
 >
