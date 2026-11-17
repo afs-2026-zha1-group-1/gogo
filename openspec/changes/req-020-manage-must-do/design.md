@@ -222,6 +222,15 @@ variants. If the item-row layout needs one new hook it is added as a single clas
 spirit as REQ-019's `.pick`, and the design records it here rather than leaving it to be
 discovered — no inline style blocks duplicated per item, no second palette.
 
+> **MD13 revision — 2026-11-17 (owner-directed).** The first implementation honoured the
+> single-class limit (`.mustdo-row` only). The owner then asked the section to be brought closer to
+> `screen-08`, whose item row is a lead icon tile plus icon-only edit/delete buttons and a two-button
+> form footer — a layout the reused kit (`.pick`, `.btn`) does not cover with one hook. The owner
+> lifted the single-class limit, so these were added in the same reused-token style (no second
+> palette, no per-item inline style): `.mustdo-row .grow`, `.mustdo-lead`, `.row-actions`, `.btnrow`
+> (+ `.btnrow .btn`). This revises only this implementation decision and tasks 4.9; the behavioural
+> delta spec and the API contract are unchanged.
+
 **MD14 — Test harness: `MustDoApiTest` on its own database, neighbours untouched (P3-4).**
 `@SpringBootTest(classes = HelloApplication.class)` with
 `jdbc:sqlite:file:mustdo-test?mode=memory&cache=shared&foreign_keys=on`, Hikari pool size 1,

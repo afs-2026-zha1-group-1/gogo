@@ -18,10 +18,12 @@ import jakarta.validation.Valid;
 public class PreferenceController {
 
     private final PreferenceService service;
+    private final MustDoService mustDos;
     private final TripRepository trips;
 
-    public PreferenceController(PreferenceService service, TripRepository trips) {
+    public PreferenceController(PreferenceService service, MustDoService mustDos, TripRepository trips) {
         this.service = service;
+        this.mustDos = mustDos;
         this.trips = trips;
     }
 
@@ -40,6 +42,25 @@ public class PreferenceController {
             @RequestBody @Valid PreferenceSaveRequest request) {
         long userId = caller(authentication, tripId);
         return new PreferenceSaveResponse(service.save(tripId, userId, request.interests()));
+    }
+
+    // REQ-020: the must-do endpoints sit under the same mapping and reuse the same caller gate,
+    // so identity -> trip -> membership is written once (MD2, MD5).
+    @GetMapping("/must-dos")
+    public MustDoMembersResponse readMustDos(
+            @PathVariable long tripId,
+            Authentication authentication) {
+        caller(authentication, tripId);
+        return new MustDoMembersResponse(mustDos.members(tripId));
+    }
+
+    @PutMapping("/must-dos")
+    public MustDoSaveResponse saveMustDos(
+            @PathVariable long tripId,
+            Authentication authentication,
+            @RequestBody @Valid MustDoSaveRequest request) {
+        long userId = caller(authentication, tripId);
+        return new MustDoSaveResponse(mustDos.save(tripId, userId, request.items()));
     }
 
     // Session identity, then trip existence, then membership (DD5). US-066 replaced the

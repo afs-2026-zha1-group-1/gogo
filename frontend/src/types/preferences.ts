@@ -33,3 +33,28 @@ export interface PreferencesResponse {
 export interface SavePreferencesResponse {
   interests: string[]
 }
+
+/**
+ * One must-do item (US-020). `null` location or time means "not given"; the server stores and
+ * returns the explicit null (C4). `id` is `null` only for an item the server has not issued an id
+ * for yet — the page never appends a local id, it adopts the response (PAGE-6).
+ */
+export interface MustDoItem {
+  id: number | null
+  activity: string
+  location: string | null
+  time: string | null
+}
+
+export interface MustDoMember {
+  userId: number
+  mustDos: MustDoItem[]
+}
+
+export interface MustDosResponse {
+  members: MustDoMember[]
+}
+
+export interface SaveMustDosResponse {
+  items: MustDoItem[]
+}

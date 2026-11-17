@@ -1,5 +1,11 @@
 import { api } from '../api'
-import type { PreferencesResponse, SavePreferencesResponse } from '../types/preferences'
+import type {
+  MustDoItem,
+  MustDosResponse,
+  PreferencesResponse,
+  SaveMustDosResponse,
+  SavePreferencesResponse,
+} from '../types/preferences'
 
 /** Thrown by this client so the page can branch on the HTTP status (PAGE-8 copy). */
 export class ApiError extends Error {
@@ -44,5 +50,21 @@ export function savePreferences(
   return request<SavePreferencesResponse>(`/api/trips/${tripId}/preferences`, {
     method: 'PUT',
     body: { interests },
+  })
+}
+
+// US-020: the must-do section's own two calls. A save always replaces the whole list, so the
+// page sends the acknowledged items plus the one pending change and adopts the response (MD11).
+export function fetchMustDos(tripId: number): Promise<MustDosResponse> {
+  return request<MustDosResponse>(`/api/trips/${tripId}/preferences/must-dos`)
+}
+
+export function saveMustDos(
+  tripId: number,
+  items: MustDoItem[],
+): Promise<SaveMustDosResponse> {
+  return request<SaveMustDosResponse>(`/api/trips/${tripId}/preferences/must-dos`, {
+    method: 'PUT',
+    body: { items },
   })
 }

@@ -711,6 +711,49 @@ body {
 }
 
 /* Inline feedback on the preferences page (formerly antd Alert; keeps the dependency list flat) */
+
+/* US-020 must-do item row: a lead marker tile, the activity and its place/time markers, actions right */
+.mustdo-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mustdo-row .grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.mustdo-lead {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+}
+
+.row-actions {
+  display: flex;
+  gap: 8px;
+  flex: none;
+}
+
+/* Equal-width action buttons (e.g. save vs cancel) without the stacked .btn+.btn offset */
+.btnrow {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.btnrow .btn {
+  flex: 1;
+  margin-top: 0;
+}
+
 .notice {
   border: 1px solid #f0c0bd;
   background: #fdf3f2;
