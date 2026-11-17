@@ -2,7 +2,6 @@ import type { ReactNode } from "react"
 import { useNavigate } from "react-router-dom"
 import { StepBar } from "@/components/ui/step-bar"
 import { IconArrowLeft } from "@/components/icons"
-import { useAuth } from "@/features/auth/AuthProvider"
 
 /**
  * Split-flow app shell (ui-design-reference three-part skeleton: appbar -> body -> actionbar).
@@ -28,7 +27,6 @@ export function SplitLayout({
   children: ReactNode
 }) {
   const navigate = useNavigate()
-  const { account } = useAuth()
   return (
     <div className="flex min-h-screen justify-center bg-bg">
       <div className="flex h-screen w-full max-w-[440px] flex-col overflow-hidden bg-surface-2 shadow-[0_0_40px_rgba(28,25,23,0.06)]">
@@ -54,10 +52,6 @@ export function SplitLayout({
           </div>
           {step != null ? <StepBar step={step} className="mt-3" /> : null}
         </header>
-
-        <div className="flex-none border-b border-line-2 bg-surface/70 px-4 py-2.5 text-[11px] font-semibold text-ink-2">
-          已登录 · {account?.name ?? "账号"}
-        </div>
 
         <main className="flex-1 overflow-y-auto px-4 pt-4 pb-6">{children}</main>
 

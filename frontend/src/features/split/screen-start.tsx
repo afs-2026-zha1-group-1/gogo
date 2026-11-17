@@ -1,127 +1,185 @@
 import { useNavigate, useParams } from "react-router-dom"
-import { useSplitDraft, useStartDraft } from "./hooks"
+import { useMainPlan, useSplitDraft, useStartDraft } from "./hooks"
 import { SplitLayout } from "./split-layout"
 import { ErrorState, LoadingState } from "./states"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { TeamRouteGraph } from "./team-route-graph"
+import { actionForStatus, buildGraphRows, formatTime, type StopInput } from "./graph-model"
 import { Button } from "@/components/ui/button"
-import { ValidItem, ValidList } from "@/components/ui/valid-item"
-import { IconArrowRight, IconBranch, IconCheck, IconClock, IconInfo } from "@/components/icons"
-import { shortId } from "@/lib/format"
+import { Badge } from "@/components/ui/badge"
+import { Card } from "@/components/ui/card"
+import { IconArrowRight, IconBranch, IconClock } from "@/components/icons"
+import type { SplitDraftStatus } from "./types"
 
 /**
- * Screen 11 — split start (spec REQ-004 / US-038, US-050 replacement). Empty state (GET data=null) shows the
- * fork-join intro and a start button wired to POST start; an existing draft shows the saved status. The action
- * branches on status: no draft or `cancelled` starts (or replaces) the draft, `active` continues to boundaries,
- * `confirmed` opens the confirmed review on Screen 15 (read-only terminal state, no start entry). Rejections
- * surface from the backend — the client never judges uniqueness, confirmation or cancellation eligibility.
+ * Screen 11 — 队伍路线 (US-086). Read-only overview of the confirmed main line, the saved split
+ * boundaries and the generated A/B routes. The top-right action is the only split entry and branches
+ * on draft status (start -> boundaries, active -> boundaries, confirmed -> read-only review). Nodes
+ * are display-only: no detail sheet, tasks, fees or locations (user ruling 2026-11-17).
  */
 export function ScreenStart() {
   const { tripId = "" } = useParams()
   const navigate = useNavigate()
-  const draft = useSplitDraft(tripId)
+  const draftQuery = useSplitDraft(tripId)
+  const detail = draftQuery.data ?? null
+  const status: SplitDraftStatus | null = detail?.status ?? null
+  const noDraft = !draftQuery.isPending && !draftQuery.error && (detail == null || status === "cancelled")
+  const mainPlanQuery = useMainPlan(tripId, noDraft)
   const start = useStartDraft(tripId)
-  const detail = draft.data
 
-  const status = detail?.status
-  const action = status === "active" ? (
-    <Button className="flex-1" onClick={() => navigate(`/trips/${tripId}/split/boundaries`)}>
-      下一步：选择边界 <IconArrowRight />
-    </Button>
-  ) : status === "confirmed" ? (
-    <Button className="flex-1" onClick={() => navigate(`/trips/${tripId}/split/confirm`)}>
-      查看已确认分队 <IconArrowRight />
-    </Button>
-  ) : (
-    <Button className="flex-1" disabled={start.isPending} onClick={() => start.mutate()}>
-      {start.isPending ? "发起中…" : status === "cancelled" ? "发起（替换）分队草稿" : "发起分队草稿"}{" "}
-      <IconArrowRight />
-    </Button>
-  )
+  const loading = draftQuery.isPending || (noDraft && mainPlanQuery.isPending)
+  const loadError = draftQuery.error ?? (noDraft ? mainPlanQuery.error : null)
+
+  const hasConfirmedMainPlan =
+    detail != null && status !== "cancelled" ? true : mainPlanQuery.data?.confirmed === true
+
+  const stops: StopInput[] =
+    detail != null && status !== "cancelled"
+      ? detail.mainPlanStops.map((stop) => ({
+          id: stop.id,
+          name: stop.name,
+          startLabel: formatTime(stop.startAt, "iso"),
+          endLabel: formatTime(stop.endAt, "iso"),
+        }))
+      : (mainPlanQuery.data?.stops ?? []).map((stop) => ({
+          id: String(stop.seq),
+          name: stop.name,
+          startLabel: stop.startTime,
+          endLabel: stop.endTime,
+        }))
+
+  const withDraft = detail != null && status !== "cancelled"
+  const departureStopId = withDraft ? detail.departureStopId : null
+  const reunionStopId = withDraft ? detail.reunionStopId : null
+  const routes = withDraft ? detail.routes ?? [] : []
+  const model = buildGraphRows({ stops, departureStopId, reunionStopId, routes })
+
+  const hasBoundaries = model.forkRow != null && model.joinRow != null
+  const awaitingBoundaries = status === "active" && !hasBoundaries
+  const awaitingRoutes = status === "active" && hasBoundaries && routes.length === 0
+
+  const action = actionForStatus(status, hasConfirmedMainPlan)
+  const blocked = action.kind === "blocked"
+
+  async function handleAction() {
+    if (blocked) return
+    if (action.kind === "boundaries") {
+      navigate(`/trips/${tripId}/split/boundaries`)
+      return
+    }
+    if (action.kind === "confirm") {
+      navigate(`/trips/${tripId}/split/confirm`)
+      return
+    }
+    try {
+      await start.mutateAsync()
+      navigate(`/trips/${tripId}/split/boundaries`)
+    } catch {
+      // start.error renders below; backend stays authoritative for uniqueness/prerequisites.
+    }
+  }
 
   return (
     <SplitLayout
-      title="智能分队"
-      subtitle="US-038 · 本次行程仅一次分队"
+      title="队伍路线"
+      subtitle="本次行程仅一次分队"
       backTo={`/#/trips/${tripId}`}
       right={
-        <Badge variant="brand">
-          <IconBranch /> Fork
-        </Badge>
+        <Button
+          size="sm"
+          onClick={handleAction}
+          disabled={blocked || start.isPending}
+          className="shrink-0"
+        >
+          {start.isPending ? "发起中…" : action.label}
+          {action.kind === "start" || action.kind === "blocked" ? <IconBranch /> : <IconArrowRight />}
+        </Button>
       }
-      action={action}
     >
-      {draft.isPending ? (
-        <LoadingState label="加载草稿状态…" />
-      ) : draft.error ? (
-        <ErrorState error={draft.error} onRetry={() => draft.refetch()} />
+      {loading ? (
+        <LoadingState label="加载队伍路线…" />
+      ) : loadError ? (
+        <ErrorState
+          error={loadError}
+          onRetry={() => {
+            draftQuery.refetch()
+            if (noDraft) mainPlanQuery.refetch()
+          }}
+        />
       ) : (
         <div className="flex flex-col gap-3">
-          <Card className="flex items-start gap-2.5 border-brand-soft bg-brand-soft/40 p-3.5">
-            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-brand-soft text-brand-ink [&_svg]:size-4">
-              <IconInfo />
+          <div className="flex items-center justify-between gap-2 px-1">
+            <Badge variant={status === "confirmed" ? "ok" : status === "active" ? "warn" : "neutral"}>
+              {status === "confirmed"
+                ? "分队已确认"
+                : status === "active"
+                  ? "分队草稿进行中"
+                  : status === "cancelled"
+                    ? "上次草稿已取消"
+                    : "尚未发起分队"}
+            </Badge>
+            <span className="text-[10.5px] text-ink-3">
+              {blocked
+                ? "先确认主线方案"
+                : `点击右上角${action.kind === "confirm" ? "查看" : "进入"}分队`}
             </span>
-            <div className="min-w-0">
-              <div className="text-[13px] font-bold text-brand-ink">发起前提：主线方案需全员确认</div>
-              <p className="mt-0.5 text-[11.5px] leading-relaxed text-ink-2">
-                是否满足前提由后端校验；未确认时发起将被拒绝（MAIN_PLAN_NOT_CONFIRMED）。
-              </p>
-            </div>
-          </Card>
+          </div>
 
-          <Card className="p-4">
-            <ForkJoin />
-            <div className="mt-2 text-center text-[13px] font-bold text-ink">谈不拢？分头玩，到点会合</div>
-            <p className="mt-1 text-center text-[11.5px] leading-relaxed text-ink-3">
-              从主线某节点分头行动，A/B 两组各自游玩，在会合节点按时集合。
-            </p>
-          </Card>
-
-          {detail ? (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <IconCheck className="text-ok" />{" "}
-                  {detail.status === "confirmed" ? "拆分已确认" : detail.status === "cancelled" ? "草稿已取消" : "草稿已发起"}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <dl className="flex flex-col gap-1.5 text-[12.5px]">
-                  <StatusRow label="发起人" value={shortId(detail.initiatorMemberId)} />
-                  <StatusRow label="主线版本" value={`v${detail.mainPlanVersion}`} />
-                  <StatusRow label="草稿版本" value={`v${detail.draftVersion}`} />
-                  <StatusRow label="状态" value={detail.status} />
-                </dl>
-                {detail.status === "cancelled" ? (
-                  <p className="mt-2 text-[11.5px] leading-relaxed text-ink-2">
-                    该提案已放弃，主线未改变；可直接发起替换草稿，重新选择边界与路线。
+          {!hasConfirmedMainPlan ? (
+            <Card className="border-brand-soft bg-brand-soft/40 p-4">
+              <div className="flex items-start gap-2.5">
+                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-brand-soft text-brand-ink [&_svg]:size-4">
+                  <IconBranch />
+                </span>
+                <div className="min-w-0">
+                  <div className="text-[13px] font-bold text-brand-ink">主线方案未确认</div>
+                  <p className="mt-0.5 text-[11.5px] leading-relaxed text-ink-2">
+                    确认主线后才能发起分队；本页只读取已确认主线与分队草稿。
                   </p>
-                ) : null}
-                {detail.status === "confirmed" ? (
-                  <p className="mt-2 text-[11.5px] leading-relaxed text-ink-2">
-                    当前拆分已确认并锁定，不可再编辑或取消；可点下方「查看已确认分队」查看路线与分组。
-                  </p>
-                ) : null}
-              </CardContent>
+                  <a
+                    className="mt-2 inline-flex items-center gap-1 text-[11.5px] font-semibold text-brand-ink underline-offset-2 hover:underline"
+                    href={`/#/trips/${tripId}/main-plan`}
+                  >
+                    去主线方案 <IconArrowRight className="size-3.5" />
+                  </a>
+                </div>
+              </div>
             </Card>
-          ) : null}
+          ) : stops.length === 0 ? (
+            <Card className="p-4 text-center text-[12.5px] text-ink-3">已确认主线暂无节点，暂不能展示队伍路线。</Card>
+          ) : (
+            <>
+              {hasBoundaries && detail ? (
+                <div className="flex items-center gap-2 px-1 text-[10.5px] font-semibold text-ink-2">
+                  <IconClock className="size-3.5 shrink-0 text-brand" />
+                  <span className="shrink-0">{formatTime(detail.departureAt, "iso")} 分头</span>
+                  <span className="min-w-4 flex-1 border-t border-dashed border-a-line" />
+                  <span className="shrink-0">{formatTime(detail.reunionAt, "iso")} 会合</span>
+                  {detail.windowMinutes != null ? (
+                    <span className="shrink-0 text-ink-3">{formatWindow(detail.windowMinutes)}</span>
+                  ) : null}
+                </div>
+              ) : null}
 
-          <Card className="px-4 py-1">
-            <ValidList>
-              <ValidItem
-                tone="neutral"
-                icon={<IconBranch />}
-                title="仅一次分队"
-                description="每次行程仅允许一个活跃草稿，重复发起将被拒绝。"
-              />
-              <ValidItem
-                tone="neutral"
-                icon={<IconClock />}
-                title="出发前或行程中均可"
-                description="主线全员确认后即可发起分队草稿。"
-              />
-            </ValidList>
-          </Card>
+              <TeamRouteGraph model={model} />
+
+              {awaitingBoundaries ? (
+                <HintCard title="待选择分头 / 会合边界" hint="选好边界后会显示分头、会合节点和中间暂停的主线。" />
+              ) : null}
+              {awaitingRoutes ? (
+                <HintCard title="两条路线待生成" hint="生成 Route A / B 后会在这里展开两条分支的活动与时长。" />
+              ) : null}
+              {!withDraft ? (
+                <HintCard
+                  title={status === "cancelled" ? "草稿已取消，主线未变" : "尚未发起分队"}
+                  hint={
+                    status === "cancelled"
+                      ? "右上角可发起替换草稿，重新选择边界与路线。"
+                      : "右上角「发起分队」从已确认主线开始；A/B 路线生成后回到本页。"
+                  }
+                />
+              ) : null}
+            </>
+          )}
 
           {start.error ? <ErrorState error={start.error} /> : null}
         </div>
@@ -130,29 +188,17 @@ export function ScreenStart() {
   )
 }
 
-function StatusRow({ label, value }: { label: string; value: string }) {
+function HintCard({ title, hint }: { title: string; hint: string }) {
   return (
-    <div className="flex items-center justify-between gap-2">
-      <dt className="text-ink-3">{label}</dt>
-      <dd className="font-mono font-semibold text-ink">{value}</dd>
-    </div>
+    <Card className="border-line-2 bg-surface-2 p-3.5">
+      <div className="text-[12.5px] font-bold text-ink-2">{title}</div>
+      <p className="mt-0.5 text-[11.5px] leading-relaxed text-ink-3">{hint}</p>
+    </Card>
   )
 }
 
-/** Fork-join illustration (ui-design-reference Screen 11): teal main line splits into A/B and rejoins. */
-function ForkJoin() {
-  return (
-    <svg viewBox="0 0 320 96" className="h-24 w-full" fill="none" strokeLinecap="round">
-      <path d="M12 48 H78" stroke="#0d9488" strokeWidth="3" />
-      <path d="M78 48 C110 48 110 22 142 22 H188 C220 22 220 48 252 48" stroke="#2563eb" strokeWidth="3" />
-      <path d="M78 48 C110 48 110 74 142 74 H188 C220 74 220 48 252 48" stroke="#ea580c" strokeWidth="3" />
-      <path d="M252 48 H300" stroke="#059669" strokeWidth="3" />
-      <circle cx="165" cy="22" r="11" fill="#2563eb" />
-      <text x="165" y="26" textAnchor="middle" fontSize="11" fontWeight="700" fill="#fff">A</text>
-      <circle cx="165" cy="74" r="11" fill="#ea580c" />
-      <text x="165" y="78" textAnchor="middle" fontSize="11" fontWeight="700" fill="#fff">B</text>
-      <text x="42" y="40" textAnchor="middle" fontSize="9" fill="#57534e">主线</text>
-      <text x="276" y="40" textAnchor="middle" fontSize="9" fill="#57534e">会合</text>
-    </svg>
-  )
+function formatWindow(minutes: number): string {
+  const hours = Math.floor(minutes / 60)
+  const rest = minutes % 60
+  return hours > 0 ? `${hours} 小时 ${rest} 分` : `${rest} 分`
 }

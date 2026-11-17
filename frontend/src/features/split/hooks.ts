@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { api } from "../../api"
+import type { MainPlan } from "../../types/mainPlan"
 import { cancelSplitDraft, checkTiming, confirmSplitDraft, fetchDraftDetail, generateRoutes, saveBoundaries, startDraft } from "./api"
+import { SplitApiError } from "./api"
 import type { CheckTimingRequest, GenerateRoutesRequest, SaveBoundariesRequest } from "./types"
 
 /**
@@ -16,6 +19,25 @@ export function useSplitDraft(tripId: string) {
     queryFn: () => fetchDraftDetail(tripId),
     enabled: tripId.length > 0,
     refetchInterval: POLL_MS,
+  })
+}
+
+/**
+ * Main-plan read used only when the trip has no draft / a cancelled draft (US-086 Screen 11).
+ * The endpoint returns bare JSON (not the split envelope); NO_DRAFT means "no plan yet" rather
+ * than a failure. Other rejections surface as SplitApiError so ErrorState maps the stable code.
+ */
+export function useMainPlan(tripId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ["main-plan", "trip", tripId],
+    enabled: enabled && tripId.length > 0,
+    queryFn: async (): Promise<MainPlan | null> => {
+      const result = await api<MainPlan & { code?: string; message?: string }>(`/api/trips/${tripId}/main-plan`)
+      if (result.ok && result.data) return result.data
+      const code = result.data?.code ?? "UNKNOWN"
+      if (result.status === 404 && code === "NO_DRAFT") return null
+      throw new SplitApiError(code, result.data?.message ?? `HTTP ${result.status}`, result.status)
+    },
   })
 }
 

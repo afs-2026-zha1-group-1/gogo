@@ -100,7 +100,6 @@ export type Route =
   | { page: 'my-trips' }
   | { page: 'trips-current' }
   | { page: 'create' }
-  | { page: 'split' }
   | { page: 'members' }
   | { page: 'details'; tripId: number }
   | { page: 'join'; token: string }

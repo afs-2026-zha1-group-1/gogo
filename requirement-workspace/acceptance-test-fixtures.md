@@ -563,3 +563,38 @@ Alice 的预期顺序（以 2026-11-16 为“今天”，2026-11-17 修订：**�
 | 测试创建的 id | 由数据库分配；断言从创建响应或 fixture 读取 |
 | 分页/搜索参数 | 本变更明确不做；传 `?page=1` 不得产生分页元信息 |
 | 错误 message 文本 | 只有 `code` 是契约 |
+
+
+## US-086 队伍路线（Screen 11）
+
+无新增端点、迁移或 seed；复用演示行程与既有 split/main-plan 接口构造状态。UI 参考：`ui-design-reference/screenshots/screen-11-split-start.png`。
+
+### State construction
+
+| 状态 | 构造 |
+|---|---|
+| 无已确认主线 | 新建行程（如 E2E No Plan）；或未确认主线 |
+| 无草稿（主线已确认） | 确认主线后不调用 split-draft |
+| active 无边界 | POST split-draft，不保存边界 |
+| active 有边界无路线 | PUT split-draft/boundaries，不生成路线 |
+| active 有路线 | POST split-draft/routes:generate |
+| confirmed | 组织者 POST split-draft:confirm |
+| cancelled | POST split-draft:cancel；再次发起进入替换 |
+| 非成员 | 用 Eve 会话访问 Alice 的行程 |
+
+### Values fixed by the demo seed
+
+| 项 | 值 |
+|---|---|
+| 演示行程 | Singapore Friends Day（trip 1） |
+| 主线边界（V4 plan_node） | City Hall MRT（01:00–01:30Z）/ Merlion Park（03:30–04:00Z） |
+| 演示账号 | alice@example.com / ben / chloe / daniel / eve，密码 gogo-demo-2026 |
+| 窗口（选两 stop） | 120 分钟 |
+
+### Values deliberately not fixed
+
+| Item | Why |
+|---|---|
+| 活动名/路线名 | 由路线生成结果返回；UI 只展示 |
+| 分支时长 | 由 GroupRoute 返回；空值显示「待补全」 |
+| 节点弹层内容 | 本故事明确不做 |
