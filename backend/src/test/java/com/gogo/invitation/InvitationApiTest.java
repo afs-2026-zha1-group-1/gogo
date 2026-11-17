@@ -160,6 +160,25 @@ class InvitationApiTest {
                 .andExpect(jsonPath("$.preferences").doesNotExist());
     }
 
+    // User ruling 2026-11-17: a signed-in member's preview reports viewerMember
+    // and tripId so the join page can land them on the already-in-team notice;
+    // guests and non-members keep viewerMember=false.
+    @Test
+    void memberPreviewReportsViewerMember() throws Exception {
+        String token = issueToken();
+        mockMvc.perform(get("/api/invitations/" + token).with(TestAuth.asUser("5")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.viewerMember").value(false));
+        mockMvc.perform(get("/api/invitations/" + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.viewerMember").value(false));
+        accept(token, "5");
+        mockMvc.perform(get("/api/invitations/" + token).with(TestAuth.asUser("5")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.viewerMember").value(true))
+                .andExpect(jsonPath("$.tripId").value(tripId));
+    }
+
     // J2: an invited outsider joins once and can then read the trip.
     @Test
     void outsiderJoinsOnceAndCanReadTrip() throws Exception {

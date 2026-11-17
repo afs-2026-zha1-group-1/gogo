@@ -356,6 +356,15 @@ US-013 在 US-066 会话认证基线上新增成员名册读取；不新增迁�
 > at G3 will fold it into §7 (关键实现约定) and the §3 stack table once the
 > change lands on `main`.
 
+> **2026-11-17 revision (user rulings, pre-archive):** scanner × always returns
+> to `#/` (restore-origin D2/S-5 superseded, `from` plumbing removed); the
+> scan→join hand-off lands signed-in existing members directly on an
+> already-in-team notice (organizer wording variant), backed by additive
+> preview fields `tripId`/`viewerMember` (viewer-only membership; guests
+> unchanged). Backend 364/364 incl. `memberPreviewReportsViewerMember`;
+> membership probe must run after the preview query releases the SQLite
+> single connection. See us-067 design D11 / tasks group 11.
+
 **Scanner capability (US-067), as shipped:**
 
 - **Frontend stack alignment with the shell's shipped conventions.** US-067

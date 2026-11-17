@@ -74,3 +74,12 @@ preview" rule.
 
 **All AC items: Pass. All DoV items: Pass.**
 No blocking Fail/Partial. **G1 closed as Pass on 2026-11-16 (SA Lumi, IO Leo).**
+
+## Revision review (2026-11-17, post-G1 user rulings)
+
+| Item | Review | Result |
+|---|---|---|
+| S-5 close target | restore-origin superseded by user ruling: × always `#/`; delta app-shell scenario rewritten; from-plumbing removed | Pass (browser-verified from non-home origin and direct visit) |
+| S-6 member direct-notice | preview additive `tripId`/`viewerMember` (viewer-only membership, no roster leak); Join lands members on notice; backend test added | Pass (364/364; user manual) |
+| S-7 organizer wording | creator wording variant on the same notice; participants unchanged | Implemented, build green; user manual re-check pending (tasks 11.6) |
+| Privacy reverse | guest preview still public basics + `viewerMember=false`; no member/itinerary/preference fields added | Pass (`previewShowsOnlyPublicBasics` still green) |

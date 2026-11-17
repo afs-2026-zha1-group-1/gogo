@@ -31,6 +31,26 @@ function Screen({ children }: { children: ReactNode }) {
   )
 }
 
+// User ruling 2026-11-17: an existing member opening the invite (scan or link)
+// lands directly on this notice — no preview/accept step, no duplicate join.
+function AlreadyMemberNotice({ tripName, tripId, isOrganizer = false }: { tripName: string; tripId: number; isOrganizer?: boolean }) {
+  return (
+    <Screen>
+      <div className="success-hero">
+        <div className="checkring"><Icon name="users" className="lg" /></div>
+        <h2>{isOrganizer ? `你是「${tripName}」的组织者` : `你已在「${tripName}」的队伍中`}</h2>
+        <p className="hint">
+          {isOrganizer
+            ? '这个行程由你创建，你已在行程中，无需再加入。'
+            : '这个账号已经是行程成员，无需再次加入，本次也没有重复加入。'}
+        </p>
+      </div>
+      <a className="btn btn-primary" href={`#/trips/${tripId}`} style={{ marginTop: 8 }}>进入行程</a>
+      <a className="btn btn-ghost" href="#/scan" style={{ marginTop: 8 }}>返回扫码</a>
+    </Screen>
+  )
+}
+
 export default function Join({ token }: JoinProps) {
   const { status, account, setPendingInvite, clearPendingInvite } = useAuth()
   const [state, setState] = useState<JoinState>({ kind: 'loading' })
@@ -155,16 +175,23 @@ export default function Join({ token }: JoinProps) {
   }
 
   if (state.kind === 'joined') {
+    // User ruling 2026-11-17: an existing member re-accepting must see an
+    // explicit "already in the team" notice, not the generic joined hero.
+    if (state.alreadyMember) {
+      return (
+        <AlreadyMemberNotice
+          tripName={state.preview.tripName}
+          tripId={state.tripId}
+          isOrganizer={account?.id === state.preview.organizerId}
+        />
+      )
+    }
     return (
       <Screen>
         <div className="success-hero">
           <div className="checkring"><Icon name="check" className="lg" /></div>
           <h2>已加入「{state.preview.tripName}」</h2>
-          <p className="hint">
-            {state.alreadyMember
-              ? '你已经是这个行程的成员，本次没有重复加入。'
-              : '你现在是行程成员，可以查看完整行程信息。'}
-          </p>
+          <p className="hint">你现在是行程成员，可以查看完整行程信息。</p>
         </div>
         <a className="btn btn-primary" href={`#/trips/${state.tripId}`} style={{ marginTop: 8 }}>进入行程</a>
         <a className="btn btn-ghost" href="#/" style={{ marginTop: 8 }}>返回首页</a>
@@ -173,7 +200,18 @@ export default function Join({ token }: JoinProps) {
   }
 
   const preview = state.preview
+  // Signed-in existing member: skip the preview/accept surface entirely.
+  if (status === 'signedIn' && preview.viewerMember) {
+    return (
+      <AlreadyMemberNotice
+        tripName={preview.tripName}
+        tripId={preview.tripId}
+        isOrganizer={account?.id === preview.organizerId}
+      />
+    )
+  }
   const closed = state.kind === 'closed' || preview.mainPlanConfirmed
+  const isOrganizer = status === 'signedIn' && account?.id === preview.organizerId
 
   return (
     <Screen>
@@ -227,11 +265,23 @@ export default function Join({ token }: JoinProps) {
           </div>
           <a className="btn btn-ghost" href="#/" style={{ marginTop: 14 }}>返回首页</a>
         </>
+      ) : isOrganizer ? (
+        <>
+          <section className="card pad" style={{ marginTop: 14, background: 'var(--brand-soft)', borderColor: '#99f6e4' }}>
+            <p className="hint" style={{ color: 'var(--brand-ink)' }}>
+              <Icon name="check" className="sm" /> 你是这个行程的创建者，已在行程中，无需再加入。
+            </p>
+          </section>
+          <a className="btn btn-ghost" href="#/scan" style={{ marginTop: 14 }}>返回扫码</a>
+        </>
       ) : (
-        <button className="btn btn-primary" type="button" style={{ marginTop: 16 }} onClick={accept} disabled={busy}>
-          <Icon name="check" className="sm" />
-          {busy ? '正在加入…' : status === 'signedIn' ? '接受邀请并加入' : '登录后加入'}
-        </button>
+        <>
+          <button className="btn btn-primary" type="button" style={{ marginTop: 16 }} onClick={accept} disabled={busy}>
+            <Icon name="check" className="sm" />
+            {busy ? '正在加入…' : status === 'signedIn' ? '接受邀请并加入' : '登录后加入'}
+          </button>
+          <a className="btn btn-ghost" href="#/scan" style={{ marginTop: 10 }}>不接受</a>
+        </>
       )}
     </Screen>
   )
