@@ -8,6 +8,8 @@ export interface TripSummary {
   name: string
   startDate: string
   organizerId: number
+  // Set by US-037's confirmation; a confirmed plan cannot be regenerated.
+  mainPlanConfirmed?: boolean
   // Error bodies also carry message; the screens fall back across results.
   message?: string
 }
@@ -21,6 +23,9 @@ export interface MainPlanInputs {
   mustDo: string[]
   budgets: InputBudget[]
   rules: string[]
+  // Screen 9 display layer: interest labels behind the codes, and the must-do items with owners.
+  commonInterestLabels: string[]
+  mustDoItems: InputMustDo[]
   // Error bodies also carry message; the screens fall back across results.
   message?: string
 }
@@ -30,12 +35,24 @@ export interface InputMember {
   displayName: string
   ready: boolean
   preferenceRevision: number
+  // US-026: a ready member may have chosen "no preference", which contributes default values.
+  noPreference: boolean
 }
 
+// Absent (not just null) fields are omitted by the backend's non-null serialisation.
 export interface InputBudget {
   userId: number
   displayName: string
-  hardBudgetCents: number | null
+  hardBudgetCents?: number | null
+  amount?: number | null
+  currency?: string | null
+  limitType?: 'hard' | 'soft' | null
+}
+
+export interface InputMustDo {
+  activity: string
+  location?: string | null
+  memberNames: string[]
 }
 
 export interface MainPlan {

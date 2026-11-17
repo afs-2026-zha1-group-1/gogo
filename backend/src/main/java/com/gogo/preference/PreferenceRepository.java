@@ -10,13 +10,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Single-row upsert and member left join for `member_preference` (DD7, DD8). There is no
+ * Single-row upsert and member left join for `member_preference` (DD7, DD8, MD1). There is no
  * `SELECT ... FOR UPDATE`: the unique key plus the single pooled connection serialize writers.
+ * Since REQ-020 the statements take the preference `kind` as an argument; the interest call
+ * sites pass `"interest"` and the must-do call sites pass `"must_do"` against the same row key.
  */
 @Repository
 public class PreferenceRepository {
-
-    private static final String INTEREST = "interest";
 
     private final JdbcClient jdbc;
     private final ObjectMapper objectMapper;
@@ -26,23 +26,42 @@ public class PreferenceRepository {
         this.objectMapper = objectMapper;
     }
 
-    public void save(long tripId, long userId, List<String> codes) {
+    public void save(long tripId, long userId, String kind, List<String> codes) {
         jdbc.sql("INSERT INTO member_preference (trip_id, user_id, kind, payload, updated_at) "
                         + "VALUES (?, ?, ?, ?, ?) "
                         + "ON CONFLICT (trip_id, user_id, kind) "
                         + "DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at")
-                .params(tripId, userId, INTEREST, writePayload(codes), Instant.now().toString())
+                .params(tripId, userId, kind, writePayload(codes), Instant.now().toString())
                 .update();
     }
 
-    public List<StoredPreference> membersOf(long tripId) {
+    public void savePayload(long tripId, long userId, String kind, String payloadJson) {
+        jdbc.sql("INSERT INTO member_preference (trip_id, user_id, kind, payload, updated_at) "
+                        + "VALUES (?, ?, ?, ?, ?) "
+                        + "ON CONFLICT (trip_id, user_id, kind) "
+                        + "DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at")
+                .params(tripId, userId, kind, payloadJson, Instant.now().toString())
+                .update();
+    }
+
+    // US-026 keeps the submission row as the source of truth; the main-plan read projection still
+    // reads the scaffold trip_member columns, so a real submission projects readiness onto them
+    // here instead of duplicating the flag in every write path.
+    public void markReady(long tripId, long userId) {
+        jdbc.sql("UPDATE trip_member SET ready = 1, preference_revision = preference_revision + 1 "
+                        + "WHERE trip_id = ? AND user_id = ?")
+                .params(tripId, userId)
+                .update();
+    }
+
+    public List<StoredPreference> membersOf(long tripId, String kind) {
         return jdbc.sql("SELECT m.user_id, p.payload "
                         + "FROM trip_member m "
                         + "LEFT JOIN member_preference p "
                         + "ON p.trip_id = m.trip_id AND p.user_id = m.user_id AND p.kind = ? "
                         + "WHERE m.trip_id = ? "
                         + "ORDER BY m.user_id")
-                .params(INTEREST, tripId)
+                .params(kind, tripId)
                 .query((rs, rowNum) -> new StoredPreference(rs.getLong("user_id"), rs.getString("payload")))
                 .list();
     }

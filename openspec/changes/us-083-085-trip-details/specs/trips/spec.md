@@ -4,14 +4,16 @@
 
 ### Requirement: Trip detail overview layout
 
-The trip detail page at `#/trips/<id>` SHALL present, in order: a compact trip
-summary, a countdown card, a fellow-members section, and an embedded "我的方案"
-section. The summary SHALL show the trip name on one line and the date range
-plus destination on a second line, without a repeated trip-info list block.
-The page SHALL NOT render a travel-preference entry, an embedded invitation
-panel, a split-planning section, or a main-plan confirmation button. All data
-SHALL come from existing read endpoints; no endpoint, migration or permission
-rule is added.
+The trip detail page at `#/trips/<id>` SHALL present the compact overview
+(trip summary, countdown card, fellow-members section, embedded "我的方案")
+only when a main plan exists; without a main plan the legacy detail page
+(trip-info list, preference entry, invitation panel, main-plan link) SHALL be
+kept (R9). In the overview the summary SHALL show the trip name on one line
+and the date range plus destination on a second line, without a repeated
+trip-info list block, travel-preference entry, embedded invitation panel,
+split-planning section or main-plan confirmation button. All data SHALL come
+from existing read endpoints; no endpoint, migration or permission rule is
+added.
 
 #### Scenario: Compact summary without duplicated info block
 
@@ -22,7 +24,8 @@ rule is added.
 
 #### Scenario: Sections render in the contracted order
 
-- **WHEN** an authenticated member opens the trip detail page
+- **WHEN** an authenticated member opens the trip detail page for a trip that
+  has a main plan
 - **THEN** the visible sections appear in order: trip summary, countdown,
   fellow members, 我的方案
 - **AND** no travel-preference card, embedded invitation panel, split-planning
@@ -34,11 +37,12 @@ rule is added.
 - **THEN** the 我的方案 section displays that trip's activities and their times
   directly, without requiring a "查看主线方案" navigation click
 
-#### Scenario: No plan shows the empty state
+#### Scenario: No plan keeps the legacy detail page
 
-- **WHEN** a member opens trip detail for a trip with neither a main plan nor a
-  confirmed personal route
-- **THEN** the 我的方案 section shows a no-plan empty state
+- **WHEN** a member opens trip detail for a trip with no main plan
+- **THEN** the legacy detail page renders with its trip-info list, preference
+  entry, invitation panel and main-plan link
+- **AND** no countdown card or overview 我的方案 section is present
 - **AND** no other trip's route is displayed
 
 #### Scenario: Fellow members are visible with a roster entry
@@ -81,8 +85,8 @@ SHALL be returned to the same trip's detail page.
 #### Scenario: Unconfirmed or cancelled draft is not a personal plan
 
 - **WHEN** the split draft is active (unconfirmed) or cancelled
-- **THEN** the 我的方案 section falls back to the main plan when one exists, or
-  the no-plan empty state otherwise
+- **THEN** the 我的方案 section falls back to the main plan when one exists,
+  or the legacy detail page otherwise (R9)
 - **AND** no unconfirmed route is labelled or presented as confirmed
 
 #### Scenario: Confirmation returns to the same trip detail
@@ -93,8 +97,9 @@ SHALL be returned to the same trip's detail page.
 
 ### Requirement: Activity countdown and next stop
 
-The trip detail countdown card SHALL update every second and SHALL never show
-a negative value. Before the trip starts it SHALL count down to the trip
+The trip detail countdown card SHALL appear only in the overview state (a
+main plan exists, R9), SHALL update every second and SHALL never show a
+negative value. Before the trip starts it SHALL count down to the trip
 departure (start date at local midnight) as `N 天 HH:MM:SS`. During an activity
 it SHALL show the remaining time until that activity ends plus the member's
 next stop; between activities it SHALL count down to the next activity's start.
@@ -159,11 +164,12 @@ SHALL be combined with the trip start date.
 
 ### Requirement: Trip detail main-plan navigation entry
 
-The trip detail page at `#/trips/<id>` SHALL present the trip's main plan as an
-embedded timeline inside the 我的方案 section instead of a "查看主线方案"
-navigation link, visible to every authenticated trip member whether or not a
-plan exists. Rendering it SHALL NOT trigger any server-side mutation. The
-main-plan page SHALL remain reachable through the existing
+When a main plan exists, the trip detail page at `#/trips/<id>` SHALL present
+it as an embedded timeline inside the 我的方案 section instead of a
+"查看主线方案" navigation link, visible to every authenticated trip member.
+When no main plan exists the legacy detail page SHALL keep its existing
+"查看主线方案" link (R9). Rendering SHALL NOT trigger any server-side
+mutation. The main-plan page SHALL remain reachable through the existing
 generation/confirmation flow with all six states unchanged; confirmation
 continues to follow US-081. No new state, API endpoint or permission rule is
 added.
@@ -185,7 +191,8 @@ added.
 #### Scenario: Entry visible when no plan exists
 
 - **WHEN** a member opens trip detail for a trip that has no main-plan draft
-- **THEN** the 我的方案 section shows the no-plan empty state
+- **THEN** the legacy detail page keeps the "查看主线方案" link to the
+  main-plan page
 - **AND** no other trip's route is displayed
 
 #### Scenario: Non-member or unsigned-in user cannot reach the plan

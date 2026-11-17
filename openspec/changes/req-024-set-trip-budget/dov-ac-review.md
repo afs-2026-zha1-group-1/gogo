@@ -60,6 +60,9 @@
 | E13 | A member who never saved reads `budget: null`; a cleared member also reads `null` and is not omitted | Read member budgets | P1 AC3a plus C3 |
 | E14 | An unset budget is not rendered as an empty or zero amount, and a saved `0` is not rendered as "not set" | Preferences page | The AC3 distinction carried to the screen |
 | E15 | A rejected budget save keeps the server's saved value while the controls keep the typed input | Preferences page | P1 AC19-N |
+| E16 | Each defect maps to exactly one `code`, resolved by the fixed order of C1 | Save member budget | Added 2026-11-17 when the requirement body was compressed |
+| E17 | `amount: null` together with a present `currency` or `limitType` is an incomplete budget, not a clear | Save member budget | Added 2026-11-17 with the same compression; sharpens C2 |
+| E18 | `2147483647` is accepted, and neither response converts, compares or caps any amount | Save; Read | Added 2026-11-17; carries C4 and the US-031 deferral onto the wire contract |
 
 ## 5. Traceability
 
@@ -78,6 +81,7 @@
 | P1 AC17-N (`GET` twice) | Read | Reading changes nothing |
 | Proposal: page section with its own save action | Page | Saving the budget sends one request and touches nothing else; saving the budget blocks duplicate submissions |
 | User ruling 2026-11-15; delta C8 | Page | Both destructive actions require confirmation; Cancel/dismiss sends no PUT; failed confirmed clear preserves saved budget and shows an error |
+| C1 fixed order, C2 key presence, C4 no business cap (asserted rather than narrated since 2026-11-17) | Save | A defect maps to its own error code; an incomplete null budget is not a clear; the representable maximum is accepted and the capability does no arithmetic |
 
 ## 6. Residual risks and role concerns
 
@@ -86,14 +90,29 @@
 | IO | User accepted 2026-11-15: unset and zero are distinct; exact copy belongs to UI implementation | No; distinction remains contractual |
 | IO | User accepted 2026-11-15: clearly labelled currency and major-unit entry, currency-specific minor-unit storage (40 SGD -> 4000) | No; explicit page obligation |
 | IO | User rejected immediate clearing 2026-11-15: both budget clear and must-do delete require confirmation | C8 and confirm/cancel/failure scenarios updated; Emily IO Pass recorded 2026-11-15 for 53 scenarios by separate explicit instruction; revised SA review passed 2026-11-16 (evelyn.huang) |
-| SA | Two ordered prerequisites: REQ-019's `V4` plus page revision 1, then REQ-020's page revision 2, which revision 3 reproduces | No for the delta, yes for P4/merge; conditions 1 and 2 of the G1 draft |
+| SA | Two ordered prerequisites: REQ-019's `V4` plus page revision 1, then REQ-020's page revision 2, which revision 3 reproduces | No for the delta, yes for P4/merge; conditions 1 and 2 of the G1 draft. **Updated 2026-11-16**: REQ-019's half is satisfied — the table is on the branch as `V6__create_member_preference.sql` and the page as `frontend/src/pages/PreferencesPage.tsx` (revision 1) — so condition 1 is closed; condition 2 (REQ-020's revision 2) stays open |
 | SA | The eight-step validation order (C1) decides which `code` a multi-violation request returns. Confirm it before P4, since tests encode it | No, but it should be confirmed at G1 |
-| SA | `TripErrorAdvice` covers `com.gogo.trip` only, so the `BUDGET_*` codes need a preference-owned advice or a widened scope | No, decided in P3 |
+| SA | `TripErrorAdvice` covers `com.gogo.trip` only, so the `BUDGET_*` codes need a preference-owned advice or a widened scope | No, decided in P3. **Resolved 2026-11-16**: `PreferenceErrorAdvice` already covers `com.gogo.preference`, so only the exception type has to be added |
 | SA | User accepted 2026-11-15: cross-currency comparison/conversion excluded here and deferred to US-031 | No; REQ-024 OQ-13 |
 | Dev/QA | The per-currency decimal table must be a code constant, not a database column, otherwise `JPY` breaks the wire contract | No; P3 obligation |
-| Dev/QA | Strict validation executed 2026-11-15, exit 1: ADDED body length and archive/preamble/Clarifications warnings; Living Spec awaits REQ-019. Architecture single-PUT drift remains separate OQ-14 | Not passed; remediation tracked in G1 condition 7 |
+| Dev/QA | Strict validation: exit 1 on 2026-11-15 by local measurement (two overlong ADDED bodies). Real CLI run **2026-11-17 → exit 0** after remediation; see §7. Architecture single-PUT drift remains a separate OQ-14 | Passed 2026-11-17; G1 condition 7 closed and the wording re-confirmation (condition 9) signed Pass by both roles the same day |
 
-## 7. Conclusion
+## 7. Strict validation run and remediation (2026-11-17)
+
+`openspec validate req-024-set-trip-budget --strict` was run with the CLI at
+`%APPDATA%\npm\openspec.cmd`. It reported one ERROR and three WARNINGs; the full finding-to-remedy
+table is in `proposal.md` ("Strict remediation and delta-spec relocation").
+
+| Point | Detail |
+|---|---|
+| ERROR | `MODIFIED "Preferences page"` omitted six scenarios the baseline still asserts, because the block was written against REQ-019's and REQ-020's **deltas** while REQ-019 has since been archived into the Living Spec. The six titles were restored verbatim; each body keeps its budget assertions |
+| Overlong bodies | `Save member budget` 2,820 → 336 characters, `Read member budgets` 749 → 406, MODIFIED page 3,162 → 484. The compression moved three obligations from narration into scenarios E16–E18 rather than dropping them |
+| Archive-carry WARNINGs | Delta preamble and the C1–C8 table relocated verbatim to `proposal.md`, matching the archived house standard |
+| Result | `Change 'req-024-set-trip-budget' is valid`, **exit 0**; the delta is 433 lines, 3 requirements / **56** scenarios |
+| AC impact | None. AC 4/4 and DoV 5/5 still stand: no existing scenario body or assertion was removed, all 53 signed scenarios remain, and the three additions assert rules C1/C2/C4 that the previous body had narrated |
+| Governance | The edits touched wording the 2026-11-15/16 signatures cover, so `g1-decision.md` opened condition 9 for IO Emily and SA evelyn.huang instead of claiming coverage. **Both roles signed that re-confirmation Pass on 2026-11-17** (relayed by the change author per explicit user instruction, no finding), so the 56-scenario package is now the signed one |
+
+## 8. Conclusion
 
 - AC: 4/4 Pass
 - DoV: 5/5 Pass (DoV-3 carries non-blocking IO/SA concerns)

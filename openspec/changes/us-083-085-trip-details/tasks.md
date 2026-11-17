@@ -59,6 +59,29 @@
 - [x] 7.3 浏览器逐 AC 对照两张参考截图（atdd-design §二全矩阵，含反向用例与倒计时边界）
 - [x] 7.4 openspec validate --strict 无 ERROR（4 WARNING 非阻塞）；local-verify Overall Pass（docs/ai4se-plugins/20261117-161355-local-verify-report.md）→ PR #127（https://github.com/afs-2026-zha1-group-1/gogo/pull/127，base main，禁直推）
 
+## T8 R9 页面分流修订（2026-11-17 用户裁决：无方案保留旧版，有方案才显新版）
+
+- [x] 8.1 合并 origin/main（42a9239→e37c404，US-086/偏好/req-020 等）；解 6 文件冲突（package.json/types.ts/App.tsx/TripDetails.tsx/fixtures/registry，文档类 main 侧在前本 change 追加在后）
+- [x] 8.2 `TripDetails.tsx` 改分流入口（useTripOverview 四态统一渲染；plan==null→TripDetailsLegacy，有 plan→TripOverview）；新增 `pages/TripDetailsLegacy.tsx`（main 旧版逐字保留仅改名）+ `components/TripOverview.tsx`（原新版 ready 渲染体，DD-8）
+- [x] 8.3 R9 同步：trips delta spec（概览门控/无方案回退旧版/旧版保留主线入口）、requirements R5/R6 修订+R9 登记、design DD-8、fixtures S0/优先级/分流派生行、registry 状态行、atdd-design 083-4 改写+083-7/083-8 新增
+- [x] 8.4 `npm run build` exit 0 + `npm run test:unit` 37/37（含 main 新增 team-route 测试）
+- [x] 8.5 浏览器验证两态：S0 旧版区块齐全+入口可用（083-4/083-7）；S1/S2 新版概览（083-1…3/5/6 回归）；生成主线后切换（083-8）——R9 轮 Case A/B/C 全 PASS（见下节）
+- [ ] 8.6 openspec validate --strict 无 ERROR；commit+push 更新 PR #127
+
+## R9 浏览器验收记录（2026-11-17，合并 origin/main 后）
+
+后端重打包重启（V9 迁移自动应用）；前端 Vite HMR 生效。Alice 真实 UI 操作，三轮全 PASS：
+
+| Case | 覆盖 | 结果 | 关键证据 |
+|---|---|---|---|
+| A trip 1（S2 confirmed） | 083-1/2/3/5/6 回归 | PASS | hero 两行+倒计时「17 天 07:16:15」+4 位成员+A 组路线（National Gallery）+共同段；R5 区块 DOM 命中全 0；右上邀请图标在 |
+| B trip 12（S0 新建无方案） | 083-4/083-7 | PASS | 旧版四区块齐全（行程信息四项/偏好卡/内嵌 QR+链接/查看主线方案）；倒计时/成员/我的方案/邀请图标命中全 0；「查看主线方案」→空态+去生成、「设置我的兴趣」→偏好页均通 |
+| C trip 12 生成后 | 083-8 | PASS | 首次生成被就绪门拦（0/1）→旧版偏好入口提交（1/1）→一键生成草稿 v1→info 按钮回详情→已切新版概览（倒计时 32 天+4 活动内嵌）；旧版区块命中全 0；回 trip 1 仍新版 |
+
+观察（非缺陷）：① trip 1 种子 endDate=2026-12-05（单日行程），页面如实渲染；② 生成门控文案「全员就绪后才能生成」符合 US-031 设计；③ 草稿（未确认）方案即触发新版概览——分流条件是「存在主线方案」而非「已确认」，与 R9/spec 一致。
+截图证据（6 张，仅本地留存不入库）：`ui-design-reference/screenshots/us-083-085-acceptance/r9-*.png`。
+验收后 DB restore 回初始备份（test trip 12 清除），后端重启补齐 V9。
+
 ## T7.3 浏览器验收记录（2026-11-17）
 
 七轮 Browser 验收（真实账号 + fixtures State setup 注入，每轮 restore 初始 S2 备份后单注入）：

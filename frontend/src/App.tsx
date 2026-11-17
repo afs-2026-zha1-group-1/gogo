@@ -13,6 +13,7 @@ import MainPlanInputs from './pages/MainPlanInputs'
 import Scanner from './pages/Scanner'
 import PreferencesPage from './pages/PreferencesPage'
 import InvitationPage from './pages/InvitationPage'
+import UserPreferencesPage from './pages/UserPreferencesPage'
 import Members from './pages/Members'
 import LoginPage from './features/auth/LoginPage'
 import RegisterPage from './features/auth/RegisterPage'
@@ -30,6 +31,7 @@ function parseRoute(hash: string): Route {
   if (path === '/login') return { page: 'login' }
   if (path === '/register') return { page: 'register' }
   if (path === '/account') return { page: 'account' }
+  if (path === '/my-preferences') return { page: 'my-preferences' }
   const mainPlanInputsMatch = path.match(/^\/trips\/(\d+)\/main-plan\/inputs$/)
   if (mainPlanInputsMatch) return { page: 'main-plan-inputs', tripId: Number(mainPlanInputsMatch[1]) }
   const mainPlanMatch = path.match(/^\/trips\/(\d+)\/main-plan$/)
@@ -44,7 +46,6 @@ function parseRoute(hash: string): Route {
   if (path === '/my-trips') return { page: 'my-trips' }
   if (path === '/trips') return { page: 'trips-current' }
   if (path === '/create') return { page: 'create' }
-  if (path === '/split') return { page: 'split' }
   if (path === '/members') return { page: 'members' }
   return { page: 'home' }
 }
@@ -55,7 +56,6 @@ const TAB_FOR_PAGE: Record<InAppPage, TabId> = {
   'trips-current': 'trips',
   details: 'trips',
   create: 'trips',
-  split: 'split',
   members: 'members',
   account: 'account',
 }
@@ -112,6 +112,9 @@ export default function App() {
   // pages (roster back, main plan) still use their own `#/trips/<id>` links.
   const tripsHref = '#/trips'
   const tripHref = lastTripId != null ? `#/trips/${lastTripId}` : '#/trips'
+  // 分队 tab goes straight to the team-route page (US-086); without a current trip,
+  // fall back to the trip list so the member can pick one first.
+  const splitHref = lastTripId != null ? `/trips/${lastTripId}/split` : tripsHref
 
   if (route.page === 'login') return <LoginPage />
   if (route.page === 'register') return <RegisterPage />
@@ -166,6 +169,14 @@ export default function App() {
     )
   }
 
+  if (route.page === 'my-preferences') {
+    return (
+      <div className="app">
+        <UserPreferencesPage />
+      </div>
+    )
+  }
+
   return (
     <div className="app">
       <div className="shell-content">
@@ -178,39 +189,6 @@ export default function App() {
         {route.page === 'main-plan-inputs' && <MainPlanInputs tripId={route.tripId} />}
         {route.page === 'my-trips' && <TripsList selectable />}
         {route.page === 'trips-current' && <CurrentTrip />}
-        {route.page === 'split' && (
-          <div className="screen">
-            <header className="appbar">
-              <div className="grow">
-                <div className="title">分队规划</div>
-                <div className="sub">A/B 分头游玩 · 到点会合</div>
-              </div>
-            </header>
-            <div className="body">
-              {lastTripId != null ? (
-                <section className="card pad">
-                  <p className="hint" style={{ marginBottom: 12 }}>
-                    进入当前行程（#{lastTripId}）的分队：发起草稿、选择边界、生成路线、校验会合窗口。
-                  </p>
-                  <button
-                    className="btn btn-primary"
-                    type="button"
-                    onClick={() => { window.location.href = `/trips/${lastTripId}/split` }}
-                  >
-                    进入分队规划
-                  </button>
-                </section>
-              ) : (
-                <section className="card pad">
-                  <p className="hint" style={{ marginBottom: 12 }}>
-                    请先在「行程」页打开一个行程，再从行程详情或底部「分队」进入分队规划。
-                  </p>
-                  <a className="btn btn-ghost" href={tripsHref}>去行程</a>
-                </section>
-              )}
-            </div>
-          </div>
-        )}
         {route.page === 'members' && (
           <Members tripId={lastTripId} tripsHref={tripsHref} tripHref={tripHref} />
         )}
@@ -223,6 +201,7 @@ export default function App() {
             : TAB_FOR_PAGE[route.page]
         }
         tripsHref={tripsHref}
+        splitHref={splitHref}
       />
     </div>
   )

@@ -178,6 +178,19 @@ during/between 时卡下渲染 NextStopDetail（US-085 R8）：
 - 组件/页面层走浏览器手工验收（逐 AC 对照参考截图 + 反向用例），见 atdd-design.md。
 - 后端 `mvn test` 回归（零改动前提下必须全绿）。
 
+## DD-8 页面分流（R9，2026-11-17 修订）
+
+- `TripDetails.tsx` 改为分流入口：调 `useTripOverview(tripId)`，loading/denied/
+  missing/failed 四态在入口统一渲染；ready 且 `plan == null` →
+  `<TripDetailsLegacy tripId>`（main 旧版原样保留，自行重读 trip）；
+  ready 且有 plan → `<TripOverview state>`。
+- `TripOverview.tsx`（components/）承接原新版 ready 渲染体（hero/倒计时/
+  成员/我的方案 + 右上邀请图标），收 ready 态 prop，内部调 useCountdown。
+- `TripDetailsLegacy.tsx`（pages/）= main 版 TripDetails 逐字保留（仅改名），
+  无方案时旧版入口（偏好/内嵌邀请/查看主线方案）不受 R5 影响。
+- 代价：无方案态 trip 读两次（入口五读 + 旧版自读），换取旧版零修改；
+  旧版 loading 闪屏为已知微小 UX 代价（accepted）。
+
 ## 残留风险
 
 - D-2 时区=设备本地（MVP 假设，G1 确认）；跨时区成员见各自本地时间。

@@ -1,35 +1,19 @@
 import Icon from '../Icons'
-import CountdownCard from '../components/CountdownCard'
-import MyPlanTimeline from '../components/MyPlanTimeline'
+import TripOverview from '../components/TripOverview'
+import TripDetailsLegacy from './TripDetailsLegacy'
 import { useTripOverview } from '../hooks/useTripOverview'
-import { useCountdown } from '../hooks/useCountdown'
-import { localEndOfDay, localMidnight } from '../lib/countdown'
-import { useAuth } from '../features/auth/AuthProvider'
 
 interface TripDetailsProps {
   tripId: number
 }
 
-function initial(name: string) {
-  return name.trim().charAt(0).toUpperCase() || '?'
-}
-
-// US-083/084/085: compact overview (hero → countdown → fellow members → 我的方案).
-// The R5 blocks (trip-info list, preference card, embedded invitation panel,
-// main-plan link, split-planning section) are removed; invitation moves to the
-// full-screen page via the app-bar person icon, main-plan confirmation stays on
-// the MainPlan page (US-081).
+// US-083 (2026-11-17 revision): the compact overview only takes over once a
+// main plan exists. Before generation the legacy detail page (trip info,
+// preference entry, invitation panel, main-plan link) stays in charge, so the
+// pre-plan flow keeps its existing entries. Loading/denied/missing/failed are
+// shared here; the legacy page re-reads the trip on its own (kept verbatim).
 export default function TripDetails({ tripId }: TripDetailsProps) {
-  const { account } = useAuth()
   const state = useTripOverview(tripId)
-
-  const trip = state.kind === 'ready' ? state.trip : null
-  const schedule = state.kind === 'ready' ? state.schedule : []
-  const countdown = useCountdown(
-    trip ? localMidnight(trip.startDate) : 0,
-    schedule,
-    trip ? localEndOfDay(trip.endDate) : 0,
-  )
 
   const appbar = (
     <header className="appbar">
@@ -38,11 +22,6 @@ export default function TripDetails({ tripId }: TripDetailsProps) {
         <div className="title">行程详情</div>
         <div className="sub">US-002 · 全员可见</div>
       </div>
-      {state.kind === 'ready' && (
-        <a className="iconbtn" href={`#/trips/${tripId}/invitation`} aria-label="邀请朋友">
-          <Icon name="user" />
-        </a>
-      )}
     </header>
   )
 
@@ -81,52 +60,9 @@ export default function TripDetails({ tripId }: TripDetailsProps) {
     )
   }
 
-  const isOrganizer = state.trip.organizerId === account?.id
-  const readinessText = state.readiness == null ? null
-    : state.readiness.readyCount === state.readiness.memberCount ? '偏好全部就绪'
-      : `${state.readiness.readyCount}/${state.readiness.memberCount} 位成员已就绪`
+  if (state.plan == null) {
+    return <TripDetailsLegacy tripId={tripId} />
+  }
 
-  return (
-    <div className="screen">
-      {appbar}
-      <div className="body">
-        <section className="hero">
-          <h1 style={{ marginTop: 0 }}>{state.trip.name}</h1>
-          <div className="hdest">
-            <Icon name="cal" className="sm" />
-            {state.trip.startDate} – {state.trip.endDate}
-            <Icon name="pin" className="sm" />
-            {state.trip.destination}
-          </div>
-        </section>
-
-        <CountdownCard state={countdown} schedule={state.schedule} />
-
-        {state.members.length > 0 && (
-          <>
-            <div className="sec-title"><Icon name="users" className="sm" /> 同行成员</div>
-            <section className="card pad members-summary">
-              <div className="avstack" aria-hidden="true">
-                {state.members.slice(0, 4).map((member) => (
-                  <div
-                    className={`member-avatar tone-${((member.userId - 1) % 4) + 1}`}
-                    key={member.userId}
-                  >
-                    {initial(member.displayName)}
-                  </div>
-                ))}
-              </div>
-              <div className="ms-main">
-                <div className="ms-title">{state.members.length} 位朋友已加入</div>
-                {readinessText && <div className="ms-sub">{readinessText}</div>}
-              </div>
-              <a className="btn btn-ghost sm" href="#/members">查看</a>
-            </section>
-          </>
-        )}
-
-        <MyPlanTimeline schedule={state.schedule} startDate={state.trip.startDate} isOrganizer={isOrganizer} />
-      </div>
-    </div>
-  )
+  return <TripOverview state={state} />
 }
