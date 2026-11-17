@@ -159,3 +159,61 @@ the consumer), ⑫ display contract (10 UI states) — all four Pass → **A0 Pa
   recorded in the registry alongside the sequential `REQ-00x` numbers.
 - **Document language**: openspec deliverables are English (repository rule); the `requirement-workspace/`
   P1 entries stay Chinese for now.
+
+## Strict remediation and delta-spec relocation (2026-11-17)
+
+`openspec validate req-024-set-trip-budget --strict` was run with the CLI at
+`%APPDATA%\npm\openspec.cmd`. It exited 1, which had been carried as open G1 condition 7. Four
+findings were reported, and all four are remedied here:
+
+| Finding | Level | Remedy |
+|---|---|---|
+| `MODIFIED "Preferences page"` omits scenarios the current spec still has | ERROR | Six titles take back the names the baseline asserts, because archive replaces the whole requirement block and a renamed Living Spec scenario reads as a deleted one: `Empty interests` → `Empty state`, `Switching identity reloads all three sections` → `Switching identity reloads for the new identity`, `Saving interests disables duplicate submissions` → `Saving disables duplicate submissions`, `A successful interest save follows the response` → `A successful save follows the response`, `A rejected interest save shows an inline error and rolls back` → `A rejected save shows an inline error and rolls back`, `A must-do action does not touch the other sections` → `A must-do action does not touch the interest selection`. Only titles moved; each body keeps its budget assertions, so the wider three-section behaviour is still specified |
+| `ADDED "Save member budget"` body is 2,820 characters, over the 500 limit | WARNING | Compressed to **336 characters**. What it dropped became asserted rather than narrated: the fixed validation order and the defect→`code` mapping moved into a new `A defect maps to its own error code` scenario as a table, the half-set `null` case into `An incomplete null budget is not a clear`, and the int32 boundary plus the "no conversion, no comparison, no cap" rule of C4 into `The representable maximum is accepted and the capability does no arithmetic`. The rejection scenarios already written under this requirement pin every other rule, so no contract was lost |
+| `ADDED "Read member budgets"` body is 749 characters, over the limit | WARNING | Compressed to **406 characters**; field shape, `null` meaning, `userId` ordering, completeness and read-only are each asserted by the six scenarios under it |
+| Delta preamble and `## Clarifications` are not carried into the Living Spec by archive | WARNING | Relocated verbatim into the subsection below. House standard: all archived delta files under `openspec/changes/archive/` carry neither, and `req-019-save-interests` / `req-020-manage-must-do` were restructured the same way |
+
+The MODIFIED page body (previously 3,162 characters) was rewritten on the same baseline as REQ-020's
+compressed page text plus the budget section, and now measures **484 characters**, so archiving this
+delta no longer re-inflates the Living Spec's 488-character page requirement. Currency formatting and
+the unset/zero distinction stay asserted — by `A saved budget is shown again after a reload`,
+`A zero budget is rendered differently from an unset budget`, `A zero-decimal currency is formatted
+without decimals` and `An unset budget is not rendered as an empty or zero amount`.
+
+After these fixes: `openspec validate req-024-set-trip-budget --strict` →
+`Change 'req-024-set-trip-budget' is valid` (**exit 0**). The delta is now 433 lines,
+**3 requirements / 56 scenarios** (53 signed + the 3 named above), with only the `ADDED` and
+`MODIFIED` sections. Every edit touched wording the two roles signed at G1, so it was carried as a new
+re-confirmation condition in `g1-decision.md` rather than reported as covered; **IO Emily and SA
+evelyn.huang signed that condition (9) Pass on 2026-11-17**, relayed by the change author per explicit
+user instruction, so the 3-requirement / 56-scenario package is the signed one.
+
+### Delta Spec baseline and revision record (moved out of `specs/preferences/spec.md`)
+
+- Change: `req-024-set-trip-budget`, capability `preferences`.
+- Baseline (corrected 2026-11-17): the **archived** Living Spec `openspec/specs/preferences/spec.md`
+  established by `req-019-save-interests`, plus the REQ-020 delta (`req-020-manage-must-do`), which is
+  signed but not yet archived; this delta stacks on both. The original preamble named
+  "the `preferences` delta of `req-019-save-interests` plus the delta of `req-020-manage-must-do`;
+  neither is archived yet" — REQ-019 has since been archived, which is why six page scenario titles
+  had to be restored. The caller identity, trip existence and membership precondition stays defined
+  once in REQ-019's `Preference caller identity and membership` and is not restated as a new ADDED
+  requirement.
+- Storage: `member_preference` with `kind = 'budget'`, one row per member, payload either
+  `{"amount": <integer>, "currency": <code>, "limitType": "hard"|"soft"}` or `{}` for the cleared
+  state. No migration.
+- Amounts are integers in the currency's **minor unit**: `SGD`/`CNY`/`USD`/`EUR` have two decimal
+  places, `JPY` has none. 40 SGD is stored and transferred as `4000`; 1200 JPY as `1200`.
+
+### Clarifications (moved out of `specs/preferences/spec.md`)
+
+| id | Decision | Rationale |
+|---|---|---|
+| C1 | Validation order is fixed and the first failing check decides the response | A request can violate several rules at once; without a fixed order the error `code` would not be assertable |
+| C2 | A missing `amount` key is `INVALID_REQUEST`, while `"amount": null` clears the budget | Keeps "malformed request" and "clear" apart, so a truncated body can never silently erase a saved budget |
+| C3 | A cleared budget keeps the row with `payload = {}` | Matches REQ-019's rule that clearing never deletes the record; "not set" still has a single wire representation (`null`) |
+| C4 | No business upper bound beyond the representable range | The ACs define none; a fabricated limit would become a product rule that later stories must honour |
+| C5 | The wire format stays in the currency's minor unit, and the page converts using a per-currency decimal table | Keeps storage integral (plan §5) while the screen shows `40.00`; a hard-coded factor of 100 would break `JPY` |
+| C6 | The budget section saves on its own action, never through a page-level submit | Interests save explicitly, must-do items save per action, budgets save per section; one shared submit would write several `kind`s at once |
+| C7 | MVP boundary: the closed loop is save, read back, change the limit type, clear | Currency conversion, exchange rates, budget history and any business amount ceiling are intentionally absent (REQ-024 OQ-10/OQ-13), and no other member's budget is rendered by this change; their absence is a scope decision, not an omission |
+| C8 | Must-do deletion and budget clearing require confirmation; cancel/dismiss sends no request | User ruling 2026-11-15 supersedes immediate destructive actions; API clear payload and storage semantics are unchanged |

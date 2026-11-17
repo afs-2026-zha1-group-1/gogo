@@ -23,7 +23,10 @@ rather than documented, and it was given on the working-tree text (the user inst
 round not be committed or pushed while REQ-019's G2 was open); part of it has since been committed
 and pushed — the header amendments, the R4 mirror and the shortened ADDED bodies — while the re-based
 page requirement and R1–R4 are still uncommitted, so the commit carrying them must not alter the
-signed wording. `openspec validate --strict` still exits 1 (condition 6, archive blocker).
+signed wording. `openspec validate req-020-manage-must-do --strict` has since been run on the real
+CLI and exits 0 (condition 6 closed 2026-11-17); the amendments that closure required are this
+document's "Strict remediation and delta-spec relocation" section and were carried as G1 condition 9,
+which IO Emily and SA evelyn.huang signed Pass on 2026-11-17.
 
 ## Condition 6 formatting fix: the two ADDED bodies shortened (2026-11-16)
 
@@ -35,10 +38,104 @@ compression dropped is asserted by a scenario of the same requirement (200 and t
 keys, trim and blank→`null`, the empty-list row, single-row upsert, idempotence, zero write on
 rejection with the six `MUST_DO_*` / `INVALID_REQUEST` codes, body shape, list-local ids, the
 two-key ascending read response), so no contract, no scenario and no count changed — still 44 — and
-condition 8 is not reopened. Two things stay open and are not claimed as passes: the remaining
-archive/preamble/Clarifications warnings, and the strict rerun itself, which needs an environment
-with the `openspec` CLI. The MODIFIED page body is still 3,247 characters; strict did not report it,
-and it is signed text, so shortening it would need a ruling first.
+condition 8 is not reopened. Two things stayed open at the time and are now settled by the real CLI
+run recorded in the next section: the archive/preamble/Clarifications warnings and the strict rerun.
+The MODIFIED page body is still 3,247 characters; strict did not report it, and it is signed text, so
+shortening it would need a ruling first. That ruling was given on 2026-11-17 and the body was
+compressed — see amendment (5) below.
+
+## Strict remediation and delta-spec relocation (2026-11-17)
+
+`openspec validate req-020-manage-must-do --strict` was run with the CLI available
+(`%APPDATA%\npm\openspec.cmd`) after REQ-019 had merged and been archived onto this branch. The two
+overlong ADDED bodies from the 2026-11-16 compression are **no longer reported** — they measure 493
+and 432 characters. Three findings remained, and all three are remedied in this section:
+
+| Finding | Kind | Remedy |
+|---|---|---|
+| MODIFIED `Preferences page` omits five scenarios the current Living Spec still has: `Empty state`, `Switching identity reloads for the new identity`, `Saving disables duplicate submissions`, `A successful save follows the response`, `A rejected save shows an inline error and rolls back` | ERROR | The five interest-path scenarios take back their Living Spec titles. Only the titles change — the section-scoping wording stays in the bodies (`the interest save request returns 200`, `the interest controls and that action are disabled`), so no assertion changes and the delta still holds 44 scenarios. The five titles are part of the text the two roles signed under condition 8, so this rename is recorded here for re-confirmation rather than claimed as already covered |
+| Text above the first `## ` section is not carried into the Living Spec by archive | WARNING | The delta preamble moved out of `specs/preferences/spec.md` into the subsection below |
+| Section `## Clarifications` is not carried into the Living Spec by archive | WARNING | The C1–C6 / R1–R4 table moved out verbatim into the subsection below |
+
+The house standard was checked before restructuring: all 18 archived delta files under
+`openspec/changes/archive/` carry no preamble and no `Clarifications` section, and
+`req-019-save-interests` was restructured the same way to reach exit 0.
+
+After these three fixes the rerun passes: `openspec validate req-020-manage-must-do --strict` →
+`Change 'req-020-manage-must-do' is valid` (**exit 0**), `openspec validate preferences --type spec
+--strict` → `Specification 'preferences' is valid` (**exit 0**), and repository-wide
+`openspec validate --all --strict` improves from 7 passed / 8 failed to 8 passed / 7 failed. The
+delta is now 385 lines, 3 requirements / 44 scenarios, with only the `ADDED` and `MODIFIED` sections.
+
+A fourth fix followed the same day. The user ruled that the MODIFIED page body should be compressed
+to the house style before it can inflate the Living Spec again, so amendment (5) shortened it from
+3,247 to **478 characters** in the shape REQ-019 used for the same requirement. Every clause the
+compression dropped is asserted by a scenario of that requirement — the reload, rollback, immediate
+persistence, confirmation, retry and no-local-storage behaviors — so the 44-scenario contract is
+unchanged and the re-run still reports **exit 0**. The delta is now 345 lines and all three
+requirement bodies sit under the 500-character limit (493 / 432 / 478).
+
+The baseline error this exposed is now corrected: REQ-019 is archived, so the MODIFIED page
+requirement must be re-based on the **Living Spec** `openspec/specs/preferences/spec.md`
+(5 requirements / 31 scenarios, `Preferences page` body 488 characters), not on REQ-019's delta
+revision 1. Two consequences are deliberately left for a ruling rather than folded in silently: the
+Living Spec's page body is compressed and no longer carries the screen-08 layout strings, R1 or R3,
+and this delta's MODIFIED body was 3,247 characters — archiving it as written would have re-inflated
+the Living Spec page requirement and made `openspec validate preferences --strict` report an overlong
+body. That risk is closed by amendment (5) above, which compressed the body to 478 characters; because
+it edited signed wording it went to condition 9 rather than being reported as covered, and both roles
+signed that re-confirmation Pass on 2026-11-17.
+
+### Delta Spec baseline and revision record (moved out of `specs/preferences/spec.md`)
+
+- Change: `req-020-manage-must-do`, capability `preferences`.
+- Baseline (corrected 2026-11-17): the **archived** Living Spec `openspec/specs/preferences/spec.md`
+  established by `req-019-save-interests` on 2026-11-16 (5 requirements / 31 scenarios), not
+  REQ-019's unarchived delta. The caller identity, trip existence and membership precondition is
+  defined once in its `Preference caller identity and membership` and applies unchanged to the
+  endpoints below; it is not restated here as a new ADDED requirement.
+- Revision (2026-11-16, P3): three amendments. (1) The MODIFIED `Preferences page` requirement was
+  re-based on that revised revision 1, because it had been written against the pre-revision text
+  (seven English labels, no layout paragraph). (2) A storage-only `name` mirror was added (R4),
+  because the merged main-plan reader reads `name`; it costs two scenarios, so this delta is now
+  3 requirements / 44 scenarios instead of the earlier 42. (3) The two ADDED requirement bodies were
+  shortened to the 500-character strict limit (G1 condition 6); every statement they dropped is
+  asserted by a scenario of the same requirement, so no contract, no scenario and no count changed.
+  Amendments (1) and (2) were re-reviewed and signed Pass on 2026-11-16 by IO Emily and SA
+  evelyn.huang (`g1-decision.md`, "Revision re-review (2026-11-16) — Pass", condition 8 closed).
+  Amendment (3) is a formatting change made afterwards under condition 6 and does not reopen that
+  signature.
+- Revision (2026-11-17, condition 6): amendment (4), from the first real strict run. Amendment (1)
+  had re-based the page requirement on REQ-019's **delta** while REQ-019 had meanwhile been
+  archived, so five scenario titles that the Living Spec still asserts had been renamed and were
+  reported as omitted; they are restored, with no change to any assertion. The preamble and the
+  Clarifications table moved here, because archive does not carry either into the Living Spec.
+  Together with (1)–(3) this is still 3 requirements / 44 scenarios.
+- Revision (2026-11-17, condition 9): amendment (5), the MODIFIED `Preferences page` body compressed
+  from 3,247 to 478 characters at the user's instruction, in REQ-019's compressed style. No scenario
+  title, body or assertion changed; the requirement still holds its 19 scenarios.
+- Storage: `member_preference` with `kind = 'must_do'`, one row per member, payload
+  `{"items": [{id, activity, name, location, time}]}`, `null` where a field is absent. `name` mirrors
+  `activity` and is never returned. No migration.
+
+### Clarifications (moved out of `specs/preferences/spec.md`)
+
+C1–C6 were frozen at G1 and are unchanged by the 2026-11-16 re-basing. R1–R3 were added by that
+re-basing of the page requirement; R4 was added the same day. All four were re-reviewed and signed
+Pass on 2026-11-16 (IO Emily, SA evelyn.huang) — `g1-decision.md`, condition 8 closed.
+
+| id | Decision | Rationale |
+|---|---|---|
+| C1 | Item ids are unique within the caller's list only and may be reassigned after the list is emptied (`max + 1`) | Ids are never referenced outside the list, and a durable counter would require a payload field or a second table; REQ-020's proposal wording "not reused after deletion" is narrowed accordingly |
+| C2 | The stored and returned order is the request order | Makes assertions repeatable and matches the interest set's ordering rule; no server-side sorting rule is added |
+| C3 | No item-count limit, field-length limit or name-based deduplication | The ACs define none, and a fabricated limit would be a new product rule |
+| C4 | An absent `location`/`time` is stored as `null`, not omitted | Keeps the stored and returned item shape fixed, so assertions do not depend on key presence |
+| C5 | Both `location` and `time` may be saved together | Overrides the reference screen's "choose one of location or time" wording, as decided in REQ-020's P1 |
+| C6 | Delete requires a confirmation dialog; cancelling or dismissing sends no request | User ruling 2026-11-15 supersedes the earlier immediate-delete decision, and supersedes the reference screen, whose `rmMustdo` removes a row at once — the same kind of override C5 makes. Item-count/field-length limits, name-based deduplication and per-item date remain out of scope |
+| R1 | The app bar subtitle reads `<display name> · US-019~020` | The reference screen carries the whole range `US-019~027`, while revision 1 shipped `· US-019` because that was all the page rendered; the range now covers both rendered sections. Changes a shipped string, so it was submitted for the 2026-11-16 re-review and is signed |
+| R2 | The must-do strings come from `screen-08-preferences.png` | Fixes what the E2E rows assert: heading `必做项（US-020 · 可增删改）`, action `添加必做项`, fields `活动名称` / `地点` / `固定时间`, buttons `取消` / `保存`, pin and clock markers. The screen's `二选一` marker on `地点` is dropped, because C5 allows both fields |
+| R3 | The save-state badge describes the interests section only | Revision 1 shipped one page-level badge for its single save; must-do persists per action and reports inside its own section, so the badge must not claim to cover it |
+| R4 | The stored payload mirrors `activity` as `name`; the response never carries it | User ruling 2026-11-16. `MainPlanService.mustDoItems`, already merged to `main`, reads `item.path("name")`, and `V5__create_main_plan.sql` seeds `must_do` rows in that shape; without the mirror, every item saved through this change would reach main-plan generation as an empty string while `MainPlanApiTest` stayed green. The alternatives were changing that reader (`activity` first, `name` fallback) or a `V7` rewrite of the seeds; the mirror was chosen because it keeps this change inside its own package and leaves the merged reader and the seeds untouched |
 
 ## Why
 

@@ -17,6 +17,9 @@ current REQ-019/020/024 packages (31/42/53 scenarios) on 2026-11-15. All three
 remain Conditional for recorded outstanding conditions, not missing IO approval.
 REQ-026 stays at P1, unchanged. Strict validation was executed for
 019/020/024 and exited 1 with existing length/archive warnings; none is marked passed.
+(2026-11-17 update: REQ-019 has since been archived with `openspec validate preferences --strict`
+at exit 0, and the change-level validation of REQ-020 and REQ-024 also reaches exit 0 — see the
+"REQ-020 strict 实跑关闭（2026-11-17）" and "REQ-024 strict 实跑关闭（2026-11-17）" sections below.)
 
 ## 推送与 G1 状态更新（2026-11-16）
 
@@ -28,8 +31,9 @@ REQ-026 stays at P1, unchanged. Strict validation was executed for
 不新增签署主张。三者已于 2026-11-16 随 SA 复审通过而 G1 全部 Pass：SA evelyn.huang 对 020/024 修订后
 契约复审 Pass，REQ-019 的批次就绪条件（等兄弟需求）随之解除。仍列开放的是实现前置
 （REQ-019 的 `V7` 与偏好页已于当日随 P4 落地分支、REQ-020 的第 2 版页面仍缺——见下方「US-020/024 实现前置核对」节）与 019/020/024 的 strict
-validation（exit 1，阻塞归档、不阻塞 P4）。上方 2026-11-15 段落中「三者仍为 Conditional」
-的表述以本节为准。
+validation（exit 1，阻塞归档、不阻塞 P4）。其中 REQ-020 与 REQ-024 的 strict 已于 2026-11-17 实跑
+exit 0 并分别关闭其 g1 条件 6 / 条件 7（见下方「REQ-020 strict 实跑关闭（2026-11-17）」与「REQ-024 strict 实跑关闭（2026-11-17）」两节）。
+上方 2026-11-15 段落中「三者仍为 Conditional」的表述以本节为准。
 
 ## G1 修订复审（2026-11-16）
 
@@ -38,7 +42,7 @@ REQ-019 在 P4 之后把兴趣标签改为 10 项中文、并按 `screen-08-pref
 按需求 owner 的明确指令记录，无附加条件、无 findings），见
 `openspec/changes/req-019-save-interests/g1-decision.md` 的「Revision re-review」段与
 `dov-ac-review.md` §8。G2 可据此引用修订后的 G1。REQ-019 行中原「需重新评审、代理不自签」
-的表述以本节为准。strict validation（exit 1）仍为归档前置，未标记通过。
+的表述以本节为准。strict validation（exit 1）仍为归档前置，未标记通过。（后记：REQ-019 已于同日压字数后经 `openspec validate --strict` = exit 0 并归档，该前置对 REQ-019 已清除；本段作为当时记录保留。）
 
 **合并 main 后的编号变更（2026-11-16）**：合入 `main`（`bac8095`；splits 已占用 `V4`，且
 `V5__create_main_plan.sql` 已以 `IF NOT EXISTS` 声明 `member_preference`）后，本变更的迁移改号为
@@ -62,8 +66,8 @@ shadcn baseline`，`feat/travel_preference` → `main`，OPEN、非 draft、`mer
 `%LOCALAPPDATA%\Programs\gh\bin` 且已登录）。该段结论已被后续事实取代：`main` 先后前进到 `f11d395`
 （US-065 前端 TS 化）与 `40381ac`，本分支三次并入 main 后 head 为 `f16d009`、`mergeStateStatus`
 复位为 `CLEAN`，run `43829662798` 在该 head 上双 job 全绿（203/203；`Check lockfile portability`
-2/2 → `npm ci` → `typecheck` → `build`）。仍未完成：strict validation（exit 1，阻塞归档）；G2 已于
-同日由 VL 签署 Pass（见下）。
+2/2 → `npm ci` → `typecheck` → `build`）。当时仍未完成：strict validation（exit 1，阻塞归档）；G2 已于
+同日由 VL 签署 Pass（见下）。（后记：strict 已压缩正文后 exit 0，REQ-019 已于 2026-11-16 归档。）
 
 **G2 待签草稿（2026-11-16）**：`openspec/changes/req-019-save-interests/g2-decision.md` 已按 G2 输入
 清单整理——输入（local-verify / pipeline ci 含 E1 slot / 验证矩阵 / G1 / delta）、三个 run、维度结果、
@@ -76,7 +80,7 @@ shadcn baseline`，`feat/travel_preference` → `main`，OPEN、非 draft、`mer
 署名，签署提交 `3b2d42d docs(g2): signed by Sammi Ng`。该行原仅写了 `Decision` 与姓名、`Timestamp`
 留白，代理仅把签署转写进门禁字段（标题/状态改为 RECORDED、`Decision: Pass`、`Approvers: Sammi Ng`、
 `Timestamp: 2026-11-16 17:19 (+0800)` 并注明取自签署提交时间）与维度表的 Code review 行，未改判、
-未补写整改项。未完成：G3（具名 SA）与 strict validation（exit 1）。
+未补写整改项。当时未完成：G3（具名 SA）与 strict validation（exit 1）。（后记：两者均已完成——G3 由 SA 于 2026-11-16 签署，strict exit 0，见「归档（2026-11-16）」节。）
 
 **PR #44 第四次并入 main（2026-11-16）**：签署后 `origin/main` 前进到 `80d3dce`（PR #48 归档
 US-066/US-065），PR #44 变 `dirty`，故第四次合并为 `c1c1f89`（base `80d3dce`）：四个文本冲突 +
@@ -102,7 +106,37 @@ REQ-019 已过 G2（`g2-decision.md` = Pass，VL Sammi Ng 2026-11-16；PR #44 �
 - **页面 rev2 与 019 修订后的 rev1 漂移**：020 的 MODIFIED 页面 requirement 原按 019 修订**前**的文本撰写（七个英文标签、无 screen-08 版式段、`Loading` 写了两个 Save 动作），若照此归档会把 rev1 的版式段从 Living Spec 里抹掉。已按修订后的 rev1 重基线，并新增 R1–R3（副标题 `US-019~020`、必做项文案取自 screen-08、状态徽标只描述兴趣段）。
 - **跨变更键名冲突**：`MainPlanService.mustDoItems()`（已合入 `main`）读 `item.path("name")`，`V5__create_main_plan.sql` 也已按该形状为 fixture 行程种子了 `must_do` 行（只有 `name`、无 `id`），而 020 的契约写 `activity`。不处理则 020 存的条目在主线生成时变成空字符串，而 `MainPlanApiTest` 只断言 `$.mustDo.length()`、不会变红。用户 2026-11-16 裁定采用**存储层双写**（020 delta R4：payload 内 `name` = `activity`，响应仍只出四键），种子与 `com.gogo.mainplan` 都不动；遗留种子行按 019 DD1 处理（测试每例清表、开发库 P4 手工重置）。备选（改读取端为 `activity` 优先、或加 `V7` 重写种子）已记录在 R4 的理由里。
 - **门禁后果（已闭合）**：020 的 g1 condition 8（上述两处修订需 IO Emily / SA evelyn.huang 复审签署）于 2026-11-16 **由两个角色转达签署 Pass、无附加发现**，条件关闭；场景总数从 42 变为 44（即当前已签署版本），**020 的 P4 已解锁**，G2 可引用该门禁；024 的页面 rev3 以 020 的 rev2 为基线，同一约束随之解除（024 自身条件仍按原记录）。两项限制如实登记：签署为转达而非签署人亲笔文本；签署对象是**未提交的工作区文本**（用户指令本轮不 commit / 不 push，避免与 REQ-019 的 G2 / PR #44 冲突），提交时不得改动已签署措辞，若有差异须重开 condition 8。事后核实：该签署文本已部分提交并推送（header 修订注、R4 镜像与其两个场景、压缩后的两处 ADDED 正文），页面重基线与 R1–R4 仍未提交。
-- **条件 6 的格式性整改（2026-11-16）**：上次 strict 报的两处 ADDED 正文超长已压到 500 字符限制内——`Save member must-do items` 3,267 → 493、`Read member must-do items` 740 → 432（本地脚本按「`### Requirement:` 到首个 `#### Scenario:` 之间文本 join 后 trim」计量）。属格式性改动、非第三处修订：被压缩掉的每句规范性语句都由同一 requirement 下的场景断言承载，契约、场景与计数（仍 44）均未变，不重开 condition 8。仍未完成、不得报为通过的两项：其余 archive/preamble/Clarifications 告警，以及 strict 复跑本身（本机无 `openspec` CLI）。MODIFIED 页面正文仍 3,247 字符，strict 未报它且属已签署文本，压缩需先取裁定。
+- **条件 6 的格式性整改（2026-11-16）**：上次 strict 报的两处 ADDED 正文超长已压到 500 字符限制内——`Save member must-do items` 3,267 → 493、`Read member must-do items` 740 → 432（本地脚本按「`### Requirement:` 到首个 `#### Scenario:` 之间文本 join 后 trim」计量）。属格式性改动、非第三处修订：被压缩掉的每句规范性语句都由同一 requirement 下的场景断言承载，契约、场景与计数（仍 44）均未变，不重开 condition 8。当时仍未完成的两项——其余 archive/preamble/Clarifications 告警与 strict 复跑本身（当时本机无 `openspec` CLI）——已于 2026-11-17 实跑并关闭，见下方专节。MODIFIED 页面正文当时仍 3,247 字符，strict 未报它且属已签署文本，压缩需先取裁定；该裁定已于 2026-11-17 取得并完成压缩，见下方专节。
+
+## REQ-020 strict 实跑关闭（2026-11-17）
+
+本机已安装 openspec CLI（`%APPDATA%\npm\openspec.cmd`），首次实跑与此前所有文档记录都不同，以机器证据为准：
+
+- `openspec validate req-020-manage-must-do --strict` → **exit 0**（`Change 'req-020-manage-must-do' is valid`）；`openspec validate preferences --type spec --strict` → **exit 0**；全仓 `openspec validate --all --strict` 由 7 passed / 8 failed 变为 **8 passed / 7 failed**。REQ-020 的 g1 condition 6 据此关闭。
+- 2026-11-16 压缩的两处 ADDED 正文已不再被报告（实测 493 / 432 字符），与旧文档「剩余告警源于正文超长」的推断不符。
+- 整改前的实际剩余项为 1 个 ERROR + 2 个 WARNING：MODIFIED `Preferences page` 相对已归档的 Living Spec 漏了 5 个场景名（归档时 MODIFIED 整块替换，改名会被视为删除）；delta 前言与 `## Clarifications` 段不会被 archive 带入 Living Spec。处理方式：5 个场景标题还原为 Living Spec 原名（断言与 44 计数不变），前言与 C1–C6 / R1–R4 全表逐字迁至该变更的 `proposal.md`——与 `openspec/changes/archive/` 下 18 个 delta 文件均无前言、无 Clarifications 段的房屋口径一致。迁出后 delta 为 385 行、仅 `ADDED` + `MODIFIED` 两段。
+- 门禁后果：上述改动触及 condition 8 已签署的措辞，代理不宣称已被原签署覆盖，新开 g1 **condition 9**（IO Emily / SA evelyn.huang 再确认，归档前置，不阻塞 P4）。**该条件已于 2026-11-17 由两个角色签署 Pass（用户明确指示转达、无附加发现），见下方「condition 9 双角色签署与本轮提交」节。**
+- 基线纠正：REQ-019 已归档，MODIFIED 页面 requirement 的基线应是 Living Spec `openspec/specs/preferences/spec.md`（5 requirements / 31 scenarios，页面正文 488 字符），而非 REQ-019 未归档的 delta rev1。
+- 页面正文裁定与压缩（2026-11-17，记为 amendment (5)）：用户裁定「按 019 风格压到 500 内」后，MODIFIED `Preferences page` 正文 3,247 → **478** 字符，被删的每一句都由该 requirement 下的既有场景承载（reload / rollback / 即时持久化 / 确认 / 重试 / 无本地存储），场景体与 44 计数不变；复跑仍 **exit 0**，delta 由 385 行降为 345 行，三处正文 493 / 432 / 478 全部达标。此项与标题还原、前言迁出一并列在该变更 g1 **condition 9** 的再确认范围内（该条件已同日签署 Pass）。
+- 全仓新基线：`openspec validate --all --strict` = **9 passed / 6 failed**（15 项）；剩余 6 项为 `spec/app-shell`、`spec/auth`、`spec/invitations`、`spec/trips`、`change/us-067-qr-scanner` 五处存量告警与 `change/req-026-submit-preferences`。
+
+## REQ-024 strict 实跑关闭（2026-11-17）
+
+按用户对「024 是否一并修」的裁定，用与 REQ-020 完全相同的办法整改，全程以 CLI 实跑为证据：
+
+- `openspec validate req-024-set-trip-budget --strict` → **exit 0**（`Change 'req-024-set-trip-budget' is valid`），其 g1 **condition 7** 据此关闭。
+- 实跑发现与此前本地推断不同：除两处 ADDED 正文超长与前言/Clarifications 两条告警外，还有 1 个 **ERROR**——MODIFIED `Preferences page` 相对 Living Spec/020 基线漏了 **6 个场景名**（`Empty interests`→`Empty state`、`Switching identity reloads all three sections`→`Switching identity reloads for the new identity`、`Saving interests disables duplicate submissions`→`Saving disables duplicate submissions`、`A successful interest save follows the response`→`A successful save follows the response`、`A rejected interest save shows an inline error and rolls back`→`A rejected save shows an inline error and rolls back`、`A must-do action does not touch the other sections`→`A must-do action does not touch the interest selection`）。根因同 020：基线取的是未归档 delta 而非 Living Spec。只改标题，各场景体保留预算断言。
+- 正文压缩：`Save member budget` 2,820 → **336**、`Read member budgets` 749 → **406**、MODIFIED 页面 3,162 → **484**，全部 ≤500。为满足压缩不丢契约，新增 3 个场景承接原正文语句：`A defect maps to its own error code`（C1 校验顺序与 defect→code 映射表）、`An incomplete null budget is not a clear`（C2 半套 null）、`The representable maximum is accepted and the capability does no arithmetic`（C4 int32 上界与「无换算/无比较/无封顶」）。因此包由 53 场景增为 **56**，行数 433，仅 `ADDED` + `MODIFIED` 两段；前言与 C1–C8 表逐字迁至该变更 `proposal.md`（与 18 个归档 delta 的房屋口径一致）。
+- 同步位置：`proposal.md` 新增「Strict remediation and delta-spec relocation (2026-11-17)」及其两个迁出子节；`dov-ac-review.md` 增 §7 与 E16–E18 边缘项、追溯表新行，结论节改为 §8；`g1-decision.md` 关闭条件 7、补注条件 8、新开**条件 9**（已同日签署 Pass）。
+- 门禁后果：以上都改动了 2026-11-15/16 已签署的措辞（含新增 3 个场景），代理当时不宣称被原签署覆盖而是新开条件；IO Emily / SA evelyn.huang 已于 2026-11-17 在 **condition 9** 签署 Pass（转达，无发现），因此归档不再受 G1 条件阻挡；合入顺序仍为 019 → 020 → 024。
+- REQ-026 处置（用户裁定）：`change/req-026-submit-preferences` 保持现状——它还在 P1/P2 阶段、尚无 delta，`No deltas found` 属预期，不制造空 delta、也不设 `.openspec.yaml` 的 `skip_specs: true`；该项在台账登记为已知项，待其真正产出 delta spec 时一并解决。
+- 本轮未解决（不属本次指令）：`spec/app-shell`、`spec/auth`、`spec/invitations`、`spec/trips`、`change/us-067-qr-scanner` 五处存量告警，以及 REQ-026 的 `No deltas found`（处置见上一节）。
+
+## condition 9 双角色签署与本轮提交（2026-11-17）
+
+- 签署事实：用户在本轮明确指示「两个 change 各自的 condition 9 IO 和 SA 都签署 pass」。代理只记录人类陈述：REQ-020 的 amendment (4)+(5) 与 REQ-024 的 strict 整改均获 **IO Emily + SA evelyn.huang Pass，无附加发现**，两份 `g1-decision.md` 的条件 9 改为 closed（保留原编号与原描述，只改 State 列），Approvers 行同步补 2026-11-17 日期。
+- 两项限制依旧登记：（1）签署为**转达而非亲笔评审文本**，仓库内不存在这两个角色针对本次整改的 findings 文字；（2）签署对象是当时的**工作区文本**，本轮提交就是把该文本原样入库，未再改动任何 delta 措辞（提交前后 delta 文本一致：020 = 345 行 / 3 req / 44 sc，024 = 433 行 / 3 req / 56 sc）。
+- 解锁范围：两个变更的 G1 均无开放条件，归档不再受 G1 阻挡；仍不允许的是在 019 → 020 → 024 顺序之外提前合入 `main`，以及把未做的 P4/G2/G3 读成已完成。REQ-020 已完成 P3 的 `atdd-design.md`，下一步 `/sdd:task-plan`；REQ-024 尚无 P3 产物（页面 rev3 的基线 020 rev2 已签署）。
 
 ## US-031-037 product review update (2026-11-15)
 

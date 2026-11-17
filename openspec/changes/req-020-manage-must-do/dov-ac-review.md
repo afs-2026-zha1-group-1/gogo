@@ -91,7 +91,7 @@
 | SA | `TripErrorAdvice` covers `com.gogo.trip` only, so `INVALID_REQUEST` and the `MUST_DO_*` codes need a preference-owned advice or a widened scope | No, decided in P3 |
 | SA | C1 (ids may be reused after the list is emptied) narrows the proposal's earlier wording. Confirm it, or switch to a durable counter before P4, because the payload shape changes | No, but it should be confirmed at G1 |
 | Dev/QA | Item ids live inside the JSON payload, so the database cannot enforce uniqueness; assertions must compare the id set and the item count, not just the HTTP status | No; already stated in the scenarios |
-| Dev/QA | Strict validation executed 2026-11-15, exit 1: ADDED body length and archive/preamble/Clarifications warnings; Living Spec awaits REQ-019 | Not passed; remediation tracked in G1 condition 6. **Updated 2026-11-16**: the ADDED body length part is fixed (see §8.3); the remaining warnings and the rerun are not |
+| Dev/QA | Strict validation executed 2026-11-15, exit 1: ADDED body length and archive/preamble/Clarifications warnings; Living Spec awaits REQ-019 | **Closed 2026-11-17**: with the CLI at `%APPDATA%\npm\openspec.cmd`, `openspec validate req-020-manage-must-do --strict` exits 0 and `openspec validate preferences --type spec --strict` exits 0. Remediation chain in §8.3–§8.5; G1 condition 6 is closed, and the wording change it required (condition 9) is signed Pass by both roles on 2026-11-17 |
 | Team | `docs/knowledge/architecture/tech-stack-plan.md` §5/§6 still describes envelopes, `X-Member-Id`, `JdbcClient` and Ant Design 5 while the code uses bare DTOs, `X-User-Id`, `JdbcTemplate` and hand-written CSS | No; REQ-020 OQ-14, team-owned |
 
 ## 7. Conclusion
@@ -146,8 +146,9 @@ baseline and the shipped code.
   the working-tree text, which the user instructed not to commit or push while REQ-019's G2 was open.
   Part of it has since been committed and pushed — the header amendments, the R4 mirror and the
   shortened ADDED bodies — while the re-based page requirement and R1–R4 are still uncommitted; the
-  commit that carries them must not alter the signed wording. Strict validation remains exit 1
-  (condition 6, an archive blocker).
+  commit that carries them must not alter the signed wording. Strict validation now exits 0
+  (condition 6 closed 2026-11-17, see §8.4); the amendment it required was carried as condition 9 and
+  signed Pass by both roles on 2026-11-17.
 
 **8.3 The two ADDED requirement bodies were shortened (2026-11-16, G1 condition 6).**
 
@@ -160,5 +161,36 @@ condition 8.
 | `Read member must-do items` body | 740 characters | 432 characters |
 | Contract | — | unchanged: every statement the compression dropped is asserted by a scenario of the same requirement (200 and the four response keys, trim and blank→`null`, the empty-list row, single-row upsert, idempotence, zero write on rejection with the six `MUST_DO_*` / `INVALID_REQUEST` codes, body shape, list-local ids, the two-key/ascending read response) |
 | Scenarios and counts | 19 + 6 + 19 = 44 | unchanged, 44 |
-| Evidence | — | measured locally by joining the lines between `### Requirement:` and the first `#### Scenario:`; no `openspec` CLI is available in this environment, so the strict rerun is still owed and strict is not reported as passed |
+| Evidence | — | measured locally by joining the lines between `### Requirement:` and the first `#### Scenario:`; confirmed afterwards by the real CLI — the 2026-11-17 run no longer reports either body (§8.4) |
 | Not touched | — | the MODIFIED `Preferences page` body is still 3,247 characters. Strict reported only the two ADDED bodies, and that text is signed, so shortening it would alter signed wording and reopen condition 8; it needs a ruling first |
+
+**8.4 Strict validation run on the real CLI, and amendment (4) (2026-11-17, G1 condition 6).**
+
+After REQ-019 merged and was archived, `openspec validate req-020-manage-must-do --strict` was run
+with the CLI at `%APPDATA%\npm\openspec.cmd`. The result differed from what this review had recorded:
+neither shortened ADDED body is reported any more. Three findings remained — one ERROR and two
+WARNINGs — and all three are now remedied.
+
+| Point | Detail |
+|---|---|
+| ERROR (the only blocker) | `MODIFIED "Preferences page" omits scenario(s) the current spec still has` for five titles: `Empty state`, `Switching identity reloads for the new identity`, `Saving disables duplicate submissions`, `A successful save follows the response`, `A rejected save shows an inline error and rolls back`. Archive replaces the whole requirement block, so renaming a Living Spec scenario reads as deleting it. Cause: amendment (1) re-based the page requirement on REQ-019's **delta** rather than on the archived Living Spec |
+| Fix | The five titles were restored verbatim. No scenario body, assertion or count changed — the delta stays 3 requirements / 44 scenarios, and its MODIFIED block now lists the same 19 scenarios as before |
+| WARNING × 2 | "Text above the first `## ` section is not carried into the main spec by archive" and "Section `## Clarifications` is not carried into the main spec by archive". Both were remedied by relocation, not deletion: the delta preamble and the full C1–C6 / R1–R4 table now live in `proposal.md` ("Delta Spec baseline and revision record" / "Clarifications"). All 18 archived delta files in this repository have no preamble and no Clarifications section, so this matches house standard |
+| Result | `Change 'req-020-manage-must-do' is valid`, **exit 0**; `Specification 'preferences' is valid`, **exit 0**; repository-wide `openspec validate --all --strict` improved from 7 passed / 8 failed to 8 passed / 7 failed. The delta is now 385 lines with only the `ADDED` and `MODIFIED` sections |
+| AC impact | None. The 44 scenarios, their assertions, C1–C7 and DoV-1..DoV-5 are unchanged; AC 4/4 and DoV 5/5 still stand |
+| Governance | Amendment (4) edited wording that condition 8 signed, so it was **not** reported as covered by that signature; `g1-decision.md` opened condition 9 for IO Emily and SA evelyn.huang to re-confirm the titles and the relocation. **Signed Pass by both roles on 2026-11-17** (relayed by the change author per explicit user instruction, no finding) |
+| Still open, not a strict failure | The 3,247-character MODIFIED page body. Strict does not measure length on MODIFIED delta blocks, but archiving it as written re-inflates the Living Spec's 488-character page requirement and would then make `openspec validate preferences --type spec --strict` report an overlong body. Compressing it is a ruling about signed wording, so it needs the same re-confirmation path. **Resolved the same day by amendment (5), see §8.5** |
+
+**8.5 Amendment (5): the MODIFIED `Preferences page` body was compressed (2026-11-17, carried by condition 9).**
+
+The outstanding item in §8.3 and §8.4. The body was rewritten in the style REQ-019 used for the same
+requirement, keeping only statements no scenario asserts.
+
+| Point | Detail |
+|---|---|
+| Before / after | 3,247 characters → **478 characters**, inside the 500-character house limit that the two ADDED bodies already meet. Measured with the CLI's own method (lines between `### Requirement:` and the first `#### Scenario:`, joined with `\n`, trimmed) |
+| What was dropped | The per-concern restatements: the interest `GET`-entry/rollback narrative, the add/edit/confirmed-delete persistence sentence, the "no browser local storage" clause and the server-`message` clause. Each is asserted by a scenario of this requirement — `Saved interests are shown again after a reload`, `A rejected save shows an inline error and rolls back`, `Adding an item persists immediately`, `Deleting an item requires confirmation`, `A rejected must-do action shows an inline error and rolls back`, `Loading fails`, `The page keeps no local evidence of saved state` |
+| What was kept | Route and entry link, the `screen-08-preferences.png` layout, the two-section order, the exclusion of blocks owned by other changes, the one-request interest save versus the per-action must-do `PUT`, section independence, and retry on a failed `GET` |
+| Scenarios and counts | Unchanged: 3 requirements / 44 scenarios, 19 under the page requirement; no body, assertion or title moved |
+| Result | `openspec validate req-020-manage-must-do --strict` re-run → `Change 'req-020-manage-must-do' is valid`, **exit 0**; the delta is now 345 lines |
+| Governance | This edited wording condition 8 signed, so it was added to **condition 9** for IO Emily and SA evelyn.huang rather than reported as covered. **Condition 9 is signed Pass by both roles on 2026-11-17** (relayed, no finding), so amendments (4) and (5) are now covered by a current signature |

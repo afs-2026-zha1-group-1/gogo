@@ -3,16 +3,20 @@
 - Change id: `req-020-manage-must-do`
 - Gate: G1 (Align)
 - Status: **RECORDED — Pass; gate closed 2026-11-16, re-review of the two P3 amendments signed
-  2026-11-16**. SA evelyn.huang re-reviewed the revised confirmation contract and signed Pass,
+  2026-11-16, and condition 9 signed 2026-11-17**. SA evelyn.huang re-reviewed the revised confirmation contract and signed Pass,
   relayed by the change author on 2026-11-16; IO Emily approved the revised three-requirement /
   42-scenario package on 2026-11-15 per explicit user instruction. Both roles then passed the two
   amendments made at the start of P3 (page re-basing and the R4 storage mirror), relayed by the
   change author on 2026-11-16 per explicit user instruction, so condition 8 is closed and the signed
-  package is now **3 requirements / 44 scenarios**. `openspec validate --strict` still
-  exits 1 and is carried as a follow-up, not as a passed check. The two overlong ADDED bodies behind
-  that exit 1 were shortened on 2026-11-16 (measured 493 and 432 characters against the 500 limit);
-  the rerun itself is still outstanding because no `openspec` CLI is available in this environment,
-  so condition 6 stays open.
+  package is now **3 requirements / 44 scenarios**. `openspec validate req-020-manage-must-do
+  --strict` ran **exit 0 on 2026-11-17** with the CLI at `%APPDATA%\npm\openspec.cmd`, so condition 6
+  is closed on machine evidence rather than a local measurement. Remedying it required amendment (4)
+  — five scenario titles restored to the archived Living Spec's names, and the delta preamble plus
+  its `## Clarifications` table relocated to `proposal.md` — and amendment (5) compressed the
+  MODIFIED `Preferences page` body from 3,247 to 478 characters to match the house 500-character
+  limit. Both wording changes were carried to condition 9 and **IO Emily and SA evelyn.huang signed
+  that re-confirmation Pass on 2026-11-17**, relayed by the change author per explicit user
+  instruction, so the signed package is the current delta: 3 requirements / 44 scenarios.
 - Provenance: the SA's Pass is **relayed**, not documented. No SA-authored review text, finding
   or condition is on file for this change, so anything the SA said that was not relayed is not
   recorded here and must be supplied before this file is treated as final. The 2026-11-16 signature
@@ -45,13 +49,23 @@ The Pass is relayed by the change author and carries no findings. With the IO
 approval already recorded on 2026-11-15, both required roles have signed and G1 is
 closed.
 
-Recorded limitation, deliberately not presented as a pass: `openspec validate
---strict` still exits 1, so the gate was closed with that item outstanding; it blocks
-archive, not P4 start. Its two overlong ADDED bodies were shortened on 2026-11-16 and the
-remaining archive/preamble/Clarifications warnings plus the rerun are still open (condition 6). Condition 1 is an
+Recorded limitation, deliberately not presented as a pass at the time: `openspec
+validate --strict` exited 1, so the gate was closed with that item outstanding; it blocked archive,
+not P4 start. **Closed 2026-11-17**: `openspec validate req-020-manage-must-do --strict` now exits 0
+and `openspec validate preferences --type spec --strict` exits 0. What it took: the two ADDED bodies
+shortened on 2026-11-16 (493 / 432 characters, no longer reported), then amendment (4) on 2026-11-17
+— five interest-path scenario titles restored to the names the archived Living Spec still asserts,
+and the delta preamble and `## Clarifications` table relocated to `proposal.md`, which is the house
+standard for all 18 archived delta files. Amendment (4) altered wording the two roles had signed, so
+it is carried as condition 9, which the two roles signed on 2026-11-17. The same day, amendment (5) compressed
+the MODIFIED `Preferences page` body from 3,247 to 478 characters: the CLI does not flag length on a
+MODIFIED block, but the block becomes the Living Spec text at archive, and 3,247 would have re-longed
+`spec/preferences` on the first check after merge. Every removed clause is asserted by an existing
+scenario, and the 44-scenario total is unchanged. Condition 1 is an
 implementation prerequisite rather than an alignment condition: REQ-019's G1 is
-closed too, but its `V4` migration and preferences page are still absent from the
-tree, so this change remains unbuildable and unmergeable until they land.
+closed and its `V6` migration and preferences page are on this branch (see
+*Implementation prerequisite update*), so what still keeps this change from `main`
+is REQ-019's G2 and PR #44, not the delta text.
 
 ## Implementation prerequisite update (2026-11-16)
 
@@ -160,13 +174,19 @@ neither `com.gogo.mainplan` nor the seeds.
   by REQ-019 and are **not** on disk yet, so this change remains zero-migration but not
   independently runnable (superseded 2026-11-16: both are on the branch, the migration as
   `V6` — see *Implementation prerequisite update*)
-- Structural check: `spec.md` follows `# Spec Delta` → `## ADDED Requirements` →
-  `## MODIFIED Requirements` → `## Clarifications`, with 3 `### Requirement:` blocks and
-  44 `#### Scenario:` blocks (42 before the R4 mirror; see condition 8). Strict validation last
-  executed 2026-11-15 exited 1: two ADDED bodies exceeded 500 characters — those two were shortened
-  on 2026-11-16 to 493 and 432 characters, measured by a line-join script because no `openspec` CLI
-  is available here, so the rerun is still owed. Preamble/Clarifications are not archived. Archive
-  also needs REQ-019 to establish the Living Spec first. Strict validation is not passed.
+- Structural check at G1: `spec.md` followed `# Spec Delta` → `## ADDED Requirements` →
+  `## MODIFIED Requirements` → `## Clarifications`, with 3 `### Requirement:` blocks and 42
+  `#### Scenario:` blocks (44 after the R4 mirror; see condition 8).
+- Strict validation: first run 2026-11-15, exit 1 (two ADDED bodies over 500 characters,
+  preamble and `Clarifications` not carried by archive). Those two bodies were shortened to 493 and
+  432 characters on 2026-11-16. Re-run **2026-11-17 with the CLI available: exit 1 on one ERROR —
+  MODIFIED `Preferences page` omitted five scenario titles the archived Living Spec still asserts —
+  plus the two archive-carry warnings.** After amendment (4) (five titles restored, preamble and
+  Clarifications relocated to `proposal.md`): `openspec validate req-020-manage-must-do --strict`
+  → `Change 'req-020-manage-must-do' is valid`, **exit 0**. Amendment (5) then compressed the
+  MODIFIED page body to 478 characters and the run was repeated: still **exit 0**, with the delta now
+  345 lines, 3 requirements / 44 scenarios, only the `ADDED` and `MODIFIED` sections, and all three
+  requirement bodies under the 500-character house limit (493 / 432 / 478).
 - AC/DoV review: `dov-ac-review.md` — AC 4/4 Pass, DoV 5/5 Pass (DoV-3 carries non-blocking
   IO/SA concerns), blocking ambiguities 0, contract details C1–C7 and 16 reviewed edge
   scenarios recorded there. The page requirement is reviewed at revision 2.
@@ -235,12 +255,16 @@ neither `com.gogo.mainplan` nor the seeds.
 | 3 | IO approval of revised three-requirement / 42-scenario package | Emily (IO) | closed 2026-11-15; explicit user instruction |
 | 4 | Re-review the revised confirmation contract and sign G1 for this version | evelyn.huang (SA) | closed 2026-11-16 — Pass on the revised confirmation contract, relayed by the change author; no findings |
 | 5 | Fold any IO/SA finding into `specs/preferences/spec.md` (and `proposal.md` if a ruling changes) before P4 implementation | author of this change | closed 2026-11-16 — no IO/SA findings relayed with either signature |
-| 6 | Resolve strict warnings and rerun `openspec validate req-020-manage-must-do --strict` | Dev | open — the two overlong ADDED bodies were shortened 2026-11-16 (493 / 432 characters against the 500 limit, measured locally by script); the remaining warnings and the rerun are outstanding, because no `openspec` CLI exists in this environment and strict must not be reported as passed. Blocks archive, not P4 start |
+| 6 | Resolve strict warnings and rerun `openspec validate req-020-manage-must-do --strict` | Dev | closed 2026-11-17 — run with the real CLI at `%APPDATA%\npm\openspec.cmd`: `openspec validate req-020-manage-must-do --strict` → `Change 'req-020-manage-must-do' is valid`, **exit 0**, and `openspec validate preferences --type spec --strict` → **exit 0**. Remediation chain: the two ADDED bodies shortened 2026-11-16 (493 / 432 characters), then amendment (4) 2026-11-17 (five MODIFIED scenario titles restored to the archived Living Spec's names; delta preamble and `## Clarifications` relocated to `proposal.md`). The earlier "no `openspec` CLI exists in this environment" premise no longer holds |
 | 7 | Confirm the C1 id-reuse ruling, or record the opposite ruling and amend the payload shape before P4 | evelyn.huang (SA) | closed with the SA's Pass — C1 is written in the delta the SA approved; no separate minute exists, so an opposing ruling must still be recorded before P4 |
-| 8 | Re-review and sign both 2026-11-16 amendments: the re-based MODIFIED `Preferences page` requirement (ten interests, the screen-08 layout paragraph, R1–R3) and the R4 storage mirror with its two new scenarios (44 in total) | Emily (IO) / evelyn.huang (SA) | closed 2026-11-16 — both roles Pass, relayed by the change author per explicit user instruction, no finding; signed on the uncommitted working-tree text, so the commit must not alter the signed wording |
+| 8 | Re-review and sign both 2026-11-16 amendments: the re-based MODIFIED `Preferences page` requirement (ten interests, the screen-08 layout paragraph, R1–R3) and the R4 storage mirror with its two new scenarios (44 in total) | Emily (IO) / evelyn.huang (SA) | closed 2026-11-16 — both roles Pass, relayed by the change author per explicit user instruction, no finding; signed on the uncommitted working-tree text, so the commit must not alter the signed wording. Note: that signed wording was subsequently altered by amendment (4) on 2026-11-17, which is not claimed as covered here — see condition 9 |
+| 9 | Re-confirm amendments (4) and (5) on the signed delta wording: (4) the five MODIFIED `Preferences page` scenario titles restored to the names the archived Living Spec asserts (`Empty state`, `Switching identity reloads for the new identity`, `Saving disables duplicate submissions`, `A successful save follows the response`, `A rejected save shows an inline error and rolls back`) and the relocation of the delta preamble and its `## Clarifications` table (C1–C6, R1–R4) verbatim into `proposal.md`; (5) the MODIFIED `Preferences page` body compressed from 3,247 to 478 characters, keeping only what no scenario asserts. Scenario bodies, assertions and the 44-scenario total are unchanged in both | Emily (IO) / evelyn.huang (SA) | **closed 2026-11-17 — both roles Pass, relayed by the change author per explicit user instruction, no finding.** Raised the same day because amendments (4) and (5) touched text condition 8 signed. Two limits stand as recorded for condition 8: the Pass is relayed rather than documented, and it was given on the working-tree text, so the commit that carries it must reproduce this wording exactly |
 
-- Approvers: **IO = Emily — Pass (2026-11-15; 2026-11-16 for the two P3 amendments)**,
-  **SA = evelyn.huang — Pass (2026-11-16, revised contract; 2026-11-16 for the two P3 amendments)**.
+- Approvers: **IO = Emily — Pass (2026-11-15; 2026-11-16 for the two P3 amendments; 2026-11-17 for
+  amendments (4) and (5))**, **SA = evelyn.huang — Pass (2026-11-16, revised contract; 2026-11-16 for
+  the two P3 amendments; 2026-11-17 for amendments (4) and (5))**. The 2026-11-17 Pass is relayed by the
+  change author per explicit user instruction and carries no finding; no role-authored review text for
+  those amendments is on file.
 - IO sign-off: **Emily — Pass**, 2026-11-15; revised three-requirement / 42-scenario
   package including confirmation dialogs and cancellation, per explicit user instruction.
 - SA sign-off: **evelyn.huang — Pass**. The Pass on the previous contract was relayed
@@ -256,10 +280,13 @@ neither `com.gogo.mainplan` nor the seeds.
 
 - Allowed: P3 completion (`design.md`, `tasks.md` via `/sdd:task-plan`) **and P4 implementation** of
   the whole change on this branch, now that condition 8 is signed and REQ-019's `V6` table and the
-  preferences page exist; citing this gate in G2 for what the signatures covered (44 scenarios).
-- Not allowed: merging this change to `main` before REQ-019 merges (PR #44, G2 pending); reporting
-  strict validation as passed; archiving before that rerun succeeds (condition 6); altering the signed
-  delta wording at commit time — the signature covers the uncommitted text as it stands.
+  preferences page exist; citing this gate in G2 for what the signatures covered (44 scenarios);
+  and citing the 2026-11-17 strict run as machine evidence for condition 6.
+- Not allowed: merging this change to `main` before REQ-019 merges (PR #44, G2 pending); altering
+  the signed delta wording further at commit time — the signature covers the uncommitted text as it
+  stands, and the commit must reproduce the reviewed wording exactly. Archive is no longer blocked by
+  a G1 condition: condition 9 is signed, and what remains ahead of archive is this change's own P4
+  implementation, G2 evidence and G3.
 
 ## Next
 
@@ -273,8 +300,10 @@ neither `com.gogo.mainplan` nor the seeds.
    the re-based page requirement and Clarifications R1–R4 are still uncommitted in the working tree.
    Amendment (1) is therefore not yet on the branch, so the commit that carries it must reproduce the
    reviewed wording exactly, and the reviewers should be able to re-read it there.
-3. Before archive, rerun `openspec validate req-020-manage-must-do --strict` in an environment that
-   has the CLI. The two overlong ADDED bodies behind the last exit 1 are fixed (493 / 432 characters);
-   the archive/preamble/Clarifications warnings and the rerun are not, and strict must not be reported
-   as passed on the strength of a local measurement.
+3. Strict validation is settled: `openspec validate req-020-manage-must-do --strict` exits 0 and
+   `openspec validate preferences --type spec --strict` exits 0 as of 2026-11-17, so condition 6 is
+   closed on CLI evidence. Both follow-ups recorded that day are now closed: the MODIFIED page body was
+   compressed to 478 characters under the house 500-character limit (amendment (5)), and **condition 9
+   is signed Pass by IO Emily and SA evelyn.huang (2026-11-17, relayed)**. No G1 condition stays open;
+   the change is aligned end to end and its remaining work is P4 and the merge order in item 4.
 4. Merge order to `main` is 019 → 020 → 024; REQ-019's G2 is the first link.

@@ -2,12 +2,17 @@
 
 - Change id: `req-024-set-trip-budget`
 - Gate: G1 (Align)
-- Status: **RECORDED — Pass; gate closed 2026-11-16**. SA evelyn.huang re-reviewed the
+- Status: **RECORDED — Pass; gate closed 2026-11-16, condition 9 signed 2026-11-17**. SA evelyn.huang re-reviewed the
   revised confirmation, cancellation and clear-failure behavior and signed Pass,
   relayed by the change author on 2026-11-16; IO Emily approved the revised
   three-requirement / 53-scenario package on 2026-11-15 per explicit user
-  instruction. `openspec validate --strict` still exits 1 and is carried as a
-  follow-up, not as a passed check.
+  instruction. `openspec validate req-024-set-trip-budget --strict` ran **exit 0 on 2026-11-17**
+  with the CLI at `%APPDATA%\npm\openspec.cmd`, so condition 7 is closed on machine evidence.
+  Reaching exit 0 required edits to wording both roles had signed — six MODIFIED page scenario titles
+  restored, three new scenarios, and all three requirement bodies compressed under the 500-character
+  house limit — and those edits were carried as condition 9, which **IO Emily and SA evelyn.huang
+  signed Pass on 2026-11-17** (relayed by the change author per explicit user instruction), so the
+  signed package is the current delta: 3 requirements / 56 scenarios.
 - Provenance: the SA's Pass is **relayed**, not documented. No SA-authored review text, finding
   or condition is on file for this change, so anything the SA said that was not relayed is not
   recorded here and must be supplied before this file is treated as final.
@@ -31,11 +36,14 @@ recorded on 2026-11-15, both required roles have signed and G1 is closed; REQ-01
 and REQ-020 hold closed G1s as well, so the ordered chain 019 → 020 → 024 is
 aligned end to end.
 
-Recorded limitation, deliberately not presented as a pass: `openspec validate
---strict` still exits 1 on two overlong ADDED bodies, so the gate was closed with
-that item outstanding; it blocks archive, not P4 start. Conditions 1 and 2 are
-implementation prerequisites rather than alignment conditions: neither REQ-019's
-`V4`/page nor REQ-020's page revision 2 exists in the tree yet.
+Recorded limitation, deliberately not presented as a pass at the time: `openspec validate
+--strict` exited 1 on two overlong ADDED bodies, so the gate was closed with that item outstanding; it
+blocked archive, not P4 start. **Closed 2026-11-17**, see the *Strict validation* evidence bullet
+below. The run
+also reported one ERROR that the earlier local measurement had missed — the MODIFIED page block had
+renamed six scenarios the baseline Living Spec still asserts — plus the two archive-carry warnings.
+Conditions 1 and 2 are implementation prerequisites rather than alignment conditions: REQ-019's `V6`
+and page are on this branch, while REQ-020's page revision 2 is signed but not yet implemented.
 
 ## Implementation prerequisite update (2026-11-16)
 
@@ -93,12 +101,18 @@ yet" sentence in *G1 closure*:
   stays inside the planned enum, with zero migration (superseded 2026-11-16: the table is on
   the branch as `V6` and the page exists — see *Implementation prerequisite update*).
 - Structural check: `spec.md` follows `# Spec Delta` → `## ADDED Requirements` →
-  `## MODIFIED Requirements` → `## Clarifications`, with 3 `### Requirement:` blocks and
-  53 `#### Scenario:` blocks. Current strict validation exited 1: two ADDED bodies
-  exceed 500 characters; preamble/Clarifications are not archived. Archive also
-  needs REQ-019 to establish the Living Spec first. Strict validation is not passed.
+  `## MODIFIED Requirements`, with 3 `### Requirement:` blocks and 56 `#### Scenario:` blocks
+  (433 lines). The `## Clarifications` table and the delta preamble were relocated to `proposal.md`
+  on 2026-11-17 because archive carries neither into the Living Spec; the requirement bodies measure
+  336 / 406 / 484 characters, all inside the 500-character limit.
+- Strict validation: exit 1 at G1 closure on two overlong ADDED bodies. First real CLI run
+  **2026-11-17**: one ERROR (MODIFIED `Preferences page` omitted six scenarios the Living Spec still
+  asserts) plus the overlong-body and archive-carry WARNINGs. After the remediation recorded in
+  `proposal.md` ("Strict remediation and delta-spec relocation"), `openspec validate
+  req-024-set-trip-budget --strict` → `Change 'req-024-set-trip-budget' is valid`, **exit 0**.
+  Archive still needs REQ-019 (already archived) and REQ-020 merged ahead of this change.
 - AC/DoV review: `dov-ac-review.md` — AC 4/4 Pass, DoV 5/5 Pass (DoV-3 carries non-blocking
-  IO/SA concerns), blocking ambiguities 0, contract details C1–C7 and 15 reviewed edge
+  IO/SA concerns), blocking ambiguities 0, contract details C1–C8 and 15 reviewed edge
   scenarios recorded there. The page requirement is reviewed at revision 3.
 
 ## Findings (scope / ambiguity / conflict)
@@ -166,11 +180,14 @@ yet" sentence in *G1 closure*:
 | 4 | IO approval of revised three-requirement / 53-scenario package | Emily (IO) | closed 2026-11-15; explicit user instruction |
 | 5 | Re-review confirmation dialogs, cancellation and clear failure; sign G1 for revised version | evelyn.huang (SA) | closed 2026-11-16 — Pass on the revised contract, relayed by the change author; no findings |
 | 6 | Fold any IO/SA finding into `specs/preferences/spec.md` (and `proposal.md` if a ruling changes) before P4 implementation | author of this change | closed 2026-11-16 — no IO/SA findings relayed with either signature |
-| 7 | Resolve strict warnings and rerun `openspec validate req-024-set-trip-budget --strict` | Dev | carried open past G1 closure: exit 1 at closure time; blocks archive, not P4 start |
-| 8 | Confirm the eight-step validation order and the minor-unit wire format (C1, C5), or record the opposite ruling before P4 | evelyn.huang (SA) | closed with the SA's Pass — C1 and C5 are written in the delta the SA approved; no separate minute exists, so an opposing ruling must still be recorded before P4 |
+| 7 | Resolve strict warnings and rerun `openspec validate req-024-set-trip-budget --strict` | Dev | closed 2026-11-17 — run with the real CLI at `%APPDATA%\npm\openspec.cmd`: `openspec validate req-024-set-trip-budget --strict` → `Change 'req-024-set-trip-budget' is valid`, **exit 0**. Remediation: six MODIFIED page scenario titles restored to the names the baseline asserts; `Save member budget` body 2,820 → 336 characters, `Read member budgets` 749 → 406, MODIFIED page body 3,162 → 484; delta preamble and `## Clarifications` relocated to `proposal.md`. Three new scenarios carry what the compression dropped, so the package is now 3 requirements / 56 scenarios. The earlier "strict still exits 1" premise no longer holds |
+| 8 | Confirm the eight-step validation order and the minor-unit wire format (C1, C5), or record the opposite ruling before P4 | evelyn.huang (SA) | closed with the SA's Pass — C1 and C5 are written in the delta the SA approved; no separate minute exists, so an opposing ruling must still be recorded before P4. Note: C1's mapping is now asserted by the `A defect maps to its own error code` scenario table rather than narrated in the requirement body |
+| 9 | Re-confirm the 2026-11-17 strict remediation on the signed delta wording: the six restored MODIFIED `Preferences page` scenario titles, the three new `Save member budget` scenarios (`A defect maps to its own error code`, `An incomplete null budget is not a clear`, `The representable maximum is accepted and the capability does no arithmetic`), the compression of all three requirement bodies to 336 / 406 / 484 characters, and the relocation of the delta preamble and the C1–C8 table verbatim into `proposal.md`. No existing scenario body or assertion was removed; the signed 53 scenarios are all still present, so the package grows to 56 | Emily (IO) / evelyn.huang (SA) | **closed 2026-11-17 — both roles Pass, relayed by the change author per explicit user instruction, no finding.** Raised the same day because the remediation touched text the 2026-11-15/16 signatures cover. Two limits stand as recorded for those signatures: the Pass is relayed rather than documented, and it was given on the working-tree text, so the commit that carries it must reproduce this wording exactly |
 
-- Approvers: **IO = Emily — Pass (2026-11-15)**, **SA = evelyn.huang — Pass (2026-11-16,
-  revised contract)**.
+- Approvers: **IO = Emily — Pass (2026-11-15; 2026-11-17 for the strict remediation)**, **SA =
+  evelyn.huang — Pass (2026-11-16, revised contract; 2026-11-17 for the strict remediation)**. The
+  2026-11-17 Pass is relayed by the change author per explicit user instruction and carries no
+  finding; no role-authored review text for that remediation is on file.
 - IO sign-off: **Emily — Pass**, 2026-11-15; revised three-requirement / 53-scenario
   package including confirmation/cancellation and clear-failure behavior, per explicit
   user instruction.
@@ -186,8 +203,11 @@ yet" sentence in *G1 closure*:
 - Allowed: P3 design, and P4 implementation and local verification of this change on this
   branch once REQ-020's page revision 2 exists; presenting `preferences` as G1-aligned in
   the registry.
-- Not allowed: merging to `main` before 019 and 020 merge, reporting strict validation as
-  passed, or archiving before that rerun succeeds.
+- Not allowed: merging to `main` before 019 and 020 merge, or altering the reviewed wording at commit
+  time — the 2026-11-17 signature covers the working-tree text as it stands. Reporting strict
+  validation as failed is equally wrong: it exits 0 as of 2026-11-17. Archive is no longer blocked by a
+  G1 condition: condition 9 is signed, and what remains ahead of archive is this change's own P3/P4
+  output, G2 evidence and G3.
 
 ## Next
 
@@ -199,5 +219,7 @@ yet" sentence in *G1 closure*:
 3. Implement revision 3 once REQ-020's revision 2 page exists; until then the page
    requirement has no baseline to extend.
 4. Merge order to `main` is 019 → 020 → 024; REQ-019's G2 is the first link.
-5. Before archive, fix the two overlong ADDED bodies and rerun
-   `openspec validate req-024-set-trip-budget --strict`.
+5. Strict validation is settled: `openspec validate req-024-set-trip-budget --strict` exits 0 as of
+   2026-11-17, so condition 7 is closed on CLI evidence, and **condition 9 is signed Pass by IO Emily
+   and SA evelyn.huang (2026-11-17, relayed)**. No G1 condition stays open; what remains is this
+   change's P3 output (`design.md` / `tasks.md`) and the merge order in item 4.

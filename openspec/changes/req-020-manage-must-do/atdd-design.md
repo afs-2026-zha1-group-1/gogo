@@ -135,10 +135,13 @@ later step's failure discards an item that passed the earlier ones.
   lockfile job is unchanged. G2 needs a fresh run read for this change's own commit; nothing is
   inherited from REQ-019's runs. No new CI product.
 - **Not** a P3/P4 gate: `openspec validate req-020-manage-must-do --strict`. It exited 1 at G1
-  closure (two overlong ADDED bodies plus warnings) and is carried as condition 6, an archive
-  blocker; the CLI is not on `PATH` here either. The two ADDED bodies were shortened on 2026-11-16
-  to 493 and 432 characters against the 500 limit, measured locally by script; the remaining
-  warnings and the rerun are still open, so strict is still not a passed check.
+  closure (two overlong ADDED bodies plus warnings) and was carried as condition 6, an archive
+  blocker. **Closed 2026-11-17** with the CLI at `%APPDATA%\npm\openspec.cmd`: the change and the
+  `preferences` Living Spec both validate at exit 0. The remediation chain — the two ADDED bodies
+  shortened to 493 and 432 characters, then five MODIFIED scenario titles restored to the archived
+  Living Spec's names and the delta preamble plus Clarifications relocated to `proposal.md` — is
+  recorded in `g1-decision.md` (amendment (4)) and `dov-ac-review.md` §8.3/§8.4. No scenario,
+  assertion or test layer changed, so this ATDD design is unaffected.
 
 ## 4. Data / fixtures strategy
 
@@ -204,5 +207,8 @@ raise it if a later story needs it.
 
 `/sdd:task-plan` writes `design.md` and `tasks.md` from this document. Condition 8 of
 `g1-decision.md` is closed (both signatures, 2026-11-16), so P4 is unblocked; the merge to `main`
-still waits behind REQ-019's G2 and PR #44, and strict validation stays open as condition 6 — its two
-overlong ADDED bodies are fixed, its rerun is not.
+still waits behind REQ-019's G2 and PR #44. Strict validation is closed as condition 6 (exit 0 on
+2026-11-17), and condition 9 — the two roles' re-confirmation of the amendment (4) titles and
+relocation plus the amendment (5) compression of the MODIFIED page body from 3,247 to 478 characters —
+is signed Pass by IO Emily and SA evelyn.huang on 2026-11-17. No G1 condition stays open; this design
+and the tasks derived from it describe the signed 3 requirements / 44 scenarios.
