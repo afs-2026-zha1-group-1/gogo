@@ -500,3 +500,5 @@ US-071（PR #102，merge `b07f4c1`）已归档。单 change：`trips` +2 ADDED�
 - **未改**：邀请/主线/分队/成员名册读取语义；US-072 的详情页主线入口不重复实现。
 
 §6 清单为 MVP 计划口径；实际端点以本节与 §13–§20 为准。
+
+**残余承接（2026-11-17 followups）**：F2 已修复——`gogo.db` 的 V2 校验和与代码一致，默认启动 `No migration necessary`；F3 已落地——`src/lib/trip-date.ts` 纯函数 + `tests/trip-date.test.ts`（node:test，6 例，零新依赖）+ CI `test:unit` step；F4 评估维持接受——排序 UTC 与徽标本地日期的凌晨边界不引入时区协商或前端重排（避免破坏 API 排序契约），若出现客诉再立独立变更。
