@@ -3,7 +3,7 @@
 - Gate: G3 (Merge & Archive)
 - Timestamp: 2026-11-17（草稿创建，+08:00）
 - Branch: `US-040-split-grouping-p0`；PR #117；**已合并 `3bcf7b9`**（合并前 head `34a88c6`）
-- 状态：**合并与归档已完成 / Decision = OPEN 待 SA 签**（建议 Pass）
+- 状态：**RECORDED / Decision = Pass**（SA Leo，2026-11-17，按用户签署指令代记）
 
 ## Inputs
 
@@ -51,14 +51,12 @@
 
 | Role | Name | Decision | Date |
 |---|---|---|---|
-| SA | （待具名） | | |
+| SA | **Leo** | **Pass** | 2026-11-17 |
 
-## Decision: OPEN
+按用户 2026-11-17 指令代为记录（用户本人担任 SA，签核名 Leo）；代理不独立核实签署人身份，也不代替签署人判断。三项前置（C8 closed / 合并 `3bcf7b9` / 归档齐备）均已具备。
 
-建议 **Pass**，三项前置均已满足：
+## Decision: Pass
 
-1. C8 已 closed（2026-11-17，IO Emily 复核 Pass）；
-2. PR #117 已合并（merge `3bcf7b9`）；
-3. `openspec archive` 完成，归档目录 / Living Spec / Purpose / registry / handoff / change-summary 齐备。
+C8 已于 2026-11-17 closed（IO Emily 复核 Pass）；PR #117 已合并（merge `3bcf7b9`）；`openspec archive` 完成，归档目录 / Living Spec / Purpose / registry / handoff / change-summary 齐备；无 CRITICAL 缺陷、无 Waiver 需求。
 
-请 SA 具名签核；代理不代签、不改判。
+合并与归档结论：**接受合并并对 delta 归档生效**。本记录随归档 PR #129 一同合并。

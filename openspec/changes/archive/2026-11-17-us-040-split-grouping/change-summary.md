@@ -4,7 +4,7 @@
 - 分支：`US-040-split-grouping-p0`；PR [#117](https://github.com/afs-2026-zha1-group-1/gogo/pull/117)
 - 合并：`3bcf7b9`（2026-11-17，merge commit；合并前 head `34a88c6`）
 - 归档：`openspec/changes/archive/2026-11-17-us-040-split-grouping/`
-- 门禁：**G1 Pass + Revision Pass（SA Leo / IO Emily）**、**G2 Pass（VL Leo）**、**G3 待 SA 签**
+- 门禁：**G1 Pass + Revision Pass（SA Leo / IO Emily）**、**G2 Pass（VL Leo）**、**G3 Pass（SA Leo）**
 
 ## 交付内容
 
@@ -58,6 +58,6 @@
 
 ## 后续
 
-- G3（Merge & Archive）待 SA 签核：见 `g3-decision.md`（`Decision = OPEN`）。
+- G3 Pass（SA Leo，2026-11-17，代记）：见 `g3-decision.md`（`Decision = Pass`），随归档 PR #129 合并。
 - 知识库：`docs/knowledge/architecture/tech-stack-plan.md` **§24** + `docs/knowledge/_LOG.md` **A24** 已对账（归档前完成，路径引用待 G3 时复核）。
 - 看板：issue #84 可置 Done（G3 后）。
