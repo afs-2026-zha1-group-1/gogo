@@ -77,9 +77,11 @@ clears it and keeps the row). One row per `(trip_id, user_id, kind)` stores
 answers `{"members":[{"userId":n,"interests":[...]}]}` for every member of the
 trip, ordered by `userId`, with `[]` for anyone who has not saved yet. The page
 lives at `#/trips/<id>/preferences`, is linked from `#/trips/<id>`, follows
-`ui-design-reference/screenshots/screen-08-preferences.png`, and is the
-first TypeScript/Ant Design page: Save is explicit, a failed save rolls back to
-the acknowledged set, and a failed load offers Retry instead of an empty state.
+`ui-design-reference/screenshots/screen-08-preferences.png`, and is written in
+TypeScript: the bottom bar is the page's only save, writing the interest set, the
+budget and the readiness row in one submit, the explicit "no preference" switch
+clears the interest selection and the budget before submitting, and a failed load
+offers Retry instead of an empty state.
 
 REQ-020 adds member must-do items (US-020): `GET` and `PUT
 /api/trips/{tripId}/preferences/must-dos`, sharing the session identity, trip and
