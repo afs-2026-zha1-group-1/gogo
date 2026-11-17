@@ -473,3 +473,15 @@ US-068（我的）、US-069（退出登录）、US-070（注册）已实现并�
 - **验证**：合并 `origin/main` 后后端 `mvn -B test` **279/279**；前端 clean install/build 绿；浏览器 E2E 18 Pass / 1 Skipped；PR #101 CI 双 job 绿（runs 43999674160 / 43999680155）；G1 Pass（IO Emily + SA Elian Jiang）、G2 Pass（VL lumi）。
 
 §3/§4/§7 无需改动；§14 的“不做注册”由本节取代；其余数据模型/API 未变。
+
+## 20. US-082 返回导航修复（2026-11-17，归档对齐）
+
+US-082（修复返回按钮异常跳转与上下文丢失）已实现并合并（PR #107，merge `ee8bf8f`）；单 change，路由修复为主。
+
+- **API 增量**：无新端点、无迁移。`POST /api/invitations/{token}/accept` 响应 additive `tripId`（既有 `joined` / `alreadyMember` 与状态码 200/401/403/404 不变），供入会成功页直达 `#/trips/<id>`。
+- **路由/前端**：`#/trips/<id>` 仍是行程详情真源；分队首页与主线方案返回该路由；登录深链使用 `/login?next=<encoded>`，只恢复单斜杠同源站内路径并拒绝 `/login`、`/register` 自跳；登录/注册内部链接统一 `/login`、`/register`，既有 `#/login`、`#/register` hash 入口保留。
+- **数据模型**：无变化。
+- **验证**：`mvn -B test` 279/279；clean `npm ci` + build 绿；PR #107 CI 双 job 绿（runs 44012217311 / 44012221844 / 44012751115 / 44012755875）；local-verify Pass；G1/G2 Pass（Johnson）。
+- **未改**：行程 tab、成员名册、创建页返回口径由 US-071 拥有，本变更不重复实现。
+
+§3/§5/§6/§7 无需改动；本节只记录 accept 响应字段与前端返回/回跳口径。

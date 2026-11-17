@@ -9,9 +9,7 @@ shown on My Account and in the dashboard greeting. Existing home, create,
 details and invitation behavior stays under the shell unchanged, future areas
 stay honest text placeholders, and login, registration and invited guests
 joining by link render full-screen without in-app navigation.
-
 ## Requirements
-
 ### Requirement: Mobile shell frame
 
 The frontend SHALL render every signed-in in-app route inside a centered column
@@ -38,7 +36,6 @@ session ownership belong to the `auth` capability.
 - **AND** the dock does not obscure the page content or the home create entry
 
 #### Scenario: No shell-wide identity bar or profile shortcut
-
 
 - **WHEN** an authenticated traveler views any shell page
 - **THEN** no identity switcher, scaffold bar or top-right profile shortcut is
@@ -73,7 +70,6 @@ authenticated account. Every tab page SHALL carry a unique visible heading or
 state so a text-only forward and reverse walk can identify each page.
 
 #### Scenario: The dock shows five ordered tabs with an active highlight
-
 
 - **WHEN** the shell renders on any signed-in in-app route
 - **THEN** the dock shows 仪表盘, 行程, 分队, 成员, 我的 in that order, each with
@@ -204,8 +200,11 @@ who acts on the preview SHALL be sent to login, the same preview SHALL resume
 after login, and no membership SHALL be created until the guest explicitly
 accepts. A signed-out guest MAY register an account instead of logging in; the
 pending invitation SHALL survive registration and resume after the subsequent
-login without automatically joining. The previous identity scaffold bar SHALL
-NOT be rendered, and join outcomes SHALL behave exactly as before this change.
+login without automatically joining. After acceptance succeeds, the joined state
+SHALL offer a primary 进入行程 action targeting `#/trips/<id>` for the accepted
+trip and SHALL keep 返回首页 as a secondary action. The previous identity
+scaffold bar SHALL NOT be rendered, and join outcomes SHALL otherwise behave
+exactly as before this change.
 
 #### Scenario: A valid invitation opens full-screen without the dock
 
@@ -249,6 +248,13 @@ NOT be rendered, and join outcomes SHALL behave exactly as before this change.
 - **AND** after login the same `#/join/<token>` preview resumes
 - **AND** no membership is created until the guest explicitly accepts
 
+#### Scenario: Joined state opens the accepted trip
+
+- **WHEN** a guest acceptance succeeds and the joined state renders
+- **THEN** the primary action is 进入行程
+- **AND** activating it opens `#/trips/<id>` for the accepted trip
+- **AND** 返回首页 remains available as a secondary action
+
 ### Requirement: Tab content
 
 The 分队 tab SHALL target `#/split` and render the shipped split entry for the
@@ -281,3 +287,66 @@ order, active-tab rule and signed-in account bar SHALL remain unchanged.
 - **WHEN** either tab renders
 - **THEN** no demo member, route or status value is displayed
 - **AND** an outsider sees the permission-denied state with no member names
+
+### Requirement: Trip-context return links
+
+The split start screen SHALL provide a back action that returns to the trip
+details at `#/trips/<id>` for its trip, and the main plan screen SHALL return to
+the same trip details route from its back action. Returning through either link
+SHALL re-establish the resolved trip context so trip-scoped shell entries keep
+resolving that trip. These return actions SHALL use explicit in-app routes and
+SHALL NOT depend on the browser history length.
+
+#### Scenario: Split start back returns to the trip details
+
+- **WHEN** a member opens `/trips/<id>/split` from the trip details and
+  activates the back action
+- **THEN** the app renders the trip details for `<id>` under the shell
+- **AND** the resolved trip is `<id>` for subsequent members and split entries
+
+#### Scenario: Direct split entry back does not fall to home
+
+- **WHEN** a signed-in member opens `/trips/<id>/split` directly and activates
+  the back action
+- **THEN** the app renders the trip details for `<id>`
+- **AND** the dashboard is not rendered
+
+#### Scenario: Main plan back returns to the trip details
+
+- **WHEN** a member opens `#/trips/<id>/main-plan` from the trip details and
+  activates the back action
+- **THEN** the app renders the trip details for `<id>`
+
+### Requirement: Auth deep-link resume and route consistency
+
+Protected in-app routes SHALL send a signed-out visitor to the login page with
+the attempted in-app route preserved, and a successful login SHALL resume that
+route unless a pending invitation takes precedence. Only same-origin in-app
+paths SHALL be resumed; any other preserved value SHALL fall back to the default
+route. The login and register pages SHALL link to each other through the
+`/login` and `/register` routes.
+
+#### Scenario: Signed-out split deep link resumes after login
+
+- **WHEN** a signed-out visitor opens `/trips/<id>/split/boundaries` directly
+- **THEN** the login page opens
+- **AND** after successful login the boundaries screen for `<id>` renders
+
+#### Scenario: Pending invitation takes precedence
+
+- **WHEN** a signed-out guest acts on a valid invitation preview and logs in
+- **THEN** the same `#/join/<token>` preview resumes instead of any preserved
+  split route
+
+#### Scenario: Unsafe resume value is rejected
+
+- **WHEN** the preserved route value is not a same-origin in-app path
+- **THEN** login falls back to the default route
+- **AND** no external URL is opened
+
+#### Scenario: Auth pages link through router routes
+
+- **WHEN** a traveler activates 创建账号 on the login page or the back and
+  去登录 actions on the register page
+- **THEN** the app opens `/register` or `/login` respectively
+

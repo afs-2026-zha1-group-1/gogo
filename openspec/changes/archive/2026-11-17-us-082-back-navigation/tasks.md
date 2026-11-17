@@ -92,10 +92,10 @@ Green; browser walk on `http://localhost:5174` recorded in
 
 ## 10. Reconcile architecture baseline (pre-archive)
 
-- [ ] 10.1 If this change altered routing facts recorded in
-      `docs/knowledge/architecture/tech-stack-plan.md`, reconcile only what
-      shipped; if nothing changed, record the no-op reason.
-- [ ] 10.2 Append a dated row to `docs/knowledge/_LOG.md` when the plan is
-      updated; verify the row references `us-082-back-navigation`.
-- [ ] 10.3 Archive the change only after G3 and the reconciliation task are
-      closed; verify `openspec list` no longer shows it as active.
+- [x] 10.1 Reconciled `docs/knowledge/architecture/tech-stack-plan.md` §20:
+      accept response additive `tripId`, no new endpoint/migration, return-link
+      and `?next=` routing facts.
+- [x] 10.2 Appended a dated row to `docs/knowledge/_LOG.md` referencing
+      `us-082-back-navigation`.
+- [x] 10.3 Archive the change after the reconciliation tasks and record G3;
+      `openspec list` no longer shows it as active.
