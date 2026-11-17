@@ -129,7 +129,7 @@ export function ScreenRoutes() {
               setNotice(null)
               assign.mutate(
                 { memberId, groupLabel: label, draftVersion: detail.draftVersion },
-                { onSuccess: () => setNotice("分组已更新，路线仍为上次生成的版本，可点击重新生成。") },
+                { onSuccess: () => setNotice(hasPair ? "分组已更新，路线仍为上次生成的版本，可点击重新生成。" : "分组已更新。") },
               )
             }}
           />

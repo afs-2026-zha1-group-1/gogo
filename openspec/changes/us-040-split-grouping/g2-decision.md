@@ -50,10 +50,10 @@
 | id | 级别 | 发现 | 处置 |
 |---|---|---|---|
 | F1 | WARNING | G1 Revision（BQ-10 任意成员可改组）只记录 SA Leo Pass，IO Emily 的 C8 仍 open；本次实现与测试已按修订后 delta 落地 | 记录为**合并前必须关闭**项，owner Emily（IO）；不影响 G2 对已实现行为的验证结论 |
-| F2 | WARNING | `gh pr view 117` 返回 `mergeable = CONFLICTING`（基线 main 已前进，含 US-071 等） | 记录为 G3 前置：先解决冲突再合并；G2 不代为合并 |
+| F2 | WARNING | PR #117 与 base 冲突（main 已前进至 US-083-085 / US-086 归档） | **已关闭（2026-11-17）**：本地 merge origin/main `b0fbd79` → `ec810d7`，逐一解决 6 个冲突文件；delta 补入 main 新增的 3 个 Screen 11 场景（39 → **41**）；后端 356/356、前端 build 绿、validate --strict valid；待 push 后确认新 head CI |
 | F3 | WARNING | `design.md` 写 38 场景、DD16 `AssignmentRequest` 缺 `memberId`、DD17「9 例」与 detail 期望 4/0；`tasks.md` 2.3「10 例（含请求体不可移动他人）」、4.2 旧 DTO 签名、4.9「314/314」、对齐自检「38 场景」；`atdd-design.md` 38 场景/10 例；`registry.md`、`handoff.md` 10 例/38 场景/314 | 复核中已按当前代码（39 场景、11 例、`memberId?`、315/315、A=3/B=1）就地修正 design/tasks/atdd/registry/handoff；`dov-ac-review.md` 保留 G1 时口径并补 Revision 段落（不改已签署结论）；属口径同步，不改语义、不重开 G1 |
-| F4 | SUGGESTION | `SplitAssignmentApiTest` 类注释仍称「no request shape can move another member」；`useAssignGroup` 注释写「Moves the caller」 | 仅注释漂移，不影响行为；建议 P5 归档时一并订正（本轮不改 `.java`，避免 CI 证据 head 变动） |
-| F5 | SUGGESTION | Screen 13 改组成功提示恒为「分组已更新，路线仍为上次生成的版本…」，在尚未生成路线时同样显示 | delta Screen 13 原文即要求该提示；保留现状，文案精确化留 P5 打磨 |
+| F4 | SUGGESTION | `SplitAssignmentApiTest` 类注释仍称「no request shape can move another member」；`useAssignGroup` 注释写「Moves the caller」 | **已处理（2026-11-17）**：两处注释改为「任意成员可移动任意成员（memberId 缺省为调用者；目标非成员 403）」 |
+| F5 | SUGGESTION | Screen 13 改组成功提示恒为「分组已更新，路线仍为上次生成的版本…」，在尚未生成路线时同样显示 | **已处理（2026-11-17）**：有路线时保留该提示，尚未生成路线时只提示「分组已更新。」 |
 | F6 | SUGGESTION | E2E 初始分组为存量 active 草稿（v80）导致的 A=0/B=4 镜像，S9「发起即全员 A」只在 API 层验证 | 接受：S9 由 `SplitDraftStartApiTest` 覆盖，E2E 台账已显式记录前置偏差 |
 
 ## 偏差与已接受后果
@@ -72,8 +72,8 @@
 | # | 项 | Owner | 说明 |
 |---|---|---|---|
 | 1 | G1 Revision C8：IO 对「任意成员改组 + 头像切组 + `memberId` 入参」复核并具名签核 | Emily（IO） | 未关闭前 G1 Revision 仍为 Conditional；G3 不得据以合并 |
-| 2 | PR #117 冲突解决（`mergeable = CONFLICTING`） | Leo（SA） | 解决后需在新的 head 上确认 CI 双绿 |
-| 3 | 知识库对账（`tasks.md` 9.3：`docs/knowledge/architecture/tech-stack-plan.md` §US-040 + `_LOG.md` 一行） | SA / P5 | 当前 `docs/knowledge/` 无 US-040 记录；归档前补齐 |
+| 2 | PR #117 冲突解决 | Leo（SA） | **已关闭 2026-11-17**：merge `b0fbd79` → `ec810d7`；待 push 后确认新 head CI 双绿 |
+| 3 | 知识库对账（`tasks.md` 9.3） | SA / P5 | **已关闭 2026-11-17**：`tech-stack-plan.md` 新增 §24、`_LOG.md` 新增 A24 行 |
 
 ## 签核区（VL）
 
@@ -90,3 +90,16 @@ delta 39 场景实现与回归全绿、E1 在两个 head 均机读双绿、E2E 1
 ## Closure path
 
 - 当前 **Pass** → 关闭 C8（IO 补签）→ 解决 PR #117 冲突并复核 CI → G3（合并）→ P5（`/sdd:living-merge` + 归档 + 知识库对账 + F4 注释订正）。
+
+## Merge reconciliation（2026-11-17，合并 origin/main 后复核）
+
+- 基线：main 前进至 `b0fbd79`（含 US-083-085、US-086 归档）；本地 merge origin/main 得到 `ec810d7`。
+- 冲突（6 文件）逐一解决：
+  - `hooks.ts`：保留 main 的 `useMainPlan` + 本次的 `useTripMembers` / `assignGroup`。
+  - `screen-start.tsx`：采用 US-086 的「队伍路线」结构（`useMainPlan` + `actionForStatus` + 路线图），把成员门禁移植为「`tooFewMembers` 时覆盖为 `blocked`」+ 顶部提示卡；保留 US-086 的三个新场景。
+  - `TripDetails.tsx`：采用 `useTripOverview` 分流（无主线 → `TripDetailsLegacy`，有主线 → `TripOverview`）；分队入口已由 US-086 移至分队 tab，原「进入分队规划」按钮不再存在，成员门禁由 Screen 11/13 覆盖。
+  - `impact-brief.md` / `registry.md` / `acceptance-test-fixtures.md`：US-040 段与 main 的 US-086 / US-083-085 段并存（各自保留完整段落）。
+- Delta 场景：main 的 US-086 把 `Split draft start` 扩到 13 场景；delta 已逐字补入 3 条（「无草稿或已取消只显示主线」「活跃草稿的边界与路线状态」「状态分支的右上动作」），总数 **39 → 41**；`openspec validate --strict` = valid。
+- 验证：后端 **356/356**、前端 `typecheck + build` 绿。
+- 已关闭：F2（冲突）、F4（注释）、F5（提示文案）、知识库对账（§24 + A24）。
+- 仍开放：**G1 Revision C8（IO Emily 补签）**；push 后需确认新 head CI 双绿并更新 `ci-report.md`。

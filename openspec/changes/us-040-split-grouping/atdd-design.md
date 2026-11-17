@@ -1,7 +1,7 @@
 # US-040 ATDD 设计
 
 - change：`us-040-split-grouping`（G1 Pass：SA Leo + IO Emily，2026-11-17）
-- delta：`specs/splits/spec.md`（1 ADDED / 10 场景；3 MODIFIED / 28 场景；共 39 场景，Revision 后 38 → 39）
+- delta：`specs/splits/spec.md`（1 ADDED / 10 场景；3 MODIFIED / 31 场景；共 41 场景；Revision 后 38 → 39，合并 main 的 US-086 新增 3 条 Screen 11 场景 → 41）
 - 输入：`dov-ac-review.md`、`requirement-workspace/requirements/US-040.md`、`deep-dive.md` §US-040、`impact-brief.md` §US-040
 - 本文件只设计 **API** 与 **E2E** 两层；UT 留 apply 阶段
 

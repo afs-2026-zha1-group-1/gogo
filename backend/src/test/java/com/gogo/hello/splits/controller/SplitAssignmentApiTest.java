@@ -16,9 +16,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
 
 /**
- * API acceptance tests for member group assignment (US-040 A1-A9-N, design DD1/DD2/DD4/DD7). MockMvc + real
- * in-memory SQLite, reset to seed before each test. The caller is always the authenticated session, so every case
- * also proves that no request shape can move another member.
+ * API acceptance tests for group assignment (US-040 A1-A9, A9b-N, design DD1/DD2/DD4/DD7). MockMvc + real
+ * in-memory SQLite, reset to seed before each test. Any trip member may move any trip member ({@code memberId},
+ * defaults to the caller); a target outside the trip is rejected with NOT_A_MEMBER.
  */
 class SplitAssignmentApiTest extends AbstractSplitApiTest {
 

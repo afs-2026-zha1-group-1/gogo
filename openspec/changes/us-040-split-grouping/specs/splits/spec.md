@@ -187,6 +187,35 @@
 - **AND** 冲突 / 主线未确认 / 无权限 / 成员不足两人错误态与 loading / empty 态均可观察（错误按 `error.code` 渲染）
 - **AND** 前端不自行判定唯一性或确认状态（判定归后端）
 
+#### Scenario: 无草稿或已取消只显示主线
+
+- **GIVEN** 该行程无草稿，或最近的草稿已 `cancelled`
+- **WHEN** 页面渲染
+- **THEN** 仅按时间顺序展示已确认主线节点
+- **AND** 显示可发起分队的提示；不得虚构 Route A 或 Route B
+
+#### Scenario: 活跃草稿的边界与路线状态
+
+- **GIVEN** 草稿为 `active`
+- **WHEN** 尚未保存分头/会合边界
+- **THEN** 仅展示主线与「待选择分头/会合边界」提示，不展示分头/会合节点或 A/B 轨道
+- **WHEN** 边界已保存但路线尚未生成
+- **THEN** 展示分头节点、会合节点与主线暂停段，A/B 轨道显示「路线待生成」，不编造活动
+- **WHEN** 两条路线已生成
+- **THEN** Route A 在右、Route B 在左，分支节点由现有 `GroupRoute` 字段派生为「活动 → 路程（travel legs 求和）→ 缓冲」；空时长显示为「待补全」而非 0
+- **AND** 主线节点文字左右交替，Route B 文字靠左、Route A 文字靠右
+
+#### Scenario: 状态分支的右上动作
+
+- **GIVEN** 成员触发右上角分队动作
+- **WHEN** 草稿不存在或为 `cancelled`
+- **THEN** 客户端先发起（或替换）草稿，再进入边界步骤
+- **WHEN** 草稿为 `active`
+- **THEN** 客户端进入边界步骤
+- **WHEN** 草稿为 `confirmed`
+- **THEN** 客户端进入只读复核页，且不出现发起入口
+- **AND** 客户端不得自行判定唯一性或确认资格；判定归后端
+
 ### Requirement: Group route generation
 
 The system SHALL expose `POST /api/trips/{tripId}/split-draft/routes:generate` with `draftVersion` for the initiator after boundaries are saved and while the draft is `active`. Before generating, it SHALL require a complete group partition: both `groups.A` and `groups.B` non-empty, every current trip member assigned exactly once. An incomplete partition SHALL be rejected with `409 SPLIT_DRAFT_INCOMPLETE` and `error.details.missing` listing `groups.A` / `groups.B` / `groups.unassigned` / `groups.duplicate` as applicable, with no route rows written and no version change. When complete, it SHALL atomically replace both group routes using fixed in-process candidates, preserve main-plan rows, increment the version on success, roll back on failure, and reject stale results without overwriting newer state. Routes SHALL be generated for the current `groups` keys (A/B) regardless of membership changes since the last generation. Each saved route SHALL bind to a group label only and SHALL NOT carry member ids; a later group change SHALL NOT invalidate, rewrite or delete the saved pair. A `confirmed` or `cancelled` draft SHALL be rejected with `SPLIT_DRAFT_NOT_ACTIVE`.

@@ -86,7 +86,7 @@
 ## 对齐自检（Spec ↔ Design ↔ Tasks ↔ ATDD）
 | 检查项 | 结果 | 证据 |
 |---|---|---|
-| 39 场景全部有层归属 | Pass | `atdd-design.md` §1（API 28 / E2E 3 / 既有回归 7 行合并项；Revision 后 38 → 39） |
+| 41 场景全部有层归属 | Pass | `atdd-design.md` §1（API 28 / E2E 3 / 既有回归 7 行合并项；Revision 后 38 → 39，合并 main 后 41） |
 | 每个 ADDED/MODIFIED requirement 有实现任务 | Pass | A1–A9 → 任务 4.3/4.4；S9/S10-N → 3.1/4.5；G6-N → 4.7；CF8-N → 4.8；Screen 13/15 → 6.x/7.x |
 | 每条设计决策被任务覆盖 | Pass | DD1–DD17 与任务 3.x–9.x 一一对应（DD17 → 任务 2.2–2.6） |
 | Non-goals 有反向验证 | Pass | `atdd-design.md` §5 七行 + 任务 8.3 |

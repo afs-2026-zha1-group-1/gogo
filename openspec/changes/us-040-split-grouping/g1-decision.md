@@ -8,7 +8,7 @@
 ## Inputs
 
 - Proposal: `openspec/changes/us-040-split-grouping/proposal.md`
-- Delta Spec: `openspec/changes/us-040-split-grouping/specs/splits/spec.md`（1 ADDED「Member group assignment」/ 10 场景；3 MODIFIED：Split draft start 12 场景、Group route generation 7 场景、Split confirmation 9 场景；共 38 场景）
+- Delta Spec: `openspec/changes/us-040-split-grouping/specs/splits/spec.md`（1 ADDED「Member group assignment」/ 10 场景；3 MODIFIED：Split draft start 12 场景、Group route generation 7 场景、Split confirmation 9 场景；共 38 场景；2026-11-17 Revision 后 39，合并 main 后 US-086 新增 3 条 Screen 11 场景已补入 → 41，见 `g2-decision.md`）
 - AC/DoV review: `openspec/changes/us-040-split-grouping/dov-ac-review.md`（AC 4/4 Pass、DoV 5/5 Pass；2026-11-17 IO 复核补记）
 - OpenSpec 校验：`openspec validate us-040-split-grouping --strict` = **valid**（deltas = 4）
 - Requirement source: `requirement-workspace/requirements/US-040.md`（OQ-1…OQ-8 resolved，OQ-9…OQ-12 deferred，OQ-13 由 IO 复核 resolved = BQ-9）

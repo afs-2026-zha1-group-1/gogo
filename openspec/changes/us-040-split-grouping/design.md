@@ -1,7 +1,7 @@
 # US-040 设计（design）
 
 - change：`us-040-split-grouping`；G1 Pass（SA Leo + IO Emily，2026-11-17）
-- delta：`specs/splits/spec.md`（39 场景，含 2026-11-17 Revision）；ATDD：`atdd-design.md`
+- delta：`specs/splits/spec.md`（41 场景，含 2026-11-17 Revision 与合并 main 后 US-086 新增的 3 条 Screen 11 场景）；ATDD：`atdd-design.md`
 - 范围：`splits` 1 ADDED + 3 MODIFIED；零迁移、零新依赖、不新增路由
 
 ## 后端

@@ -49,7 +49,7 @@ export function useStartDraft(tripId: string) {
   })
 }
 
-/** Moves the caller into the target group (US-040 A1-A9, design DD13/DD16). */
+/** Moves a member (memberId, defaults to the caller) into the target group (US-040 A1-A9, design DD13/DD16). */
 export function useAssignGroup(tripId: string) {
   const queryClient = useQueryClient()
   return useMutation({
