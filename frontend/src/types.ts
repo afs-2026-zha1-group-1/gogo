@@ -35,7 +35,6 @@ export interface AcceptResult {
   joined: boolean
   alreadyMember: boolean
   tripId: number
-  tripName: string
 }
 
 export interface InvitationIssue {

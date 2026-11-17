@@ -12,6 +12,20 @@ const DEMO_ACCOUNTS = [
   { name: 'Eve', email: 'eve@example.com' },
 ]
 
+/** Only a same-origin in-app path may be resumed after login. */
+function resumeTarget(): string | null {
+  const raw = new URLSearchParams(window.location.search).get('next')
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//')) return null
+  try {
+    const target = new URL(raw, window.location.origin)
+    if (target.origin !== window.location.origin) return null
+    if (target.pathname === '/login' || target.pathname === '/register') return null
+    return `${target.pathname}${target.search}${target.hash}`
+  } catch {
+    return null
+  }
+}
+
 export default function LoginPage() {
   const { status, pendingInvite, login } = useAuth()
   const [email, setEmail] = useState(() => {
@@ -31,7 +45,7 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    if (status === 'signedIn' && !pendingInvite) window.location.assign('/')
+    if (status === 'signedIn' && !pendingInvite) window.location.assign(resumeTarget() ?? '/')
   }, [status, pendingInvite])
 
   async function submit(event: React.FormEvent) {
@@ -53,7 +67,7 @@ export default function LoginPage() {
       if (pendingInvite) {
         window.location.assign(`/#/join/${encodeURIComponent(pendingInvite)}`)
       } else {
-        window.location.assign('/')
+        window.location.assign(resumeTarget() ?? '/')
       }
     } catch {
       setError('无法连接服务器，请稍后重试。')
@@ -129,7 +143,7 @@ export default function LoginPage() {
               </button>
             </form>
             <p className="hint" style={{ marginTop: 12 }}>
-              还没有账号？<a href="/#/register">创建账号</a>
+              还没有账号？<a href="/register">创建账号</a>
             </p>
           </section>
           <p className="hint" style={{ marginTop: 14 }}>
