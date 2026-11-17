@@ -69,7 +69,7 @@
 ## 10. 验证与门禁
 
 - [x] 10.1 `/sdd:local-verify-report`：Overall **Partial**（Build/Static/Code review/Evidence 均 Pass；E1 Missing 因未 push、E3 Pending），报告 `docs/ai4se-plugins/20261117-162107-local-verify-report.md`，白名单 6/6
-- [ ] 10.2 PR CI 双 job 绿（backend `mvn -B test` + frontend typecheck/build）
+- [x] 10.2 PR CI 双 job 绿（run [44046339433](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/44046339433)：Backend tests pass 38s、Frontend build pass 20s；E1 机器读取）；报告 `docs/ai4se-plugins/20261117-162544-pipeline-report.md` + `ci-report.md`
 - [ ] 10.3 `/sdd:g2-decision-record` 后合并；P5 归档时把 delta 合入 Living Spec
 
 ## 11. P4 打磨（2026-11-17，用户反馈）
