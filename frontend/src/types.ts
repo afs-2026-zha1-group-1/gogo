@@ -48,6 +48,8 @@ export interface InvitationPreview {
   endDate: string
   mainPlanConfirmed: boolean
   organizerId: number
+  tripId: number
+  viewerMember: boolean
 }
 
 export interface AcceptResult {
