@@ -115,7 +115,7 @@ renders. Dashboard content and read boundaries belong to `trip-dashboard`.
 #### Scenario: No aggregation is introduced
 
 - **WHEN** an authenticated member selects a listed member trip
-- **THEN** the selected-trip overview and unavailable progress state render under the shell
+- **THEN** the selected-trip overview and source-backed milestone strip render under the shell
 - **AND** 仪表盘 remains active and the account remains authenticated
 
 ### Requirement: Trips tab placement and no-trip empty state

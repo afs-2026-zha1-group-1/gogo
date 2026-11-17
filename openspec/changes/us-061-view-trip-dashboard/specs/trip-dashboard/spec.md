@@ -69,19 +69,64 @@ as stale and SHALL NOT create separate persisted dashboard progress state.
 - **WHEN** the dashboard successfully reads the updated state
 - **THEN** the displayed values reflect that state without a dashboard write
 
-### Requirement: Completion-dependent progress unavailable
+### Requirement: Source-backed journey milestones
 
-Until completion state is integrated, the dashboard SHALL present the
-completion-dependent seven-stage progress as unavailable, without assigning
-completed, current or upcoming stages. It SHALL NOT show a next-action
-recommendation or write completion state.
+The selected dashboard SHALL display a seven-stage strip in the prototype's
+order: setup, invitations, preferences, main plan, split, reunion and
+completion. It SHALL describe the first five as independently verified
+planning milestones rather than claiming the current stage of the entire
+journey. The final two SHALL be visibly unknown until their owning state is
+available. It SHALL NOT infer trip completion or active status from dates,
+split status or missing data.
 
-#### Scenario: Progress cannot be established
+#### Scenario: Verified planning milestones
 
-- **GIVEN** an authorized member views any member trip
-- **WHEN** US-058 completion state is not integrated
-- **THEN** progress is explicitly unavailable and no stages are assigned
-- **AND** no completion, active status or next-action recommendation is inferred
+- **GIVEN** a selected trip and its required authorized reads are valid
+- **WHEN** the milestone strip is displayed
+- **THEN** setup is shown as created, invitation joining as open or closed
+  according to the trip's main-plan-confirmed flag, and preferences as the
+  verified ready count out of the member count
+- **AND** the main-plan milestone distinguishes absent, draft, stale draft and
+  confirmed state, and the split milestone distinguishes absent, active,
+  confirmed and cancelled state
+- **AND** reunion and completion are marked unknown rather than completed,
+  current or upcoming
+
+#### Scenario: Milestone source unavailable or inconsistent
+
+- **WHEN** a required source is pending, invalid, inconsistent or fails
+- **THEN** affected milestones are loading or unavailable, not inferred or
+  displayed as verified
+
+### Requirement: Source-backed next step
+
+The dashboard SHALL show a next-step card only when verified information
+supports a suggestion and its destination has been verified to be authorized
+and read-only on navigation. Suggestions SHALL navigate to an owning page
+without performing its actions. Failed, pending or invalid data SHALL NOT
+produce a recommendation.
+
+#### Scenario: Next step for preferences
+
+- **GIVEN** a valid inputs response identifies the signed-in member as not
+  ready and the trip's main plan is not confirmed
+- **WHEN** the preferences destination is verified safe
+- **THEN** the card suggests reviewing that member's preferences and links to
+  that destination
+
+#### Scenario: Next step for the main plan
+
+- **GIVEN** the signed-in member is ready or the main plan is confirmed
+- **WHEN** the main-plan destination is verified safe and the applicable
+  source reads are valid
+- **THEN** the card suggests viewing the main plan without generating,
+  confirming or changing it
+
+#### Scenario: No supported recommendation
+
+- **GIVEN** the required source or safe destination cannot be verified
+- **WHEN** the dashboard is displayed
+- **THEN** it does not invent a next step or link to an unsafe destination
 
 ### Requirement: Explicit dashboard read and access states
 

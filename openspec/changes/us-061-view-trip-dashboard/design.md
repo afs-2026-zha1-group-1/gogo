@@ -7,16 +7,16 @@ See [proposal](proposal.md) and [ATDD design](atdd-design.md). The current
 `App.tsx` routes the dashboard to Home and remembers a details trip for the
 trip tab. The organizer's details page issues an invitation on load. The
 current session principal and existing authenticated shell must be preserved.
-The [G1 decision](g1-decision.md) is Pass for the interim scope; later
-follow-ups and acceptance evidence remain open.
+The [G1 decision](g1-decision.md) is Pass only for the earlier interim scope;
+the revised milestone and recommendation scope requires renewed alignment.
 
 ## Goals / Non-Goals
 
 **Goals:** combine authorized owning reads into a defensively validated,
-read-only view of all member trips; keep the list, selected dashboard and
-shell coherent; provide observable failure and access states. Until US-058
-is integrated, completion-dependent progress is unavailable and completed
-trips may appear.
+read-only view of all member trips; match the supplied prototype's trip hero,
+seven-stage strip, four status cards, next-step card and mobile dock; provide
+observable failure and access states. Completed trips may appear until US-058
+is integrated.
 
 **Non-Goals:** no completion or archive implementation, no dashboard-owned
 progress persistence, no new destination permissions or destination actions.
@@ -60,11 +60,21 @@ planned completion integration establishes its actual contract.
 
 ### D3 — Progress and route safety
 
-Show the seven-stage progress as unavailable: the earlier projection assumes
-a non-completed trip, which cannot be established without US-058. Do not
-assign stages, infer active status or show a recommendation. Completion-aware
-projection and the viewer preference-submission predicate are deferred to a
-later integration.
+Display seven independent milestones in the prototype's order, not a single
+overall current journey stage: setup is created; invitations are open or
+closed according to `mainPlanConfirmed`; preferences show the verified
+ready/member count; main plan shows absent, draft, stale or confirmed; split
+shows absent, active, confirmed or cancelled. Reunion and completion are
+unknown because neither has an authoritative read. Do not infer completion
+or active status from dates or split state. The strip uses verified facts
+only; loading, failure and inconsistent source results remain explicit.
+
+Suggest reviewing the signed-in member's preferences when their input member
+is not ready and the main plan is unconfirmed. Otherwise, when that member is
+ready or the main plan is confirmed, suggest viewing the main plan. Only show
+a suggestion after the required reads are validated and its destination is
+verified to load without writes and to enforce existing authorization. The
+dashboard never performs the destination's operations.
 
 Use `#/` for the list and `#/dashboard/trips/<id>` for the selected view.
 Parse malformed selected identifiers explicitly instead of falling back to
@@ -79,7 +89,8 @@ create/back behavior, browser history and account identity.
 ### D4 — Acceptance before code
 
 Follow the [ATDD design](atdd-design.md) for red-first API and E2E slices:
-include all member trips and leave completion-dependent progress unavailable.
+include all member trips and distinguish verified planning milestones from
+unknown reunion and completion.
 The
 existing Maven and frontend build CI jobs are real gates; browser acceptance
 has no existing configured runner and needs explicit setup during apply.
@@ -90,8 +101,12 @@ deferred and must not be claimed.
 ## Risks / Trade-offs
 
 - **Undelivered US-058 read** → all member trips, including potentially
-  completed trips, appear and progress is unavailable. A later change must
+  completed trips, appear and completion is unknown. A later change must
   establish the real read contract before restoring active-only behavior.
+- **Revised G1 scope** → the existing Pass covers unavailable progress and no
+  recommendation, not this revision. Obtain renewed human alignment and
+  update ATDD evidence before implementation; do not imply the old Pass covers
+  this design.
 - **Auth and US-066 shell overlap** → Reuse the session authentication already
   present in the codebase without waiting for US-066 archive. US-061 proceeds
   first; Sammi Ng coordinates the later reconciliation of overlapping complete

@@ -14,15 +14,17 @@ member-trip aggregation.
   US-058 is integrated, completed trips may appear and cards are not labelled
   active.
 - Show an authorized per-trip overview with the trip summary, member and ready
-  counts, and main-plan and split statuses. Present completion-dependent
-  progress as unavailable until authoritative completion is integrated.
+  counts, and main-plan and split statuses. Present a seven-stage progress
+  strip based on verified planning data, with reunion and completion marked
+  unknown until their authoritative state is available.
   Reuse owning capabilities' data and authorization; do not persist progress.
 - Show navigation to available pages without changing saved state. Pages not
   yet developed say they are coming soon. The existing trip-details
   destination also says coming soon until its organizer page-load invitation
   write is fixed separately; dashboard tabs must not bypass this restriction.
-- Do not show a next-action recommendation or implement actions belonging to
-  other pages. Active-only filtering and the separately delivered archive
+- Show a next-step recommendation only when supported by verified source data
+  and an authorized, read-only destination. Do not execute actions belonging
+  to other pages. Active-only filtering and the separately delivered archive
   remain follow-up work. The interim member-trip scope supersedes the earlier
   active-only dashboard decision; tracker reconciliation remains with its
   owner.
@@ -34,7 +36,7 @@ member-trip aggregation.
 
 - Implement completion, archive, invitation issuance, or other destination-page
   actions; those remain owned by their respective capabilities.
-- Persist dashboard progress or recommend a next action.
+- Persist dashboard progress or infer reunion or completion state.
 - Change destination permissions or reconcile the original tracker issue as
   part of this change.
 
@@ -43,8 +45,8 @@ member-trip aggregation.
 ### New Capabilities
 
 - `trip-dashboard`: authenticated member-trip listing and read-only trip
-  overview, unavailable completion-dependent progress, safe links and honest
-  unavailable states.
+  overview, source-backed planning milestones, safe recommendations and honest
+  unknown states.
 
 ### Modified Capabilities
 
@@ -82,11 +84,11 @@ member-trip aggregation.
   The new list read is not in the binding tech-stack plan's API list; record
   the deviation during design and reconcile the plan at archive.
 - **Verification:** cover authorized membership isolation, actual counts and
-  statuses, unavailable progress, safe and unavailable navigation, an empty
+  statuses, source-backed progress and recommendations, safe and unavailable navigation, an empty
   membership list, error handling and no navigation writes.
 - **Effort and ordering:** medium-to-large full-stack vertical slice.
-  Completion filtering and progress projection require a separately planned
-  US-058 follow-up. The archive and trip-details fix remain separate
+  Completion filtering and completion-aware progress require a separately
+  planned US-058 follow-up. The archive and trip-details fix remain separate
   deliverables; applicable prerequisites must be met before acceptance.
 
 Source: `requirement-workspace/requirements/US-061.md`,

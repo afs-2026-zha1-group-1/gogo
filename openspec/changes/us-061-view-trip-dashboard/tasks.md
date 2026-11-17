@@ -1,11 +1,13 @@
 # US-061 implementation plan
 
 > Apply-time workers: use the project's OpenSpec apply workflow and red-green
-> TDD. G1 passed for the interim scope; later follow-ups and acceptance checks
-> remain open.
+> TDD. The earlier G1 Pass does not cover the revised milestone and
+> recommendation scope. Renew human alignment and reconcile ATDD before
+> implementation.
 
 **Goal:** Deliver an authenticated, read-only member-trip dashboard with
-completion-dependent progress unavailable.
+source-backed planning milestones and recommendations; reunion and completion
+remain unknown.
 **Architecture:** [Design](design.md), [ATDD](atdd-design.md),
 [dashboard delta](specs/trip-dashboard/spec.md), and
 [shell delta](specs/app-shell/spec.md).
@@ -15,7 +17,8 @@ completion-dependent progress unavailable.
 
 - Session identity is authoritative; never trust a caller-supplied identity.
 - No dashboard completion writer or inference, archive, persisted progress,
-  recommendation, unsafe trip-details navigation, or new permission rule.
+  unsafe trip-details navigation, or new permission rule. Recommendations
+  require valid source data and verified read-only destinations.
 - Fail closed on missing, invalid, inconsistent or unavailable source data;
   distinguish successful absence from a failed read.
 - Test unauthorized users, invalid identifiers, invalid success payloads,
@@ -26,10 +29,12 @@ completion-dependent progress unavailable.
 
 ## 1. Prerequisites and acceptance harness
 
-- [ ] 1.1 **Owner: Sammi Ng.** Verify that implementation and acceptance checks
-  retain the approved interim scope. US-058 filtering and completion-dependent
-  progress require a later integration with verified read, consistency and
-  fixture contracts; verify no date, split or missing-value inference is used.
+- [ ] 1.1 **Owner: Sammi Ng.** Obtain renewed IO/SA alignment for the revised
+  source-backed milestones and recommendations; the earlier G1 Pass covers
+  only the superseded interim scope. Reconcile ATDD and acceptance checks
+  before implementation. US-058 filtering and completion-aware progress
+  require later verified read, consistency and fixture contracts; verify no
+  date, split or missing-value completion inference is used.
 - [ ] 1.2 **Owner: Sammi Ng.** Coordinate US-061 before the later US-066 shell
   reconciliation, preserving dashboard behavior. Reuse the session
   authentication already present without waiting for US-066 archive and
@@ -65,10 +70,12 @@ completion-dependent progress unavailable.
   split, plus successful absence and changed source values on refresh.
   Implement validated composition of D2's owning reads; run checks and verify
   values come from sources, not placeholders or dashboard writes.
-- [ ] 3.2 **Owner: implementer.** Add failing checks that progress is explicitly
-  unavailable for member trips and does not assign stages, infer active or
-  completion status, or show a recommendation. Implement the unavailable
-  state with apply-time unit TDD and verify the checks.
+- [ ] 3.2 **Owner: implementer.** After renewed G1 alignment and ATDD
+  reconciliation, add failing checks for each source-backed planning
+  milestone, unknown reunion and completion, and safe next-step suggestions.
+  Verify no overall current stage or active/completion inference is made,
+  invalid or failed inputs never produce suggestions, and suggested navigation
+  is authorized and read-only. Implement and verify with apply-time unit TDD.
 - [ ] 3.3 **Owner: implementer.** Add failing checks for pending and failed
   trip/readiness/plan/split reads, invalid or incomplete success bodies,
   unknown/malformed/denied ids, signed-out/expired sessions and stale
@@ -111,5 +118,5 @@ completion-dependent progress unavailable.
 
 - Run the verification and archive workflows only after their prerequisites
   are met.
-  Plan the US-058 filtering and completion-dependent progress follow-up
+  Plan the US-058 filtering and completion-aware progress follow-up
   separately; this interim change does not implement or prove it.
