@@ -1202,6 +1202,7 @@ frontend bootstrap/login/guard → invitation resume + header-ignored verificati
 → full existing-acceptance re-run. Baseline: `origin/main` `f6419a5`, merged as
 `53bdcc6`. The story already exists as GitHub issue #38, so
 `/sdd:story-split` is Skipped.
+
 ## 46. Requirement set
 
 REQ-009 — My Account、退出登录与注册（US-068 + US-069 + US-070，2026-11-16）
@@ -1644,6 +1645,70 @@ No critical blocker. 可进入 P2 proposal-split。
 
 ---
 
+# US-061 - Dashboard impact brief (2026-11-16)
+
+> Current reconciliation, 2026-11-17: the assessment below is historical.
+> The current dashboard uses the persisted current trip and role-specific
+> milestones. Organizer invitation and details destinations invoke the
+> existing invitation POST on load. The changed boundary requires renewed
+> IO/SA alignment; see [US-061](requirements/US-061.md) and its
+> [proposal](../openspec/changes/us-061-view-trip-dashboard/proposal.md).
+
+> Historical impact analysis for the earlier active-only scope. The current
+> interim scope is recorded in [US-061](requirements/US-061.md) and the
+> [proposal](../openspec/changes/us-061-view-trip-dashboard/proposal.md).
+> US-058 integration and archive are deferred; the unsafe details destination
+> remains blocked until its separate fix is verified.
+
+## Requirement set
+
+`requirement-workspace/requirements/US-061.md`; base readiness self-check:
+`requirement-workspace/analysis/us-061-dor.md`. Decisions are user-confirmed;
+this is not gate approval.
+
+## As-is inventory and proposed delta
+
+| Asset | As-is evidence | Proposed dashboard impact |
+|---|---|---|
+| Knowledge and archive | `docs/knowledge/_INDEX.md`, `docs/knowledge/architecture/tech-stack-plan.md`, `openspec/changes/archive/2026-11-16-us-064-mobile-app-shell/proposal.md` | Continue the existing React/Spring Boot/SQLite architecture and shell; record any API-list deviation rather than silently changing the binding plan. |
+| Shell Living Spec | `openspec/specs/app-shell/spec.md` says the dashboard shows home only and no aggregation; parts also describe the superseded identity scaffold. | Modify dashboard placement and navigation requirements for active-trip cards and per-trip overview; reconcile with authenticated behavior, not the historical scaffold. |
+| Frontend | `frontend/src/pages/Home.tsx`, `frontend/src/App.tsx`, `frontend/src/router.tsx` | Replace the home-only dashboard content with a member-scoped list and per-trip presentation, preserving shell/navigation and honest unavailable states. |
+| Trip and membership | `backend/src/main/java/com/gogo/trip/TripController.java` exposes a member-guarded individual trip read, but no list-all-member-trips read. | Add a read-only authenticated member-scoped active-trip list/projection; use US-058's completion state to exclude completed trips. Do not add a completion writer or separate identity rules. |
+| Readiness and main plan | `MainPlanController.java`, `InputsResponse.java`, `openspec/specs/main-itinerary/spec.md` | Reuse authorized inputs/readiness and plan reads, including legitimate absence of a draft; show real count and status. |
+| Split | `backend/src/main/java/com/gogo/hello/splits/SplitDraftController.java` and `SplitDraftService.java` | Reuse the member-only read; successful null data denotes no split draft, while actual read failures are not treated as absence. Display actual draft status. |
+| Completion and archive | US-058 issue #24; no completion schema or read endpoint was found under `backend/src/main/resources/db/migration/` or the trip controller. | Depend on US-058's completed state, not inferred dates or split state. Archive is separately owned; neither completion nor archive is implemented by this dashboard. |
+| Existing details navigation | `frontend/src/pages/TripDetails.tsx`, `frontend/src/pages/InvitationPanel.tsx` | Organizer load currently issues an invitation via POST. The user chose to show the dashboard destination as coming soon until a separate fix removes that load-time write; tabs cannot bypass it. |
+| Tests and fixtures | `requirement-workspace/acceptance-test-fixtures.md`, backend and frontend test trees | Add dashboard acceptance coverage for membership isolation, actual state, the progress table, no-write navigation, error/empty states, and completed-trip exclusion after US-058 is available. |
+| Tracker | US-061 issue #26 | Original next-action and completed-dashboard criteria conflict with confirmed user decisions; tracker owner must reconcile separately. |
+
+## Blast radius and artifacts
+
+The React shell and dashboard, authenticated trip read boundary and read-only
+SQLite-backed queries are affected. Existing main-plan and split business
+operations are not modified. Expected artifacts include a dashboard capability
+and app-shell delta, acceptance fixtures and frontend/backend tests. The active
+list read is new even though the original story assumed existing reads.
+US-058 and the separate archive/details changes remain separately owned.
+
+## Risks and dependencies
+
+| Risk | Status and handling |
+|---|---|
+| Completion read is not delivered | US-058 is an explicit prerequisite. Its actual read contract must be integrated and verified before implementation can deliver the exclusion; never treat an unknown state as active. |
+| Archive is not delivered | Separate prerequisite from the supplied draft; do not build it under US-061 or promise availability before delivery. |
+| Existing details page writes on load | Separate fix prerequisite; show coming soon from the dashboard until safe. |
+| Other pages may not exist | Show coming soon, not broken links or fabricated data; apply the owning destination's access rules. |
+| Existing specs and tracker do not fully match current decisions | Owner follow-up deferred by user; the issue and spec must be reconciled before acceptance. |
+
+No unresolved requirement-level blocker prevents deep-dive. These prerequisites
+still block any claim of an end-to-end implemented or accepted dashboard.
+
+## Split boundary
+
+One dashboard-focused vertical change is the candidate: list, overview, read-only
+projection and safe navigation together. US-058, archive and the trip-details
+fix are external dependencies, not additional dashboard work. The existing
+US-061 tracker story means a separate story export is not needed by default.
 # Impact brief — US-040（2026-11-17 追加）
 
 - Date: 2026-11-17

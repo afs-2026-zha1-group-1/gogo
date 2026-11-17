@@ -1,5 +1,6 @@
 import { useState } from "react"
-import { useNavigate, useParams } from "react-router-dom"
+import { useLocation, useParams } from "react-router-dom"
+import { useSplitNavigate } from "./split-navigation"
 import { useMainPlan, useSplitDraft, useStartDraft, useTripMembers } from "./hooks"
 import { SplitLayout } from "./split-layout"
 import { ErrorState, LoadingState } from "./states"
@@ -21,7 +22,9 @@ import type { SplitDraftStatus } from "./types"
  */
 export function ScreenStart() {
   const { tripId = "" } = useParams()
-  const navigate = useNavigate()
+  const navigate = useSplitNavigate()
+  const { search } = useLocation()
+  const dashboardOrigin = new URLSearchParams(search).get("from") === "dashboard"
   const draftQuery = useSplitDraft(tripId)
   const detail = draftQuery.data ?? null
   const status: SplitDraftStatus | null = detail?.status ?? null
@@ -102,6 +105,7 @@ export function ScreenStart() {
       title="队伍路线"
       subtitle="本次行程仅一次分队"
       showTabBar
+      backTo={dashboardOrigin ? `/#/dashboard/trips/${tripId}` : `/#/trips/${tripId}`}
       right={
         <Button
           size="sm"
@@ -182,7 +186,7 @@ export function ScreenStart() {
                   </p>
                   <a
                     className="mt-2 inline-flex items-center gap-1 text-[11.5px] font-semibold text-brand-ink underline-offset-2 hover:underline"
-                    href={`/#/trips/${tripId}/main-plan`}
+                    href={dashboardOrigin ? `/#/dashboard/trips/${tripId}/main-plan` : `/#/trips/${tripId}/main-plan`}
                   >
                     去主线方案 <IconArrowRight className="size-3.5" />
                   </a>

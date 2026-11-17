@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../api'
 import Icon from '../Icons'
 import TripDetails from './TripDetails'
-import type { CurrentTripResponse } from '../types'
+import { isCurrentTripResponse } from '../lib/current-trip'
 
 type CurrentState =
   | { kind: 'loading' }
@@ -18,10 +18,10 @@ export default function CurrentTrip() {
   useEffect(() => {
     let active = true
     setState({ kind: 'loading' })
-    api<CurrentTripResponse>('/api/trips/current')
+    api<unknown>('/api/trips/current')
       .then((result) => {
         if (!active) return
-        if (result.ok && result.data) {
+        if (result.ok && isCurrentTripResponse(result.data)) {
           setState(result.data.tripId == null
             ? { kind: 'empty' }
             : { kind: 'ready', tripId: result.data.tripId })

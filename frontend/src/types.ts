@@ -97,6 +97,8 @@ export type TabId = 'dashboard' | 'trips' | 'split' | 'members' | 'account'
 
 export type Route =
   | { page: 'home' }
+  | { page: 'dashboard-trip'; tripId: number | null }
+  | { page: 'dashboard-trip-guard' }
   | { page: 'login' }
   | { page: 'register' }
   | { page: 'account' }
@@ -105,12 +107,12 @@ export type Route =
   | { page: 'create' }
   | { page: 'members' }
   | { page: 'details'; tripId: number }
+  | { page: 'invitation'; tripId: number; dashboardOrigin?: boolean }
   | { page: 'join'; token: string }
-  | { page: 'main-plan'; tripId: number }
-  | { page: 'main-plan-inputs'; tripId: number }
+  | { page: 'main-plan'; tripId: number; dashboardOrigin?: boolean }
+  | { page: 'main-plan-inputs'; tripId: number; dashboardOrigin?: boolean; backToDashboard?: boolean }
   | { page: 'scan' }
-  | { page: 'preferences'; tripId: number }
-  | { page: 'invitation'; tripId: number }
+  | { page: 'preferences'; tripId: number; dashboardOrigin?: boolean }
   | { page: 'my-preferences' }
 
 // login, registration, join, main-plan, preference, scan and invitation screens

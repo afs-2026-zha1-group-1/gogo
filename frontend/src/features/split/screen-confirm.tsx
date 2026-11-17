@@ -1,5 +1,6 @@
 import { useEffect } from "react"
-import { useNavigate, useParams } from "react-router-dom"
+import { useLocation, useParams } from "react-router-dom"
+import { useSplitNavigate } from "./split-navigation"
 import { useCancelDraft, useConfirmDraft, useSplitDraft, useTripMembers } from "./hooks"
 import { useAuth } from "../auth/AuthProvider"
 import { SplitLayout } from "./split-layout"
@@ -22,7 +23,9 @@ import { cn } from "@/lib/utils"
  */
 export function ScreenConfirm() {
   const { tripId = "" } = useParams()
-  const navigate = useNavigate()
+  const navigate = useSplitNavigate()
+  const { search } = useLocation()
+  const dashboardOrigin = new URLSearchParams(search).get("from") === "dashboard"
   const draft = useSplitDraft(tripId)
   const confirm = useConfirmDraft(tripId)
   const cancel = useCancelDraft(tripId)
@@ -39,10 +42,14 @@ export function ScreenConfirm() {
 
   // US-084 AC1: a successful confirmation returns to the same trip's detail page,
   // where the confirmed personal route is derived. Cross-router-space navigation
-  // uses a full page load (precedent: router.tsx /account → /#/account).
+  // uses a full page load and preserves the dashboard origin.
   useEffect(() => {
-    if (confirm.isSuccess) window.location.href = `/#/trips/${tripId}`
-  }, [confirm.isSuccess, tripId])
+    if (confirm.isSuccess) {
+      window.location.href = dashboardOrigin
+        ? `/#/dashboard/trips/${tripId}`
+        : `/#/trips/${tripId}`
+    }
+  }, [confirm.isSuccess, dashboardOrigin, tripId])
 
   const onCancel = () => {
     if (!detail) return

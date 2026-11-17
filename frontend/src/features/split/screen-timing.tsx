@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
-import { useNavigate, useParams } from "react-router-dom"
+import { useParams } from "react-router-dom"
+import { useSplitNavigate } from "./split-navigation"
 import { useCheckTiming, useSplitDraft } from "./hooks"
 import { SplitLayout } from "./split-layout"
 import { EmptyState, ErrorState, LoadingState } from "./states"
@@ -29,7 +30,7 @@ interface RouteInput {
 
 export function ScreenTiming() {
   const { tripId = "" } = useParams()
-  const navigate = useNavigate()
+  const navigate = useSplitNavigate()
   const draft = useSplitDraft(tripId)
   const check = useCheckTiming(tripId)
   const detail = draft.data

@@ -2,21 +2,44 @@ import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../api'
 import Icon from '../Icons'
 import { useAuth } from '../features/auth/AuthProvider'
-import type { GreetingResponse } from '../types'
+import { isCurrentTripResponse } from '../lib/current-trip'
+import DashboardTrip from './DashboardTrip'
 
-export default function Home() {
+type CurrentState =
+  | { kind: 'loading' }
+  | { kind: 'ready'; tripId: number | null }
+  | { kind: 'error'; message: string }
+
+export default function Home({ tripId, onTripReady, selectionInFlight = false }: {
+  tripId?: number | null
+  onTripReady?: (tripId: number) => void
+  selectionInFlight?: boolean
+}) {
   const { account } = useAuth()
-  const [greeting, setGreeting] = useState<string>('')
-  const [error, setError] = useState<string>('')
+  const [state, setState] = useState<CurrentState>({ kind: 'loading' })
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
-    api<GreetingResponse>('/api/greeting')
+    if (tripId !== undefined || selectionInFlight) return
+    let active = true
+    setState({ kind: 'loading' })
+    api<unknown>('/api/trips/current')
       .then((result) => {
-        if (!result.ok || !result.data) throw new Error('request failed')
-        setGreeting(result.data.message)
+        if (!active) return
+        if (result.ok && isCurrentTripResponse(result.data)) {
+          setState({ kind: 'ready', tripId: result.data.tripId })
+        } else {
+          setState({
+            kind: 'error',
+            message: result.ok ? '当前行程数据无效' : result.data?.message ?? `请求失败（HTTP ${result.status}）`,
+          })
+        }
       })
-      .catch((cause: unknown) => setError(`Failed to load the greeting: ${errorMessage(cause)}`))
-  }, [])
+      .catch((cause: unknown) => {
+        if (active) setState({ kind: 'error', message: `无法连接服务器：${errorMessage(cause)}` })
+      })
+    return () => { active = false }
+  }, [tripId, account?.id, reloadKey, selectionInFlight])
 
   return (
     <div className="screen">
@@ -29,43 +52,25 @@ export default function Home() {
         <a className="iconbtn" href="#/scan" aria-label="扫码加入行程"><Icon name="scan" /></a>
       </header>
       <div className="body">
-        <section className="hero">
-          <div className="htop">
-            <Icon name="sparkle" className="sm" />
-            GOGO · 一起旅行
-          </div>
-          <h1>一起出发</h1>
-          <div className="hdest">
-            <Icon name="pin" className="sm" />
-            创建行程，邀请朋友加入同一个共享空间
-          </div>
-        </section>
-
-        <div className="sec-title"><Icon name="info" className="sm" /> 服务状态</div>
-        <section className="card pad">
-          {error ? (
-            <p role="alert" className="error">{error}</p>
-          ) : (
-            <>
-              <div className="valid-item">
-                <span className="valid-ic brand"><Icon name="check" className="sm" /></span>
-                <div>
-                  <div className="vt">后端连接正常</div>
-                  <div className="vd">{greeting || '正在读取问候语…'}</div>
-                </div>
-              </div>
-              <p className="help">
-                收到邀请链接的朋友会直接打开加入页；接受邀请后才看到完整行程与成员。
-              </p>
-            </>
-          )}
-        </section>
-      </div>
-      <div className="actionbar">
-        <a className="btn btn-primary" href="#/create">
-          <Icon name="plus" className="sm" />
-          创建行程
-        </a>
+        {tripId !== undefined ? (
+          <DashboardTrip tripId={tripId} onTripReady={onTripReady} />
+        ) : selectionInFlight || state.kind === 'loading' ? (
+          <p className="loading">正在加载当前行程…</p>
+        ) : state.kind === 'error' ? (
+          <section className="card pad">
+            <p role="alert" className="error">无法加载当前行程：{state.message}</p>
+            <button className="btn btn-ghost" type="button" onClick={() => setReloadKey((key) => key + 1)}>重试</button>
+          </section>
+        ) : state.tripId === null ? (
+          <section className="card pad empty-state">
+            <h2>尚未选择行程</h2>
+            <p className="hint">在「我的行程」里选择一个行程，或创建新行程。</p>
+            <a className="btn btn-primary" href="#/my-trips">去我的行程选择</a>
+            <a className="btn btn-ghost" href="#/create">创建行程</a>
+          </section>
+        ) : (
+          <DashboardTrip tripId={state.tripId} onTripReady={onTripReady} />
+        )}
       </div>
     </div>
   )

@@ -1,5 +1,6 @@
 import { useState } from "react"
-import { useNavigate, useParams } from "react-router-dom"
+import { useLocation, useParams } from "react-router-dom"
+import { useSplitNavigate } from "./split-navigation"
 import { useAssignGroup, useGenerateRoutes, useSplitDraft, useTripMembers } from "./hooks"
 import { useAuth } from "../auth/AuthProvider"
 import { SplitLayout } from "./split-layout"
@@ -21,7 +22,9 @@ import { cn } from "@/lib/utils"
  */
 export function ScreenRoutes() {
   const { tripId = "" } = useParams()
-  const navigate = useNavigate()
+  const navigate = useSplitNavigate()
+  const { search } = useLocation()
+  const dashboardOrigin = new URLSearchParams(search).get("from") === "dashboard"
   const draft = useSplitDraft(tripId)
   const generate = useGenerateRoutes(tripId)
   const assign = useAssignGroup(tripId)
@@ -86,7 +89,9 @@ export function ScreenRoutes() {
               size="sm"
               variant="outline"
               onClick={() => {
-                window.location.href = `/#/trips/${tripId}`
+                window.location.href = dashboardOrigin
+                  ? `/#/dashboard/trips/${tripId}`
+                  : `/#/trips/${tripId}`
               }}
             >
               返回行程详情

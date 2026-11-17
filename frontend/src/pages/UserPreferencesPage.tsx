@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import Icon from '../Icons'
 import { fetchUserInterests, saveUserInterests } from '../api/preferences'
+import { useAuth } from '../features/auth/AuthProvider'
 import { INTEREST_OPTIONS } from '../types/preferences'
 import type { UserInterestsResponse } from '../types/preferences'
 
@@ -13,7 +14,8 @@ import type { UserInterestsResponse } from '../types/preferences'
  */
 export default function UserPreferencesPage() {
   const queryClient = useQueryClient()
-  const key = ['user-interests']
+  const { account } = useAuth()
+  const key = ['user-interests', account?.id ?? null]
   const [selected, setSelected] = useState<string[]>([])
   const [acknowledged, setAcknowledged] = useState<string[]>([])
   const [failure, setFailure] = useState<string | null>(null)
