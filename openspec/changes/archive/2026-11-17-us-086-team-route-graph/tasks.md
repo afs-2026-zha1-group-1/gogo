@@ -46,14 +46,14 @@
 
 - [x] 6.1 `openspec validate us-086-team-route-graph --strict` = valid（如需改 delta，先回 P2）
 - [x] 6.2 更新 `requirement-workspace/registry.md`、`handoff.md` 进度
-- [ ] 6.3 归档前对账 `docs/knowledge/architecture/tech-stack-plan.md` 与 `_LOG.md`（若实现未改 API/DB，记录「无变更」）
+- [x] 6.3 归档前对账 `docs/knowledge/architecture/tech-stack-plan.md` 与 `_LOG.md`（若实现未改 API/DB，记录「无变更」）
 
 ## 7. 验证与门禁
 
 - [x] 7.1 本地：`npm run test:unit`、`npm run typecheck`、`npm run build`、`mvn -B test` 全绿
 - [x] 7.2 `/sdd:local-verify-report`（记录 E2E 与构建证据）
 - [x] 7.3 推送分支 + 开 PR（PR #119）；CI 双 job 绿（runs 44039479156 / 44039487042）
-- [ ] 7.4 `/sdd:g2-decision-record`（具名 VL）→ 合并 → `/sdd:living-merge` + G3
+- [x] 7.4 G2 Pass（VL lumi）→ PR #119 merged → living-merge + archive + G3 Pass（SA Elian Jiang）
 
 ## 对齐自检（P3，2026-11-17）
 
