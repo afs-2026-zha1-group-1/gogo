@@ -2,7 +2,7 @@
 
 - 复核人：sdd-delta-craft（P2 review），2026-11-17；IO/SA Johnson 按用户指令签核
 - change：`us-082-back-navigation`
-- delta：`specs/app-shell/spec.md`（1 MODIFIED + 2 ADDED / 12 场景）
+- delta：`specs/app-shell/spec.md`（1 MODIFIED + 2 ADDED / 14 场景；其中 2 条为 US-068-070 归档后的 Living 场景原样继承）
 - 证据：`requirement-workspace/requirements/US-082.md`、`analysis/us-082-dor.md`、GitHub issue #105
 - 校验：`openspec validate us-082-back-navigation --strict` = valid
 
@@ -10,7 +10,7 @@
 
 | # | 项 | 结果 | 证据 | 备注 |
 |---|---|---|---|---|
-| AC-1 | 每条 requirement 至少有 1 条可测 AC | **Pass** | Guest join 5 场景 + Trip-context 3 场景 + Auth 4 场景；均含 WHEN/THEN | 共 12 条 |
+| AC-1 | 每条 requirement 至少有 1 条可测 AC | **Pass** | Guest join 7 场景（含 2 条 Living 继承的注册/邀请场景）+ Trip-context 3 场景 + Auth 4 场景；均含 WHEN/THEN | 共 14 条 |
 | AC-2 | AC 可观察 | **Pass** | 路由落点 `#/trips/<id>`、`/login`、`/register`；主/次按钮文案；登录后页面 | 无「运行良好」式表述 |
 | AC-3 | 负向 / 边界 | **Pass** | 直接打开分队深链；非法 `next`（跨源/非单斜杠）；`pendingInvite` 优先；已登录访问注册页 | 高风险路径有负向场景 |
 | AC-4 | AC 不是伪装的实现细节 | **Pass** | 场景不含类名/函数名；只描述路由、按钮与页面 | `?next=` 为实现手段但可观察 |

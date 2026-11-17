@@ -4,17 +4,20 @@
 
 ### Requirement: Guest join exclusion
 
-The shell SHALL render the login page and `#/join/<token>` — preview, accept,
-joined and closed states — and the unusable-invitation state full-screen without
-the bottom dock, so a guest is not shown in-app navigation before joining. The
-invitation preview SHALL stay public. Acceptance SHALL require an authenticated
-session: a signed-out guest who acts on the preview SHALL be sent to login, the
-same preview SHALL resume after login, and no membership SHALL be created until
-the guest explicitly accepts. After acceptance succeeds, the joined state SHALL
-offer a primary 进入行程 action targeting `#/trips/<id>` for the accepted trip
-and SHALL keep 返回首页 as a secondary action. The previous identity scaffold bar
-SHALL NOT be rendered, and join outcomes SHALL otherwise behave exactly as
-before this change.
+The shell SHALL render the login page, the registration page and
+`#/join/<token>` — preview, accept, joined and closed states — and the
+unusable-invitation state full-screen without the bottom dock, so a guest is not
+shown in-app navigation before joining. The invitation preview SHALL stay
+public. Acceptance SHALL require an authenticated session: a signed-out guest
+who acts on the preview SHALL be sent to login, the same preview SHALL resume
+after login, and no membership SHALL be created until the guest explicitly
+accepts. A signed-out guest MAY register an account instead of logging in; the
+pending invitation SHALL survive registration and resume after the subsequent
+login without automatically joining. After acceptance succeeds, the joined state
+SHALL offer a primary 进入行程 action targeting `#/trips/<id>` for the accepted
+trip and SHALL keep 返回首页 as a secondary action. The previous identity
+scaffold bar SHALL NOT be rendered, and join outcomes SHALL otherwise behave
+exactly as before this change.
 
 #### Scenario: A valid invitation opens full-screen without the dock
 
@@ -43,6 +46,21 @@ before this change.
 - **THEN** it is full-screen without the bottom dock
 - **AND** it exposes no in-app navigation or private trip data
 
+#### Scenario: The registration page has no dock
+
+- **WHEN** the registration page renders from the login page
+- **THEN** it is full-screen without the bottom dock
+- **AND** it exposes no in-app navigation or private trip data
+
+#### Scenario: Registration during an invitation resumes the preview after login
+
+- **GIVEN** a signed-out guest opened a valid invitation preview and chose to
+  register
+- **WHEN** registration succeeds and the guest then logs in
+- **THEN** registration establishes no session and consumes no invitation
+- **AND** after login the same `#/join/<token>` preview resumes
+- **AND** no membership is created until the guest explicitly accepts
+
 #### Scenario: Joined state opens the accepted trip
 
 - **WHEN** a guest acceptance succeeds and the joined state renders
@@ -66,7 +84,7 @@ SHALL NOT depend on the browser history length.
 - **WHEN** a member opens `/trips/<id>/split` from the trip details and
   activates the back action
 - **THEN** the app renders the trip details for `<id>` under the shell
-- **AND** the resolved trip is `<id>` for subsequent 成员 and 分队 entries
+- **AND** the resolved trip is `<id>` for subsequent members and split entries
 
 #### Scenario: Direct split entry back does not fall to home
 

@@ -7,7 +7,7 @@
 ## Inputs
 
 - Proposal: `openspec/changes/us-082-back-navigation/proposal.md`
-- Delta Spec: `openspec/changes/us-082-back-navigation/specs/app-shell/spec.md`（1 MODIFIED + 2 ADDED / 12 场景）
+- Delta Spec: `openspec/changes/us-082-back-navigation/specs/app-shell/spec.md`（1 MODIFIED + 2 ADDED / 14 场景；G1 后随 US-068-070 归档同步 Living 基线）
 - Design: `openspec/changes/us-082-back-navigation/design.md`
 - Tasks: `openspec/changes/us-082-back-navigation/tasks.md`
 - AC/DoV review: `openspec/changes/us-082-back-navigation/dov-ac-review.md`（AC 4/4 Pass、DoV 5/5 Pass）
@@ -16,7 +16,7 @@
 - Backend test: `mvn -B test` = **279/279 Pass**（含 `InvitationApiTest` 对 accept `tripId` 的断言）
 - Requirement source: `requirement-workspace/requirements/US-082.md`（DoR：`analysis/us-082-dor.md`，BLOCKER = 0）
 - 依赖：`openspec/changes/us-071-my-trips/specs/app-shell/spec.md`（AC2/AC3 的返回口径，US-071 G1 Pass）
-- 相邻已合并资产：`us-068-070-account-register`（PR #101 已合入 `main`，未归档；登录/注册页面的既有 delta 允许 `/register` 与 `#/register` 两种入口）
+- 相邻已归档资产：`us-068-070-account-register`（PR #101/#103 已合入 `main` 并归档；登录/注册页面的既有 delta 允许 `/register` 与 `#/register` 两种入口）
 - Story: GitHub issue #105（`Iteration 1`、`Priority - Must`、`Type - Trip Setup`）
 
 ## Check conclusions
@@ -45,6 +45,8 @@ Rationale：delta 只覆盖本 change 的 5 条 AC，AC2/AC3 明确依赖 US-071
 ## Implementation amendment（2026-11-17）
 
 实现期发现后端 accept 实际只返回 `joined` / `alreadyMember`，前端 `AcceptResult.tripId` 是空承诺，入会成功页会生成 `#/trips/undefined`。已按最小面补齐：`JoinResult` 增加 `tripId`（additive，既有字段与状态码不变），`InvitationApiTest` 断言该字段，前端类型同步收敛。delta 未变，AC 语义不变，G1 结论仍为 Pass；`mvn -B test` 279/279、`npm run build` Green。
+
+Post-G1 sync（2026-11-17）：`main` 前进 4 个提交（US-068-070 P5 archive/finalize）后已合入本分支，`registry.md` 冲突按 main 的 REQ-009 行 + 本 change 的 US-082 行解决；MODIFIED `Guest join exclusion` 已按归档后的 Living 文本整段重同步（保留注册页无 dock、注册后邀请恢复两条场景），再叠加本 change 的 joined 行动；复扫 BLOCKER 0。US-082 的 delta 语义与 AC 不变。
 
 ## Conditions
 
