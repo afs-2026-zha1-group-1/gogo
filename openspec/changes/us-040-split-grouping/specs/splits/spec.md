@@ -40,6 +40,7 @@
 - **GIVEN** 成员已位于 A 组，携带当前 `draftVersion`
 - **WHEN** 请求 `groupLabel = "A"`
 - **THEN** 响应 `200` 且 `groups` 内容不变；版本是否递增按 OQ-10 在 P3 定稿，实现前不得在测试中固化相反断言
+- **AND** 无论如何，响应 SHALL 返回写入后的最新 `draftVersion`，前端以响应值为唯一来源、不自行推算版本增减
 
 #### Scenario: 改组保留已生成路线与边界（A4）
 
@@ -98,7 +99,7 @@
 
 ### Requirement: Split draft start
 
-系统 SHALL 提供 `POST /api/trips/{tripId}/split-draft`（认证会话），允许任意行程成员从已确认主线发起该行程唯一的拆分草稿。系统 SHALL 依序校验成员资格、主线确认前置、活跃唯一性，并以条件写入在 `split_draft` 表创建 JSON 文档（`initiatorMemberId`、`mainPlanVersion`、`draftVersion = 1`、`status = active`、可空边界字段、`groups`、`createdAt`、`updatedAt`）；`groups` SHALL 初始化为 `{"A": [全部行程成员 id], "B": []}`（`app_user.id`，按 `display_name` 升序），不再按成员数量前后均分；每 trip 至多一行（`trip_id` UNIQUE），撞车即冲突。当且仅当已存在行的文档 `status = cancelled` 时，系统 SHALL 在该行重建草稿：以调用者为新发起人、`draftVersion` 重置为 1、`status = active`、边界与路线清空、`groups` 同样初始化为全员 A 组；`active` 或 `confirmed` 行 SHALL 返回冲突。系统 SHALL 通过既有 V4 Flyway 迁移提供 `split_draft` 与 `plan_node` 两表，且落地 SQLite 三铁律（池=1、WAL、busy_timeout=5000、foreign_keys=on）。
+系统 SHALL 提供 `POST /api/trips/{tripId}/split-draft`（认证会话），允许任意行程成员从已确认主线发起该行程唯一的拆分草稿。系统 SHALL 依序校验成员资格、主线确认前置、活跃唯一性、当前行程成员数至少 2（双组分队要求每组至少一人），并以条件写入在 `split_draft` 表创建 JSON 文档（`initiatorMemberId`、`mainPlanVersion`、`draftVersion = 1`、`status = active`、可空边界字段、`groups`、`createdAt`、`updatedAt`）；`groups` SHALL 初始化为 `{"A": [全部行程成员 id], "B": []}`（`app_user.id`，按 `display_name` 升序），不再按成员数量前后均分；每 trip 至多一行（`trip_id` UNIQUE），撞车即冲突。当且仅当已存在行的文档 `status = cancelled` 时，系统 SHALL 在该行重建草稿：以调用者为新发起人、`draftVersion` 重置为 1、`status = active`、边界与路线清空、`groups` 同样初始化为全员 A 组；`active` 或 `confirmed` 行 SHALL 返回冲突。当前成员数少于 2 时，创建与重建 SHALL 均以 `409 SPLIT_MEMBERS_INSUFFICIENT` 拒绝，不创建或改写任何行（单人行程无法满足「两组非空」）。系统 SHALL 通过既有 V4 Flyway 迁移提供 `split_draft` 与 `plan_node` 两表，且落地 SQLite 三铁律（池=1、WAL、busy_timeout=5000、foreign_keys=on）。
 
 #### Scenario: V2 迁移与自包含种子（REQ-004 In scope / OQ-1）
 
@@ -119,6 +120,13 @@
 - **WHEN** 任一成员发起草稿
 - **THEN** 响应 `201` 且 `data.groups.A` 恰为这四名成员的 `app_user.id`（按 `display_name` 升序）
 - **AND** `data.groups.B` 为空数组；两个键均存在，不出现 `groups` 缺键或 `null`
+
+#### Scenario: 成员不足两人拒绝发起（S10-N）
+
+- **GIVEN** 该行程仅有 1 名成员（组织者本人），主线已确认，且无活跃草稿
+- **WHEN** 该成员发起草稿
+- **THEN** 响应 `409` 且 `error.code = SPLIT_MEMBERS_INSUFFICIENT`
+- **AND** 不创建草稿行；若已存在 `cancelled` 行也不被重建，`groups` 与版本不变
 
 #### Scenario: 并发发起至多一个活跃草稿（S2）
 
@@ -169,12 +177,12 @@
 - **WHEN** 草稿读取返回
 - **THEN** 页面呈现草稿状态（initiator、mainPlanVersion、draftVersion、status）
 - **AND** 动作按 `status` 分支：无草稿或 `cancelled` → 展示「发起（替换）分队草稿」并调用 `POST split-draft`；`active` → 「下一步：选择边界」；`confirmed` → 只读终态（无发起入口，但提供「查看已确认分队」入口跳转复核页）
-- **AND** 冲突 / 主线未确认 / 无权限错误态与 loading / empty 态均可观察
+- **AND** 冲突 / 主线未确认 / 无权限 / 成员不足两人错误态与 loading / empty 态均可观察（错误按 `error.code` 渲染）
 - **AND** 前端不自行判定唯一性或确认状态（判定归后端）
 
 ### Requirement: Group route generation
 
-The system SHALL expose `POST /api/trips/{tripId}/split-draft/routes:generate` with `draftVersion` for the initiator after boundaries are saved and while the draft is `active`. Before generating, it SHALL require a complete group partition: both `groups.A` and `groups.B` non-empty, every current trip member assigned exactly once. An incomplete partition SHALL be rejected with `409 SPLIT_DRAFT_INCOMPLETE` and `error.details.missing` listing `groups.A` / `groups.B` / `groups.unassigned` / `groups.duplicate` as applicable, with no route rows written and no version change. When complete, it SHALL atomically replace both group routes using fixed in-process candidates, preserve main-plan rows, increment the version on success, roll back on failure, and reject stale results without overwriting newer state. Routes SHALL be generated for the current `groups` keys (A/B) regardless of membership changes since the last generation. A `confirmed` or `cancelled` draft SHALL be rejected with `SPLIT_DRAFT_NOT_ACTIVE`.
+The system SHALL expose `POST /api/trips/{tripId}/split-draft/routes:generate` with `draftVersion` for the initiator after boundaries are saved and while the draft is `active`. Before generating, it SHALL require a complete group partition: both `groups.A` and `groups.B` non-empty, every current trip member assigned exactly once. An incomplete partition SHALL be rejected with `409 SPLIT_DRAFT_INCOMPLETE` and `error.details.missing` listing `groups.A` / `groups.B` / `groups.unassigned` / `groups.duplicate` as applicable, with no route rows written and no version change. When complete, it SHALL atomically replace both group routes using fixed in-process candidates, preserve main-plan rows, increment the version on success, roll back on failure, and reject stale results without overwriting newer state. Routes SHALL be generated for the current `groups` keys (A/B) regardless of membership changes since the last generation. Each saved route SHALL bind to a group label only and SHALL NOT carry member ids; a later group change SHALL NOT invalidate, rewrite or delete the saved pair. A `confirmed` or `cancelled` draft SHALL be rejected with `SPLIT_DRAFT_NOT_ACTIVE`.
 
 #### Scenario: 成对生成（G1）
 
@@ -225,6 +233,7 @@ The system SHALL expose `POST /api/trips/{tripId}/split-draft/routes:generate` w
 - **WHEN** 草稿读取返回
 - **THEN** 页面呈现分组卡（A/B 组人数与成员名、「我」标记、切组控件）与成对路线卡（组标签、活动名、起终点、时长/交通/buffer 分解）
 - **AND** 已生成路线在成员改组后仍原样呈现，并提示「分组已更新，路线仍为上次生成的版本，可点击重新生成」
+- **AND** 任一组被搬空且仍留有旧路线时，该组路线卡标注「需重新生成」，且不得暗示可直接确认
 - **AND** 分组不完整 / 无边界 / 失败 / 过期错误态与 loading / empty / permission 态均可观察；非发起人的「重新生成」不可用
 - **AND** 前端不自行判定分组完整性或路线合法性（判定归后端）
 
@@ -300,5 +309,6 @@ The system SHALL expose `POST /api/trips/{tripId}/split-draft/routes:generate` w
 - **WHEN** 成员打开拆分复核与确认屏幕
 - **THEN** 页面呈现两条路线卡（组标签、分组、活动/交通/buffer 分解、合计与窗口对比）、边界与窗口、校验结论与草稿状态徽标；A/B 组以成员名展示
 - **AND** 组织者可见确认按钮，非组织者只见只读视图（permission 态）
+- **AND** 若分组在路线生成之后被变更，页面 SHALL 显示与 Screen 13 相同的「分组已更新，路线仍为上次生成的版本」提示，不得让查看者把旧路线当作当前分组的结果
 - **AND** 超窗 / 缺输入 / 不完整（含分组不完整）错误态按 `error.details` 渲染逐路线数值与缺失项（`groups.*` 映射为中文提示），已确认终态、loading 与 empty（无草稿）态均可观察
 - **AND** 前端不自行宣布可确认（判定归后端）

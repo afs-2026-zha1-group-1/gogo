@@ -1304,6 +1304,7 @@ AC 未声明保留期、SLA 或容量指标。列表是既有行的只读投影�
 | 确认权限 | 非组织者调 confirm | Out — `403 NOT_SPLIT_ORGANIZER`（既有） | 不在本变更范围 |
 | 确认门禁 | 分组完整、边界与路线齐备 | In — `200`，`status = confirmed` | S9 |
 | 成员表 | 改组对 `trip_member` | 不变 — 不新增/删除成员、不改角色 | R9 |
+| 成员数 | 当前行程成员数 < 2（单人行程） | Out — 发起/重建 `409 SPLIT_MEMBERS_INSUFFICIENT`，不创建也不改写草稿行 | OQ-13 / BQ-9（单人无法「两组非空」） |
 
 ### ⑪ Cross-REQ consistency
 
@@ -1319,7 +1320,7 @@ AC 未声明保留期、SLA 或容量指标。列表是既有行的只读投影�
 | `trips` 成员名册 | US-013 | 前端复用 `displayName`，不新增字段 | ✓ 组合，不改 |
 | `trips` 行程详情/成员 | REQ-003 / US-013 | 无写入变更；Screen 13 入口仍在行程内 | ✓ 不改 |
 | `app-shell` | US-064 / US-082 | 不新增路由、不改 stepbar、不改返回链 | ✓ 不改 |
-| `auth` 会话 | US-066 / REQ-008 | 沿用会话主体与 `/api/**` 认证，新 PUT 自动受保护 | ✓ 不改 |
+| `auth` 会话 | US-066 / REQ-008 | 沿用会话主体；splits 路径在 `SecurityConfig` 为 `permitAll`，401 由 `MemberGuard` 产出 `MEMBER_REQUIRED` + `{data,error}`（auth 已登记的 splits 例外）；新 PUT 必须命中 `"/api/trips/*/split-draft/**"` | ✓ 不改配置，但实现需核对匹配器 |
 | `main-itinerary` / `invitations` / `preferences` | — | 无交叉写入 | ✓ 无影响 |
 
 ### ⑫ Notification / display contract
@@ -1331,7 +1332,7 @@ AC 未声明保留期、SLA 或容量指标。列表是既有行的只读投影�
 | 改组成功提示 | assignment `200` | 操作者本人 | 「分组已更新，路线仍为上次生成的版本，可点击重新生成」 | 页内提示 | 一 |
 | 分组不完整（生成） | `routes:generate` 返回 `SPLIT_DRAFT_INCOMPLETE` | 发起人 | 错误卡：`SPLIT_DRAFT_INCOMPLETE` + 中文说明「分组不完整」+ `details.missing` 映射（`groups.A`=A 组无人、`groups.B`=B 组无人、`groups.unassigned`=有成员未分组、`groups.duplicate`=有成员重复分组） | `ErrorState` | 一 |
 | 分组不完整（确认） | `:confirm` 返回 `SPLIT_DRAFT_INCOMPLETE` | 组织者 | 同上，且同时可含 `boundaries` / `routes.A` / `routes.B` | `ErrorState` | 一 |
-| Screen 15 分组复核 | 打开复核屏 | 全部行程成员 | A 组 / B 组以成员名展示（无名字回退短 id） | `GET split-draft` + `GET members` | 每次渲染一组 |
+| Screen 15 分组复核 | 打开复核屏 | 全部行程成员 | A 组 / B 组以成员名展示（无名字回退短 id）；若分组晚于路线生成，同屏显示「分组已更新，路线仍为上次生成的版本」提示 | `GET split-draft` + `GET members` | 每次渲染一组 |
 | 空组引导 | 草稿 active 且任一组为空 | 全部行程成员 | 分组卡内提示「至少一人加入另一组后才能生成路线与确认」 | 页内文案 | 一 |
 | 权限态 | `403 NOT_SPLIT_INITIATOR` / `NOT_A_MEMBER` / `401` | 操作者 | 现有 `ErrorState` 权限样式；非发起人的「重新生成」不可用 | `ErrorState` | 一 |
 | loading / empty / 终态 | 读取中、无草稿、`confirmed`/`cancelled` | 查看者 | 沿用既有四态；终态不显示切组控件 | 客户端渲染 | 一 |
