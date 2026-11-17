@@ -1,19 +1,60 @@
 ---
 name: pr-only-main-guard
-description: Install and verify the repository's PR-only guard that blocks direct pushes to main. Use when a teammate needs the local hook enabled, when a push to main is rejected, or when checking whether the guard is active. Do not use it to bypass the guard, merge pull requests, or rewrite git history.
+description: Guard any push that targets main. Use before a user or agent runs git push to main, pushes with --all, or asks to commit directly to main; route the change through a branch and pull request instead. Also installs and verifies the local pre-push hook. Do not use it to bypass the guard, force-push, or rewrite history.
 ---
 
 # PR-only main guard
 
-Enable the per-clone `pre-push` hook so every change lands through a pull request.
+Keep `main` reachable only through pull requests, at two levels:
 
-## Inputs
+- This skill: when the agent is asked to push or commit to `main`, stop and
+  redirect the work to a branch plus a pull request.
+- The repository hook: `.githooks/pre-push` rejects a direct push to `main`
+  on every clone that ran `scripts/setup-dev.sh`.
+
+## Push to main
+
+Trigger this branch of the skill when the request contains `git push` and the
+destination is `main`, `git push --all`, or wording such as "push to main",
+"直接提交到 main", "推 main".
+
+1. Do not run the push.
+2. Inspect the repository:
+
+   ```bash
+   git branch --show-current
+   git status --short
+   git log --oneline group1/main..HEAD 2>/dev/null || git log --oneline origin/main..HEAD
+   ```
+
+3. If there are commits to land, move them to a branch and push that:
+
+   ```bash
+   git switch -c <change-id>-<short-slug>
+   git push -u <remote> <change-id>-<short-slug>
+   ```
+
+   Then open a pull request into `main`. Opening or merging the PR is a separate
+   action: do it only when the user asked for it.
+
+4. If the user calls it an emergency and explicitly asks for a direct push, use
+   `ALLOW_MAIN_PUSH=1 git push ...` only in that turn. Never add the variable on
+   your own initiative.
+
+5. If the hook rejects the push, report that the guard is working. Do not retry
+   with `--no-verify`, `--force`, or a different ref.
+
+## Install and verify
+
+Use this when a teammate needs the hook enabled or asks whether the guard is active.
+
+### Inputs
 
 - A clone that contains `.githooks/pre-push` and `scripts/setup-dev.sh`.
 - A remote pointing at `afs-2026-zha1-group-1/gogo`. Its name differs per clone:
   `origin` after a fresh clone, `group1` in some existing clones.
 
-## Steps
+### Steps
 
 1. Locate the clone and its remote.
 
