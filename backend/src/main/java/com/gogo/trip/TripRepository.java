@@ -86,6 +86,20 @@ public class TripRepository {
         return new TripMemberListResponse(tripId, members);
     }
 
+    /** US-071: the caller's trips, ordered by start date then id for deterministic tests. */
+    public TripListResponse findTripsForUser(long userId) {
+        List<TripListItem> trips = jdbc.query(
+                "SELECT t.id, t.name, t.destination, t.start_date, t.end_date, t.main_plan_confirmed, "
+                        + "CASE WHEN t.organizer_id = tm.user_id THEN 1 ELSE 0 END AS organizer "
+                        + "FROM trip t JOIN trip_member tm ON tm.trip_id = t.id "
+                        + "WHERE tm.user_id = ? ORDER BY t.start_date, t.id",
+                (rs, rowNum) -> new TripListItem(rs.getLong("id"), rs.getString("name"),
+                        rs.getString("destination"), rs.getString("start_date"), rs.getString("end_date"),
+                        rs.getInt("organizer") != 0, rs.getInt("main_plan_confirmed") != 0),
+                userId);
+        return new TripListResponse(trips);
+    }
+
     /** Confirms the trip's main plan so the split flow (REQ-004 precondition) can start. */
     public int confirmMainPlan(long tripId) {
         return jdbc.update("UPDATE trip SET main_plan_confirmed = 1 WHERE id = ?", tripId);

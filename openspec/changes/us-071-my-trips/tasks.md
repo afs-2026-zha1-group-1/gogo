@@ -10,36 +10,36 @@
 
 ## 2. Fixtures 与红先行
 
-- [ ] 2.1 在 `requirement-workspace/acceptance-test-fixtures.md` 追加 §US-071（Alice 自建/受邀/已结束/同日两条、Eve 空账号、Eve 非成员；四条行程的 start/end/organizer 与预期顺序）
-- [ ] 2.2 新建 `backend/src/test/java/com/gogo/trip/TripListApiTest.java`，覆盖 A1–A9（9 例，先红）：200 字段集、排序（含同日 id 升序）、`organizer` true/false、空 `trips`、`mainPlanConfirmed` 只读投影、`endDate` 已过仍返回且无状态字段、401 无会话、401 仅 `X-User-Id`、`POST /api/trips` 语义不变
+- [x] 2.1 在 `requirement-workspace/acceptance-test-fixtures.md` 追加 §US-071（Alice 自建/受邀/已结束/同日两条、Eve 空账号、Eve 非成员；四条行程的 start/end/organizer 与预期顺序）
+- [x] 2.2 新建 `backend/src/test/java/com/gogo/trip/TripListApiTest.java`，覆盖 A1–A9（9 例，先红）：200 字段集、排序（含同日 id 升序）、`organizer` true/false、空 `trips`、`mainPlanConfirmed` 只读投影、`endDate` 已过仍返回且无状态字段、401 无会话、401 仅 `X-User-Id`、`POST /api/trips` 语义不变
 
 ## 3. 后端实现
 
-- [ ] 3.1 `com.gogo.trip` 新增 `TripListItem`、`TripListResponse` record（字段见 DD1/DD2）
-- [ ] 3.2 `TripRepository` 新增成员范围查询（DD3 SQL，`ORDER BY start_date, id`，`organizer` 由 CASE 派生）
-- [ ] 3.3 `TripController` 新增 `@GetMapping` 列表端点（`AccountPrincipal`，只读）
-- [ ] 3.4 A1–A9 转绿；`cd backend && mvn -B test` 全绿（既有 226+ 测试不回归）
+- [x] 3.1 `com.gogo.trip` 新增 `TripListItem`、`TripListResponse` record（字段见 DD1/DD2）
+- [x] 3.2 `TripRepository` 新增成员范围查询（DD3 SQL，`ORDER BY start_date, id`，`organizer` 由 CASE 派生）
+- [x] 3.3 `TripController` 新增 `@GetMapping` 列表端点（`AccountPrincipal`，只读）
+- [x] 3.4 A1–A9 转绿；`cd backend && mvn -B test` 全绿（既有 226+ 测试不回归）
 
 ## 4. 前端实现
 
-- [ ] 4.1 `frontend/src/types.ts` 增加 `TripListItem` / `TripListResponse`
-- [ ] 4.2 新建 `frontend/src/pages/TripsList.tsx`：四态（loading / 列表 / 空态 / 错误+重试）、行内名称+目的地+日期、`我创建的` 与 `已结束` 徽标、整行 `<a href="#/trips/{id}">`；标题「行程」
-- [ ] 4.3 `isEnded(endDate, today)` 纯函数 + apply 时 UT（本地日期 vs `YYYY-MM-DD` 字典序）
-- [ ] 4.4 `App.tsx`：`parseRoute` 的 `#/trips` 改为 `trips-list`；`TAB_FOR_PAGE` 增 `trips-list: 'trips'`；渲染 `TripsList`
-- [ ] 4.5 `tripsHref` 收敛为 `#/trips`（TabBar、分队无行程、`CreateTrip` back）；`Members` 新增 `tripHref` prop，有行程时用 `#/trips/{id}`
-- [ ] 4.6 删除 `frontend/src/pages/TripsEmpty.tsx` 与 `App.tsx` 的 import/分支（删除前 grep 确认无其他引用）
-- [ ] 4.7 `cd frontend && npm run typecheck && npm run build` 绿
+- [x] 4.1 `frontend/src/types.ts` 增加 `TripListItem` / `TripListResponse`
+- [x] 4.2 新建 `frontend/src/pages/TripsList.tsx`：四态（loading / 列表 / 空态 / 错误+重试）、行内名称+目的地+日期、`我创建的` 与 `已结束` 徽标、整行 `<a href="#/trips/{id}">`；标题「行程」
+- [x] 4.3 `isEnded` / `todayIso` 纯函数实现（`TripsList.tsx`）；**前端无 UT runner**（无 vitest/jest，既有仅 node:test 的 lockfile 检查），由 E2E E5 覆盖，偏离记入 design TS-2
+- [x] 4.4 `App.tsx`：`parseRoute` 的 `#/trips` 改为 `trips-list`；`TAB_FOR_PAGE` 增 `trips-list: 'trips'`；渲染 `TripsList`
+- [x] 4.5 `tripsHref` 收敛为 `#/trips`（TabBar、分队无行程、`CreateTrip` back）；`Members` 新增 `tripHref` prop，有行程时用 `#/trips/{id}`
+- [x] 4.6 删除 `frontend/src/pages/TripsEmpty.tsx` 与 `App.tsx` 的 import/分支（删除前 grep 确认无其他引用）
+- [x] 4.7 `cd frontend && npm run typecheck && npm run build` 绿
 
 ## 5. E2E 与回归
 
-- [ ] 5.1 新建 `docs/feedback/e2e-us-071.md`，按 E1–E12 逐行执行并记 Pass/Partial/N/A（E7 为 US-072 入口回归，E8 为成员名册返回上下文，E12 用网络面板确认只调用一次 `GET /api/trips`）
-- [ ] 5.2 回归：分队 tab 进入、成员名册（含返回）、创建流程（back → `#/trips`，成功后 → `#/trips/<id>`）、行程详情、`#/trips/<id>/main-plan` 可达
-- [ ] 5.3 反向验证：`GET /api/trips?page=1` 不产生分页元信息、无搜索框、无第二个主线入口、`PUT/DELETE /api/trips` 不改变数据
+- [x] 5.1 新建 `docs/feedback/e2e-us-071.md`，按 E1–E12 逐行执行并记 Pass/Partial/N/A（E7 为 US-072 入口回归，E8 为成员名册返回上下文，E12 用网络面板确认只调用一次 `GET /api/trips`）
+- [x] 5.2 回归：分队 tab 进入、成员名册（含返回）、创建流程（back → `#/trips`，成功后 → `#/trips/<id>`）、行程详情、`#/trips/<id>/main-plan` 可达
+- [x] 5.3 反向验证：`GET /api/trips?page=1` 不产生分页元信息、无搜索框、无第二个主线入口、`PUT/DELETE /api/trips` 不改变数据
 
 ## 6. Spec 与文档
 
-- [ ] 6.1 `openspec validate us-071-my-trips --strict` = valid（如 delta 需改，先回 `/sdd:delta-craft`）
-- [ ] 6.2 更新 `requirement-workspace/registry.md`（US-071 行）与 `handoff.md`（P3/P4 进度）
+- [x] 6.1 `openspec validate us-071-my-trips --strict` = valid（如 delta 需改，先回 `/sdd:delta-craft`）
+- [x] 6.2 更新 `requirement-workspace/registry.md`（US-071 行）与 `handoff.md`（P3/P4 进度）
 - [ ] 6.3 归档前对账：`docs/knowledge/architecture/tech-stack-plan.md` 增补 `GET /api/trips`（API 清单）+ `docs/knowledge/_LOG.md` 追加一行；无数据模型变更
 
 ## 7. 验证与门禁

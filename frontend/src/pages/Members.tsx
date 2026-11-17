@@ -22,9 +22,10 @@ function causeMessage(cause: unknown) {
 interface MembersProps {
   tripId: number | null
   tripsHref: string
+  tripHref: string
 }
 
-export default function Members({ tripId, tripsHref }: MembersProps) {
+export default function Members({ tripId, tripsHref, tripHref }: MembersProps) {
   const [state, setState] = useState<MembersState>(
     tripId == null ? { kind: 'no-trip' } : { kind: 'loading' },
   )
@@ -97,7 +98,7 @@ export default function Members({ tripId, tripsHref }: MembersProps) {
             {state.kind === 'failed' && (
               <button className="btn btn-ghost" type="button" onClick={load}>重试</button>
             )}
-            <a className="btn btn-ghost" href={tripsHref}>返回行程</a>
+            <a className="btn btn-ghost" href={tripHref}>返回行程</a>
           </section>
         )}
 
@@ -107,7 +108,7 @@ export default function Members({ tripId, tripsHref }: MembersProps) {
               <section className="card pad empty-state">
                 <h2>暂无成员</h2>
                 <p className="hint">这个行程还没有成员记录。</p>
-                <a className="btn btn-ghost" href={tripsHref}>返回行程</a>
+                <a className="btn btn-ghost" href={tripHref}>返回行程</a>
               </section>
             ) : (
               <>
@@ -144,6 +145,10 @@ export default function Members({ tripId, tripsHref }: MembersProps) {
               </>
             )}
             <p className="hint">本页只展示成员和组织者；偏好与就绪状态不在成员页。</p>
+            <a className="btn btn-ghost" href={tripHref}>
+              <Icon name="left" className="sm" />
+              返回行程
+            </a>
           </>
         )}
       </div>

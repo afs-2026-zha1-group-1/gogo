@@ -113,6 +113,8 @@ public TripListResponse list(@AuthenticationPrincipal AccountPrincipal principal
 | id | 偏离 | 处置 |
 |---|---|---|
 | TS-1 | `tech-stack-plan` 计划中的 TanStack Query 未采用，列表用手写 `api()` + `useEffect` | 用户 2026-11-16 裁决；与当前已落地基线一致，记录不迁移 |
+| TS-2 | 前端无 UT runner（无 vitest/jest），`isEnded` / `todayIso` 未配单测 | 纯函数保留在页面模块内并由 E2E E5 覆盖；引入测试框架属独立工具变更，不在本变更扩范围 |
+| TS-3 | 既有 `TripApiTest.noEditDeleteOrListRoutesExist` 断言 `GET /api/trips` 为 405 | 该断言基于本变更取代的旧契约；P4 改为断言 200 + `trips` 数组（编辑/删除仍 405），重命名 `noEditOrDeleteRoutesExistAndListIsReadOnly` |
 
 ## 风险
 

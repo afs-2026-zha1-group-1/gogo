@@ -23,6 +23,20 @@ export interface Trip {
   mainPlanConfirmed?: boolean
 }
 
+export interface TripListItem {
+  id: number
+  name: string
+  destination: string
+  startDate: string
+  endDate: string
+  organizer: boolean
+  mainPlanConfirmed: boolean
+}
+
+export interface TripListResponse {
+  trips: TripListItem[]
+}
+
 export interface InvitationPreview {
   tripName: string
   destination: string
@@ -78,7 +92,7 @@ export type TabId = 'dashboard' | 'trips' | 'split' | 'members'
 export type Route =
   | { page: 'home' }
   | { page: 'login' }
-  | { page: 'trips-empty' }
+  | { page: 'trips-list' }
   | { page: 'create' }
   | { page: 'split' }
   | { page: 'members' }

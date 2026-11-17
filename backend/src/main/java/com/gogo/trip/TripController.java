@@ -49,6 +49,11 @@ public class TripController {
         return ResponseEntity.status(201).body(repository.create(normalized, userId));
     }
 
+    @GetMapping
+    public TripListResponse list(@AuthenticationPrincipal AccountPrincipal principal) {
+        return repository.findTripsForUser(principal.id());
+    }
+
     @GetMapping("/{id}")
     public TripResponse read(
             @AuthenticationPrincipal AccountPrincipal principal,
