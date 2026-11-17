@@ -1,8 +1,9 @@
 /**
- * US-084: pure derivation of the member's personal timeline (design DD-2/DD-3, R6).
- * Confirmed split snapshot is authoritative: shared segments come from mainPlanStops
- * (ISO timestamps), the group activity is centered inside the departure→reunion window
- * only when its duration is known and fits; missing inputs stay null (待确认, never fabricated).
+ * US-084/US-089: pure derivation of the member's personal timeline (design DD-2/DD-3, R6).
+ * Confirmed split snapshot is authoritative: shared segments come from mainPlanStops (ISO timestamps).
+ * The group that keeps the confirmed plan (route steps present) fills the departure→reunion segment with
+ * those main-plan stops; the other group gets its generated activity centered inside the window only when
+ * its duration is known and fits. Missing inputs stay null (待确认, never fabricated).
  */
 import type { ScheduleItem } from './countdown'
 import type { SplitDraftDetail, PlanStop as SplitPlanStop } from '../features/split/types'
@@ -71,9 +72,20 @@ export function derivePersonalRoute(
   const stops = detail.mainPlanStops
   const departureIndex = stops.findIndex((stop) => stop.id === detail.departureStopId)
   const reunionIndex = stops.findIndex((stop) => stop.id === detail.reunionStopId)
-  // departureAt = departure stop end, reunionAt = reunion stop start (backend BoundaryResponse):
-  // both boundary stops stay in the shared segments; the group activity sits between them.
-  const before = departureIndex >= 0 ? stops.slice(0, departureIndex + 1) : stops
+  // departureAt/reunionAt are the two stops' start times (backend BoundaryResponse). The group that keeps
+  // the confirmed plan walks its scheduled stops inside the window; the other group is away from them.
+  const steps = myRoute.steps ?? []
+  const keepsMainLine =
+    steps.length > 0 && departureIndex >= 0 && reunionIndex > departureIndex
+  const mainLineItems = keepsMainLine
+    ? stops.slice(departureIndex, reunionIndex).map((stop) => ({
+        ...sharedItem(stop, plan),
+        groupLabel: myGroupLabel,
+      }))
+    : null
+  const before = departureIndex >= 0
+    ? stops.slice(0, keepsMainLine ? departureIndex : departureIndex + 1)
+    : stops
   const after = reunionIndex >= 0 ? stops.slice(reunionIndex) : []
 
   const departureMs = toMs(detail.departureAt)
@@ -106,7 +118,7 @@ export function derivePersonalRoute(
 
   const items = [
     ...before.map((stop) => sharedItem(stop, plan)),
-    groupItem,
+    ...(mainLineItems ?? [groupItem]),
     ...after.map((stop) => sharedItem(stop, plan)),
   ]
   return items.sort((a, b) => (a.start ?? Number.MAX_SAFE_INTEGER) - (b.start ?? Number.MAX_SAFE_INTEGER))

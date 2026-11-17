@@ -8,8 +8,8 @@ import {
 import type { SplitDraftDetail, GroupRoute } from '../src/features/split/types.ts'
 import type { MainPlan } from '../src/types/mainPlan.ts'
 
-// S2 夹具：2026-11-20 本地时间。共同段 s1–s4；departure=s2（endAt 10:00）、
-// reunion=s3（startAt 12:00），窗口 120 分钟；A 组活动 60 分钟居中 → 10:30–11:30。
+// S2 夹具：2026-11-20 本地时间。共同段 s1–s4；departure=s2（startAt 09:30）、
+// reunion=s3（startAt 12:00），窗口 150 分钟；B 组活动 60 分钟居中 → 10:15–11:15。
 const START_DATE = '2026-11-20'
 const iso = (h: number, m: number) => new Date(2026, 10, 20, h, m, 0, 0).toISOString()
 const ms = (h: number, m: number) => new Date(2026, 10, 20, h, m, 0, 0).getTime()
@@ -46,9 +46,9 @@ function detail(overrides: Partial<SplitDraftDetail> = {}): SplitDraftDetail {
     mainPlanStops,
     departureStopId: 's2',
     reunionStopId: 's3',
-    departureAt: iso(10, 0),
+    departureAt: iso(9, 30),
     reunionAt: iso(12, 0),
-    windowMinutes: 120,
+    windowMinutes: 150,
     routes: [route('A'), route('B')],
     destination: 'Singapore',
     ...overrides,
@@ -74,10 +74,28 @@ test('P1 assigned member sees own group route with shared activities', () => {
   assert.deepEqual(items.map((item) => item.name), ['早餐', '出发站', 'A 组活动', '会合站', '晚餐'])
   const group = items.find((item) => item.groupLabel === 'A')
   assert.ok(group)
-  assert.equal(group.start, ms(10, 30))
-  assert.equal(group.end, ms(11, 30))
+  assert.equal(group.start, ms(10, 15))
+  assert.equal(group.end, ms(11, 15))
   assert.equal(group.travelMinutesToNext, 15)
   assert.ok(items.every((item) => item.groupLabel !== 'B'))
+})
+
+test('P12 main-line group fills the window with its scheduled stops', () => {
+  const d = detail({
+    routes: [
+      route('A', { activityName: '沿主线方案', steps: [{ name: '出发站', minutes: 30 }] }),
+      route('B'),
+    ],
+  })
+  const items = derivePersonalRoute(d, '1', plan)
+  assert.ok(items)
+  assert.deepEqual(items.map((item) => item.name), ['早餐', '出发站', '会合站', '晚餐'])
+  assert.ok(items.every((item) => item.groupLabel !== 'B'))
+  const departure = items.find((item) => item.name === '出发站')
+  assert.ok(departure)
+  assert.equal(departure.groupLabel, 'A')
+  assert.equal(departure.start, ms(9, 30))
+  assert.equal(departure.end, ms(10, 0))
 })
 
 test('P2 different members see different routes (isolation)', () => {
