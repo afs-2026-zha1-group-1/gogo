@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { cancelSplitDraft, checkTiming, confirmSplitDraft, fetchDraftDetail, generateRoutes, saveBoundaries, startDraft } from "./api"
-import type { CheckTimingRequest, GenerateRoutesRequest, SaveBoundariesRequest } from "./types"
+import { api } from "../../api"
+import type { TripMemberList } from "../../types"
+import { SplitApiError, assignGroup, cancelSplitDraft, checkTiming, confirmSplitDraft, fetchDraftDetail, generateRoutes, saveBoundaries, startDraft } from "./api"
+import type { AssignmentRequest, CheckTimingRequest, GenerateRoutesRequest, SaveBoundariesRequest } from "./types"
 
 /**
  * TanStack Query v5 data hooks. The member-only GET detail snapshot is polled so a concurrent
@@ -24,6 +26,30 @@ export function useStartDraft(tripId: string) {
   return useMutation({
     mutationFn: () => startDraft(tripId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [DETAIL_KEY, tripId] }),
+  })
+}
+
+/** Moves the caller into the target group (US-040 A1-A9, design DD13/DD16). */
+export function useAssignGroup(tripId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: AssignmentRequest) => assignGroup(tripId, body),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [DETAIL_KEY, tripId] }),
+  })
+}
+
+/** Trip member roster used to map group member ids to display names (US-040 DD12). */
+export function useTripMembers(tripId: string) {
+  return useQuery({
+    queryKey: ["trip-members", tripId],
+    queryFn: async () => {
+      const result = await api<TripMemberList>(`/api/trips/${tripId}/members`)
+      if (!result.ok || !result.data) {
+        throw new SplitApiError(`HTTP ${result.status}`, `HTTP ${result.status}`, result.status)
+      }
+      return result.data.members
+    },
+    enabled: tripId.length > 0,
   })
 }
 

@@ -32,8 +32,8 @@ public record SplitDraftDocument(
     }
 
     /**
-     * Builds the initial active draft (draftVersion=1, no boundaries, no routes) with a fixture-guaranteed
-     * complete/disjoint A/B group partition (design D16).
+     * Builds the initial active draft (draftVersion=1, no boundaries, no routes) with the US-040 initial partition:
+     * every trip member in group A and an empty group B (design US-040 DD6).
      */
     public static SplitDraftDocument initial(
             String initiatorMemberId, int mainPlanVersion, Map<String, List<String>> groups, String now) {
@@ -42,15 +42,33 @@ public record SplitDraftDocument(
     }
 
     /**
-     * Partitions ordered member ids into two complete, disjoint groups: first half A, remainder B (design D16).
-     * With the fixture's four members ordered by display name this yields A=Alice+Ben, B=Chloe+Daniel.
+     * Partitions ordered member ids into the US-040 initial groups: all members in A, B empty (design US-040 DD6).
+     * Both keys always exist so the detail projection never returns a missing group key.
      */
-    public static Map<String, List<String>> partitionGroups(List<String> orderedMemberIds) {
-        int half = (orderedMemberIds.size() + 1) / 2;
+    public static Map<String, List<String>> initialGroups(List<String> orderedMemberIds) {
         Map<String, List<String>> groups = new LinkedHashMap<>();
-        groups.put("A", new ArrayList<>(orderedMemberIds.subList(0, half)));
-        groups.put("B", new ArrayList<>(orderedMemberIds.subList(half, orderedMemberIds.size())));
+        groups.put("A", new ArrayList<>(orderedMemberIds));
+        groups.put("B", new ArrayList<>());
         return groups;
+    }
+
+    /**
+     * Returns a new document with the caller moved into {@code groupLabel} (US-040 A1-A4, design DD7): the member is
+     * removed from both groups first and appended to the target group, so a member can never be duplicated. The saved
+     * boundaries, routes, initiator and status are preserved and {@code draftVersion} bumps by one; route rows are
+     * never touched by a group change.
+     */
+    public SplitDraftDocument withAssignment(String groupLabel, String memberId, String now) {
+        Map<String, List<String>> updated = new LinkedHashMap<>();
+        for (Map.Entry<String, List<String>> entry : groups.entrySet()) {
+            List<String> members = new ArrayList<>(entry.getValue());
+            members.remove(memberId);
+            updated.put(entry.getKey(), members);
+        }
+        updated.computeIfAbsent(groupLabel, key -> new ArrayList<>()).add(memberId);
+        return new SplitDraftDocument(
+                initiatorMemberId, mainPlanVersion, draftVersion + 1, status,
+                departureStopId, reunionStopId, updated, routes, createdAt, now);
     }
 
     /**

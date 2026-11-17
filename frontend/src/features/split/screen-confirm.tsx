@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom"
-import { useCancelDraft, useConfirmDraft, useSplitDraft } from "./hooks"
+import { useCancelDraft, useConfirmDraft, useSplitDraft, useTripMembers } from "./hooks"
 import { useAuth } from "../auth/AuthProvider"
 import { SplitLayout } from "./split-layout"
 import { EmptyState, ErrorState, LoadingState } from "./states"
@@ -26,7 +26,12 @@ export function ScreenConfirm() {
   const confirm = useConfirmDraft(tripId)
   const cancel = useCancelDraft(tripId)
   const { accountId } = useAuth()
+  const membersQuery = useTripMembers(tripId)
   const detail = draft.data
+  const nameOf = (id: string) =>
+    membersQuery.data?.find((member) => String(member.userId) === id)?.displayName ?? shortId(id)
+  const groupText = (ids: string[] | undefined) =>
+    ids && ids.length > 0 ? ids.map(nameOf).join(" / ") : "暂无成员"
   const status: SplitDraftStatus | undefined = detail?.status
   const isInitiator = detail != null && accountId != null && detail.initiatorMemberId === accountId
   const busy = confirm.isPending || cancel.isPending
@@ -98,8 +103,8 @@ export function ScreenConfirm() {
               <Row label="发起人" value={shortId(detail.initiatorMemberId)} />
               <Row label="草稿版本" value={`v${detail.draftVersion}`} />
               <Row label="状态" value={detail.status} />
-              <Row label="A 组" value={(detail.groups.A ?? []).join(" / ")} />
-              <Row label="B 组" value={(detail.groups.B ?? []).join(" / ")} />
+              <Row label="A 组" value={groupText(detail.groups.A)} />
+              <Row label="B 组" value={groupText(detail.groups.B)} />
             </dl>
           </Card>
 
@@ -148,6 +153,12 @@ export function ScreenConfirm() {
 
           {confirm.error ? <ErrorState error={confirm.error} /> : null}
           {cancel.error ? <ErrorState error={cancel.error} /> : null}
+
+          {detail.routes.length > 0 ? (
+            <p className="text-[10.5px] leading-relaxed text-ink-3">
+              路线为上次生成的版本；若分组已调整，请返回分组页由发起人重新生成。
+            </p>
+          ) : null}
 
           <p className="text-[10.5px] leading-relaxed text-ink-3">
             确认由服务端从草稿复算时间窗，客户端声明不参与判定；失败时下方明细来自 error.details。

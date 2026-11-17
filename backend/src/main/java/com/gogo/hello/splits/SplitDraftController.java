@@ -4,6 +4,7 @@ import com.gogo.auth.AccountPrincipal;
 import com.gogo.hello.common.ApiResponse;
 import com.gogo.hello.splits.domain.SplitDraftDocument;
 import com.gogo.hello.splits.domain.TimingResult;
+import com.gogo.hello.splits.dto.AssignmentRequest;
 import com.gogo.hello.splits.dto.BoundaryResponse;
 import com.gogo.hello.splits.dto.CheckTimingRequest;
 import com.gogo.hello.splits.dto.DraftVersionRequest;
@@ -78,6 +79,16 @@ public class SplitDraftController {
             @RequestBody CheckTimingRequest request) {
         TimingResult result = service.checkTiming(tripId, caller(authentication), request);
         return ResponseEntity.ok(ApiResponse.ok(result));
+    }
+
+    /** Moves the caller into the target group (US-040 A1-A9, design DD1/DD2). */
+    @PutMapping("/split-draft/assignment")
+    public ResponseEntity<ApiResponse<SplitDraftDetailResponse>> assignGroup(
+            @PathVariable String tripId,
+            Authentication authentication,
+            @RequestBody AssignmentRequest request) {
+        SplitDraftDetailResponse detail = service.assign(tripId, caller(authentication), request);
+        return ResponseEntity.ok(ApiResponse.ok(detail));
     }
 
     /** Confirms the current draft as the trip's split (US-049, design D1/D5). */

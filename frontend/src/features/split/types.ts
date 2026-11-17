@@ -138,6 +138,12 @@ export interface TimingResult {
   routes: RouteTimingResult[]
 }
 
+/** PUT .../split-draft/assignment body (US-040 A1-A3, design DD16). The caller is always the moved member. */
+export interface AssignmentRequest {
+  groupLabel: "A" | "B"
+  draftVersion: number
+}
+
 /** POST :confirm / :cancel body (backend DraftVersionRequest). */
 export interface DraftVersionRequest {
   draftVersion: number

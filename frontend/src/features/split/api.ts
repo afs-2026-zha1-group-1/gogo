@@ -1,5 +1,6 @@
 import { csrfHeaders } from "../../lib/csrf"
 import type {
+  AssignmentRequest,
   BoundaryResult,
   CheckTimingRequest,
   Envelope,
@@ -71,6 +72,14 @@ export function startDraft(tripId: string): Promise<SplitDraftDocument> {
 /** PUT save the departure/reunion boundary pair (spec REQ-005). */
 export function saveBoundaries(tripId: string, body: SaveBoundariesRequest): Promise<BoundaryResult> {
   return request<BoundaryResult>(`/${tripId}/split-draft/boundaries`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  })
+}
+
+/** PUT move the caller into the target group (US-040 A1-A9, design DD1/DD16). */
+export function assignGroup(tripId: string, body: AssignmentRequest): Promise<SplitDraftDetail> {
+  return request<SplitDraftDetail>(`/${tripId}/split-draft/assignment`, {
     method: "PUT",
     body: JSON.stringify(body),
   })

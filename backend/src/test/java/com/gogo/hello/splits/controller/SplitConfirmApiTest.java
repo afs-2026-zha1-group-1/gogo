@@ -189,6 +189,38 @@ class SplitConfirmApiTest extends AbstractSplitApiTest {
     }
 
     @Test
+    @DisplayName("confirmDraft_emptyGroup_returns409IncompleteWithGroupsB")
+    void confirmDraft_emptyGroup_returns409IncompleteWithGroupsB() throws Exception {
+        int version = prepareConfirmableDraftAs("Ben");
+        Map<String, java.util.List<String>> groups = new java.util.LinkedHashMap<>();
+        groups.put("A", java.util.List.of(memberId("Alice"), memberId("Ben"), memberId("Chloe"), memberId("Daniel")));
+        groups.put("B", java.util.List.of());
+        updateGroups(groups);
+        confirm(memberId("Alice"), version)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.data").doesNotExist())
+                .andExpect(jsonPath("$.error.code").value("SPLIT_DRAFT_INCOMPLETE"))
+                .andExpect(jsonPath("$.error.details.missing[0]").value("groups.B"));
+        assertThat(objectMapper.readTree(draftJson()).get("status").asText()).isEqualTo("active");
+    }
+
+    @Test
+    @DisplayName("confirmDraft_unassignedAndDuplicateGroups_reportGroupProblems")
+    void confirmDraft_unassignedAndDuplicateGroups_reportGroupProblems() throws Exception {
+        int version = prepareConfirmableDraftAs("Ben");
+        Map<String, java.util.List<String>> groups = new java.util.LinkedHashMap<>();
+        groups.put("A", java.util.List.of(memberId("Alice"), memberId("Ben"), memberId("Chloe")));
+        groups.put("B", java.util.List.of(memberId("Chloe")));
+        updateGroups(groups);
+        confirm(memberId("Alice"), version)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("SPLIT_DRAFT_INCOMPLETE"))
+                .andExpect(jsonPath("$.error.details.missing[0]").value("groups.unassigned"))
+                .andExpect(jsonPath("$.error.details.missing[1]").value("groups.duplicate"));
+        assertThat(objectMapper.readTree(draftJson()).get("status").asText()).isEqualTo("active");
+    }
+
+    @Test
     @DisplayName("confirmDraft_slashFormPath_isNotRouted")
     void confirmDraft_slashFormPath_isNotRouted() throws Exception {
         int status = mockMvc.perform(post("/api/trips/{tripId}/split-draft/confirm", sgfTripId())

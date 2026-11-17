@@ -6,53 +6,53 @@
 
 ## 1. 分支与 PR（P4 起手）
 
-- [ ] 1.1 从最新 `origin/main` 切出 `US-040-split-grouping`
-- [ ] 1.2 首提交后开 PR 到 `main`（标题含 `US-040: 成员分组`；描述引用 change 的 proposal/design/atdd/g1）
+- [x] 1.1 沿用既有分支 `US-040-split-grouping-p0`（P0–P3 文档已在该分支；**偏差**：未从 `origin/main` 另切 `US-040-split-grouping`）
+- [x] 1.2 代码随 PR #117 提交（**偏差**：未另开代码专用 PR；PR #117 覆盖 P0–P4）
 
 ## 2. Fixtures 与红测试
 
 - [x] 2.1 在 `requirement-workspace/acceptance-test-fixtures.md` 补 §US-040（初始 4/0、改组序列 v1→v2→v3、空组/漏组/重复组构造、单成员行程）（P3 已完成）
-- [ ] 2.2 `AbstractSplitApiTest` 增加 `assignAs(displayName, label, draftVersion)` 与 `updateGroups(...)`；`prepareConfirmableDraftAs` 插入「把 Chloe 分到 B 组」并把版本序列改为 1→2→3→4→5（DD17）
-- [ ] 2.3 新增 `SplitAssignmentApiTest`：A1–A9-N 共 9 例（先红；端点尚不存在）
-- [ ] 2.4 `SplitDraftStartApiTest` 增 S9（A=4/B=0）与 S10-N（单成员行程 → 409 `SPLIT_MEMBERS_INSUFFICIENT`）
-- [ ] 2.5 `SplitRouteGenerationApiTest` 增 G6-N（空组/漏组/重复组 → 409 `SPLIT_DRAFT_INCOMPLETE`），并删除/改写 `generateRoutes_groupMoveEndpoint_notImplemented`
-- [ ] 2.6 `SplitConfirmApiTest` 增 CF8-N；`SplitDraftDetailApiTest` 断言改为 A=4/B=0；`SplitDraftDocumentTest` 的 `partitionGroups` 用例改为 `initialGroups`
+- [x] 2.2 `AbstractSplitApiTest` 增加 `assignAs(displayName, label, draftVersion)` 与 `updateGroups(...)`；`prepareConfirmableDraftAs` 插入「把 Chloe 分到 B 组」并把版本序列改为 1→2→3→4→5（DD17）
+- [x] 2.3 新增 `SplitAssignmentApiTest`：A1–A9-N 共 10 例（含「请求体不可移动他人」）
+- [x] 2.4 `SplitDraftStartApiTest` 增 S9（A=4/B=0）与 S10-N（单成员行程 → 409 `SPLIT_MEMBERS_INSUFFICIENT`）
+- [x] 2.5 `SplitRouteGenerationApiTest` 增 G6-N（空组/漏组/重复组 → 409 `SPLIT_DRAFT_INCOMPLETE`），并把 `groups:move` 负向用例改写为 `assignment` 已实现
+- [x] 2.6 `SplitConfirmApiTest` 增 CF8-N（空组/漏组/重复组两条）；`SplitDraftDetailApiTest` 断言改为 A=3/B=1（改组后）；`SplitDraftDocumentTest` 的 `partitionGroups` 用例改为 `initialGroups` + `withAssignment` 两条
 
 ## 3. 后端领域模型
 
-- [ ] 3.1 `SplitDraftDocument`：删除 `partitionGroups`，新增 `initialGroups(orderedMemberIds)`（A=全部、B 空），`initial`/`initialRebuilt` 改用它（DD6）
-- [ ] 3.2 `SplitDraftDocument`：新增 `withAssignment(groupLabel, memberId, now)`（先双组移除再加目标组、`draftVersion + 1`、保留 boundaries/routes/initiator/status）（DD7）
-- [ ] 3.3 纯逻辑 UT：`initialGroups` 与 `withAssignment`（含幂等前置判断的边界）红→绿
+- [x] 3.1 `SplitDraftDocument`：删除 `partitionGroups`，新增 `initialGroups(orderedMemberIds)`（A=全部、B 空），`initial`/`initialRebuilt` 改用它（DD6）
+- [x] 3.2 `SplitDraftDocument`：新增 `withAssignment(groupLabel, memberId, now)`（先双组移除再加目标组、`draftVersion + 1`、保留 boundaries/routes/initiator/status）（DD7）
+- [x] 3.3 纯逻辑 UT：`initialGroups`、`withAssignment`（移动/保留字段/往返不重复）红→绿
 
 ## 4. 后端端点与门禁
 
-- [ ] 4.1 `ErrorCode` 增 `INVALID_GROUP_LABEL`（400）与 `SPLIT_MEMBERS_INSUFFICIENT`（409）（DD3）
-- [ ] 4.2 新增 `AssignmentRequest(groupLabel, draftVersion)` DTO（DD1）
-- [ ] 4.3 `SplitDraftService.assign`：守卫顺序 → 幂等分支 → `withAssignment` + CAS → 返回 detail（DD2/DD4）
-- [ ] 4.4 `SplitDraftController` 增 `PUT /split-draft/assignment` 返回 `ApiResponse<SplitDraftDetailResponse>`
-- [ ] 4.5 `startDraft`（含重建）增加「成员数 ≥ 2」前置 → `SPLIT_MEMBERS_INSUFFICIENT`（DD5）
-- [ ] 4.6 抽出 `groupProblems(draft, memberIds)`（固定顺序 `groups.A`/`groups.B`/`groups.unassigned`/`groups.duplicate`）（DD8）
-- [ ] 4.7 `generateRoutes` 在 provider 前接入 `groupProblems`（DD9）
-- [ ] 4.8 `confirmDraft` 的 `missingDraftParts` 合并 `groupProblems`（DD10）
-- [ ] 4.9 A1–A9-N、S9、S10-N、G6-N、CF8-N 全绿；`cd backend && mvn -B test` 通过（含既有回归）
+- [x] 4.1 `ErrorCode` 增 `INVALID_GROUP_LABEL`（400）与 `SPLIT_MEMBERS_INSUFFICIENT`（409）（DD3）
+- [x] 4.2 新增 `AssignmentRequest(groupLabel, draftVersion)` DTO（DD1）
+- [x] 4.3 `SplitDraftService.assign`：守卫顺序 → 幂等分支 → `withAssignment` + CAS → 返回 detail（DD2/DD4）
+- [x] 4.4 `SplitDraftController` 增 `PUT /split-draft/assignment` 返回 `ApiResponse<SplitDraftDetailResponse>`
+- [x] 4.5 `startDraft`（含重建）增加「成员数 ≥ 2」前置 → `SPLIT_MEMBERS_INSUFFICIENT`（DD5）
+- [x] 4.6 抽出 `groupProblems(draft, memberIds)`（固定顺序 `groups.A`/`groups.B`/`groups.unassigned`/`groups.duplicate`）（DD8）
+- [x] 4.7 `generateRoutes` 在 provider 前接入 `groupProblems`（DD9）
+- [x] 4.8 `confirmDraft` 的 `missingDraftParts` 合并 `groupProblems`（DD10）
+- [x] 4.9 A1–A9-N、S9、S10-N、G6-N、CF8-N 全绿；`mvn -B test` **314/314** 通过（含既有回归）
 
 ## 5. 前端契约层
 
-- [ ] 5.1 `types.ts` 增 `AssignmentRequest`；`api.ts` 增 `assignGroup`；`hooks.ts` 增 `useAssignGroup` 与 `useTripMembers`（DD12/DD16）
-- [ ] 5.2 `states.tsx`：补 `INVALID_GROUP_LABEL` / `SPLIT_MEMBERS_INSUFFICIENT` 文案，泛化 `SPLIT_DRAFT_INCOMPLETE`，新增 `details.missing` 中文化映射（DD15）
+- [x] 5.1 `types.ts` 增 `AssignmentRequest`；`api.ts` 增 `assignGroup`；`hooks.ts` 增 `useAssignGroup` 与 `useTripMembers`（DD12/DD16）
+- [x] 5.2 `states.tsx`：补 `INVALID_GROUP_LABEL` / `SPLIT_MEMBERS_INSUFFICIENT` 文案，泛化 `SPLIT_DRAFT_INCOMPLETE`，新增 `details.missing` 中文化映射（DD15）
 
 ## 6. Screen 13 分组卡
 
-- [ ] 6.1 分组卡改为 A/B 两列：成员名、「我」标记、人数；标题「分组」，删除「本期不开放」文案与过时注释（DD13）
-- [ ] 6.2 切组按钮（非本组可点；终态隐藏）；成功后 invalidate + 提示「分组已更新，路线仍为上次生成的版本，可点击重新生成」
-- [ ] 6.3 空组引导文案（OQ-12）与「需重新生成」徽标（任一组为空且仍有路线）（DD14）
-- [ ] 6.4 `cd frontend && npm run typecheck && npm run build` 通过
+- [x] 6.1 分组卡改为 A/B 两列：成员名、「我」标记、人数；标题「分组」，删除「本期不开放」文案与过时注释（DD13）
+- [x] 6.2 切组按钮（非本组可点；终态隐藏）；成功后 invalidate + 提示「分组已更新，路线仍为上次生成的版本，可点击重新生成」
+- [x] 6.3 空组引导文案（OQ-12）与「需重新生成」徽标（任一组为空且仍有路线）（DD14）
+- [x] 6.4 `npm run typecheck && npm run build` 通过
 
 ## 7. Screen 15 复核屏
 
-- [ ] 7.1 A/B 组改用成员名（复用 `useTripMembers`）（DD12）
-- [ ] 7.2 `routes` 非空时显示「路线为上次生成的版本」提示（DD14）
-- [ ] 7.3 `SPLIT_DRAFT_INCOMPLETE` 的 `groups.*` 缺失项以中文渲染
+- [x] 7.1 A/B 组改用成员名（复用 `useTripMembers`）（DD12）
+- [x] 7.2 `routes` 非空时显示「路线为上次生成的版本」提示（DD14）
+- [x] 7.3 `SPLIT_DRAFT_INCOMPLETE` 的 `groups.*` 缺失项以中文渲染
 
 ## 8. E2E 与验收台账
 
@@ -62,8 +62,8 @@
 
 ## 9. Spec 与文档对账
 
-- [ ] 9.1 `openspec validate us-040-split-grouping --strict` = valid（若需语义调整，回 `/sdd:delta-craft` 并重开 G1）
-- [ ] 9.2 更新 `requirement-workspace/registry.md`（US-040 行：P4 完成与测试计数）与 `handoff.md`
+- [x] 9.1 `openspec validate us-040-split-grouping --strict` = valid（若需语义调整，回 `/sdd:delta-craft` 并重开 G1）
+- [x] 9.2 更新 `requirement-workspace/registry.md`（US-040 行：P4 实现完成与测试计数）与 `handoff.md`
 - [ ] 9.3 `docs/knowledge/architecture/tech-stack-plan.md` 增 §US-040（assignment 端点、分组完整性门禁、零迁移）+ `docs/knowledge/_LOG.md` 一行
 
 ## 10. 验证与门禁
