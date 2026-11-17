@@ -2,8 +2,8 @@
 
 - **Gate:** G2（Verify）
 - **Decision:** **Pass**
-- **Approvers:** VL = **Elian Jiang**（2026-11-16，经用户转达的口头 Pass；按先例由代理代记，非代理自批）
-- **Timestamp:** 2026-11-16（+0800）
+- **Approvers:** VL = **Johnson Sun**（2026-11-17 本人复核并签核；更正 2026-11-16 记录的 Elian Jiang 代记）
+- **Timestamp:** 2026-11-17（+0800）
 - **Change id:** `us-049-050-split-confirm-cancel`
 - **Target:** `main` 直开发（用户 2026-11-16 裁决，无 PR）；验收头 `60f44d1`，实现头 `64060f5`
 
@@ -13,7 +13,7 @@
 - **checkpoints:** `docs/ai4se-plugins/20261116-173657-local-verify-report-checkpoints.md`；命令清单 `20261116-173659-local-verify-commands.txt`；运行日志 `20261116-173712-local-verify-run.log`。
 - **pipeline ci:** `openspec/changes/us-049-050-split-confirm-cancel/ci-report.md` — run `43839036207`@`60f44d1` 与 `43833884672`@`64060f5` 双 job success；**E1 = 全绿**（main push 触发，非继承绿）。
 - **pipeline cd:** n/a（合并前不部署）。
-- **验收脚本与实测:** `docs/feedback/e2e-us-049-050.md` — E1–E11：**10 Pass / 1 N/A**（E11 的"未登录跳转"子项因无 logout 端点、属 US-069，标 N/A 并记录）。
+- **验收脚本与实测:** `docs/feedback/e2e-us-049-050.md` — E1–E11：**10 Pass / 1 Partial**（E11 的"未登录跳转"子项因无 logout 端点、属 US-069，标 N/A 并记录）。
 - **Spec/Design/Tasks:** `specs/splits/spec.md`（7 req / 51 场景，`validate --strict` valid）、`design.md`（D1–D16）、`tasks.md`（32/36 完成，余 4 项为 P5 归档范围）、`dov-ac-review.md`、`consistency-lint.md`、`g1-decision.md`（Pass，C7 已 closed）。
 
 ## Dimension results
@@ -24,7 +24,7 @@
 | Static scan | Pass | 白名单 6/6（反向 grep ×4 + CI YAML 断言 ×2）；`openspec validate --strict` valid |
 | Code review | Pass | 分层/事务/CAS/错误契约/可空模型/前端状态分支均符合 D1–D16；无 CRITICAL 发现 |
 | Evidence (OpenSpec) | Pass | V1–V8 Pass；五问 Q1–Q5 全 ✅ |
-| E2E（浏览器） | Pass（1 N/A） | `docs/feedback/e2e-us-049-050.md`：确认成功/非组织者 403/超窗明细/取消+替换/终态查看/权限与错误态全部实测；logout 子项 N/A（US-069） |
+| E2E（浏览器） | Pass（E11 Partial） | `docs/feedback/e2e-us-049-050.md`：确认成功/非组织者 403/超窗明细/取消+替换/终态查看/权限与错误态全部实测；E11 的 logout 子项 N/A（US-069） |
 
 ## Defect grades
 

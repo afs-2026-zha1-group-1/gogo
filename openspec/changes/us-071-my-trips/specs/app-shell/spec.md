@@ -9,13 +9,18 @@ list there: every row SHALL show the trip name, destination and start–end date
 SHALL mark trips the caller created and trips whose end date has passed, and
 activating a row SHALL navigate to `#/trips/<id>`, where the existing trip
 details screen (hero, information rows, organizer invitation panel) renders
-under the shell with its loading, denied and missing states unchanged, and
-exposes an entry to the trip's main plan at `#/trips/<id>/main-plan`. A list
+under the shell with its loading, denied and missing states unchanged, and the
+main-plan entry owned by the `trips` capability ("Trip detail main-plan
+navigation entry", delivered by US-072) SHALL remain reachable there at
+`#/trips/<id>/main-plan`; this change SHALL NOT add a second entry. A list
 with no trips SHALL render a text empty state offering 创建行程 and SHALL NOT
 invent trip data or ask for a numeric trip id. A read in progress SHALL show a
 loading state, a failed read SHALL offer a retry, `#/create` SHALL be reachable
 from the shell, its back action SHALL return to 行程, and a successful create
-SHALL still navigate to `#/trips/<id>`.
+SHALL still navigate to `#/trips/<id>`. Because the dock tab no longer carries a
+trip id, trip-scoped in-page return links SHALL keep their trip: the 成员
+roster's back link SHALL target `#/trips/<id>`, while guidance used when no trip
+is resolved (分队, create back) SHALL target `#/trips`.
 
 #### Scenario: Details render under the shell with 行程 active
 
@@ -61,8 +66,16 @@ SHALL still navigate to `#/trips/<id>`.
 #### Scenario: The details screen exposes the main plan entry
 
 - **WHEN** a member opens `#/trips/<id>`
-- **THEN** the details screen offers an entry to that trip's main plan
-- **AND** activating it opens `#/trips/<id>/main-plan`
+- **THEN** the entry delivered by the trip details capability is still present
+  and activating it opens `#/trips/<id>/main-plan`
+- **AND** this change adds no additional main-plan entry
+
+#### Scenario: Trip-scoped return links keep the trip context
+
+- **WHEN** a member activates the back link on the 成员 roster of a trip
+- **THEN** the app returns to that trip's details at `#/trips/<id>`
+- **AND** guidance shown when no trip is resolved (分队, create back) targets
+  `#/trips`
 
 #### Scenario: No trip selected shows the honest empty state
 
