@@ -110,7 +110,7 @@ N/A — no waiver（Overall=Pass）。
 - 验证：`mvn -B test` **296/296**（含 `CurrentTripApiTest` 8 例）；`npm run build` 绿；`openspec validate --strict` = valid；E2E **R1–R9 全 Pass**（`docs/feedback/e2e-us-071.md` §Revision）。
 - 截图：`e2e-us-071-revision-selected.png`、`e2e-us-071-revision-empty.png`、`e2e-us-071-revision3.png`。
 - 新增偏离：DD21——排序用 SQLite `date('now')`（UTC），前端徽标用本地日期；+08:00 凌晨边界日可能不一致，MVP 接受。
-- 门禁：G1 Revision 复审 **C4 仍 open**（IO Emily / SA Leo 待签）；本报告 Overall 仍 Pass，但**合并与归档必须等 C4 关闭**。
+- 门禁：G1 Revision 复审 **C4 已 closed**（IO Emily + SA Leo 2026-11-17 复审 Pass，按用户指令代记）；G1 全范围 Pass，可进入 G2 与合并流程。
 
 ## Next
 
