@@ -66,7 +66,7 @@
 - [x] 8.3 R9 同步：trips delta spec（概览门控/无方案回退旧版/旧版保留主线入口）、requirements R5/R6 修订+R9 登记、design DD-8、fixtures S0/优先级/分流派生行、registry 状态行、atdd-design 083-4 改写+083-7/083-8 新增
 - [x] 8.4 `npm run build` exit 0 + `npm run test:unit` 37/37（含 main 新增 team-route 测试）
 - [x] 8.5 浏览器验证两态：S0 旧版区块齐全+入口可用（083-4/083-7）；S1/S2 新版概览（083-1…3/5/6 回归）；生成主线后切换（083-8）——R9 轮 Case A/B/C 全 PASS（见下节）
-- [ ] 8.6 openspec validate --strict 无 ERROR；commit+push 更新 PR #127
+- [x] 8.6 openspec validate --strict 无 ERROR（4 个既有长度 WARNING）；后端回归 337/337；merge+R9 提交 f5e530d 已 push 更新 PR #127
 
 ## R9 浏览器验收记录（2026-11-17，合并 origin/main 后）
 
