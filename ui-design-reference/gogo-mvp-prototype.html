@@ -159,6 +159,20 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
 .hero .htop{display:flex;align-items:center;gap:8px;font-size:11.5px;opacity:.9;font-weight:600}
 .hero h2{font-size:23px;font-weight:780;letter-spacing:-.4px;margin:9px 0 3px}
 .hero .hdest{font-size:13px;opacity:.92;display:flex;align-items:center;gap:6px}
+.trip-hero{display:grid;grid-template-columns:max-content max-content;align-items:center;gap:4px 8px;padding:10px 12px;border-radius:var(--r);overflow-x:auto;white-space:nowrap}
+.trip-hero::after{display:none}
+.trip-hero h2{grid-column:1 / -1;grid-row:1;font-size:14px;margin:0;letter-spacing:0}
+.trip-hero .htop,.trip-hero .hdest{grid-row:2}
+.trip-hero .htop,.trip-hero .hdest{font-size:10px;gap:3px;flex:none}
+.trip-hero .ic{width:13px;height:13px}
+.trip-countdown{display:flex;flex-direction:column;align-items:stretch;gap:6px;margin-top:12px;padding:12px 15px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.trip-countdown-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.trip-countdown-next{font-size:12px;color:var(--ink-2);overflow-wrap:anywhere}
+.trip-countdown strong{font-size:18px;color:var(--brand-ink);white-space:nowrap}
+.trip-choice{display:flex;align-items:center;gap:12px;width:100%;margin-bottom:10px;text-align:left;cursor:pointer}
+.trip-choice input{width:18px;height:18px;accent-color:var(--brand);flex:none}
+#s3 .avstack .av{width:28px;height:28px;font-size:11px}
+#s3 .avstack .av+.av{margin-left:-12px}
 .hero .hmeta{display:flex;gap:16px;margin-top:15px;position:relative;z-index:2}
 .hero .hmeta div{font-size:11px;opacity:.82}
 .hero .hmeta b{display:block;font-size:13px;font-weight:680;opacity:1;margin-top:2px}
@@ -414,7 +428,7 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
                 <div class="logo" style="width:36px;height:36px;border-radius:11px"><svg class="ic" style="width:20px;height:20px"><use href="#i-branch"/></svg></div>
                 <div style="flex:1;min-width:0"><div class="title">我的行程</div><div class="sub" id="dashboardGreeting" style="overflow-wrap:anywhere">你好，<span data-account-name>小明</span></div></div>
                 <button class="iconbtn" onclick="go(20)" title="Scan invitation · 扫码加入" aria-label="Scan invitation"><svg class="ic"><use href="#i-camera"/></svg></button>
-                <button class="iconbtn" onclick="go(3)" title="行程信息" aria-label="行程信息"><svg class="ic"><use href="#i-info"/></svg></button>
+                <button class="iconbtn" onclick="openSelectedTrip()" title="行程信息" aria-label="行程信息"><svg class="ic"><use href="#i-info"/></svg></button>
               </div>
             </div>
             <div class="body">
@@ -457,7 +471,7 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
 
               <div class="sec-title"><svg class="ic sm"><use href="#i-grid"/></svg> 快捷入口</div>
               <div class="quick">
-                <button class="qcard" onclick="go(3)"><span class="qi"><svg class="ic"><use href="#i-info"/></svg></span><span><span class="qt">行程详情</span><span class="qd">US-002</span></span></button>
+                <button class="qcard" onclick="openSelectedTrip()"><span class="qi"><svg class="ic"><use href="#i-info"/></svg></span><span><span class="qt">行程详情</span><span class="qd">US-002</span></span></button>
                 <button class="qcard" onclick="go(4)"><span class="qi"><svg class="ic"><use href="#i-link"/></svg></span><span><span class="qt">邀请朋友</span><span class="qd">US-008</span></span></button>
                 <button class="qcard" onclick="go(7)"><span class="qi"><svg class="ic"><use href="#i-users"/></svg></span><span><span class="qt">成员就绪</span><span class="qd">US-013</span></span></button>
                 <button class="qcard" onclick="go(8)"><span class="qi"><svg class="ic"><use href="#i-star"/></svg></span><span><span class="qt">我的偏好</span><span class="qd">US-019~027</span></span></button>
@@ -469,7 +483,7 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
             </div>
             <div class="tabbar">
               <div class="tab on"><svg class="ic"><use href="#i-home"/></svg>仪表盘</div>
-              <button class="tab tabbutton" onclick="go(23)"><svg class="ic"><use href="#i-list"/></svg>行程</button>
+              <button class="tab tabbutton" onclick="openSelectedTrip()"><svg class="ic"><use href="#i-list"/></svg>行程</button>
               <div class="tab" onclick="go(11)"><svg class="ic"><use href="#i-branch"/></svg>分队</div>
               <div class="tab" onclick="go(7)"><svg class="ic"><use href="#i-users"/></svg>成员</div>
               <button class="tab tabbutton" onclick="go(21)"><svg class="ic"><use href="#i-user"/></svg>我的</button>
@@ -480,6 +494,7 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
             <div class="appbar"><div class="row"><button class="iconbtn" onclick="go(1)" title="返回仪表盘" aria-label="返回仪表盘"><svg class="ic"><use href="#i-left"/></svg></button><div class="title">我的</div></div></div>
             <div class="body">
               <div class="profile-heading"><div class="av av-teal lg" id="profileAvatar">小</div><div style="min-width:0"><h2 id="profileName">小明</h2><p class="hint" id="profileEmail" style="overflow-wrap:anywhere">demo@gogo.app</p></div></div>
+              <button class="btn btn-ghost" style="margin-bottom:20px" onclick="go(23)"><svg class="ic sm"><use href="#i-list"/></svg> 我的行程 <svg class="ic sm"><use href="#i-arrow"/></svg></button>
               <form onsubmit="saveProfile(event)" novalidate>
                 <div class="field"><label class="label" for="displayName">名字</label><input class="input" id="displayName" value="小明" maxlength="30" autocomplete="nickname" aria-describedby="profileMessage" /></div>
                 <p id="profileMessage" class="flow-message" role="status" aria-live="polite"></p>
@@ -489,34 +504,34 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
             </div>
             <div class="tabbar">
               <button class="tab tabbutton" onclick="go(1)"><svg class="ic"><use href="#i-home"/></svg>仪表盘</button>
-              <button class="tab tabbutton" onclick="go(23)"><svg class="ic"><use href="#i-list"/></svg>行程</button>
+              <button class="tab tabbutton" onclick="openSelectedTrip()"><svg class="ic"><use href="#i-list"/></svg>行程</button>
               <button class="tab tabbutton" onclick="go(11)"><svg class="ic"><use href="#i-branch"/></svg>分队</button>
               <button class="tab tabbutton" onclick="go(7)"><svg class="ic"><use href="#i-users"/></svg>成员</button>
               <button class="tab tabbutton on" aria-current="page" onclick="go(21)"><svg class="ic"><use href="#i-user"/></svg>我的</button>
             </div>
           </section>
           <section class="screen" id="s23" data-screen="23">
-            <div class="appbar"><div class="row"><div style="flex:1"><div class="title">我的行程</div><div class="sub" id="tripListCount"></div></div></div></div>
-            <div class="body"><div id="myTripList"></div><button class="btn btn-ghost" style="margin-top:16px" onclick="go(2)"><svg class="ic sm"><use href="#i-plus"/></svg> 创建行程</button></div>
+            <div class="appbar"><div class="row"><button class="iconbtn" onclick="go(21)" title="返回我的" aria-label="返回我的"><svg class="ic"><use href="#i-left"/></svg></button><div style="flex:1"><div class="title">我的行程</div><div class="sub" id="tripListCount"></div></div></div></div>
+            <div class="body"><div id="myTripList" role="radiogroup" aria-label="选择当前行程"></div></div>
             <div class="tabbar">
               <button class="tab tabbutton" onclick="go(1)"><svg class="ic"><use href="#i-home"/></svg>仪表盘</button>
-              <button class="tab tabbutton on" aria-current="page" onclick="go(23)"><svg class="ic"><use href="#i-list"/></svg>行程</button>
+              <button class="tab tabbutton" onclick="openSelectedTrip()"><svg class="ic"><use href="#i-list"/></svg>行程</button>
               <button class="tab tabbutton" onclick="go(11)"><svg class="ic"><use href="#i-branch"/></svg>分队</button>
               <button class="tab tabbutton" onclick="go(7)"><svg class="ic"><use href="#i-users"/></svg>成员</button>
-              <button class="tab tabbutton" onclick="go(21)"><svg class="ic"><use href="#i-user"/></svg>我的</button>
+              <button class="tab tabbutton on" aria-current="page" onclick="go(21)"><svg class="ic"><use href="#i-user"/></svg>我的</button>
             </div>
           </section>
           <section class="screen" id="s24" data-screen="24">
-            <div class="appbar"><div class="row"><button class="iconbtn" onclick="go(23)" title="返回行程列表" aria-label="返回行程列表"><svg class="ic"><use href="#i-left"/></svg></button><div style="flex:1"><div class="title">行程详情</div><div class="sub">US-002 · 全员可见</div></div><button class="iconbtn" onclick="go(4)" title="邀请朋友" aria-label="邀请朋友"><svg class="ic"><use href="#i-users"/></svg></button></div></div>
+            <div class="appbar"><div class="row"><div style="flex:1"><div class="title">行程详情</div><div class="sub">US-002 · 全员可见</div></div><button class="iconbtn" onclick="go(4)" title="邀请朋友" aria-label="邀请朋友"><svg class="ic"><use href="#i-users"/></svg></button></div></div>
             <div class="body">
-              <div class="hero"><div class="htop"><svg class="ic sm"><use href="#i-cal"/></svg> <span id="selectedTripDates"></span></div><h2 id="selectedTripName"></h2><div class="hdest"><svg class="ic sm"><use href="#i-pin"/></svg> <span id="selectedTripDestination"></span></div></div>
+              <div class="hero trip-hero"><div class="htop"><svg class="ic sm"><use href="#i-cal"/></svg> <span id="selectedTripDates"></span></div><h2 id="selectedTripName"></h2><div class="hdest"><svg class="ic sm"><use href="#i-pin"/></svg> <span id="selectedTripDestination"></span></div></div>
+              <div class="trip-countdown" id="selectedTripCountdown"></div>
               <div class="sec-title"><svg class="ic sm"><use href="#i-users"/></svg> 同行成员</div>
               <div class="card pad" style="display:flex;align-items:center;gap:12px"><div class="av av-teal" id="selectedTripAvatar"></div><div style="flex:1"><div style="font-size:13.5px;font-weight:650">1 位成员</div><div class="tiny muted">等待朋友加入</div></div></div>
-              <div class="sec-title"><svg class="ic sm"><use href="#i-list"/></svg> 主线方案</div>
-              <div class="card pad"><h3>还没有主线方案</h3><p class="hint" style="margin-top:8px">新行程的主线方案生成尚未在原型中实现。</p></div>
-              <div class="sec-title"><svg class="ic sm"><use href="#i-branch"/></svg> 分队规划</div>
-              <button class="btn btn-primary" onclick="toast('新行程分队规划尚未在原型中实现')"><svg class="ic sm"><use href="#i-branch"/></svg> 进入分队规划</button>
+              <div class="sec-title"><svg class="ic sm"><use href="#i-list"/></svg> 我的方案</div>
+              <div class="card pad"><h3>还没有方案</h3><p class="hint" style="margin-top:8px">新行程的方案生成尚未在原型中实现。</p></div>
             </div>
+            <div class="tabbar"><button class="tab tabbutton" onclick="go(1)"><svg class="ic"><use href="#i-home"/></svg>仪表盘</button><button class="tab tabbutton on" aria-current="page" onclick="openSelectedTrip()"><svg class="ic"><use href="#i-list"/></svg>行程</button><button class="tab tabbutton" onclick="go(11)"><svg class="ic"><use href="#i-branch"/></svg>分队</button><button class="tab tabbutton" onclick="go(7)"><svg class="ic"><use href="#i-users"/></svg>成员</button><button class="tab tabbutton" onclick="go(21)"><svg class="ic"><use href="#i-user"/></svg>我的</button></div>
           </section>
           <section class="screen" id="s25" data-screen="25">
             <div class="appbar"><div class="row"><button class="iconbtn" onclick="go(24)" title="返回行程详情" aria-label="返回行程详情"><svg class="ic"><use href="#i-left"/></svg></button><div class="title">主线方案</div></div></div>
@@ -567,29 +582,27 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
           <!-- ========== 3 · 行程详情 US-002 ========== -->
           <section class="screen" id="s3" data-screen="3">
             <div class="appbar"><div class="row">
-              <button class="iconbtn" onclick="go(23)" title="返回行程列表" aria-label="返回行程列表"><svg class="ic"><use href="#i-left"/></svg></button>
               <div style="flex:1"><div class="title">行程详情</div><div class="sub">US-002 · 全员可见</div></div>
               <button class="iconbtn" onclick="go(4)" title="邀请朋友" aria-label="邀请朋友"><svg class="ic"><use href="#i-users"/></svg></button>
             </div></div>
             <div class="body">
-              <div class="hero">
+              <div class="hero trip-hero">
                 <div class="htop"><svg class="ic sm"><use href="#i-cal"/></svg> 2026年11月14日 – 11月15日</div>
                 <h2>周末海边游</h2>
                 <div class="hdest"><svg class="ic sm"><use href="#i-pin"/></svg> 青岛 · 黄金海岸</div>
               </div>
+              <div class="trip-countdown" id="demoTripCountdown"></div>
               <div class="sec-title"><svg class="ic sm"><use href="#i-users"/></svg> 同行成员</div>
               <div class="card pad" style="display:flex;align-items:center;gap:12px">
                 <div class="avstack"><div class="av av-teal">明</div><div class="av av-blue">强</div><div class="av av-amber">红</div><div class="av av-rose">美</div></div>
                 <div style="flex:1"><div style="font-size:13.5px;font-weight:650">4 位朋友已加入</div><div class="tiny muted">偏好全部就绪</div></div>
                 <button class="btn btn-ghost sm" onclick="go(7)">查看</button>
               </div>
-              <div class="sec-title"><svg class="ic sm"><use href="#i-list"/></svg> 主线方案</div>
+              <div class="sec-title"><svg class="ic sm"><use href="#i-list"/></svg> 我的方案</div>
               <div class="sec-title"><svg class="ic sm"><use href="#i-clock"/></svg> Day 1 · 11月14日（周六）</div>
               <div id="tripMainTimeline"></div>
-              <button class="btn btn-ghost" style="margin-top:12px" onclick="go(10)"><svg class="ic sm"><use href="#i-shield"/></svg> 审阅并确认主线</button>
-              <div class="sec-title"><svg class="ic sm"><use href="#i-branch"/></svg> 分队规划</div>
-              <button class="btn btn-primary" onclick="go(11)"><svg class="ic sm"><use href="#i-branch"/></svg> 进入分队规划</button>
             </div>
+            <div class="tabbar"><button class="tab tabbutton" onclick="go(1)"><svg class="ic"><use href="#i-home"/></svg>仪表盘</button><button class="tab tabbutton on" aria-current="page" onclick="openSelectedTrip()"><svg class="ic"><use href="#i-list"/></svg>行程</button><button class="tab tabbutton" onclick="go(11)"><svg class="ic"><use href="#i-branch"/></svg>分队</button><button class="tab tabbutton" onclick="go(7)"><svg class="ic"><use href="#i-users"/></svg>成员</button><button class="tab tabbutton" onclick="go(21)"><svg class="ic"><use href="#i-user"/></svg>我的</button></div>
           </section>
 
           <!-- ========== 4 · 分享邀请 US-008 ========== -->
@@ -1345,7 +1358,7 @@ function go(n){
   n=Math.max(1,Math.min(25,n));
   if(!signedIn&&![5,6,19,20,22].includes(n)){pendingScreen=n;n=19;}
   if(n===4){invitationBackScreen=cur===3||cur===24?cur:1;$('invitationDemoBody').style.display=cur===24?'none':'';$('invitationNewBody').style.display=cur===24?'':'none';}
-  if(n===3){$('tripMainTimeline').replaceChildren(document.querySelector('#s10 .timeline').cloneNode(true));}
+  if(n===3){renderTripTimeline();renderCountdown('demoTripCountdown',demoTrip);}
   if(n===10)planBackScreen=cur===3?3:1;
   if(cur===22&&n!==22){$('registerPassword').value='';$('registerConfirm').value='';}
   if(n!==20)stopCamera();
@@ -1485,9 +1498,63 @@ function markPass(id,desc){const el=$(id);if(!el)return;el.classList.add('pass')
 function markWait(id,desc){const el=$(id);if(!el)return;el.classList.remove('pass');const ic=el.querySelector('.valid-ic');ic.style.background='var(--surface-3)';ic.style.color='var(--ink-3)';ic.innerHTML='<svg class="ic"><use href="#i-clock"/></svg>';if(desc)el.querySelector('.vd').textContent=desc;}
 
 function renderMyTrips(){
-  const trips=accounts.get(activeEmail).trips;
+  const account=accounts.get(activeEmail),trips=account.trips;
+  if(trips.length&&!(account.selectedTrip>=0&&account.selectedTrip<trips.length))account.selectedTrip=0;
   $('tripListCount').textContent=trips.length?`${trips.length} 个行程`:'还没有行程';
-  $('myTripList').innerHTML=trips.length?trips.map((trip,index)=>`<button class="qcard" style="width:100%;margin-bottom:10px;text-align:left" onclick="openMyTrip(${index})"><span class="qi"><svg class="ic"><use href="#i-pin"/></svg></span><span style="min-width:0;flex:1"><span class="qt" style="display:block;overflow-wrap:anywhere">${esc(trip.name)}</span><span class="qd" style="display:block;overflow-wrap:anywhere">${esc(trip.destination)} · ${esc(trip.start)} – ${esc(trip.end)}</span></span><svg class="ic sm"><use href="#i-arrow"/></svg></button>`).join(''):'<div class="empty"><svg class="ic"><use href="#i-list"/></svg><p>还没有行程</p><p class="hint">创建行程或接受朋友的邀请</p></div>';
+  $('myTripList').innerHTML=trips.length?trips.map((trip,index)=>`<label class="qcard trip-choice"><span class="qi"><svg class="ic"><use href="#i-pin"/></svg></span><span style="min-width:0;flex:1"><span class="qt" style="display:block;overflow-wrap:anywhere">${esc(trip.name)}</span><span class="qd" style="display:block;overflow-wrap:anywhere">${esc(trip.destination)} · ${esc(trip.start)} – ${esc(trip.end)}</span></span><input type="radio" name="selectedTrip" value="${index}" ${index===account.selectedTrip?'checked':''} onchange="selectTrip(${index})" aria-label="选择 ${esc(trip.name)}"></label>`).join(''):'<div class="empty"><svg class="ic"><use href="#i-list"/></svg><p>还没有行程</p><p class="hint">创建行程或接受朋友的邀请</p></div>';
+}
+function selectTrip(index){accounts.get(activeEmail).selectedTrip=index;}
+function openSelectedTrip(){
+  const account=accounts.get(activeEmail);
+  if(!account.trips.length){go(23);return;}
+  if(!(account.selectedTrip>=0&&account.selectedTrip<account.trips.length))account.selectedTrip=0;
+  openMyTrip(account.selectedTrip);
+}
+function renderTripTimeline(){
+  const timeline=document.querySelector('#s10 .timeline').cloneNode(true),split=demoTrip.confirmedSplit;
+  if(split){
+    const placeholder=timeline.querySelector('.split-cta')?.closest('.tl-item');
+    const group=split.groups.findIndex(members=>members.some(member=>member.email===activeEmail||(!member.email&&member.name===displayName)));
+    if(placeholder&&group>=0){
+      const activities=split.routes[group];
+      const items=activities.map((activity,index)=>{
+        const item=placeholder.cloneNode(true),card=item.querySelector('.tl-card');
+        const time=document.createElement('div'),detail=document.createElement('div'),title=document.createElement('h4'),meta=document.createElement('div');
+        time.className='tl-time';time.textContent=`${activity.time} – ${activities[index+1]?.time||'17:00'}`;
+        detail.className='act';detail.style.marginTop='5px';title.textContent=activity.name;
+        meta.className='meta';meta.textContent=activity.detail;detail.append(title,meta);card.replaceChildren(time,detail);
+        return item;
+      });
+      placeholder.replaceWith(...items);
+    }else if(placeholder){placeholder.remove();}
+  }
+  $('tripMainTimeline').replaceChildren(timeline);
+}
+function renderCountdown(id,trip,now=new Date()){
+  const start=new Date(`${trip.start}T00:00:00`),end=new Date(`${trip.end}T00:00:00`);
+  const dayEnd=new Date(end);dayEnd.setDate(dayEnd.getDate()+1);
+  let label='距离出发',target=start,next='';
+  if(now>=start&&now<dayEnd){
+    const sameDay=now.getFullYear()===start.getFullYear()&&now.getMonth()===start.getMonth()&&now.getDate()===start.getDate();
+    const slots=trip===demoTrip&&sameDay?Array.from(document.querySelectorAll('#tripMainTimeline .tl-item')).map(item=>{
+      const times=item.querySelector('.tl-time').textContent.match(/(\d{2}):(\d{2})\s*–\s*(\d{2}):(\d{2})/);
+      if(!times)return null;
+      const slotStart=new Date(start),slotEnd=new Date(start);
+      slotStart.setHours(+times[1],+times[2]);slotEnd.setHours(+times[3],+times[4]);
+      return {start:slotStart,end:slotEnd,name:item.querySelector('h4, .split-cta .hd').textContent.trim()};
+    }).filter(Boolean):[];
+    const current=slots.findIndex(slot=>now>=slot.start&&now<slot.end);
+    const upcoming=slots.find(slot=>now<slot.start);
+    if(current>=0){label='当前活动剩余';target=slots[current].end;next=slots[current+1]?`下一站：${slots[current+1].name}`:'今天没有更多活动';}
+    else if(upcoming){label='距离下一活动';target=upcoming.start;next=`下一站：${upcoming.name}`;}
+    else{label=slots.length?'今天的活动已结束':'今天暂无活动安排';target=now;}
+  }else if(now>=dayEnd){target=now;}
+  const seconds=Math.max(0,Math.floor((target.getTime()-now.getTime())/1000));
+  const days=Math.floor(seconds/86400),hours=Math.floor(seconds%86400/3600),minutes=Math.floor(seconds%3600/60),remaining=seconds%60;
+  const container=$(id),row=document.createElement('div'),caption=document.createElement('span'),clock=document.createElement('strong');
+  row.className='trip-countdown-row';caption.className='hint';caption.textContent=label;
+  clock.textContent=`${days} 天 ${pad(hours)}:${pad(minutes)}:${pad(remaining)}`;row.append(caption,clock);container.replaceChildren(row);
+  if(next){const destination=document.createElement('div');destination.className='trip-countdown-next';destination.textContent=next;container.append(destination);}
 }
 function openMyTrip(index){
   const trip=accounts.get(activeEmail).trips[index];if(!trip)return;
@@ -1495,6 +1562,7 @@ function openMyTrip(index){
   $('selectedTripName').textContent=trip.name;$('selectedTripDestination').textContent=trip.destination;
   $('selectedTripDates').textContent=`${trip.start} – ${trip.end}`;
   $('selectedTripAvatar').textContent=Array.from(displayName)[0];
+  renderCountdown('selectedTripCountdown',trip);
   go(24);
 }
 /* ---------- US-001 创建行程 ---------- */
@@ -1613,7 +1681,15 @@ function confirmSplit(){
   setTimeout(()=>markPass('rv1','路线对与分组一致'),400);
   setTimeout(()=>markPass('rv2','边界锁定、时间窗可行'),850);
   setTimeout(()=>markPass('rv3','唯一分队、主线未变'),1300);
-  setTimeout(()=>{$('splitReval').style.display='none';$('splitDone').style.display='block';toast('分队已确认并锁定');},1750);
+  setTimeout(()=>{
+    demoTrip.confirmedSplit={
+      groups:['groupA','groupB'].map(id=>Array.from($(id).querySelectorAll('[data-m]'),member=>({name:member.dataset.m,email:member.hasAttribute('data-account-member')?activeEmail:null}))),
+      routes:Array.from(document.querySelectorAll('#routesResult .route'),route=>Array.from(route.querySelectorAll('.mini'),item=>({time:item.querySelector('.mt').textContent.trim(),name:item.querySelector('.mn').textContent.trim(),detail:item.querySelector('.mm')?.textContent.trim()||''})))
+    };
+    const trips=accounts.get(activeEmail).trips,index=trips.indexOf(demoTrip);
+    if(index>=0)accounts.get(activeEmail).selectedTrip=index;
+    toast('分队已确认并锁定');go(3);
+  },1750);
 }
 function cancelSplit(){toast('草稿已取消，主线方案不变');resetSplit();setTimeout(()=>go(10),600);}
 /* ---------- 行程中 / 会合 / 完成 ---------- */
@@ -1639,6 +1715,8 @@ function tick(){
   const a=$('cd16');if(a)a.textContent=`${pad(h)}:${pad(m)}:${pad(s)}`;
   const b=$('cd17');if(b)b.textContent=`${pad(h)}:${pad(m)}`;
   const bar=$('cdBar');if(bar)bar.style.width=((WIN-remain)/WIN*100)+'%';
+  if(cur===3)renderCountdown('demoTripCountdown',demoTrip);
+  if(cur===24){const account=accounts.get(activeEmail),trip=account.trips[account.selectedTrip];if(trip)renderCountdown('selectedTripCountdown',trip);}
 }
 /* ---------- 初始化 ---------- */
 function init(){
