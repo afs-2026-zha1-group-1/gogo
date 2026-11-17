@@ -77,7 +77,11 @@ create/back behavior, browser history and account identity.
 
 ### D4 — Acceptance before code
 
-Follow [ATDD design](atdd-design.md) for red-first API and E2E slices. The
+Before feature implementation, reconcile [ATDD design](atdd-design.md) with
+the interim scope: include all member trips and leave completion-dependent
+progress unavailable. Revisit the Conditional G1 decision with the applicable
+human approvers. Then follow the reconciled ATDD for red-first API and E2E
+slices. The
 existing Maven and frontend build CI jobs are real gates; browser acceptance
 has no existing configured runner and needs explicit setup during apply.
 Test against real applicable separately owned dependencies before end-to-end

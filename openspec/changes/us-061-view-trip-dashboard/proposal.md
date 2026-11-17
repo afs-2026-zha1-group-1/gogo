@@ -64,7 +64,7 @@ member-trip aggregation.
 - **Frontend:** `frontend/src/App.tsx`, dashboard/home content, navigation and
   related tests. Existing destination operations and permissions remain owned
   by their respective pages.
-- **Backend/data:** a new authenticated, membership-filtered read for active
+- **Backend/data:** a new authenticated, membership-filtered read for all member
   trips is required; the current trip controller exposes only an individual
   member-guarded read. Reuse authorized readiness, main-plan and split reads.
   Do not add a completion writer, archive, or duplicate business state.
