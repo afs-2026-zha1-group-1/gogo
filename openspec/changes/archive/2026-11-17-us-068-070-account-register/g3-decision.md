@@ -61,3 +61,8 @@ No blocking conditions. Non-blocking follow-ups:
 
 - Commit the P5 archive branch, open its PR, wait for CI, merge; then move the
   board cards and close the change.
+
+## Post-merge addendum (2026-11-17)
+
+- PR #103 merged to `main` as `37f4ceb`.
+- By explicit user direction, board cards US-068 #40, US-069 #41 and US-070 #43 were moved from Req Analysis to Done; the US-068 card handoff is therefore closed as a process decision.
