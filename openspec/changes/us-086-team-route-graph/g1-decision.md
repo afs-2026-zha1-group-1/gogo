@@ -59,6 +59,8 @@ Rationale：delta 与 proposal/requirement 一致；节点只读、无弹层；�
 
 P4 中用户澄清入口：底部「分队」tab 必须直达「队伍路线」；删除 `App.tsx` 的 `#/split`「分队规划」中间页与 `TripDetails.tsx` 的「分队规划」区块；并移除 confirmed 状态底部重复的「分队已确认」提示卡。该变更落在既有 AC1（打开分队 tab）范围内，不改变 API/状态机/数据契约；delta 的 Screen 11 场景已补「tab 直达、无中间页」一句并重新 `validate --strict` valid。G1 Decision 仍为 **Pass**，不重新签署，此段仅作追溯。
 
+补充（同一 P4 修订）：拆分流程统一移除 `SplitLayout` 的「已登录 · 姓名」身份条；confirmed 复核页隐藏左上返回按钮。二者为展示层收敛，AC1/AC5 语义不变，delta 场景已补身份条说明并重新 validate。
+
 ## Closure path
 
 G1 **Pass** → `/sdd:p3`：ATDD 设计、`design.md`、`tasks.md` 与对齐自检；随后 P4 实现与本地验证。

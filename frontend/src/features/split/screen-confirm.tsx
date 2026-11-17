@@ -64,7 +64,7 @@ export function ScreenConfirm() {
       title="复核并确认分队"
       subtitle="服务端重校验通过后成对生效"
       step={4}
-      backTo={`/trips/${tripId}/split/timing`}
+      backTo={status === "confirmed" ? undefined : `/trips/${tripId}/split/timing`}
       right={
         <Badge variant={status === "confirmed" ? "ok" : status === "cancelled" ? "warn" : "brand"}>
           {status === "confirmed" ? "已确认" : status === "cancelled" ? "已取消" : "待确认"}

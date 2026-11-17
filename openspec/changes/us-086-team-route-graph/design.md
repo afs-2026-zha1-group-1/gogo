@@ -107,6 +107,12 @@
 
 不改 `backend/`、`SecurityConfig`、DTO、迁移与 `package.json`；只消费既有读接口。
 
+### DD11 拆分流程 chrome（P4 修订 2026-11-17）
+
+- `SplitLayout` 删除「已登录 · 姓名」身份条，只保留 appbar / stepbar / body / footer；该布局被 11–15 屏共享，因此一次移除全流程生效。
+- `ScreenConfirm` 在 `confirmed` 只读态不传 `backTo`，左上返回按钮不渲染；待确认/已取消仍保留返回，底部「返回分队首页」保留。
+- `ScreenStart` 的 `confirmed` 只读态不再渲染重复的「分队已确认」提示卡；顶栏状态徽章已表达该状态。
+
 ## 数据与配置
 
 无新表、无新字段、无新配置。

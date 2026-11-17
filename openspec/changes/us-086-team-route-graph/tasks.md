@@ -31,6 +31,9 @@
 - [x] 4.5 返回仍指向当前行程详情（US-082）
 - [x] 4.6 底部「分队」tab 直接指向 `/trips/{currentTripId}/split`（无当前行程回退 `#/trips`）
 - [x] 4.7 删除 `App.tsx` 的 `#/split`「分队规划」占位页与 `TripDetails.tsx` 的「分队规划」section
+- [x] 4.8 移除 `SplitLayout` 的「已登录 · 姓名」身份条（11–15 屏共享生效）
+- [x] 4.9 confirmed 复核页不显示左上返回按钮（保留底部返回分队首页）
+- [x] 4.10 移除 confirmed 队伍路线页底部重复的「分队已确认」提示卡
 
 ## 5. E2E 与回归
 
