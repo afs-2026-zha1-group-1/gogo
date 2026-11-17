@@ -17,7 +17,7 @@ to the `auth` capability.
 
 #### Scenario: An in-app route renders inside the frame
 
-- **WHEN** an authenticated traveler opens the active-trip list, a selected
+- **WHEN** an authenticated traveler opens the member-trip list, a selected
   trip dashboard, the no-trip 行程 route, `#/trips/<id>`, `#/create`, `#/split`
   or `#/members`
 - **THEN** the content is inside a centered column at most 430 px wide and
@@ -95,14 +95,14 @@ SHALL have a unique visible heading or state.
 ### Requirement: Dashboard tab placement
 
 The 仪表盘 tab SHALL target `#/`, the authenticated default route, showing the
-active member-trip list. Selecting a card SHALL show its trip dashboard with
+member-trip list. Selecting a card SHALL show its trip dashboard with
 仪表盘 active. A signed-out visitor SHALL be sent to login before either view
 renders. Dashboard content and read boundaries belong to `trip-dashboard`.
 
 #### Scenario: The default route shows the existing home under the shell
 
 - **WHEN** an authenticated traveler opens the default route `#/`
-- **THEN** the active member-trip list or its applicable state renders inside
+- **THEN** the member-trip list or its applicable state renders inside
   the shell
 - **AND** the 仪表盘 tab is active
 
@@ -114,8 +114,8 @@ renders. Dashboard content and read boundaries belong to `trip-dashboard`.
 
 #### Scenario: No aggregation is introduced
 
-- **WHEN** an authenticated member selects a listed active trip
-- **THEN** the selected-trip overview and progress render under the shell
+- **WHEN** an authenticated member selects a listed member trip
+- **THEN** the selected-trip overview and unavailable progress state render under the shell
 - **AND** 仪表盘 remains active and the account remains authenticated
 
 ### Requirement: Trips tab placement and no-trip empty state

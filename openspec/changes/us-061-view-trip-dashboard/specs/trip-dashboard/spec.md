@@ -2,42 +2,42 @@
 
 ## Purpose
 
-Give authenticated trip members a reliable, read-only view of their active
-trips, progress and available destinations without changing trip state.
+Give authenticated trip members a reliable, read-only view of their member
+trips and available destinations without changing trip state.
 
 ## ADDED Requirements
 
-### Requirement: Active member-trip listing
+### Requirement: Member-trip listing
 
-The dashboard SHALL show all and only non-completed trips in which the
-authenticated traveler is a member. Completion SHALL be determined by the
-authoritative US-058 state, not by dates or other trip statuses. Each card
-SHALL show the saved name, destination, start date and end date and open the
-corresponding trip dashboard.
+The dashboard SHALL show all and only trips in which the authenticated
+traveler is a member. Until US-058 integration is delivered, completed trips
+may appear; the dashboard SHALL NOT label the list or cards active or infer
+completion from dates or other trip statuses. Each card SHALL show the saved
+name, destination, start date and end date and open the corresponding trip
+dashboard.
 
-#### Scenario: Only active member trips are listed
+#### Scenario: Only member trips are listed
 
-- **GIVEN** Ben belongs to active trips A and B and completed trip C, and is
-  not a member of active trip D
+- **GIVEN** Ben belongs to trips A, B and C, and is not a member of trip D
 - **WHEN** Ben opens the dashboard after signing in
-- **THEN** exactly A and B are listed, each with its saved name, destination
+- **THEN** exactly A, B and C are listed, each with its saved name, destination
   and start and end dates
-- **AND** C and D and their private information are not shown
+- **AND** D and its private information are not shown
+- **AND** none of the cards is presented as confirmed active
 - **AND** selecting B opens B's trip dashboard
 
-#### Scenario: No active trips
+#### Scenario: No member trips
 
-- **GIVEN** the authenticated traveler has no non-completed member trips
-- **WHEN** the active-trip list is successfully loaded
+- **GIVEN** the authenticated traveler has no member trips
+- **WHEN** the member-trip list is successfully loaded
 - **THEN** an empty state is shown without fabricated trip information
 
-#### Scenario: Completion cannot be read
+#### Scenario: Completion is not integrated
 
-- **GIVEN** completion state for a member trip is unavailable or invalid
-- **WHEN** the dashboard loads the active-trip list
-- **THEN** it shows an error or unavailable state
-- **AND** it does not classify the affected trip as active or report a
-  successful empty list on the basis of that failure
+- **GIVEN** US-058 completion state is not integrated
+- **WHEN** the dashboard loads the member-trip list
+- **THEN** it includes all member trips regardless of possible completion
+- **AND** it does not infer or display completion or active status
 
 ### Requirement: Authorized trip overview
 
@@ -69,68 +69,35 @@ as stale and SHALL NOT create separate persisted dashboard progress state.
 - **WHEN** the dashboard successfully reads the updated state
 - **THEN** the displayed values reflect that state without a dashboard write
 
-### Requirement: Active-trip progress projection
+### Requirement: Completion-dependent progress unavailable
 
-The dashboard SHALL display setup, invitations, preferences, main plan, split,
-reunion and completion as completed, current or upcoming using the confirmed
-active-trip state rules below. It SHALL NOT show a next-action recommendation.
+Until completion state is integrated, the dashboard SHALL present the
+completion-dependent seven-stage progress as unavailable, without assigning
+completed, current or upcoming stages. It SHALL NOT show a next-action
+recommendation or write completion state.
 
-#### Scenario: Joining remains open
+#### Scenario: Progress cannot be established
 
-- **GIVEN** an active trip's joining remains open, regardless of whether a
-  member has submitted preferences
-- **WHEN** an authorized member views its progress
-- **THEN** setup is completed and invitations is current
-- **AND** preferences, main plan, split, reunion and completion are upcoming
-- **AND** a non-organizer who has not submitted preferences sees a waiting
-  message rather than a next-action recommendation
-
-#### Scenario: Confirmed main plan without a current split
-
-- **GIVEN** an active trip has a confirmed main plan and either no split draft
-  or a cancelled split draft
-- **WHEN** an authorized member views its progress
-- **THEN** setup, invitations and preferences are completed
-- **AND** main plan is current and split, reunion and completion are upcoming
-
-#### Scenario: Active or confirmed split
-
-- **GIVEN** an active trip has an active or confirmed split
-- **WHEN** an authorized member views its progress
-- **THEN** setup, invitations, preferences and main plan are completed
-- **AND** split is current and reunion and completion are upcoming
-
-#### Scenario: Trip becomes completed
-
-- **GIVEN** US-058 reports that a member trip is completed
-- **WHEN** the active dashboard is loaded or refreshed
-- **THEN** the trip is absent from the active list
-- **AND** the dashboard does not infer a completion stage or write completion
-  state; the separate archive owns completed-trip access
-
-#### Scenario: Previously selected trip is completed
-
-- **GIVEN** a selected member trip is reported completed by US-058
-- **WHEN** its active-trip dashboard is opened or refreshed
-- **THEN** it is not shown as an active overview or assigned active progress
-- **AND** completed-trip access remains with the separately delivered archive
+- **GIVEN** an authorized member views any member trip
+- **WHEN** US-058 completion state is not integrated
+- **THEN** progress is explicitly unavailable and no stages are assigned
+- **AND** no completion, active status or next-action recommendation is inferred
 
 ### Requirement: Explicit dashboard read and access states
 
 The dashboard SHALL distinguish pending, empty, missing, denied and failed
 reads from successful data. It SHALL enforce the existing authenticated
-membership boundary and SHALL NOT substitute zero, absent drafts or active
-status for invalid, incomplete or failed responses.
+membership boundary and SHALL NOT substitute zero or absent drafts for
+invalid, incomplete or failed responses.
 
 #### Scenario: Loading and failed overview reads
 
 - **GIVEN** an authorized member opens a selected trip
-- **WHEN** a required trip, readiness, plan, split or completion read is pending
+- **WHEN** a required trip, readiness, plan or split read is pending
 - **THEN** the relevant information is shown as loading, not as actual values
 - **WHEN** any required read fails or returns invalid or incomplete data
 - **THEN** the affected information is shown as unavailable or in error
-- **AND** the failure is not displayed as zero counts, an absent draft or an
-  active trip
+- **AND** the failure is not displayed as zero counts or an absent draft
 
 #### Scenario: Missing and denied trips
 

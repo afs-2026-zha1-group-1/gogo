@@ -12,8 +12,10 @@ The [G1 decision](g1-decision.md) is Conditional, not a Pass.
 ## Goals / Non-Goals
 
 **Goals:** combine authorized owning reads into a defensively validated,
-read-only view; keep the list, selected dashboard and shell coherent; provide
-observable failure and access states.
+read-only view of all member trips; keep the list, selected dashboard and
+shell coherent; provide observable failure and access states. Until US-058
+is integrated, completion-dependent progress is unavailable and completed
+trips may appear.
 
 **Non-Goals:** no completion or archive implementation, no dashboard-owned
 progress persistence, no new destination permissions or destination actions.
@@ -21,17 +23,15 @@ Do not treat a test double as delivered upstream functionality.
 
 ## Decisions
 
-### D1 — Member-scoped active list
+### D1 — Member-scoped list
 
 Add a read-only `GET /api/trips` returning a JSON array of card objects
-`{id, name, destination, startDate, endDate}` for the session principal's
-member trips, filtered by authoritative completion. An empty array means a
-successful empty result only. Query membership server-side; never accept an
-identity from a client parameter or header. Before implementing, obtain the
-delivered US-058 read contract and determine its consistency/transaction
-boundary. If any relevant completion value is unavailable or invalid, fail
-the list rather than return partial or incorrectly active results. No response
-shape or status for US-058 is assumed here.
+`{id, name, destination, startDate, endDate}` for all the session principal's
+member trips, without a completion filter. An empty array means a successful
+empty result only. Query membership server-side; never accept an identity
+from a client parameter or header. Do not label results active or infer
+completion. A later change must establish the delivered US-058 read,
+consistency and fixture contracts before adding completion filtering.
 
 Alternatives: downloading all trips and filtering in the browser leaks private
 data; a dashboard-owned completion column duplicates the owning state. Both
@@ -43,32 +43,27 @@ them over the existing authenticated implementation.
 ### D2 — Overview as authorized read composition
 
 Use `GET /api/trips/{id}`, `/main-plan/inputs`, `/main-plan`, and
-`/split-draft` with the delivered completion read. Reuse existing session
+`/split-draft`. Reuse existing session
 authentication and each owning endpoint's authorization and data rules. The
 main-plan `404 NO_DRAFT` and the split endpoint's successful null draft are
 absent only when their precise contracts say so; other 404s, invalid payloads,
 missing mandatory fields and failures are not absence. Validate data at the
-boundary; distinguish pending, denied, missing, completed and failed states.
+boundary; distinguish pending, denied, missing and failed states.
 On trip or account changes discard stale in-flight results and prevent private
 data from the previous selection being shown. A successful refresh rereads
 source values; no dashboard-owned persistence.
 
 An all-in-one aggregation endpoint would duplicate existing read contracts and
-permission checks; use composition unless the delivered completion contract
-demonstrably requires a different server boundary, in which case revise this
-design before implementation.
+permission checks; use composition. Revisit the boundary when the separately
+planned completion integration establishes its actual contract.
 
 ### D3 — Progress and route safety
 
-Project the seven stages from validated source state using the three rows in
-`requirement-workspace/requirements/US-061.md`. Joining-open takes the stated
-precedence; confirmed main plan with absent/cancelled split selects main plan;
-active/confirmed split selects split for a non-completed trip. Treat
-inconsistent or unsupported combinations as unavailable, not invented state.
-Only show the waiting message in the specified case; never show a
-recommendation. Confirm the source for the viewer's own preference readiness
-with the owning inputs contract; `members[].ready` must not be assumed to mean
-preferences were submitted without verification.
+Show the seven-stage progress as unavailable: the earlier projection assumes
+a non-completed trip, which cannot be established without US-058. Do not
+assign stages, infer active status or show a recommendation. Completion-aware
+projection and the viewer preference-submission predicate are deferred to a
+later integration.
 
 Use `#/` for the list and `#/dashboard/trips/<id>` for the selected view.
 Parse malformed selected identifiers explicitly instead of falling back to
@@ -85,14 +80,15 @@ create/back behavior, browser history and account identity.
 Follow [ATDD design](atdd-design.md) for red-first API and E2E slices. The
 existing Maven and frontend build CI jobs are real gates; browser acceptance
 has no existing configured runner and needs explicit setup during apply.
-Test against the real completion provider and applicable separately owned
-dependencies before end-to-end acceptance.
+Test against real applicable separately owned dependencies before end-to-end
+acceptance of the interim scope. Real completion-provider integration is
+deferred and must not be claimed.
 
 ## Risks / Trade-offs
 
-- **Undelivered US-058 read** → implementation is blocked until Sammi Ng
-  documents and verifies its contract; do not infer completion. Revisit D1/D2
-  if the contract changes the read architecture.
+- **Undelivered US-058 read** → all member trips, including potentially
+  completed trips, appear and progress is unavailable. A later change must
+  establish the real read contract before restoring active-only behavior.
 - **Auth and US-066 shell overlap** → Sammi Ng confirms delivery/sequence and
   reconciles overlapping complete requirement blocks before archive.
 - **Separate archive and unsafe details page** → Sammi Ng confirms owners and
@@ -100,7 +96,7 @@ dependencies before end-to-end acceptance.
   claim end-to-end acceptance while applicable prerequisites are missing.
 - **Changing source reads during composition** → never claim a cross-source
   atomic snapshot; reject inconsistent combinations and refresh. Validate
-  the completion/list consistency guarantee against US-058 before coding.
+  completion/list consistency when the deferred integration is undertaken.
 - **Original tracker drift** → owner Sammi Ng reconciles it separately; this
   design does not silently change the original issue.
 - **No existing browser E2E CI** → establish a reproducible acceptance runner
@@ -108,9 +104,9 @@ dependencies before end-to-end acceptance.
 
 ## Deployment and rollback
 
-Deploy only after prerequisite contracts, feature checks and navigation safety
-are verified. This change proposes no dashboard schema migration; US-058 owns
-its own deployment and schema. Roll back the dashboard application release
-without rolling back or modifying upstream completion data. Archive only after
+Deploy only after applicable prerequisite contracts, feature checks and
+navigation safety are verified. This change proposes no dashboard schema
+migration; US-058 owns its own deployment and schema. Roll back the dashboard
+application release without modifying upstream completion data. Archive only after
 the final tech-stack-plan reconciliation task, including its log entry if the
 plan changes.
