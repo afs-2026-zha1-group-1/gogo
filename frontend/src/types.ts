@@ -47,6 +47,7 @@ export interface InvitationPreview {
   startDate: string
   endDate: string
   mainPlanConfirmed: boolean
+  organizerId: number
 }
 
 export interface AcceptResult {
@@ -105,7 +106,7 @@ export type Route =
   | { page: 'join'; token: string }
   | { page: 'main-plan'; tripId: number }
   | { page: 'main-plan-inputs'; tripId: number }
-  | { page: 'scan'; from: string | null }
+  | { page: 'scan' }
   | { page: 'preferences'; tripId: number }
   | { page: 'invitation'; tripId: number }
   | { page: 'my-preferences' }
