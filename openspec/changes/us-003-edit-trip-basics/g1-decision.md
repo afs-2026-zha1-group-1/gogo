@@ -18,7 +18,7 @@
 - Cross-change scan: `cross-change-scan.md` — 手工九轴 BLOCKER 0 / WARNING 2 / WAIVER 1（A2 preferences 误报 W1；A4 splits 既有漂移）
 - Waiver: W1 by Emily (SA), scope=preferences identity no-op, expiry=delta 触及 preferences 身份/API 契约即失效
 - OpenSpec 校验：`openspec show --json --deltas-only` = deltaCount **11**，结构与场景全部解析；`validate --strict` 退出 1 **仅**因 5 条 ADDED requirement 文本 >500 字符（既有 Living Spec 同类 WARNING，无结构错误/缺失场景）
-- Requirement source：issue #60（历史）+ 本地 `story-detail-iteration-1.md` US-003~007 / US-016~018 / US-051 + **2026-11-17 用户裁决（权威）**
+- Requirement source：issue #60（历史）+ 本地 `story-detail-iteration-1.md` US-003~007 / US-016~018 / US-051 + **2026-11-17 用户裁决（权威）**；主线 stop 编辑由同日并行裁决并入，issue #60 / PR #120 正文同步情况待核验
 - 代码基线：`TripController`/`TripRepository`/`MainPlanService`/`MainPlanRepository`/`InvitationRepository`/`SplitDraft*`/`TripDetails`/`MainPlan`/`Join`/`screen-confirm` 均存在；V9 紧随 V8
 - 角色：IO Leo / SA Emily（用户 2026-11-17 指定；SA 按角色轮换代记）
 - Story：issue #60（US-003，OPEN）；合并来源 #61–#64 已 CLOSED；US-051 此前未实现，本 change 补齐
@@ -109,7 +109,7 @@ IO Pass 为用户 2026-11-17 以 IO 身份明确给出（「根据建议和我�
 - **既有漂移**：Living trips「不暴露确认操作」、列表 read-only 措辞、splits `X-Member-Id` 不在本 change 修。
 - **扫描工具链**：`scripts/cross-change-scan.sh`、`openspec/templates/cross-change-scan.md`、`@rule:g1-cross-change-scan` 不在仓（US-082 同样引用）；本记录以手工九轴为准。
 - **strict 警告**：5 条 ADDED requirement >500 字符；与既有 Living Spec 同类，无结构错误；如 P2 lint 要求可拆分，但不得改变语义。
-- **需求文本**：issue #60 与 story-detail 旧口径保留为历史；PR #120 正文、registry、handoff 必须写明 Supersedes，避免后续误用旧 AC。
+- **需求文本**：issue #60 与 story-detail 旧口径保留为历史；PR #120 正文、registry、handoff 必须写明 Supersedes，避免后续误用旧 AC。并行提交称 issue #60 / PR #120 正文已同步主线 stop 编辑，本机无 gh 无法核验，P4 前复核。
 - **测试面**：`TripDetails` 确认按钮、`MainPlan` 确认弹窗与 per-stop 编辑、split confirm 屏取消按钮、`Join` 的 `joiningClosed` 都需要 E2E 证据。
 - **stop 编辑面**：`MainPlanStopEditApiTest` 覆盖 16 场景；手动编辑不 bump version、不改 stale；重生成必须整份替换并提示丢弃手动编辑；确认时跨 stop 冲突仍 422 `scheduleErrors`。
 
