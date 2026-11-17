@@ -1,3 +1,4 @@
+import { useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { useCancelDraft, useConfirmDraft, useSplitDraft } from "./hooks"
 import { useAuth } from "../auth/AuthProvider"
@@ -30,6 +31,13 @@ export function ScreenConfirm() {
   const status: SplitDraftStatus | undefined = detail?.status
   const isInitiator = detail != null && accountId != null && detail.initiatorMemberId === accountId
   const busy = confirm.isPending || cancel.isPending
+
+  // US-084 AC1: a successful confirmation returns to the same trip's detail page,
+  // where the confirmed personal route is derived. Cross-router-space navigation
+  // uses a full page load (precedent: router.tsx /account → /#/account).
+  useEffect(() => {
+    if (confirm.isSuccess) window.location.href = `/#/trips/${tripId}`
+  }, [confirm.isSuccess, tripId])
 
   const onCancel = () => {
     if (!detail) return

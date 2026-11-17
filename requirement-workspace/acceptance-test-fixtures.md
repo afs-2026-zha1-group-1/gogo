@@ -563,3 +563,66 @@ Alice 的预期顺序（以 2026-11-16 为“今天”，2026-11-17 修订：**�
 | 测试创建的 id | 由数据库分配；断言从创建响应或 fixture 读取 |
 | 分页/搜索参数 | 本变更明确不做；传 `?page=1` 不得产生分页元信息 |
 | 错误 message 文本 | 只有 `code` 是契约 |
+
+## US-083-085 — 行程详情重构 + 个人路线 + 活动倒计时（2026-11-17）
+
+纯前端读组合变更：复用 §Users、V2 种子行程（id=1）与既有四读接口（trip / main-plan / split-draft / members / inputs），**不新增端点、不改迁移、不改种子行**。状态 setup 走既有写路径（生成/确认主线、发起/确认分队）或 test-only 注入。
+
+### State setup
+
+| 状态 | 构造方式 | 用途 |
+|---|---|---|
+| S0 无方案 | 种子行程未生成主线 | US-083 AC3 空态 |
+| S1 主线草稿/已确认 | 既有生成 + 确认流程（US-031-037） | US-083 AC3 内嵌时间轴；US-085 pre-split 倒计时 |
+| S2 分队已确认 | 既有 startDraft → confirm（US-049-050），Alice/Ben 一组、Chloe/Daniel 另一组 | US-084 个人路线隔离；US-085 AC4 |
+| S3 分队草稿未确认 / cancelled | startDraft 不 confirm；或 confirm 后 cancel | US-084 AC5 反向 |
+| S4 成员未分配 | confirmed 快照中 groups 不含该成员 | US-084 AC4 反向 |
+| S5 时间三态 | 以设备本地当前时间相对活动区间构造（test-only 时间注入或调整行程日期） | US-085 AC1/2/3/6 |
+
+### 数据源优先级（R6，契约）
+
+1. split-draft `status=confirmed` 且当前成员在 `groups` 某组 → 我的方案 = 该组路线 + 共同活动（`mainPlanStops`）。
+2. 否则 main-plan 有 stops → 我的方案 = 主线 stops（HH:mm 拼 `trip.startDate` 本地日期）。
+3. 两者皆无 → 无方案空态；不得显示其他行程/其他组的路线。
+
+### 倒计时口径（R7，契约）
+
+| 态 | 目标时刻 | 显示 |
+|---|---|---|
+| 未出发 | `startDate` 本地 00:00 | `N 天 HH:MM:SS`，每秒 tick |
+| 活动中 | 当前活动 endAt | 剩余时间 + 下一站 |
+| 活动间 | 下一活动 startAt | 距开始倒计时 + 下一站 |
+| split confirmed | 我组 ISO 时间戳 + 共同活动 | 同上三态，不用他组 |
+| 边界 | 到达 endAt/startAt | 按当前时间切换下一态；任何时刻不显负数（clamp ≥ 0） |
+| 无安排/无下一站 | — | 无安排态 / 「没有更多活动」；不显其他日期或行程活动 |
+
+时区 = 设备本地（MVP 假设 D-2，G1 确认）。下一站详情（R8）：名称/时间/地址/小组 + 建议出发时间 = 下一活动 startAt − travelMinutes；地址或交通时间缺失 → 「待确认」，不伪造；无后续 → 「没有更多活动」。
+
+### Requests（全部复用，无新增）
+
+| Case | Call | Expected |
+|---|---|---|
+| T1 详情读 | `GET /api/trips/1` as Alice | 既有 200 投影不变（回归） |
+| T2 主线读 | `GET /api/trips/1/main-plan` as Alice | 既有 confirmed/stale/stops 投影不变（回归） |
+| T3 分队读 | `GET /api/trips/1/split-draft` as Alice | confirmed 后仍返回快照（回归 US-049-050） |
+| T4 名册读 | `GET /api/trips/1/members` as Alice | 既有名册投影不变（回归 US-013） |
+| T5 非成员 | 以上各读 as Eve | 既有 403/404 分态不变（回归） |
+| T6 邀请权限 | 非组织者打开邀请页 | 不返回/不显示邀请链接；权限或不可用态（invitations 既有 403 契约） |
+
+### Wire projection（前端派生，非后端契约）
+
+| 派生 | 规则 |
+|---|---|
+| myGroup | `groups` 中含当前成员 userId 的组 label；无 → null |
+| personalRoute | `routes[myGroup]`（activityName/activityMinutes/travelLegsMinutes/bufferMinutes）+ `mainPlanStops` 共同段，按 `departureAt`/`reunionAt` 排时间轴 |
+| countdownTarget | 按 R7 三态从当前时间派生；split confirmed 用 ISO 时间戳，pre-split 用 HH:mm+startDate 拼接 |
+
+### Values deliberately not fixed（US-083-085）
+
+| Item | Why no value is set |
+|---|---|
+| 区块文案/图标/间距/颜色 | 以看板 US-083 两张参考截图为版式权威（R1），token 来自 `@theme`；契约是区块顺序与可见性 |
+| 倒计时数字格式细节 | `N 天 HH:MM:SS` 为契约；补零/分隔符样式为展示层 |
+| 「待确认」「没有更多活动」具体措辞 | 语义为契约（缺失不伪造/无后续态），文案可微调 |
+| 邀请页有效期/撤销/微信 | 偏离 D-1：原型 extras，后端无能力，本批不实现 |
+| 测试注入的时间值 | 由用例按设备本地当前时间构造；不固定绝对时刻 |

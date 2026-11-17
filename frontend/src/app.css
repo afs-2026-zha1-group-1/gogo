@@ -1658,3 +1658,117 @@ body {
   color: var(--ink-3);
 }
 
+/* US-083-085 trip detail overview: countdown card, member avatar stack and
+   embedded activity cards (design DD-6; layout authority = kanban US-083 screenshots). */
+.countdown {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.countdown-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--ink-2);
+}
+
+.countdown-value {
+  font-size: 22px;
+  font-weight: 780;
+  letter-spacing: 0.2px;
+  color: var(--brand-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.countdown-text {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.members-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.members-summary .ms-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.members-summary .ms-title {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.members-summary .ms-sub {
+  margin-top: 1px;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+.avstack {
+  display: flex;
+  flex: none;
+}
+
+.avstack .member-avatar {
+  width: 34px;
+  height: 34px;
+  margin-left: -10px;
+  border: 2px solid var(--surface);
+  font-size: 13px;
+}
+
+.avstack .member-avatar:first-child {
+  margin-left: 0;
+}
+
+.day-tag {
+  color: var(--brand-ink);
+}
+
+.act-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+}
+
+.act-ic {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+}
+
+.act-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.act-name {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.act-sub {
+  margin-top: 1px;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
