@@ -12,7 +12,7 @@
   `requirement-workspace/analysis/us-061-deep-dive.md`.
 - Impact: US-061 section of `requirement-workspace/impact-brief.md`.
 - One-change boundary approved by the user on 2026-11-16:
-  `openspec/changes/us-061-view-trip-dashboard/`.
+  `openspec/changes/archive/2026-11-17-us-061-view-trip-dashboard/`.
 - Dependency ordering: US-058 completion read, separate archive, and separate
   trip-details no-write fix feed dashboard integration and end-to-end
   acceptance. Missing destinations show coming soon; no dashboard-owned actions.

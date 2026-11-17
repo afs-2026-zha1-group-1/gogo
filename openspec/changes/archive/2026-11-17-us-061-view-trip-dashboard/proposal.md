@@ -66,5 +66,5 @@ access to related pages.
   issue #26 and the overlapping shell change separately. At archive, reconcile
   the tech-stack plan with what actually ships.
 
-Source: [US-061 requirement](../../../requirement-workspace/requirements/US-061.md)
+Source: [US-061 requirement](../../../../requirement-workspace/requirements/US-061.md)
 and the current implementation and tests.

@@ -40,7 +40,7 @@ US-066 shell and external tracker reconciliation remain separately owned.
 This section and the earlier assessment below are retained as historical
 records of the superseded unavailable-progress scope.
 
-The [local requirement](../../../requirement-workspace/requirements/US-061.md),
+The [local requirement](../../../../requirement-workspace/requirements/US-061.md),
 proposal, deltas, design, ATDD and tasks now describe the interim all-member
 list and unavailable progress. Existing session authentication is the chosen
 baseline; US-066 shell reconciliation is sequenced later under Sammi Ng.

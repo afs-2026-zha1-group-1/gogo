@@ -45,7 +45,7 @@ they are not approval or CI evidence for these revisions.
 
 ## 5. Final pre-archive reconciliation
 
-- [ ] 5.1 **Owner: Sammi Ng / archive operator.** At archive, reconcile
+- [x] 5.1 **Owner: Sammi Ng / archive operator.** At archive, reconcile
   `docs/knowledge/architecture/tech-stack-plan.md` with only the capabilities,
   API and data model actually shipped by this change; append
   `docs/knowledge/_LOG.md` if the plan changes. Do not publish unarchived work

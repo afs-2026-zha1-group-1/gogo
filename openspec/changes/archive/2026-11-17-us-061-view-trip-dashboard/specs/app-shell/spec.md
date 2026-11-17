@@ -41,6 +41,13 @@ to the `auth` capability.
 - **THEN** My Account renders inside the shell with the 我的 tab active
 - **AND** the dock and safe-area padding remain available
 
+#### Scenario: The invitation page renders full-screen without the dock
+
+- **WHEN** an authenticated member opens `#/trips/<id>/invitation`
+- **THEN** the invitation page renders outside the shell without the bottom
+  dock
+- **AND** a back control returns to the same trip's detail page inside the shell
+
 #### Scenario: Existing contracts are unchanged
 
 - **WHEN** create validation, trip-details permission, the invitation panel,

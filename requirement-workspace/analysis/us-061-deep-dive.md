@@ -4,7 +4,7 @@
 > historical. The implementation uses a persisted current-trip dashboard,
 > role-specific milestones and existing invitation destinations that can POST
 > on organizer page load. See [US-061](../requirements/US-061.md) and the
-> [design](../../openspec/changes/us-061-view-trip-dashboard/design.md).
+> [design](../../openspec/changes/archive/2026-11-17-us-061-view-trip-dashboard/design.md).
 
 Date: 2026-11-16. Inputs: `requirements/US-061.md`,
 `impact-brief.md` section US-061, current code and US-058 issue #24.
