@@ -57,7 +57,7 @@
 - [x] 7.1 `npm run build` + `npm run test:unit` 全绿（31/31，含验收期新增 P11 回归）
 - [x] 7.2 后端 `mvn test` 全绿（296/296，BUILD SUCCESS，零改动回归）
 - [x] 7.3 浏览器逐 AC 对照两张参考截图（atdd-design §二全矩阵，含反向用例与倒计时边界）
-- [ ] 7.4 openspec validate --strict 无 ERROR；local-verify 报告 → PR（禁直推 main）
+- [x] 7.4 openspec validate --strict 无 ERROR（4 WARNING 非阻塞）；local-verify Overall Pass（docs/ai4se-plugins/20261117-161355-local-verify-report.md）→ PR #127（https://github.com/afs-2026-zha1-group-1/gogo/pull/127，base main，禁直推）
 
 ## T7.3 浏览器验收记录（2026-11-17）
 
