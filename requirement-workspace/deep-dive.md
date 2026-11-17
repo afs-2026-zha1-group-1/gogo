@@ -599,3 +599,110 @@ recorded as non-blocking for Dev, not invented.
 ### NFR business-policy layer
 
 确认记录的保留期与 SLA 无 AC 约束，OQ-N7 遗留仍 deferred（owner Dev）；本期以单行草稿状态承载，不发明保留策略。
+
+## REQ-009
+
+账号生命周期收口（My Account/改名 / 退出 / 注册）的数据契约、边界、跨 REQ
+对齐与展示契约。依据：`requirements/REQ-009.md`、
+`intents/2026-11-16-req-009.md`、REQ-008 归档代码与 `V6__create_account_credential.sql`。
+
+### ⑨ Data contract
+
+**概念：账号（`app_user` + `account_credential`，一对一）**
+
+| 维度 | 台账 |
+|---|---|
+| 粒度 | 一行 `app_user` = 一个账号；一行 `account_credential` = 该账号的登录凭据（`user_id` PK/FK） |
+| 既有字段 | `app_user(id INTEGER PRIMARY KEY, display_name TEXT NOT NULL)`；`account_credential(user_id, email, password_hash)`；`uk_account_credential_email(email UNIQUE)` |
+| 注册写入 | 同一事务：`INSERT INTO app_user(display_name)`（rowid 自增）→ 取生成 id → `INSERT INTO account_credential(user_id,email,password_hash)`；显示名与邮箱均已 trim/归一化 |
+| 改名写入 | `UPDATE app_user SET display_name = ? WHERE id = ?`（id 仅取自会话主体） |
+| 退出 | 不写账号/凭据/成员表；只失效当前 HTTP session 与其 SecurityContext |
+| 账号投影 | `AccountResponse {id, name, email}`（沿用 REQ-008）；不含密码、哈希或会话信息 |
+| 迁移 | **无 schema 变更、无新迁移**。V6 已提供唯一邮箱索引；`app_user.id` 为 rowid 别名，可自动分配 |
+
+**注册请求与响应**
+
+| 项 | 契约（wire 细节 P2 定死） |
+|---|---|
+| 请求 | `POST /api/auth/register`，`{email, name, password}`；公开但要求 CSRF token |
+| 归一化 | 邮箱 `trim().toLowerCase(Locale.ROOT)`；显示名 `strip()`；密码不 trim（原样校验/哈希） |
+| 校验 | 邮箱基础格式（单个 `@`、两侧非空、域名含点）；显示名 1–30 字符；密码 6–72 **字节**（BCrypt 72 字节上限） |
+| 成功 | `200 {"next":"login"}`；无 `Set-Cookie` 会话；无账号投影 |
+| 重复邮箱 | `409 EMAIL_TAKEN`（扁平 `{code,message}`）；不建第二行；注册页弹窗“该邮箱已注册”并提供去登录/修改邮箱（用户 2026-11-17 指令，覆盖原不披露响应，接受邮箱枚举风险） |
+| 并发重复 | 事务内唯一索引冲突 → 捕获并映射为同一通用成功；最终恰一行 |
+| 校验失败 | `400` 扁平 `{code,message}`（`INVALID_EMAIL` / `INVALID_NAME` / `INVALID_PASSWORD`，具体码 P2）；不建行、不建会话 |
+| 服务失败 | `5xx` 扁平 `{code,message}`；事务回滚，不留下半条账号；重试幂等（唯一索引兜底） |
+
+**资料更新 / 退出**
+
+| 端点 | 请求 | 成功 | 失败 |
+|---|---|---|---|
+| `PATCH /api/auth/me` | `{name}`；CSRF；会话主体 | `200 {id,name,email}`，名称为 trim 值 | 400 `INVALID_NAME`；401 `USER_REQUIRED`；403 `CSRF_INVALID` |
+| `POST /api/auth/logout` | 无体；CSRF；会话主体 | `204`；session 失效、SecurityContext 清空、cookie 失效 | 401 `USER_REQUIRED`（无/已失效会话）；403 `CSRF_INVALID`；5xx 时前端显示可恢复错误 |
+
+**错误契约**：沿用 REQ-008 的扁平 `{code,message}`；不新增第三层封装。登录
+`INVALID_CREDENTIALS` 不变。`AuthErrorAdvice` 当前把所有不可读 JSON 映射为
+401 `INVALID_CREDENTIALS`，P3 需让注册/改名的不可读请求体落到 400 校验错误。
+
+### ⑩ Boundary enumeration
+
+| 分支 | in / out | 归属与可观察结果 |
+|---|---|---|
+| 注册成功（合法邮箱/名/密码） | in | R1：`200 {"next":"login"}`；恰一行 `app_user` + 一行凭据；名称为 trim 值；无会话 |
+| 重复邮箱（不同大小写/空格） | in（明确提示） | R2：`409 EMAIL_TAKEN`；行数不变；注册页弹窗“该邮箱已注册” |
+| 并发同一邮箱 | in（静默） | R3：恰一行；两个请求均为通用成功；无 5xx 泄漏 |
+| 邮箱非法/缺失 | in（拒绝） | R4：`400 INVALID_EMAIL`；无行 |
+| 显示名空/纯空白/31 字符 | in（拒绝） | R5：`400 INVALID_NAME`；无行 |
+| 密码 5 字符或 73 字节 | in（拒绝） | R6：`400 INVALID_PASSWORD`；无行 |
+| 注册服务失败 | in（失败） | R7：5xx 扁平错误；事务回滚；重试不产生重复 |
+| 注册时持有邀请 → 登录 | in | R8：注册不建会话；登录后恢复 preview；接受仍显式 |
+| 新账号打开 My Account | in | R9：显示注册名/邮箱；无成员关系 |
+| 未登录读/改资料 | in（拒绝） | M0：401 `USER_REQUIRED`；前端打开登录页 |
+| 改名合法（1/30 字符、带空格） | in | M1：200；trim；全表面更新 |
+| 改名空/纯空白/31 字符 | in（拒绝） | M2：400；旧值不变 |
+| 改名请求带他人 id | **out** | 端点不接受目标 id；只作用于会话主体；他人资料不可寻址 |
+| 改名服务失败 | in（失败） | M3：可恢复错误；旧值保持 |
+| 退出成功 | in | L1：204；`me` 及受保护面 401；登录页 |
+| 退出时无/已失效会话 | in（拒绝） | L2：401；前端按已登出展示，不宣称新成功 |
+| 退出 CSRF 缺失 | in（拒绝） | L3：403 `CSRF_INVALID`；会话仍有效 |
+| 退出服务失败 | in（失败） | L4：可恢复错误；本地不错误清空 |
+| 退出后数据完整性 | in | L5：账号/名称/成员/组织者/分组/行程不变 |
+| 邮箱验证 / 改密 / 找回 / SSO / remember-me | **out** | 明确非目标（R-1/R-2） |
+| 账号删除 / 停用 / 管理员用户管理 | **out** | 明确非目标（R-3） |
+| 头像上传 | **out** | 首字母由名称派生，无上传 |
+| 扫码入口 | **out** | US-067；本 change 不新增 scan 控件 |
+| 注册/登录限流、锁定、验证码 | **out** | 部署例外（OQ-13，owner Dev/SA） |
+
+### ⑪ Cross-REQ consistency
+
+| 对手方 | 该方契约 | 本变更对齐 |
+|---|---|---|
+| REQ-008 `auth` | login/me/csrf；BCrypt；session/CSRF；扁平错误；`USER_REQUIRED` | 复用同一投影与错误体；注册后必须走 `POST /api/auth/login`；`SecurityConfig` 只新增显式 logout/register/profile 路径，不启用表单登录 |
+| REQ-008 `app-shell` | 登录页全屏无 dock；壳内页面需登录；右上角只读姓名（REQ-008 OQ-9） | MODIFIED：新增"我的"tab；移除右上角身份条；问候使用账号名；登录页/注册页全屏，壳/dock/join 例外不变 |
+| `trips` / `invitations` / `main-itinerary` | 身份 = 会话主体；成员/组织者按 `app_user.id` | 行为不变；姓名展示读取最新 `display_name`；成员判断仍按 id |
+| `splits` | 会话主体；`MEMBER_REQUIRED` + `{data,error}` 例外 | 不改拆分行为；split 页"已登录 · 姓名"身份条需与右上角身份条一并核对 |
+| `greeting` | 公开问候 | 不变；仪表盘问候改用 `me` 的账号名是前端展示，不修改 greeting API |
+| 数据库 V6 | 唯一邮箱索引 + BCrypt 种子 | 复用；无新迁移；并发重复由索引兜底 |
+| tech-stack-plan §2/§14 | "MVP 不做账号体系/注册登录" | 继续记录偏差；归档时按 `openspec/config.yaml` 收敛 |
+| US-067 | 扫码控件（未实现） | 本 change 不新增 scan；US-068 "scan remains available" 解释为不破坏既有控件 |
+| US-061 | 仪表盘聚合（未实现） | 只加问候名称，不做聚合 |
+
+### ⑫ Notification / display contract
+
+| Surface | Trigger | Recipient | Content + display fields | Channel |
+|---|---|---|---|---|
+| 登录页 "Create account" | 未登录渲染 | 未登录旅行者 | 链接到注册页；保留演示账号区 | `#/login` / `/login` |
+| 注册页 | 点击 Create account | 未登录旅行者 | 邮箱/显示名/密码字段、提交、返回登录；逐字段校验错误；成功后跳登录并预填邮箱 | `POST /api/auth/register` |
+| My Account 资料 | 底部导航"我的" | 已登录持有人 | 显示名、邮箱、改名输入、保存、退出登录；无右上角快捷入口 | `GET/PATCH /api/auth/me` |
+| 底部导航 | 已登录壳内 | 已登录持有人 | 新增"我的"tab（既有 仪表盘/行程/分队/成员 + 我的） | `TabBar` |
+| 仪表盘问候 | 打开 `#/` | 已登录持有人 | 账号显示名；不追加"组织者"；角色徽标仍在行程角色处 | `me` 投影 |
+| 全名称面 | 改名成功 / 任意读取 | 同行程用户 | 成员列表、邀请身份、偏好、路线/分组标签、头像首字母使用最新名称 | 既有读接口 |
+| 退出反馈 | 点击退出成功/失败 | 已登录持有人 | 成功 → 登录页；失败 → 可恢复错误，不宣称失效 | `POST /api/auth/logout` |
+| 错误反馈 | 4xx/5xx | 操作者 | 扁平 `code` 映射文案；字段校验可操作；重复邮箱按用户 2026-11-17 指令明确提示“该邮箱已注册”（覆盖原不披露条款） | 同上 |
+
+无通知类投递（邮件/短信/推送/队列）在本期；无邮箱验证邮件。
+
+### NFR business-policy layer
+
+注册/登录限流、账号锁定与验证码作为部署关注点记录为文档化例外（OQ-13，
+owner Dev/SA）；不发明账号保留期或删除策略；退出只结束会话，不触发数据清理。
