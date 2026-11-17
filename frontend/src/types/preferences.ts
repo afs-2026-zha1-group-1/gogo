@@ -58,3 +58,52 @@ export interface MustDosResponse {
 export interface SaveMustDosResponse {
   items: MustDoItem[]
 }
+
+// US-024 (revised): budget amount is a whole number of MAJOR currency units.
+export const BUDGET_CURRENCIES = ['SGD', 'CNY', 'USD', 'EUR', 'JPY'] as const
+export type BudgetCurrency = (typeof BUDGET_CURRENCIES)[number]
+export type BudgetLimitType = 'hard' | 'soft'
+
+export interface Budget {
+  amount: number
+  currency: string
+  limitType: BudgetLimitType
+}
+
+export interface BudgetMember {
+  userId: number
+  budget: Budget | null
+}
+
+export interface BudgetsResponse {
+  members: BudgetMember[]
+}
+
+export interface SaveBudgetResponse {
+  budget: Budget | null
+}
+
+// US-026: per-member readiness / submission.
+export interface ReadinessMember {
+  userId: number
+  status: 'ready' | 'pending'
+  noPreference: boolean
+}
+
+export interface ReadinessResponse {
+  members: ReadinessMember[]
+  readyCount: number
+  memberCount: number
+  allReady: boolean
+}
+
+export interface SubmissionResponse {
+  status: string
+  noPreference: boolean
+  submittedAt: string
+}
+
+// US-019: a user's personal default interests.
+export interface UserInterestsResponse {
+  interests: string[]
+}

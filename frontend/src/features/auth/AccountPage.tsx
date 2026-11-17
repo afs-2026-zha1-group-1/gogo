@@ -96,6 +96,15 @@ export default function AccountPage() {
           <Icon name="arrow" className="sm" />
         </a>
 
+        <a className="qcard" href="#/my-preferences">
+          <span className="qi"><Icon name="star" /></span>
+          <span style={{ minWidth: 0, flex: 1 }}>
+            <span className="qt" style={{ display: 'block' }}>偏好设置</span>
+            <span className="qd" style={{ display: 'block' }}>设置我的默认兴趣，之后的行程自动勾选</span>
+          </span>
+          <Icon name="arrow" className="sm" />
+        </a>
+
         <form onSubmit={save}>
           <label className="label" htmlFor="account-name">名字</label>
           <input
