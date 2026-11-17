@@ -58,10 +58,13 @@ trip readable by users 1–4); US-066 replaces it with verified login (see below
 Trip creation requires a name, destination and an end date not before the start
 date; both locations are optional.
 
-US-061 adds `GET /api/trips`, returning an array of the signed-in member's
-trips with `id`, `name`, `destination`, `startDate` and `endDate`. An empty
-array means the member has no trips; a signed-out request returns 401
-`USER_REQUIRED`. The list does not filter or infer completion.
+US-061 reuses US-071's `GET /api/trips` response, `{trips:[...]}`, for the
+signed-in member's dashboard cards. An empty `trips` array means the member
+has no trips; a signed-out request returns 401 `USER_REQUIRED`. The dashboard
+does not filter or infer completion. Dashboard selections are read-only and
+do not change the stored current trip; the separate `#/my-trips` picker
+persists an explicit selection. Dashboard-origin trip navigation is guarded
+until the details page's automatic invitation write is fixed.
 
 REQ-004 adds the invitation flow. On `#/trips/<id>` the organizer sees a panel
 with the invitation link, a copy action and a QR encoding the same absolute URL

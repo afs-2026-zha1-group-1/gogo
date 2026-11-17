@@ -3,9 +3,8 @@
 ## Context
 
 See [proposal](proposal.md) and [ATDD design](atdd-design.md). The current
-`TripController` exposes member-guarded individual reads but no list;
-`App.tsx` routes the dashboard to Home and remembers a details trip for the
-trip tab. The organizer's details page issues an invitation on load. The
+US-071 supplies a member-scoped trip list and an explicitly persisted current
+trip. The organizer's details page issues an invitation on load. The
 current session principal and existing authenticated shell must be preserved.
 The [G1 decision](g1-decision.md) records the requester's report that the IO
 and SA passed the revised milestone and recommendation scope.
@@ -28,20 +27,23 @@ Do not treat a test double as delivered upstream functionality.
 
 ### D1 — Member-scoped list
 
-Add a read-only `GET /api/trips` returning a JSON array of card objects
-`{id, name, destination, startDate, endDate}` for all the session principal's
-member trips, without a completion filter. An empty array means a successful
-empty result only. Query membership server-side; never accept an identity
-from a client parameter or header. Do not label results active or infer
-completion. A later change must establish the delivered US-058 read,
-consistency and fixture contracts before adding completion filtering.
+Reuse US-071's read-only `GET /api/trips`, returning
+`{trips:[{id, name, destination, startDate, endDate, organizer, mainPlanConfirmed}]}`
+for all the session principal's member trips, without a completion filter.
+An empty `trips` array means a successful empty result only. Validate the
+envelope and dashboard card fields before displaying them. Membership is
+queried server-side; never accept an identity from a client parameter or
+header. The existing API orders by whether the end date is before the current
+date, then start date and ID; the dashboard must not interpret that ordering
+as authoritative completion or label results active. A later change must
+establish the delivered US-058 read, consistency and fixture contracts
+before adding completion filtering.
 
 Alternatives: downloading all trips and filtering in the browser leaks private
 data; a dashboard-owned completion column duplicates the owning state. Both
-are rejected. This new API is not in the binding tech-stack plan's API list;
-it is an explicit deviation to reconcile only when this change is archived.
-The current plan also describes older identity/data contracts; do not restore
-them over the existing authenticated implementation.
+are rejected. The existing API is recorded in the binding tech-stack plan.
+The plan also describes older identity/data contracts; do not restore them
+over the existing authenticated implementation.
 
 ### D2 — Overview as authorized read composition
 
@@ -86,17 +88,38 @@ Dashboard-origin preference and main-plan views use
 `#/dashboard/trips/<id>/preferences` and
 `#/dashboard/trips/<id>/main-plan`, respectively. Their return controls lead
 back to the selected dashboard; the main-plan view does not expose the unsafe
-details link. Existing non-dashboard routes retain their owning behavior.
+details link. Main-plan inputs use `#/dashboard/trips/<id>/main-plan/inputs`
+when opened from the dashboard, retaining that origin on return or generation.
+Existing non-dashboard routes retain their owning behavior.
 
 Use `#/` for the list and `#/dashboard/trips/<id>` for the selected view.
 Parse malformed selected identifiers explicitly instead of falling back to
 Home; both routes retain the dashboard active tab. Keep the existing details
 route available through non-dashboard flows, but from either dashboard prevent
 the trip tab and open-by-id entry from reaching it while the separately owned
-fix is absent. Show coming soon for that destination and any unimplemented
+fix is absent. Dashboard-origin trip-tab navigation uses
+`#/dashboard/trip-entry`, which remains guarded on reload; non-dashboard
+`#/trips` retains US-071's current-trip behavior. The separate `#/my-trips`
+picker remains the explicit persisted selection. A dashboard selection is
+ephemeral and never writes `current_trip_id`; a pending or failed selection
+cannot fall back to a previously saved current trip, and late current-trip
+responses cannot replace the selected dashboard trip. Dashboard-origin roster
+return links lead back to the selected dashboard, while non-dashboard roster
+and main-plan back links retain their trip-details destinations. The split
+flow carries its dashboard origin through nested screens so its back action
+returns to the dashboard; a direct non-dashboard split entry still returns to
+trip details. The current browser tab retains the safety context across
+refresh without persisting a dashboard trip selection. Show coming soon for
+that destination and any unimplemented
 destination. A link is available only after its existing page-load behavior
 and authorization are verified not to mutate on navigation. Preserve
 create/back behavior, browser history and account identity.
+
+The explicit picker invalidates prior shell trip context while a selection is
+pending or fails. Only one picker write may be in flight, including across
+navigation away from and back to the picker; late or cross-account responses
+cannot restore an older selection. Successful selection is reread from its
+owning current-trip endpoint.
 
 ### D4 — Acceptance before code
 

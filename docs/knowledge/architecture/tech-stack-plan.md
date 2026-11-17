@@ -473,3 +473,32 @@ US-068（我的）、US-069（退出登录）、US-070（注册）已实现并�
 - **验证**：合并 `origin/main` 后后端 `mvn -B test` **279/279**；前端 clean install/build 绿；浏览器 E2E 18 Pass / 1 Skipped；PR #101 CI 双 job 绿（runs 43999674160 / 43999680155）；G1 Pass（IO Emily + SA Elian Jiang）、G2 Pass（VL lumi）。
 
 §3/§4/§7 无需改动；§14 的“不做注册”由本节取代；其余数据模型/API 未变。
+
+## 20. US-082 返回导航修复（2026-11-17，归档对齐）
+
+US-082（修复返回按钮异常跳转与上下文丢失）已实现并合并（PR #107，merge `ee8bf8f`）；单 change，路由修复为主。
+
+- **API 增量**：无新端点、无迁移。`POST /api/invitations/{token}/accept` 响应 additive `tripId`（既有 `joined` / `alreadyMember` 与状态码 200/401/403/404 不变），供入会成功页直达 `#/trips/<id>`。
+- **路由/前端**：`#/trips/<id>` 仍是行程详情真源；分队首页与主线方案返回该路由；登录深链使用 `/login?next=<encoded>`，只恢复单斜杠同源站内路径并拒绝 `/login`、`/register` 自跳；登录/注册内部链接统一 `/login`、`/register`，既有 `#/login`、`#/register` hash 入口保留。
+- **数据模型**：无变化。
+- **验证**：`mvn -B test` 279/279；clean `npm ci` + build 绿；PR #107 CI 双 job 绿（runs 44012217311 / 44012221844 / 44012751115 / 44012755875）；local-verify Pass；G1/G2 Pass（Johnson）。
+- **未改**：行程 tab、成员名册、创建页返回口径由 US-071 拥有，本变更不重复实现。
+
+§3/§5/§6/§7 无需改动；本节只记录 accept 响应字段与前端返回/回跳口径。
+
+## 21. Landed reconciliation — US-071 我的行程与当前行程（archived 2026-11-17）
+
+US-071（PR #102，merge `b07f4c1`）已归档。单 change：`trips` +2 ADDED、`app-shell` REMOVED 1 + ADDED 1。
+
+- **API 增量**：
+  - `GET /api/trips` → 200 `{trips:[{id,name,destination,startDate,endDate,organizer,mainPlanConfirmed}]}`；仅会话账号作为成员的行程；排序 `(end_date < date('now')) ASC, start_date ASC, id ASC`（**已结束最后**）；未登录 401 `USER_REQUIRED`。
+  - `GET /api/trips/current` → 200 `{tripId}`（未选或成员关系失效时为 `null`）。
+  - `PUT /api/trips/current` `{tripId}` → 200 `{tripId}`；400 `TRIP_REQUIRED` / 404 `TRIP_NOT_FOUND` / 403 `NOT_A_MEMBER` / 401 `USER_REQUIRED`。
+- **数据模型**：V8 `ALTER TABLE app_user ADD COLUMN current_trip_id INTEGER REFERENCES trip(id)`（可空）。§5「4 张表」口径不变（加列而非新表）。
+- **路由/前端**：`#/my-trips` = 选择页（`.qcard` 卡片、点选**不跳转**、右缘「已选择」tag、选中高亮、无右箭头）；`#/trips` = 当前行程详情（无 current 时空态引导跳 `#/my-trips`）；`#/trips/<id>` 深链保留；「我的」页加「我的行程」入口。已结束徽标用本地日期、排序用 UTC（DD21 边界接受）。
+- **验证**：`mvn -B test` 296/296；`npm ci` + build 绿；E2E E1–E12 + AC7 + R1–R9 全 Pass；CI runs `44020071898`/`44020065562` @`8b7b1c7`；G1 Pass（C1–C4 closed）、G2 Pass（VL Leo + Johnson Sun）。
+- **未改**：邀请/主线/分队/成员名册读取语义；US-072 的详情页主线入口不重复实现。
+
+§6 清单为 MVP 计划口径；实际端点以本节与 §13–§20 为准。
+
+**残余承接（2026-11-17 followups）**：F2 已修复——`gogo.db` 的 V2 校验和与代码一致，默认启动 `No migration necessary`；F3 已落地——`src/lib/trip-date.ts` 纯函数 + `tests/trip-date.test.ts`（node:test，6 例，零新依赖）+ CI `test:unit` step；F4 评估维持接受——排序 UTC 与徽标本地日期的凌晨边界不引入时区协商或前端重排（避免破坏 API 排序契约），若出现客诉再立独立变更。

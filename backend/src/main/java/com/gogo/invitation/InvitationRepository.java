@@ -66,7 +66,7 @@ public class InvitationRepository {
                 .orElseThrow(() -> new InvitationApiException(404, "INVITATION_NOT_FOUND",
                         "This invitation is not usable"));
         if (trips.isMember(tripId, userId)) {
-            return new JoinResult(true, true);
+            return new JoinResult(true, true, tripId);
         }
         if (isMainPlanConfirmed(tripId)) {
             throw new InvitationApiException(403, "JOINING_CLOSED",
@@ -74,7 +74,7 @@ public class InvitationRepository {
         }
         int inserted = jdbc.update(
                 "INSERT OR IGNORE INTO trip_member (trip_id, user_id) VALUES (?, ?)", tripId, userId);
-        return new JoinResult(true, inserted == 0);
+        return new JoinResult(true, inserted == 0, tripId);
     }
 
     private Optional<String> findToken(long tripId) {

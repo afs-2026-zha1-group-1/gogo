@@ -50,13 +50,13 @@ class TripDashboardApiTest {
     void listsOnlyMemberTripsWithSavedCardFields() throws Exception {
         mockMvc.perform(get("/api/trips").with(TestAuth.asUser("2")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(3))
-                .andExpect(jsonPath("$[*].name").value(containsInAnyOrder(
+                .andExpect(jsonPath("$.trips.length()").value(3))
+                .andExpect(jsonPath("$.trips[*].name").value(containsInAnyOrder(
                         "Singapore Friends Day", "Trip B", "Trip C")))
-                .andExpect(jsonPath("$[?(@.name == 'Trip B')].destination").value("Penang"))
-                .andExpect(jsonPath("$[?(@.name == 'Trip B')].startDate").value("2026-12-10"))
-                .andExpect(jsonPath("$[?(@.name == 'Trip B')].endDate").value("2026-12-12"))
-                .andExpect(jsonPath("$[?(@.name == 'Trip B')].id").isNotEmpty())
+                .andExpect(jsonPath("$.trips[?(@.name == 'Trip B')].destination").value("Penang"))
+                .andExpect(jsonPath("$.trips[?(@.name == 'Trip B')].startDate").value("2026-12-10"))
+                .andExpect(jsonPath("$.trips[?(@.name == 'Trip B')].endDate").value("2026-12-12"))
+                .andExpect(jsonPath("$.trips[?(@.name == 'Trip B')].id").isNotEmpty())
                 .andExpect(content().string(not(containsString("Private D"))))
                 .andExpect(content().string(not(containsString("Private destination"))));
     }
@@ -65,7 +65,7 @@ class TripDashboardApiTest {
     void emptyMembershipReturnsEmptyList() throws Exception {
         mockMvc.perform(get("/api/trips").with(TestAuth.asUser("5")))
                 .andExpect(status().isOk())
-                .andExpect(content().json("[]"));
+                .andExpect(content().json("{\"trips\":[]}"));
     }
 
     @Test

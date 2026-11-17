@@ -509,3 +509,57 @@ contractual. Denial bodies contain no member identity, name or organizer value.
 | Trip id | Assigned by the database; tests read it from the create response or fixture |
 | Member display order beyond ascending `userId` | `userId` ascending is fixed for deterministic tests; visual grouping may vary |
 | Readiness, preference, budget or plan values | Out of scope; the projection must not contain them |
+
+## US-071 — 我的行程列表
+
+复用上面的 §Users 与 V2 种子行程（id=1）。除种子行外，再建三条 **test-only** 行程；不改产品迁移、不改种子行。
+
+| 行程 | id | organizer | 成员 | start | end | 用途 |
+|---|---|---|---|---|---|---|
+| `Singapore Friends Day`（种子） | 1 | Alice | Alice, Ben, Chloe, Daniel | 2026-12-05 | 2026-12-05 | 自建行、`organizer=true`、基准行 |
+| `Bali Weekend` | 测试创建 | Ben | Ben, Alice | 2026-12-08 | 2026-12-10 | 受邀行、`organizer=false` |
+| `Kyoto Autumn` | 测试创建 | Alice | Alice | 2026-11-01 | 2026-11-05 | 已结束（相对 2026-11-16）→ 排序最后 |
+| `Same-Day Start` | 测试创建 | Alice | Alice | 2026-12-05 | 2026-12-06 | 与种子行同日 → 按 id 升序 |
+
+Alice 的预期顺序（以 2026-11-16 为“今天”，2026-11-17 修订：**未结束在前、已结束最后**）：`Singapore Friends Day`(12-05, id=1) → `Same-Day Start`(12-05, id 更大) → `Bali Weekend`(12-08) → `Kyoto Autumn`(11-01，已结束)。同组内按 `start_date` 升序、同日按 `id` 升序。
+
+### Requests
+
+| Case | Call | Expected |
+|---|---|---|
+| L1 member list | `GET /api/trips` as Alice | `200`; `trips` 恰好 4 条，每行程一条，顺序同上 |
+| L2 same-day ordering | 同上（依赖种子行与 `Same-Day Start`） | 12-05 两条按 `id` 升序 |
+| L3 organizer flag | 同上 | 种子行 / `Kyoto Autumn` / `Same-Day Start` → `organizer=true`；`Bali Weekend` → `false` |
+| L4 empty account | `GET /api/trips` as Eve（无成员行） | `200`; `{"trips":[]}`；不虚构数据 |
+| L5 confirmed plan | 种子行 `main_plan_confirmed=1`（生产确认或 test-only） | 仍返回且 `mainPlanConfirmed=true`；不改变其他行 |
+| L6 finished trip | 同上（包含 `Kyoto Autumn`） | 仍返回同一字段集；**响应无 finished 字段**；邀请/主线/分队行为不变 |
+| L7 no session | `GET /api/trips` 无会话 | `401`; `code = USER_REQUIRED` |
+| L8 retired header | 仅 `X-User-Id: 1`，无会话 | `401`; `code = USER_REQUIRED` |
+| L9 read-only | `POST /api/trips`（合法 body） | `201`，仅新增一条；`PUT`/`DELETE /api/trips` 不改变数据 |
+| L10 outside trip still denied | `GET /api/trips/1` as Eve | 既有 `403 NOT_A_MEMBER`（回归，不进本变更断言） |
+
+### Wire projection
+
+| Projection | Fields |
+|---|---|
+| Trip list (`GET /api/trips`) | `trips` [{`id` (integer), `name` (string), `destination` (string), `startDate` (string `YYYY-MM-DD`), `endDate` (string `YYYY-MM-DD`), `organizer` (boolean), `mainPlanConfirmed` (boolean)}] ordered by ascending `startDate` then ascending `id` |
+
+`organizer` 表示当前调用者自己是否为该行程的创建者，不落库、不代表额外权限；成员名册的 `organizer` 语义不变。
+
+### Error contract
+
+| code | Status | Case |
+|---|---|---|
+| `USER_REQUIRED` | 401 | 无会话请求列表（L7、L8） |
+
+列表不新增其他错误码：不按 id 读取，故无 403/404 语义。
+
+### Values deliberately not fixed（US-071）
+
+| Item | Why no value is set |
+|---|---|
+| 列表页标题、“我创建的”/“已结束”徽标文案 | 展示层文案；契约是可见标题唯一 + 徽标可见性 |
+| 图标与行间距、徽标颜色 | 来自 `ui-design-reference` 与 `@theme` token，非 AC |
+| 测试创建的 id | 由数据库分配；断言从创建响应或 fixture 读取 |
+| 分页/搜索参数 | 本变更明确不做；传 `?page=1` 不得产生分页元信息 |
+| 错误 message 文本 | 只有 `code` 是契约 |

@@ -87,6 +87,15 @@ export default function AccountPage() {
           </div>
         </div>
 
+        <a className="qcard" href="#/my-trips">
+          <span className="qi"><Icon name="list" /></span>
+          <span style={{ minWidth: 0, flex: 1 }}>
+            <span className="qt" style={{ display: 'block' }}>我的行程</span>
+            <span className="qd" style={{ display: 'block' }}>选择当前行程，在「行程」页查看</span>
+          </span>
+          <Icon name="arrow" className="sm" />
+        </a>
+
         <form onSubmit={save}>
           <label className="label" htmlFor="account-name">名字</label>
           <input

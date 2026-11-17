@@ -23,6 +23,24 @@ export interface Trip {
   mainPlanConfirmed?: boolean
 }
 
+export interface TripListItem {
+  id: number
+  name: string
+  destination: string
+  startDate: string
+  endDate: string
+  organizer: boolean
+  mainPlanConfirmed: boolean
+}
+
+export interface TripListResponse {
+  trips: TripListItem[]
+}
+
+export interface CurrentTripResponse {
+  tripId: number | null
+}
+
 export interface InvitationPreview {
   tripName: string
   destination: string
@@ -35,7 +53,6 @@ export interface AcceptResult {
   joined: boolean
   alreadyMember: boolean
   tripId: number
-  tripName: string
 }
 
 export interface InvitationIssue {
@@ -78,17 +95,19 @@ export type TabId = 'dashboard' | 'trips' | 'split' | 'members' | 'account'
 export type Route =
   | { page: 'home' }
   | { page: 'dashboard-trip'; tripId: number | null }
+  | { page: 'dashboard-trip-guard' }
   | { page: 'login' }
   | { page: 'register' }
   | { page: 'account' }
-  | { page: 'trips-empty' }
+  | { page: 'my-trips' }
+  | { page: 'trips-current' }
   | { page: 'create' }
   | { page: 'split' }
   | { page: 'members' }
   | { page: 'details'; tripId: number }
   | { page: 'join'; token: string }
   | { page: 'main-plan'; tripId: number; dashboardOrigin?: boolean }
-  | { page: 'main-plan-inputs'; tripId: number }
+  | { page: 'main-plan-inputs'; tripId: number; dashboardOrigin?: boolean }
   | { page: 'scan'; from: string | null }
   | { page: 'preferences'; tripId: number; dashboardOrigin?: boolean }
 

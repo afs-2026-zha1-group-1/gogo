@@ -1,4 +1,5 @@
-import { useNavigate, useParams } from "react-router-dom"
+import { useParams } from "react-router-dom"
+import { useSplitNavigate } from "./split-navigation"
 import { useCancelDraft, useConfirmDraft, useSplitDraft } from "./hooks"
 import { useAuth } from "../auth/AuthProvider"
 import { SplitLayout } from "./split-layout"
@@ -21,7 +22,7 @@ import { cn } from "@/lib/utils"
  */
 export function ScreenConfirm() {
   const { tripId = "" } = useParams()
-  const navigate = useNavigate()
+  const navigate = useSplitNavigate()
   const draft = useSplitDraft(tripId)
   const confirm = useConfirmDraft(tripId)
   const cancel = useCancelDraft(tripId)

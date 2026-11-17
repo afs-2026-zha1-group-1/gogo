@@ -66,16 +66,6 @@ public class TripRepository {
         return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }
 
-    public List<TripCardResponse> findByMember(long userId) {
-        return jdbc.query(
-                "SELECT t.id, t.name, t.destination, t.start_date, t.end_date "
-                        + "FROM trip t JOIN trip_member tm ON tm.trip_id = t.id "
-                        + "WHERE tm.user_id = ? ORDER BY t.id",
-                (rs, rowNum) -> new TripCardResponse(rs.getLong("id"), rs.getString("name"),
-                        rs.getString("destination"), rs.getString("start_date"), rs.getString("end_date")),
-                userId);
-    }
-
     public boolean isMember(long tripId, long userId) {
         Long count = jdbc.queryForObject(
                 "SELECT COUNT(*) FROM trip_member WHERE trip_id = ? AND user_id = ?",
@@ -94,6 +84,43 @@ public class TripRepository {
                         rs.getInt("organizer") != 0),
                 tripId);
         return new TripMemberListResponse(tripId, members);
+    }
+
+    /** US-071: the caller's trips; unfinished first, then start date then id (ended last). */
+    public TripListResponse findTripsForUser(long userId) {
+        List<TripListItem> trips = jdbc.query(
+                "SELECT t.id, t.name, t.destination, t.start_date, t.end_date, t.main_plan_confirmed, "
+                        + "CASE WHEN t.organizer_id = tm.user_id THEN 1 ELSE 0 END AS organizer "
+                        + "FROM trip t JOIN trip_member tm ON tm.trip_id = t.id "
+                        + "WHERE tm.user_id = ? "
+                        + "ORDER BY (t.end_date < date('now')) ASC, t.start_date ASC, t.id ASC",
+                (rs, rowNum) -> new TripListItem(rs.getLong("id"), rs.getString("name"),
+                        rs.getString("destination"), rs.getString("start_date"), rs.getString("end_date"),
+                        rs.getInt("organizer") != 0, rs.getInt("main_plan_confirmed") != 0),
+                userId);
+        return new TripListResponse(trips);
+    }
+
+    /** US-071 revision: the account's stored current trip, or null when unset/stale. */
+    public CurrentTripResponse findCurrentTrip(long userId) {
+        Long stored = jdbc.queryForObject(
+                "SELECT current_trip_id FROM app_user WHERE id = ?", Long.class, userId);
+        if (stored == null || !isMember(stored, userId) || findById(stored).isEmpty()) {
+            return new CurrentTripResponse(null);
+        }
+        return new CurrentTripResponse(stored);
+    }
+
+    /** US-071 revision: persist the selection only for trips the caller belongs to. */
+    @Transactional
+    public CurrentTripResponse selectCurrentTrip(long userId, long tripId) {
+        findById(tripId)
+                .orElseThrow(() -> new TripApiException(404, "TRIP_NOT_FOUND", "No trip with id " + tripId));
+        if (!isMember(tripId, userId)) {
+            throw new TripApiException(403, "NOT_A_MEMBER", "Caller is not a member of this trip");
+        }
+        jdbc.update("UPDATE app_user SET current_trip_id = ? WHERE id = ?", tripId, userId);
+        return new CurrentTripResponse(tripId);
     }
 
     /** Confirms the trip's main plan so the split flow (REQ-004 precondition) can start. */

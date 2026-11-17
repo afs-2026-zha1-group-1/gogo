@@ -12,7 +12,7 @@ member-trip aggregation.
   signed-in user is a member. Each card shows the saved trip name,
   destination, and start/end dates and opens that trip's dashboard. Until
   US-058 is integrated, completed trips may appear and cards are not labelled
-  active.
+  active. Reuse the member-scoped list delivered by US-071.
 - Show an authorized per-trip overview with the trip summary, member and ready
   counts, and main-plan and split statuses. Present a seven-stage progress
   strip based on verified planning data, with reunion and completion marked
@@ -24,6 +24,8 @@ member-trip aggregation.
   yet developed say they are coming soon. The existing trip-details
   destination also says coming soon until its organizer page-load invitation
   write is fixed separately; dashboard tabs must not bypass this restriction.
+  Dashboard selection is ephemeral; the separate US-071 picker continues to
+  persist an explicitly chosen current trip.
 - Show a next-step recommendation only when supported by verified source data
   and an authorized, read-only destination. Do not execute actions belonging
   to other pages. Active-only filtering and the separately delivered archive
@@ -71,10 +73,10 @@ member-trip aggregation.
 - **Frontend:** `frontend/src/App.tsx`, dashboard/home content, navigation and
   related tests. Existing destination operations and permissions remain owned
   by their respective pages.
-- **Backend/data:** a new authenticated, membership-filtered read for all member
-  trips is required; the current trip controller exposes only an individual
-  member-guarded read. Reuse authorized readiness, main-plan and split reads.
-  Do not add a completion writer, archive, or duplicate business state.
+- **Backend/data:** reuse US-071's authenticated, membership-filtered trip
+  list and its existing response envelope, plus authorized readiness,
+  main-plan and split reads. Do not add a duplicate list API, completion
+  writer, archive, or duplicate business state.
 - **Prerequisites:** archive delivery is separate, and the trip-details
   automatic invitation issuance must be fixed separately before that
   destination is linked. US-058 and active-only filtering are deferred, not
@@ -85,8 +87,8 @@ member-trip aggregation.
 - **Existing contracts:** `openspec/specs/app-shell/spec.md` says there is no
   dashboard aggregation and contains historical identity-scaffold language.
   Update the applicable shell requirements without restoring that scaffold.
-  The new list read is not in the binding tech-stack plan's API list; record
-  the deviation during design and reconcile the plan at archive.
+  US-071 has since added its list and current-trip APIs to the binding
+  tech-stack plan; reconcile US-061's actually shipped behavior at archive.
 - **Verification:** cover authorized membership isolation, actual counts and
   statuses, source-backed progress and recommendations, safe and unavailable navigation, an empty
   membership list, error handling and no navigation writes.

@@ -135,47 +135,122 @@ renders. Dashboard content and read boundaries belong to `trip-dashboard`.
 - **THEN** the selected-trip overview and source-backed milestone strip render under the shell
 - **AND** 仪表盘 remains active and the account remains authenticated
 
-### Requirement: Trips tab placement and no-trip empty state
+### Requirement: Current trip tab and my-trips list
 
-The 行程 area SHALL retain the existing member-only trip-details screen and
-its loading, denied and missing outcomes at `#/trips/<id>`. With no trip
-selected, it SHALL show an honest empty state with create and open-by-id
-entries. Until the separate trip-details invitation-write fix is delivered,
-dashboard navigation and its tab SHALL present the details destination,
-including the open-by-id entry, as coming soon rather than opening it. Create
-behavior remains owned by the existing trip flow.
+The 我的 page SHALL expose 我的行程 at `#/my-trips`, listing the caller's trips
+as cards without a trailing arrow. Activating a picker card SHALL persist the
+current trip, highlight it and show 已选择 without navigating. Outside
+dashboard-origin navigation, the 行程 tab SHALL target `#/trips`, rendering the
+current trip's details or an empty state linking to `#/my-trips`.
+`#/trips/<id>` SHALL keep opening details directly. Until the separate
+invitation-write fix is delivered, dashboard-origin navigation SHALL instead
+use `#/dashboard/trip-entry`, showing a coming-soon details state with disabled
+open-by-id entry, even after reload.
 
-#### Scenario: Details render under the shell with 行程 active
+#### Scenario: The account page exposes the my-trips entry
 
-- **WHEN** a member opens `#/trips/<id>` for the fixture trip
-  `Singapore Friends Day` through an existing non-dashboard route
-- **THEN** the existing details screen renders inside the shell with 行程 active
-- **AND** its loading, denied and missing outcomes remain unchanged
+- **WHEN** a signed-in traveler opens `#/account`
+- **THEN** an entry titled 我的行程 is visible
+- **AND** activating it opens `#/my-trips` inside the shell
 
-#### Scenario: No trip selected shows the honest empty state
+#### Scenario: The my-trips page lists the caller's trips
 
-- **WHEN** the 行程 area is shown without a trip id
-- **THEN** a text empty state with a unique visible heading offers 创建行程
-  and an entry for 按编号打开行程
+- **WHEN** the traveler opens `#/my-trips`
+- **THEN** every row shows the trip name, destination and start–end dates with the created and ended markers
+- **AND** only trips the caller belongs to are listed
+- **AND** the page carries a unique visible heading
+- **AND** cards and empty states follow the `ui-design-reference` prototype visuals (`.qcard` / `.empty`)
+
+#### Scenario: Selecting a card tags it without navigating
+
+- **WHEN** the traveler activates a card in `#/my-trips`
+- **THEN** the selected trip becomes the caller's current trip on the server
+- **AND** that card is highlighted and shows an 已选择 tag at its right edge (no trailing arrow), staying on `#/my-trips`
+- **AND** any previously selected card loses its tag and highlight
+
+#### Scenario: The selected tag reflects the stored current trip
+
+- **WHEN** the traveler opens `#/my-trips` with a current trip already stored
+- **THEN** the matching card shows the 已选择 tag on first render
+- **AND** no other card shows it
+
+#### Scenario: The trips tab shows the current trip's details
+
+- **WHEN** the traveler activates the 行程 tab outside dashboard-origin navigation with a current trip set
+- **THEN** `#/trips` renders that trip's details screen under the shell with the 行程 tab active
+- **AND** the details' loading, denied and missing states behave as before
+
+#### Scenario: Without a current trip the trips tab guides to my-trips
+
+- **WHEN** the traveler opens `#/trips` and has no current trip
+- **THEN** an empty state renders with a unique visible heading
+- **AND** it offers a link to `#/my-trips`
 - **AND** no trip name, member, route or status value is invented
-- **AND** the open-by-id destination says coming soon while its details page
-  remains unsafe
 
-#### Scenario: Open-by-id reuses the details route
+#### Scenario: The current trip survives reload and re-login
 
-- **GIVEN** the separate fix has removed the automatic invitation write
-- **WHEN** the traveler opens a trip by id from the empty state
-- **THEN** the app navigates to `#/trips/<id>` and the existing details flow runs
-- **AND** an unknown id surfaces the existing missing state
+- **WHEN** the traveler reloads the app or signs in again on another device
+- **THEN** `#/trips` still shows the same current trip's details
+- **AND** switching to another account shows that account's own current trip, or its empty state
 
-#### Scenario: Create is reachable and returns to 行程
+#### Scenario: Details deep link still works
+
+- **WHEN** the traveler opens `#/trips/<id>` directly by URL
+- **THEN** the existing details flow runs for that id
+- **AND** an id that does not exist surfaces the existing missing state
+
+#### Scenario: Trip-scoped return links keep the trip context
+
+- **WHEN** a member activates the back link on the 成员 roster of a trip
+- **THEN** non-dashboard navigation returns to that trip's details at `#/trips/<id>`
+- **AND** dashboard-origin navigation returns to that trip's dashboard
+- **AND** guidance shown when no trip is resolved targets the applicable trip tab
+
+#### Scenario: Create is reachable and returns to the trips tab
 
 - **WHEN** the traveler opens `#/create` from the shell and uses the back action
-- **THEN** the app returns to the 行程 area
-- **AND** a successful create retains its existing navigation behavior
+- **THEN** the app returns to the applicable trip tab, guarded for dashboard-origin navigation
+- **AND** a successful create still navigates to `#/trips/<id>`
 
-#### Scenario: No trip listing is introduced
+#### Scenario: No second list source is introduced
 
-- **WHEN** the 行程 area and its empty state are exercised
-- **THEN** they do not themselves call a list-all-trips endpoint
-- **AND** the separate dashboard member-trip listing remains available
+- **WHEN** `#/my-trips` and `#/trips` are exercised
+- **THEN** the list comes only from the `trips` list read and the details only from the current-trip read plus the existing details read
+- **AND** no alternate list-all-trips endpoint or client-side cache is introduced
+
+#### Scenario: Dashboard selection is not a persisted picker selection
+
+- **WHEN** a traveler selects a trip on the dashboard
+- **THEN** the selection does not update the stored current trip
+- **AND** a pending or failed selection does not reuse a saved trip
+- **AND** a late current-trip response cannot replace the selected dashboard trip
+
+### Requirement: Trip-context return links
+
+The split start screen and the non-dashboard main plan screen SHALL provide
+explicit back actions to their trip's details at `#/trips/<id>`, without
+depending on browser history. Dashboard-origin main-plan and split navigation
+SHALL instead return to `#/dashboard/trips/<id>` while details are unsafe.
+Returning to details SHALL re-establish the resolved trip context.
+
+#### Scenario: Split start back returns to the trip details
+
+- **WHEN** a member opens `/trips/<id>/split` from the trip details and activates the back action
+- **THEN** the app renders the trip details for `<id>` under the shell
+- **AND** the resolved trip is `<id>` for subsequent members and split entries
+
+#### Scenario: Direct split entry back does not fall to home
+
+- **WHEN** a signed-in member opens `/trips/<id>/split` directly and activates the back action
+- **THEN** the app renders the trip details for `<id>`
+- **AND** the dashboard is not rendered
+
+#### Scenario: Main plan back returns to the trip details
+
+- **WHEN** a member opens `#/trips/<id>/main-plan` from the trip details and activates the back action
+- **THEN** the app renders the trip details for `<id>`
+
+#### Scenario: Dashboard-origin trip context returns safely
+
+- **WHEN** a member opens the main plan or split flow from a dashboard-selected trip and activates back
+- **THEN** the app returns to that trip's dashboard without opening details or issuing an invitation

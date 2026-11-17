@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { useNavigate } from "react-router-dom"
+import { useSplitNavigate } from "./split-navigation"
 import { StepBar } from "@/components/ui/step-bar"
 import { IconArrowLeft } from "@/components/icons"
 import { useAuth } from "@/features/auth/AuthProvider"
@@ -27,7 +27,7 @@ export function SplitLayout({
   action?: ReactNode
   children: ReactNode
 }) {
-  const navigate = useNavigate()
+  const navigate = useSplitNavigate()
   const { account } = useAuth()
   return (
     <div className="flex min-h-screen justify-center bg-bg">

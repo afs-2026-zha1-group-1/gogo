@@ -10,9 +10,10 @@ function persistedState() {
       'trip', 'trip_member', 'trip_invitation', 'member_preference',
       'main_plan_draft', 'main_plan_stop', 'plan_node', 'split_draft',
     ]
-    return JSON.stringify(tables.map((table) =>
-      database.prepare(`SELECT * FROM ${table} ORDER BY rowid`).all(),
-    ))
+    return JSON.stringify([
+      database.prepare('SELECT id, current_trip_id FROM app_user ORDER BY id').all(),
+      ...tables.map((table) => database.prepare(`SELECT * FROM ${table} ORDER BY rowid`).all()),
+    ])
   } finally {
     database.close()
   }
@@ -141,6 +142,64 @@ test('a dashboard main-plan view does not offer unsafe trip details', async ({ p
   await expect(page).toHaveURL(/#\/dashboard\/trips\/9001$/)
   await expect(page.getByRole('heading', { name: 'Stale draft trip' })).toBeVisible()
   expect(persistedState()).toBe(before)
+})
+
+test('dashboard main plan keeps split return safe after refresh', async ({ page }) => {
+  await login(page, 'alice@example.com')
+  const before = persistedState()
+  await page.goto('/#/dashboard/trips/9002')
+  await page.getByRole('link', { name: '查看主线方案' }).click()
+  await page.getByRole('button', { name: '进入智能分队' }).click()
+  await page.reload()
+  await page.getByRole('button', { name: '返回' }).click()
+  await expect(page).toHaveURL(/#\/dashboard\/trips\/9002$/)
+  expect(persistedState()).toBe(before)
+})
+
+test('dashboard main-plan inputs return to the dashboard without opening details', async ({ page }) => {
+  await login(page, 'alice@example.com')
+  const before = persistedState()
+  await page.goto('/#/dashboard/trips/1/main-plan')
+  await page.getByRole('link', { name: '去生成主线方案' }).click()
+  await expect(page.getByText('生成主线方案', { exact: true }).first()).toBeVisible()
+  await page.getByRole('link', { name: 'Back' }).click()
+  await page.getByRole('link', { name: 'Back' }).click()
+  await expect(page).toHaveURL(/#\/dashboard\/trips\/1$/)
+  expect(persistedState()).toBe(before)
+})
+
+test('pending dashboard main-plan deep link does not select an unvalidated trip', async ({ page }) => {
+  await login(page, 'ben@example.com')
+  let release: (() => void) | undefined
+  const paused = new Promise<void>((resolve) => { release = resolve })
+  await page.route('**/api/trips/999999', async (route) => {
+    await paused
+    await route.continue()
+  })
+  try {
+    await page.goto('/#/dashboard/trips/999999/main-plan')
+    await expect(page.getByText('正在加载主线方案…')).toBeVisible()
+    await page.getByRole('link', { name: '分队', exact: true }).click()
+    await expect(page.getByText('请先在「行程」页打开一个行程', { exact: false })).toBeVisible()
+  } finally {
+    release?.()
+  }
+})
+
+test('account change does not restore a saved trip in dashboard-origin context', async ({ page }) => {
+  await login(page, 'alice@example.com')
+  await page.goto('/#/dashboard/trips/9001')
+  await expect(page.getByRole('region', { name: '旅程进度' })).toBeVisible()
+  await page.getByRole('link', { name: '我的', exact: true }).click()
+  await page.route('**/api/auth/me', (route) => route.request().method() === 'PATCH'
+    ? route.fulfill({ json: { id: 2, name: 'Ben', email: 'ben@example.com' } })
+    : route.continue())
+  await page.route('**/api/trips/current', (route) => route.fulfill({ json: { tripId: 9002 } }))
+  await page.getByLabel('名字').fill('Ben')
+  await page.getByRole('button', { name: '保存名字' }).click()
+  await expect(page.getByRole('status')).toContainText('已保存')
+  await page.getByRole('link', { name: '分队', exact: true }).click()
+  await expect(page.getByText('请先在「行程」页打开一个行程', { exact: false })).toBeVisible()
 })
 
 test('does not reuse cached preferences when the authenticated account changes', async ({ page }) => {
@@ -280,7 +339,7 @@ for (const email of ['alice@example.com', 'ben@example.com']) {
     await page.getByRole('link', { name: '创建行程' }).click()
     await expect(navigation.getByRole('link', { name: '行程', exact: true })).toHaveAttribute('aria-current', 'page')
     await page.getByRole('link', { name: 'Back' }).click()
-    await expect(page).toHaveURL(/#\/trips$/)
+    await expect(page).toHaveURL(/#\/dashboard\/trip-entry$/)
     expect(persistedState()).toBe(before)
   })
 
@@ -306,8 +365,28 @@ for (const email of ['alice@example.com', 'ben@example.com']) {
     await expect(page.getByText('发起前提：主线方案需全员确认')).toBeVisible()
     await expect(page.getByRole('button', { name: /发起分队草稿/ })).toBeVisible()
     expect(persistedState()).toBe(before)
+    await page.getByRole('button', { name: '返回' }).click()
+    await expect(page).toHaveURL(/#\/dashboard\/trips\/9001$/)
+    await expect(page.getByRole('heading', { name: 'Stale draft trip' })).toBeVisible()
+    expect(persistedState()).toBe(before)
   })
 }
+
+test('dashboard-origin split flow keeps its safe return through nested screens', async ({ page }) => {
+  await login(page, 'ben@example.com')
+  const before = persistedState()
+  await page.goto('/#/dashboard/trips/9002')
+  await expect(page.getByRole('region', { name: '旅程进度' })).toBeVisible()
+  await page.getByRole('link', { name: '分队', exact: true }).click()
+  await page.getByRole('button', { name: '进入分队规划' }).click()
+  await page.getByRole('button', { name: /下一步：选择边界/ }).click()
+  await expect(page).toHaveURL(/\/split\/boundaries\?from=dashboard$/)
+  await page.getByRole('button', { name: '返回' }).click()
+  await expect(page).toHaveURL(/\/split\?from=dashboard$/)
+  await page.getByRole('button', { name: '返回' }).click()
+  await expect(page).toHaveURL(/#\/dashboard\/trips\/9002$/)
+  expect(persistedState()).toBe(before)
+})
 
 test('account logout remains available from the dashboard dock', async ({ page }) => {
   await login(page, 'ben@example.com')

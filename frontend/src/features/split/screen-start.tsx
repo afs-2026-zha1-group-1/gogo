@@ -1,4 +1,5 @@
-import { useNavigate, useParams } from "react-router-dom"
+import { useLocation, useParams } from "react-router-dom"
+import { useSplitNavigate } from "./split-navigation"
 import { useSplitDraft, useStartDraft } from "./hooks"
 import { SplitLayout } from "./split-layout"
 import { ErrorState, LoadingState } from "./states"
@@ -18,7 +19,9 @@ import { shortId } from "@/lib/format"
  */
 export function ScreenStart() {
   const { tripId = "" } = useParams()
-  const navigate = useNavigate()
+  const navigate = useSplitNavigate()
+  const { search } = useLocation()
+  const dashboardOrigin = new URLSearchParams(search).get("from") === "dashboard"
   const draft = useSplitDraft(tripId)
   const start = useStartDraft(tripId)
   const detail = draft.data
@@ -43,7 +46,7 @@ export function ScreenStart() {
     <SplitLayout
       title="智能分队"
       subtitle="US-038 · 本次行程仅一次分队"
-      backTo="/"
+      backTo={dashboardOrigin ? `/#/dashboard/trips/${tripId}` : `/#/trips/${tripId}`}
       right={
         <Badge variant="brand">
           <IconBranch /> Fork

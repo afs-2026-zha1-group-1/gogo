@@ -58,8 +58,9 @@ remain unknown.
   `backend/src/test/java/com/gogo/trip/TripDashboardApiTest.java` for Ben's
   member trips A/B/C, non-member D, empty membership and signed-out access;
   verify failure before code. The list must not depend on completion.
-- [x] 2.2 **Owner: implementer.** Add the D1 member-filtered `GET /api/trips`
-  without completion filtering; document its response and error behavior.
+- [x] 2.2 **Owner: implementer.** Reuse the US-071 member-filtered
+  `GET /api/trips` envelope without completion filtering; document its response
+  and error behavior.
   Run `mvn -B -Dtest=TripDashboardApiTest test` from `backend` and verify all
   list, isolation and failure cases pass.
 - [x] 2.3 **Owner: implementer.** Write failing browser checks for the same
@@ -96,9 +97,10 @@ remain unknown.
   hash/history, account actions, unique headings and create/back. Include trip
   tab with a remembered id and open-by-id; verify they cannot reach unsafe
   details. Implement safe navigation and coming-soon states; run checks and
-  preserve existing non-dashboard details behavior.
+  preserve the explicit persisted picker and existing non-dashboard details
+  and trip-context return behavior.
 - [x] 4.2 **Owner: implementer.** Capture persisted trip, membership,
-  invitation, preference, plan and split state before and after
+  invitation, preference, plan, split and account current-trip state before and after
   loading and following every available dashboard entry/tab as organizer and
   member. Verify no navigation-only write or invitation issuance; validate
   actual destination authorization and mark unsafe/unavailable links coming
@@ -107,8 +109,10 @@ remain unknown.
   frontend `node --test tests/lockfile.test.mjs tests/dashboard-progress.test.mjs`
   and `npm run build`, plus the recorded browser suite locally. Record actual
   outcomes and applicable real-dependency evidence in the
-  [local verification report](../../../docs/ai4se-plugins/20261117-130754-local-verify-report.md).
-  Do not claim US-058 integration.
+  [integrated local verification report](../../../docs/ai4se-plugins/20261117-141900-local-verify-report.md).
+  Earlier reports cover the pre-merge branch only. Include the explicit picker,
+  dashboard-origin safety and delayed current-trip response. Do not claim
+  US-058 integration.
 - [ ] 4.3b **Owner: implementer; post-PR.** Run the required CI jobs,
   including the recorded browser suite, and record actual results. Do not mark
   acceptance passed if required prerequisites are missing.

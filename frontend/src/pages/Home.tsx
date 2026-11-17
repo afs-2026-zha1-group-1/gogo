@@ -42,10 +42,12 @@ export default function Home({ tripId, onTripReady }: {
     api<unknown>('/api/trips')
       .then((result) => {
         if (!result.ok) throw new Error(`HTTP ${result.status}`)
-        if (!Array.isArray(result.data) || !result.data.every(isTripCard)) {
+        const data = result.data
+        if (typeof data !== 'object' || data === null || !('trips' in data)
+          || !Array.isArray(data.trips) || !data.trips.every(isTripCard)) {
           throw new Error('行程列表数据无效')
         }
-        if (active) setState({ kind: 'ready', trips: result.data })
+        if (active) setState({ kind: 'ready', trips: data.trips })
       })
       .catch((cause: unknown) => {
         if (active) setState({

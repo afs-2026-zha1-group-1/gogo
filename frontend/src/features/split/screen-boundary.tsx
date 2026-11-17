@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
-import { useNavigate, useParams } from "react-router-dom"
+import { useParams } from "react-router-dom"
+import { useSplitNavigate } from "./split-navigation"
 import { useSaveBoundaries, useSplitDraft } from "./hooks"
 import { SplitLayout } from "./split-layout"
 import { EmptyState, ErrorState, LoadingState } from "./states"
@@ -19,7 +20,7 @@ import { formatClock, formatWindow } from "@/lib/format"
  */
 export function ScreenBoundary() {
   const { tripId = "" } = useParams()
-  const navigate = useNavigate()
+  const navigate = useSplitNavigate()
   const draft = useSplitDraft(tripId)
   const save = useSaveBoundaries(tripId)
   const detail = draft.data

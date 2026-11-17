@@ -3,13 +3,13 @@ package com.gogo.trip;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,11 +26,6 @@ public class TripController {
 
     public TripController(TripRepository repository) {
         this.repository = repository;
-    }
-
-    @GetMapping
-    public List<TripCardResponse> list(@AuthenticationPrincipal AccountPrincipal principal) {
-        return repository.findByMember(principal.id());
     }
 
     @PostMapping
@@ -53,6 +48,26 @@ public class TripController {
                 request.startDate(), request.endDate(), blankToNull(request.startLocation()),
                 blankToNull(request.endLocation()));
         return ResponseEntity.status(201).body(repository.create(normalized, userId));
+    }
+
+    @GetMapping
+    public TripListResponse list(@AuthenticationPrincipal AccountPrincipal principal) {
+        return repository.findTripsForUser(principal.id());
+    }
+
+    @GetMapping("/current")
+    public CurrentTripResponse currentTrip(@AuthenticationPrincipal AccountPrincipal principal) {
+        return repository.findCurrentTrip(principal.id());
+    }
+
+    @PutMapping("/current")
+    public CurrentTripResponse selectCurrentTrip(
+            @AuthenticationPrincipal AccountPrincipal principal,
+            @RequestBody(required = false) CurrentTripRequest request) {
+        if (request == null || request.tripId() == null) {
+            throw new TripApiException(400, "TRIP_REQUIRED", "tripId is required");
+        }
+        return repository.selectCurrentTrip(principal.id(), request.tripId());
     }
 
     @GetMapping("/{id}")

@@ -1,4 +1,5 @@
-import { useNavigate, useParams } from "react-router-dom"
+import { useParams } from "react-router-dom"
+import { useSplitNavigate } from "./split-navigation"
 import { useGenerateRoutes, useSplitDraft } from "./hooks"
 import { SplitLayout } from "./split-layout"
 import { EmptyState, ErrorState, LoadingState } from "./states"
@@ -18,7 +19,7 @@ import { cn } from "@/lib/utils"
  */
 export function ScreenRoutes() {
   const { tripId = "" } = useParams()
-  const navigate = useNavigate()
+  const navigate = useSplitNavigate()
   const draft = useSplitDraft(tripId)
   const generate = useGenerateRoutes(tripId)
   const detail = draft.data

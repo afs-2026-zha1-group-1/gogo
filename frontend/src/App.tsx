@@ -1,10 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { InAppPage, Route, TabId } from './types'
 import TabBar from './TabBar'
 import Home from './pages/Home'
 import CreateTrip from './pages/CreateTrip'
 import TripDetails from './pages/TripDetails'
+import TripsList from './pages/TripsList'
+import CurrentTrip from './pages/CurrentTrip'
 import TripsEmpty from './pages/TripsEmpty'
+import { api } from './api'
+import { isCurrentTripResponse } from './lib/current-trip'
 import Join from './pages/Join'
 import MainPlan from './pages/MainPlan'
 import MainPlanInputs from './pages/MainPlanInputs'
@@ -27,6 +31,15 @@ function parseRoute(hash: string): Route {
   if (path === '/login') return { page: 'login' }
   if (path === '/register') return { page: 'register' }
   if (path === '/account') return { page: 'account' }
+  if (path === '/dashboard/trip-entry') return { page: 'dashboard-trip-guard' }
+  const dashboardInputsMatch = path.match(/^\/dashboard\/trips\/(\d+)\/main-plan\/inputs$/)
+  if (dashboardInputsMatch) {
+    const tripId = Number(dashboardInputsMatch[1])
+    if (Number.isSafeInteger(tripId) && tripId > 0) {
+      return { page: 'main-plan-inputs', tripId, dashboardOrigin: true }
+    }
+    return { page: 'dashboard-trip', tripId: null }
+  }
   const dashboardPlanMatch = path.match(/^\/dashboard\/trips\/(\d+)\/main-plan$/)
   if (dashboardPlanMatch) {
     const tripId = Number(dashboardPlanMatch[1])
@@ -56,17 +69,27 @@ function parseRoute(hash: string): Route {
   if (preferencesMatch) return { page: 'preferences', tripId: Number(preferencesMatch[1]) }
   const tripMatch = path.match(/^\/trips\/(\d+)$/)
   if (tripMatch) return { page: 'details', tripId: Number(tripMatch[1]) }
-  if (path === '/trips') return { page: 'trips-empty' }
+  if (path === '/my-trips') return { page: 'my-trips' }
+  if (path === '/trips') return { page: 'trips-current' }
   if (path === '/create') return { page: 'create' }
   if (path === '/split') return { page: 'split' }
   if (path === '/members') return { page: 'members' }
   return { page: 'home' }
 }
 
+function isDashboardRoute(route: Route): boolean {
+  return route.page === 'home' || route.page === 'dashboard-trip'
+    || route.page === 'dashboard-trip-guard'
+    || ((route.page === 'main-plan' || route.page === 'main-plan-inputs' || route.page === 'preferences')
+      && route.dashboardOrigin === true)
+}
+
 const TAB_FOR_PAGE: Record<InAppPage, TabId> = {
   home: 'dashboard',
   'dashboard-trip': 'dashboard',
-  'trips-empty': 'trips',
+  'dashboard-trip-guard': 'trips',
+  'my-trips': 'account',
+  'trips-current': 'trips',
   details: 'trips',
   create: 'trips',
   split: 'split',
@@ -78,6 +101,29 @@ export default function App() {
   const { status, account } = useAuth()
   const [route, setRoute] = useState<Route>(() => parseRoute(window.location.hash))
   const [lastTripId, setLastTripId] = useState<number | null>(null)
+  const [pickerReadBlocked, setPickerReadBlocked] = useState(false)
+  const [pickerWritePending, setPickerWritePending] = useState(false)
+  const [dashboardContext, setDashboardContext] = useState(() => isDashboardRoute(route)
+    || (['split', 'members', 'account', 'create', 'scan'].includes(route.page)
+      && sessionStorage.getItem('gogo:dashboard-context') === 'true'))
+  const [dashboardSelectionAttempted, setDashboardSelectionAttempted] = useState(
+    () => route.page === 'dashboard-trip'
+      || ((route.page === 'main-plan' || route.page === 'main-plan-inputs') && route.dashboardOrigin === true)
+      || (dashboardContext
+      && sessionStorage.getItem('gogo:dashboard-selection-attempted') === 'true'),
+  )
+  const previousAccountId = useRef<number | null>(null)
+  const currentAccountId = useRef<number | null>(null)
+  const pickerSelectionId = useRef(0)
+  currentAccountId.current = account?.id ?? null
+  const dashboardSelection = useRef<{ accountId: number; tripId: number } | null>(null)
+  const explicitTripContext = useRef(false)
+  const handleDashboardReady = useCallback((tripId: number) => {
+    if (!account) return
+    dashboardSelection.current = { accountId: account.id, tripId }
+    explicitTripContext.current = true
+    setLastTripId(tripId)
+  }, [account?.id])
   // Tracks the last non-scanner hash so closing the scanner can restore
   // the originating route (spec S-5 / design D2). Falls back to `#/` via
   // the Scanner close handler when this is null (user typed `#/scan`).
@@ -90,6 +136,20 @@ export default function App() {
     const onHash = () => {
       const next = window.location.hash
       const parsed = parseRoute(next)
+      if (isDashboardRoute(parsed)) {
+        setDashboardContext(true)
+        if (parsed.page === 'dashboard-trip'
+          || ((parsed.page === 'main-plan' || parsed.page === 'main-plan-inputs') && parsed.dashboardOrigin)) {
+          setDashboardSelectionAttempted(true)
+        }
+      } else if (parsed.page === 'my-trips' || parsed.page === 'trips-current'
+        || parsed.page === 'details'
+        || (parsed.page === 'main-plan-inputs' && !parsed.dashboardOrigin)
+        || (parsed.page === 'main-plan' && !parsed.dashboardOrigin)
+        || (parsed.page === 'preferences' && !parsed.dashboardOrigin)) {
+        setDashboardContext(false)
+        setDashboardSelectionAttempted(false)
+      }
       if (parsed.page === 'scan') {
         setRoute({ ...parsed, from: lastNonScanHash })
       } else {
@@ -103,24 +163,82 @@ export default function App() {
 
   useEffect(() => {
     setLastTripId(null)
+    setPickerReadBlocked(false)
+    setPickerWritePending(false)
+    pickerSelectionId.current += 1
+    dashboardSelection.current = null
+    explicitTripContext.current = false
+    if (account && previousAccountId.current !== null && previousAccountId.current !== account.id) {
+      setDashboardSelectionAttempted(dashboardContext)
+    }
+    if (account) previousAccountId.current = account.id
   }, [account?.id])
+
+  useEffect(() => {
+    sessionStorage.setItem('gogo:dashboard-context', String(dashboardContext))
+    sessionStorage.setItem('gogo:dashboard-selection-attempted', String(dashboardSelectionAttempted))
+  }, [dashboardContext, dashboardSelectionAttempted])
 
   const dashboardTripId = route.page === 'dashboard-trip' ? route.tripId : null
   useEffect(() => {
-    if (route.page === 'dashboard-trip') setLastTripId(null)
+    if (route.page === 'dashboard-trip') {
+      dashboardSelection.current = null
+      explicitTripContext.current = false
+      setLastTripId(null)
+    }
   }, [route.page, dashboardTripId])
 
   useEffect(() => {
-    if (route.page === 'details' || route.page === 'main-plan' || route.page === 'main-plan-inputs') {
+    if ((route.page === 'main-plan' || route.page === 'main-plan-inputs') && route.dashboardOrigin) {
+      const selected = dashboardSelection.current
+      if (!selected || selected.accountId !== account?.id || selected.tripId !== route.tripId) {
+        explicitTripContext.current = false
+        setLastTripId(null)
+      }
+    } else if (route.page === 'my-trips') {
+      explicitTripContext.current = false
+      setLastTripId(null)
+    } else if (route.page === 'details' || route.page === 'main-plan' || route.page === 'main-plan-inputs') {
+      explicitTripContext.current = true
       setLastTripId(route.tripId)
     }
-  }, [route])
+  }, [route, account?.id])
 
-  const tripsHref = route.page !== 'home' && route.page !== 'dashboard-trip'
-    && route.page !== 'trips-empty' && route.page !== 'create'
-    && !(route.page === 'main-plan' && route.dashboardOrigin) && lastTripId != null
-    ? `#/trips/${lastTripId}/main-plan`
-    : '#/trips'
+  // US-071 revision: the current trip is server-side; seed lastTripId from it so the
+  // split tab and roster back links follow the account's selection.
+  useEffect(() => {
+    if (status !== 'signedIn' || !account || dashboardSelectionAttempted || pickerReadBlocked
+      || explicitTripContext.current
+      || route.page === 'dashboard-trip' || route.page === 'details'
+      || route.page === 'main-plan' || route.page === 'main-plan-inputs' || route.page === 'my-trips') return
+    let active = true
+    api<unknown>('/api/trips/current')
+      .then((result) => {
+        if (!active) return
+        if (!result.ok || !isCurrentTripResponse(result.data)) {
+          setLastTripId(null)
+          console.error('Unable to load the current trip')
+        } else {
+          setLastTripId(result.data.tripId)
+        }
+      })
+      .catch((cause: unknown) => {
+        if (active) {
+          setLastTripId(null)
+          console.error('Unable to load the current trip', cause)
+        }
+      })
+    return () => {
+      active = false
+    }
+  }, [status, account?.id, route.page, dashboardSelectionAttempted, pickerReadBlocked])
+
+  // US-071: the bottom "行程" tab always opens the caller's trip list; trip-scoped
+  // pages (roster back, main plan) still use their own `#/trips/<id>` links.
+  const tripsHref = dashboardContext ? '#/dashboard/trip-entry' : '#/trips'
+  const tripHref = lastTripId != null
+    ? dashboardContext ? `#/dashboard/trips/${lastTripId}` : `#/trips/${lastTripId}`
+    : tripsHref
 
   if (route.page === 'login') return <LoginPage />
   if (route.page === 'register') return <RegisterPage />
@@ -173,15 +291,35 @@ export default function App() {
       <div className="shell-content">
         {route.page === 'home' && <Home key={`${account.id}-list`} />}
         {route.page === 'dashboard-trip' && (
-          <Home key={`${account.id}-${route.tripId}`} tripId={route.tripId} onTripReady={setLastTripId} />
+          <Home key={`${account.id}-${route.tripId}`} tripId={route.tripId} onTripReady={handleDashboardReady} />
         )}
         {route.page === 'create' && <CreateTrip backHref={tripsHref} />}
         {route.page === 'details' && <TripDetails tripId={route.tripId} />}
         {/* US-031/037: the main plan lives inside the shell so the bottom
             navigation stays visible when users arrive from the "行程" tab. */}
         {route.page === 'main-plan' && <MainPlan tripId={route.tripId} dashboardOrigin={route.dashboardOrigin} />}
-        {route.page === 'main-plan-inputs' && <MainPlanInputs tripId={route.tripId} />}
-        {route.page === 'trips-empty' && <TripsEmpty />}
+        {route.page === 'main-plan-inputs' && <MainPlanInputs tripId={route.tripId} dashboardOrigin={route.dashboardOrigin} />}
+        {route.page === 'my-trips' && (
+          <TripsList
+            selectable
+            selectionInFlight={pickerWritePending}
+            onSelectionStart={() => {
+              setLastTripId(null)
+              setPickerReadBlocked(true)
+              setPickerWritePending(true)
+              pickerSelectionId.current += 1
+              return pickerSelectionId.current
+            }}
+            onSelectionFinish={(selectionId, succeeded) => {
+              if (currentAccountId.current === account.id && selectionId === pickerSelectionId.current) {
+                setPickerWritePending(false)
+                if (succeeded) setPickerReadBlocked(false)
+              }
+            }}
+          />
+        )}
+        {route.page === 'trips-current' && <CurrentTrip />}
+        {route.page === 'dashboard-trip-guard' && <TripsEmpty />}
         {route.page === 'split' && (
           <div className="screen">
             <header className="appbar">
@@ -199,7 +337,7 @@ export default function App() {
                   <button
                     className="btn btn-primary"
                     type="button"
-                    onClick={() => { window.location.href = `/trips/${lastTripId}/split` }}
+                    onClick={() => { window.location.href = `/trips/${lastTripId}/split${dashboardContext ? '?from=dashboard' : ''}` }}
                   >
                     进入分队规划
                   </button>
@@ -216,7 +354,7 @@ export default function App() {
           </div>
         )}
         {route.page === 'members' && (
-          <Members tripId={lastTripId} tripsHref={tripsHref} />
+          <Members tripId={lastTripId} tripsHref={tripsHref} tripHref={tripHref} />
         )}
         {route.page === 'account' && <AccountPage />}
       </div>

@@ -16,8 +16,14 @@ An authenticated caller SHALL read the trips they belong to as one list. The res
 #### Scenario: Ordering is deterministic
 
 - **WHEN** the caller belongs to several trips, including two that start on the same date
-- **THEN** rows appear by ascending `startDate`
+- **THEN** unfinished trips appear first by ascending `startDate`
 - **AND** rows sharing a `startDate` appear by ascending `id`
+
+#### Scenario: Ended trips sort last
+
+- **WHEN** the caller belongs to both finished and unfinished trips
+- **THEN** every trip whose `endDate` is before today appears after all unfinished trips
+- **AND** ended trips keep ascending `startDate` then `id` among themselves
 
 #### Scenario: The organizer flag identifies the creator
 
@@ -60,3 +66,52 @@ An authenticated caller SHALL read the trips they belong to as one list. The res
 - **WHEN** the trip list path is exercised
 - **THEN** only a read endpoint is added
 - **AND** creating a trip keeps using the existing create operation and no other write verb is introduced
+
+### Requirement: Current trip selection
+
+Each account SHALL have at most one current trip, stored server-side. `GET /api/trips/current` SHALL return `{tripId}` with the stored id, or `null` when unset or when the stored trip is no longer one the caller belongs to. `PUT /api/trips/current` with `{tripId}` SHALL persist the selection only when the caller is a member of that trip, and SHALL return the stored id. The selection SHALL survive reload and re-login and SHALL be scoped to the calling account.
+
+#### Scenario: Reading the current trip returns the stored selection
+
+- **WHEN** Alice, who previously selected trip 2, requests the current trip
+- **THEN** the response status is 200 with `{"tripId":2}`
+
+#### Scenario: No selection returns null
+
+- **WHEN** an account that never selected a trip requests the current trip
+- **THEN** the response status is 200 with `{"tripId":null}`
+
+#### Scenario: Selecting a member trip persists it
+
+- **WHEN** Alice sends `{"tripId":2}` for a trip she belongs to
+- **THEN** the response status is 200 with `{"tripId":2}`
+- **AND** a later read, including after re-login, returns the same id
+
+#### Scenario: Selecting a non-member trip is denied
+
+- **WHEN** Eve sends `{"tripId":1}` for a trip she does not belong to
+- **THEN** the response status is 403 with code `NOT_A_MEMBER`
+- **AND** Eve's stored selection is unchanged
+
+#### Scenario: Selecting an unknown trip is reported
+
+- **WHEN** an authenticated caller sends `{"tripId":999999}`
+- **THEN** the response status is 404 with code `TRIP_NOT_FOUND`
+- **AND** the stored selection is unchanged
+
+#### Scenario: Unauthenticated selection is rejected
+
+- **WHEN** a request to read or write the current trip carries no authenticated session
+- **THEN** the response status is 401 with code `USER_REQUIRED`
+
+#### Scenario: Selection is scoped to the account
+
+- **WHEN** Alice selects trip 2 and Eve reads her current trip
+- **THEN** Eve's read returns her own selection or `null`, never Alice's
+
+#### Scenario: A stale selection reads as no selection
+
+- **WHEN** the stored trip is no longer one the caller belongs to (test-only membership removal)
+- **THEN** the read returns `{"tripId":null}`
+- **AND** no trip data of the removed membership is exposed
+
