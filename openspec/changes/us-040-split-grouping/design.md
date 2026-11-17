@@ -1,7 +1,7 @@
 # US-040 设计（design）
 
 - change：`us-040-split-grouping`；G1 Pass（SA Leo + IO Emily，2026-11-17）
-- delta：`specs/splits/spec.md`（38 场景）；ATDD：`atdd-design.md`
+- delta：`specs/splits/spec.md`（39 场景，含 2026-11-17 Revision）；ATDD：`atdd-design.md`
 - 范围：`splits` 1 ADDED + 3 MODIFIED；零迁移、零新依赖、不新增路由
 
 ## 后端
@@ -117,7 +117,7 @@ withAssignment(String groupLabel, String memberId, String now)
 
 ### DD16 前端类型与请求封装
 
-- `types.ts`：`AssignmentRequest {groupLabel: "A" | "B"; draftVersion: number}`。
+- `types.ts`：`AssignmentRequest {memberId?: string; groupLabel: "A" | "B"; draftVersion: number}`（`memberId` 为 Revision 新增的可选被移动成员）。
 - `api.ts`：`assignGroup(tripId, body): Promise<SplitDraftDetail>`（PUT）。
 - `hooks.ts`：`useAssignGroup(tripId)`，`onSuccess` invalidate `[split-draft, tripId]`。
 
@@ -129,11 +129,11 @@ withAssignment(String groupLabel, String memberId, String now)
 |---|---|
 | `AbstractSplitApiTest` | 新增 `assignAs(displayName, label, version)`、`updateGroups(...)`；`prepareConfirmableDraftAs` 在 boundaries 之后插入「把 Chloe 分到 B 组」并调整版本序列（1→2→3→4→5） |
 | `SplitDraftDocumentTest` | `partitionGroups` 用例改为 `initialGroups`（A=全部、B 空） |
-| `SplitDraftDetailApiTest` | `groups.A.length=4`、`groups.B.length=0` |
+| `SplitDraftDetailApiTest` | 改组后断言 `groups.A.length=3`、`groups.B.length=1` |
 | `SplitRouteGenerationApiTest` | 删除/改写 `generateRoutes_groupMoveEndpoint_notImplemented`；生成前先分组；新增 G6-N |
 | `SplitConfirmApiTest` | 现有「可确认」用例先分组；新增 CF8-N |
 | `SplitDraftStartApiTest` | 新增 S9（初始 4/0）与 S10-N（单成员 trip → 409） |
-| 新增 `SplitAssignmentApiTest` | A1–A9-N 9 例 |
+| 新增 `SplitAssignmentApiTest` | A1–A9 与 A9b-N 共 11 例（Revision 后 A9-N 拆为 A9 + A9b-N） |
 
 ## 偏离与已知限制
 

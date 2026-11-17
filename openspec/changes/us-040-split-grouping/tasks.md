@@ -13,7 +13,7 @@
 
 - [x] 2.1 在 `requirement-workspace/acceptance-test-fixtures.md` 补 §US-040（初始 4/0、改组序列 v1→v2→v3、空组/漏组/重复组构造、单成员行程）（P3 已完成）
 - [x] 2.2 `AbstractSplitApiTest` 增加 `assignAs(displayName, label, draftVersion)` 与 `updateGroups(...)`；`prepareConfirmableDraftAs` 插入「把 Chloe 分到 B 组」并把版本序列改为 1→2→3→4→5（DD17）
-- [x] 2.3 新增 `SplitAssignmentApiTest`：A1–A9-N 共 10 例（含「请求体不可移动他人」）
+- [x] 2.3 新增 `SplitAssignmentApiTest`：A1–A9 与 A9b-N 共 11 例（Revision 后改为「任意成员可移动他人」，A9-N 拆为 A9 + A9b-N）
 - [x] 2.4 `SplitDraftStartApiTest` 增 S9（A=4/B=0）与 S10-N（单成员行程 → 409 `SPLIT_MEMBERS_INSUFFICIENT`）
 - [x] 2.5 `SplitRouteGenerationApiTest` 增 G6-N（空组/漏组/重复组 → 409 `SPLIT_DRAFT_INCOMPLETE`），并把 `groups:move` 负向用例改写为 `assignment` 已实现
 - [x] 2.6 `SplitConfirmApiTest` 增 CF8-N（空组/漏组/重复组两条）；`SplitDraftDetailApiTest` 断言改为 A=3/B=1（改组后）；`SplitDraftDocumentTest` 的 `partitionGroups` 用例改为 `initialGroups` + `withAssignment` 两条
@@ -27,14 +27,14 @@
 ## 4. 后端端点与门禁
 
 - [x] 4.1 `ErrorCode` 增 `INVALID_GROUP_LABEL`（400）与 `SPLIT_MEMBERS_INSUFFICIENT`（409）（DD3）
-- [x] 4.2 新增 `AssignmentRequest(groupLabel, draftVersion)` DTO（DD1）
+- [x] 4.2 新增 `AssignmentRequest(memberId?, groupLabel, draftVersion)` DTO（DD1；`memberId` 为 Revision 新增可选字段）
 - [x] 4.3 `SplitDraftService.assign`：守卫顺序 → 幂等分支 → `withAssignment` + CAS → 返回 detail（DD2/DD4）
 - [x] 4.4 `SplitDraftController` 增 `PUT /split-draft/assignment` 返回 `ApiResponse<SplitDraftDetailResponse>`
 - [x] 4.5 `startDraft`（含重建）增加「成员数 ≥ 2」前置 → `SPLIT_MEMBERS_INSUFFICIENT`（DD5）
 - [x] 4.6 抽出 `groupProblems(draft, memberIds)`（固定顺序 `groups.A`/`groups.B`/`groups.unassigned`/`groups.duplicate`）（DD8）
 - [x] 4.7 `generateRoutes` 在 provider 前接入 `groupProblems`（DD9）
 - [x] 4.8 `confirmDraft` 的 `missingDraftParts` 合并 `groupProblems`（DD10）
-- [x] 4.9 A1–A9-N、S9、S10-N、G6-N、CF8-N 全绿；`mvn -B test` **314/314** 通过（含既有回归）
+- [x] 4.9 A1–A9、A9b-N、S9、S10-N、G6-N、CF8-N 全绿；`mvn -B test` **315/315** 通过（含既有回归）
 
 ## 5. 前端契约层
 
@@ -70,7 +70,8 @@
 
 - [x] 10.1 `/sdd:local-verify-report`：Overall **Partial**（Build/Static/Code review/Evidence 均 Pass；E1 Missing 因未 push、E3 Pending），报告 `docs/ai4se-plugins/20261117-162107-local-verify-report.md`，白名单 6/6
 - [x] 10.2 PR CI 双 job 绿（run [44046339433](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/44046339433)：Backend tests pass 38s、Frontend build pass 20s；E1 机器读取）；报告 `docs/ai4se-plugins/20261117-162544-pipeline-report.md` + `ci-report.md`
-- [ ] 10.3 `/sdd:g2-decision-record` 后合并；P5 归档时把 delta 合入 Living Spec
+- [x] 10.3 `/sdd:g2-decision-record`：**G2 = Pass**（VL Leo，2026-11-17，按用户签署指令代记；输入含 local-verify、两次 CI run、E2E 台账；发现 F1–F6 已入记录）
+- [ ] 10.4 关 C8（IO 补签）与 PR #117 冲突后合并 → P5 归档时把 delta 合入 Living Spec，并补 `tech-stack-plan.md` §US-040 + `_LOG.md`（9.3）
 
 ## 11. P4 打磨（2026-11-17，用户反馈）
 
@@ -85,7 +86,7 @@
 ## 对齐自检（Spec ↔ Design ↔ Tasks ↔ ATDD）
 | 检查项 | 结果 | 证据 |
 |---|---|---|
-| 38 场景全部有层归属 | Pass | `atdd-design.md` §1（API 28 / E2E 3 / 既有回归 7 行合并项） |
+| 39 场景全部有层归属 | Pass | `atdd-design.md` §1（API 28 / E2E 3 / 既有回归 7 行合并项；Revision 后 38 → 39） |
 | 每个 ADDED/MODIFIED requirement 有实现任务 | Pass | A1–A9 → 任务 4.3/4.4；S9/S10-N → 3.1/4.5；G6-N → 4.7；CF8-N → 4.8；Screen 13/15 → 6.x/7.x |
 | 每条设计决策被任务覆盖 | Pass | DD1–DD17 与任务 3.x–9.x 一一对应（DD17 → 任务 2.2–2.6） |
 | Non-goals 有反向验证 | Pass | `atdd-design.md` §5 七行 + 任务 8.3 |

@@ -1,64 +1,92 @@
-# G2 decision — us-040-split-grouping（草稿，待 VL 签核）
+# G2 decision — us-040-split-grouping（VL Pass）
 
 - Gate: G2 (Verify)
-- Timestamp: 2026-11-17（草稿创建，+08:00）
-- Branch: `US-040-split-grouping-p0`，PR #117
-- 状态：**DRAFT / Decision = OPEN** —— 本文件不含签核，由具名 VL 复核后填写
+- Timestamp: 2026-11-17（+08:00，VL 复核签核）
+- Branch: `US-040-split-grouping-p0`，PR #117，复核 head `8446714`（代码 head `6b6c2c9`，其后仅文档提交）
+- 状态：**RECORDED / Decision = Pass**
 
 ## Inputs
 
-- Local verify：`docs/ai4se-plugins/20261117-162107-local-verify-report.md`（Overall **Partial**：Build / Static scan / Code review / Evidence 全 Pass；E1 当时 Missing，现已由下方 CI 补齐；E3 Pending）
-- Pipeline（CI）：`docs/ai4se-plugins/20261117-162544-pipeline-report.md` + `openspec/changes/us-040-split-grouping/ci-report.md`
-  - **E1 = Pass**（机器读取）：run [44046339433](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/44046339433)，Backend tests pass 38s、Frontend build pass 20s，head `6b6c2c9`
-- E2E：`docs/feedback/e2e-us-040.md`（E1–E13，12 张截图；1 个缺陷 E2E-1 已修并回归）
-- G1：`openspec/changes/us-040-split-grouping/g1-decision.md`（Gate = Pass；**Revision Conditional**，C8「IO 复核任意成员改组 + 头像切组」仍 open）
-- Delta/Design/Tasks：`specs/splits/spec.md`（39 场景）、`design.md`（DD1–DD17 + TS-1…TS-7）、`tasks.md`
-- 基线校验：`openspec validate us-040-split-grouping --strict` = valid（deltas = 4）
+- Local verify：`docs/ai4se-plugins/20261117-162107-local-verify-report.md`（Overall **Partial**：Build / Static scan / Code review / Evidence 全 Pass；E1 当时 Missing，已由下方 CI 补齐；E3 由本记录关闭）
+- Pipeline（CI，E1）：
+  - `docs/ai4se-plugins/20261117-162544-pipeline-report.md` + `openspec/changes/us-040-split-grouping/ci-report.md`
+  - run [44046339433](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/44046339433)（head `6b6c2c9`）：Backend tests 38s Pass、Frontend build 20s Pass
+  - run [44046867411](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/44046867411)（head `8446714`，本次复核时用 `gh` 机读确认）：Backend tests Pass、Frontend build Pass
+  - 两次均为**机器读取**（`gh` API），无人工代为确认
+- E2E：`docs/feedback/e2e-us-040.md`（E1–E13，12 行 Pass + 回归记录 + 12 张截图）
+- G1：`openspec/changes/us-040-split-grouping/g1-decision.md`（Gate = Pass；Revision **Conditional**，C8 仍 open）
+- Delta/Design/Tasks/ATDD/Fixtures：`specs/splits/spec.md`（39 场景）、`design.md`（DD1–DD17 + TS-1…TS-7）、`tasks.md`、`atdd-design.md`、`requirement-workspace/acceptance-test-fixtures.md` §US-040
+- Delta 校验：`openspec validate us-040-split-grouping --strict` = valid（本次复核重跑）
+- PR 状态：`gh pr view 117` → OPEN、非 draft、head `8446714`、**mergeable = CONFLICTING**
+
+## 复核方式
+
+逐条比对 delta 39 场景与实现（`SplitDraftController`/`SplitDraftService.assign`/`groupProblems`/`withAssignment`/`initialGroups`/前端 Screen 13·14·15），核对 11 例 `SplitAssignmentApiTest` 与改写的既有测试，`gh` 机读两次 CI run 与 PR 状态，重跑 `openspec validate --strict`。
+
+**证据边界（如实记录）**：本轮未重跑本地 `mvn -B test` 与 `npm run typecheck/build`——环境无 `mvn` 在 PATH（`D:\Dev\apache-maven-3.8.8` 直调时 Maven Central 证书不受信）、`frontend/node_modules` 未安装。因此构建/测试结论以 E1 机器证据（两个 head 均双 job 绿）为准，未用本机重跑替代。
 
 ## 维度结果
 
 | 维度 | 结果 | 证据 |
 |---|---|---|
-| 功能实现（delta 39 场景） | **Pass** | 后端 315/315；`SplitAssignmentApiTest` 11 例；G6-N / CF8-N / S9 / S10-N 均绿 |
-| 回归（splits 既有 51 场景） | **Pass** | `SplitBoundary/Cancel/Confirm/Detail/RouteGeneration/DocumentStatus/Window/SchemaMigration` 全绿 |
-| UI（Screen 13/14/15） | **Pass** | 分组卡原型化（彩色 A/B 头 + 成员胶囊）；空组禁用生成/下一步；终态按钮禁用与只读文案；Screen 14 主按钮改为「前往复核并确认」 |
-| 安全 | **Pass** | 仅行程成员可写；目标成员必须属于本行程（403）；仅 `active` 可写；`SecurityConfig` 未改；无新增依赖/凭据 |
-| 文档一致性 | **Pass** | delta / proposal / requirements / design / atdd / tasks / fixtures / registry 同步；TS-1…TS-7 已登记 |
-| CI（E1） | **Pass** | 上述 run 双 job 全绿（机器读取） |
-| 浏览器 E2E | **Pass** | 12 行 Pass；发现并修复 E2E-1（终态按钮可点） |
+| 功能实现（delta 39 场景） | **Pass** | A1–A4、A5-N、A6-N、A7-N、A8-N、A9、A9b-N、Screen 13 均有对应实现；`assign` 守卫顺序（资格→活跃→版本→组别→目标归属）与 A5-N「终态优先 400」一致；`withAssignment` 先双组移除再加目标组（不可重复），保留 boundaries/routes；S9 全员 A、S10-N 发起门禁、G6-N/CF8-N 共用 `groupProblems`（固定顺序 `groups.A→B→unassigned→duplicate`） |
+| 回归 | **Pass** | CI `Backend tests` 在 `6b6c2c9` 与 `8446714` 全绿；`prepareConfirmableDraftAs` 已插入分组步（v1→v2→v3→v4），`groups:move` 负向断言已改写 |
+| UI（Screen 13/14/15 + 行程详情入口） | **Pass** | 头像 chip 切组、空组禁用生成/下一步、终态只读（E2E-1 已修复回归）、复核屏成员名与陈旧路线提示、成员不足前置拦截 |
+| 安全 | **Pass** | `SecurityConfig` 未改（splits 维持 `permitAll` + `MemberGuard`）；无会话 401 `MEMBER_REQUIRED`；目标成员非本行程 403 `NOT_A_MEMBER`；仅 `active` 可写；无新增依赖/凭据/迁移 |
+| 文档一致性 | **Pass（复核中修正漂移）** | delta/proposal/requirements/design/atdd/tasks/fixtures/registry/handoff 主链路一致；复核发现 design/tasks/atdd/registry 仍写 38 场景、9/10 例、旧 DTO 签名等 Revision 前口径，已就地修正；`dov-ac-review.md` 以 Revision 补记保留历史口径（见 F3） |
+| CI（E1） | **Pass** | 上述两个 run 双 job 全绿（机读） |
+| 浏览器 E2E | **Pass（含前置偏差说明）** | 12 行 Pass；唯一缺陷 E2E-1 已修复并回归；初始分组为存量草稿导致的A=0/B=4 镜像，S9「全员 A」由 API 测试覆盖（见 F6） |
 
 ## 缺陷分级
 
 | 级别 | 数量 | 说明 |
 |---|---|---|
 | CRITICAL | 0 | — |
-| WARNING | 1 | E2E-1（confirmed 终态 CTA 仍可点）——**已修复并回归**（`draftActive`，实测 `disabled=true`） |
-| SUGGESTION | 2 | S1 routes 页无终态徽标（未要求，未实施）；S2 `validate --specs --strict` 存量 >500 字符 WARNING（与本变更无关） |
+| WARNING | 3 | F1 G1 Revision C8 未关闭；F2 PR #117 与 base 冲突；F3 P3 文档计数/DTO 描述漂移（已修正） |
+| SUGGESTION | 3 | F4 注释与实现不符；F5 无路线时改组成功提示文案越界；F6 E2E 初始分组证据缺口 |
+
+## 复核发现与处置
+
+| id | 级别 | 发现 | 处置 |
+|---|---|---|---|
+| F1 | WARNING | G1 Revision（BQ-10 任意成员可改组）只记录 SA Leo Pass，IO Emily 的 C8 仍 open；本次实现与测试已按修订后 delta 落地 | 记录为**合并前必须关闭**项，owner Emily（IO）；不影响 G2 对已实现行为的验证结论 |
+| F2 | WARNING | `gh pr view 117` 返回 `mergeable = CONFLICTING`（基线 main 已前进，含 US-071 等） | 记录为 G3 前置：先解决冲突再合并；G2 不代为合并 |
+| F3 | WARNING | `design.md` 写 38 场景、DD16 `AssignmentRequest` 缺 `memberId`、DD17「9 例」与 detail 期望 4/0；`tasks.md` 2.3「10 例（含请求体不可移动他人）」、4.2 旧 DTO 签名、4.9「314/314」、对齐自检「38 场景」；`atdd-design.md` 38 场景/10 例；`registry.md`、`handoff.md` 10 例/38 场景/314 | 复核中已按当前代码（39 场景、11 例、`memberId?`、315/315、A=3/B=1）就地修正 design/tasks/atdd/registry/handoff；`dov-ac-review.md` 保留 G1 时口径并补 Revision 段落（不改已签署结论）；属口径同步，不改语义、不重开 G1 |
+| F4 | SUGGESTION | `SplitAssignmentApiTest` 类注释仍称「no request shape can move another member」；`useAssignGroup` 注释写「Moves the caller」 | 仅注释漂移，不影响行为；建议 P5 归档时一并订正（本轮不改 `.java`，避免 CI 证据 head 变动） |
+| F5 | SUGGESTION | Screen 13 改组成功提示恒为「分组已更新，路线仍为上次生成的版本…」，在尚未生成路线时同样显示 | delta Screen 13 原文即要求该提示；保留现状，文案精确化留 P5 打磨 |
+| F6 | SUGGESTION | E2E 初始分组为存量 active 草稿（v80）导致的 A=0/B=4 镜像，S9「发起即全员 A」只在 API 层验证 | 接受：S9 由 `SplitDraftStartApiTest` 覆盖，E2E 台账已显式记录前置偏差 |
 
 ## 偏差与已接受后果
 
 | id | 内容 | 处置 |
 |---|---|---|
-| TS-1 | 陈旧路线提示为常驻（未记录「路线生成时的分组」，不新增 wire 字段） | accepted；如需精确提示回 `/sdd:delta-craft` 增字段并重开 G1 |
-| OQ-10 | 同组重复提交幂等，不递增版本 | accepted（避免无意义版本膨胀；响应恒返回最新版本） |
-| 存量单人 active 草稿 | 生成/确认仍 `SPLIT_DRAFT_INCOMPLETE` | accepted；新发起已由 `SPLIT_MEMBERS_INSUFFICIENT` 前置拦截 |
+| TS-1 | 陈旧路线提示为常驻（草稿不记录「路线生成时的分组」，未新增 wire 字段） | accepted；精确提示需回 `/sdd:delta-craft` 增字段并重开 G1 |
+| TS-2 / OQ-10 | 同组重复提交幂等：200、不写库、不递增版本 | accepted；响应恒返回最新 `draftVersion`，前端以响应为准 |
+| TS-3 | 存量单人 `active` 草稿仍 `SPLIT_DRAFT_INCOMPLETE`（不放宽分组完整性） | accepted；新发起由 `SPLIT_MEMBERS_INSUFFICIENT` 前置拦截 |
+| TS-4 | 分组写入不重算路线、不删 `plan_node` | accepted；与 BQ-2 / A4 一致 |
 | 分支/PR 形式 | 沿用 `US-040-split-grouping-p0` 与 PR #117（未另切代码分支/PR） | 记录在 `tasks.md` 1.1/1.2 |
+| 404 诊断 | 无 envelope 的 404 映射为 `ENDPOINT_NOT_FOUND`（前端错误卡提示后端需更新） | 纯前端诊断增强，不改契约 |
 
-## 未闭合项（合并前）
+## 合并前必须关闭
 
 | # | 项 | Owner | 说明 |
 |---|---|---|---|
-| 1 | G1 Revision C8：IO 对「任意成员改组 + 头像切组 + `memberId` 入参」复核并具名签核 | Emily（IO） | 未关闭前 Revision 为 Conditional |
-| 2 | G3（合并与归档） | SA | 本记录不自证 G3 |
+| 1 | G1 Revision C8：IO 对「任意成员改组 + 头像切组 + `memberId` 入参」复核并具名签核 | Emily（IO） | 未关闭前 G1 Revision 仍为 Conditional；G3 不得据以合并 |
+| 2 | PR #117 冲突解决（`mergeable = CONFLICTING`） | Leo（SA） | 解决后需在新的 head 上确认 CI 双绿 |
+| 3 | 知识库对账（`tasks.md` 9.3：`docs/knowledge/architecture/tech-stack-plan.md` §US-040 + `_LOG.md` 一行） | SA / P5 | 当前 `docs/knowledge/` 无 US-040 记录；归档前补齐 |
 
 ## 签核区（VL）
 
 | Role | Name | Decision | Date |
 |---|---|---|---|
-| VL | （待具名） | | |
+| VL | **Leo** | **Pass** | 2026-11-17 |
 
-## Decision: OPEN
+按用户 2026-11-17 指令代为记录（用户本人担任 VL，签核名 Leo）；代理不独立核实签署人身份，也不代替签署人判断。上述 F1/F2/F3 已并入本记录，未以已关闭项覆盖新增问题。
 
-建议 **Pass**：delta 39 场景实现与回归全绿、E1 机器读取双绿、E2E 12 行 Pass 且唯一缺陷已修复回归、无 CRITICAL。请 VL 基于上述输入勾选 Pass / Conditional / Fail；Conditional 须列整改项与 owner。
+## Decision: Pass
 
-代理不代签、不改判。
+delta 39 场景实现与回归全绿、E1 在两个 head 均机读双绿、E2E 12 行 Pass 且唯一缺陷已修复回归、无 CRITICAL、无 Waiver 需求。F1（IO 补签）与 F2（PR 冲突）为**合并（G3）前置**，不属于实现验证失败；F3 已在复核中修正。
+
+## Closure path
+
+- 当前 **Pass** → 关闭 C8（IO 补签）→ 解决 PR #117 冲突并复核 CI → G3（合并）→ P5（`/sdd:living-merge` + 归档 + 知识库对账 + F4 注释订正）。

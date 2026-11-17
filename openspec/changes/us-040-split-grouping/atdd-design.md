@@ -1,7 +1,7 @@
 # US-040 ATDD 设计
 
 - change：`us-040-split-grouping`（G1 Pass：SA Leo + IO Emily，2026-11-17）
-- delta：`specs/splits/spec.md`（1 ADDED / 10 场景；3 MODIFIED / 28 场景；共 38 场景）
+- delta：`specs/splits/spec.md`（1 ADDED / 10 场景；3 MODIFIED / 28 场景；共 39 场景，Revision 后 38 → 39）
 - 输入：`dov-ac-review.md`、`requirement-workspace/requirements/US-040.md`、`deep-dive.md` §US-040、`impact-brief.md` §US-040
 - 本文件只设计 **API** 与 **E2E** 两层；UT 留 apply 阶段
 
@@ -52,11 +52,11 @@
 
 | 顺序 | 先写的验收代码 | 期望（红） |
 |---|---|---|
-| 1 | `SplitAssignmentApiTest`（A1–A9、A9b-N，8 例 → 10 例含修订） | 端点 404/405 → 全部失败 |
+| 1 | `SplitAssignmentApiTest`（A1–A9、A9b-N，Revision 后共 11 例） | 端点 404/405 → 全部失败 |
 | 2 | `SplitDraftStartApiTest` 增 S9/S10-N | S9 期望 A=4/B=0（现均分 2/2 失败）；S10-N 期望 409（现 201） |
 | 3 | `SplitRouteGenerationApiTest` 增 G6-N | 期望 409 `SPLIT_DRAFT_INCOMPLETE`（现仅夹具前置，无此分支） |
 | 4 | `SplitConfirmApiTest` 增 CF8-N | 期望 409 + `groups.*`（现 `missingDraftParts` 不含分组） |
-| 5 | `SplitDraftDetailApiTest` 断言改为 A=4/B=0 | 现值 2/2 → 红 |
+| 5 | `SplitDraftDetailApiTest` 断言改为改组后 A=3/B=1 | 现值 2/2 → 红 |
 | 6 | `docs/feedback/e2e-us-040.md` 台账（先登记待执行） | P4 执行后填 Pass/Partial/N/A |
 
 ## 3. Local vs CI gate

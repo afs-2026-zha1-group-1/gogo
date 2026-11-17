@@ -76,3 +76,10 @@
 ## 结论
 
 **AC 4/4 Pass；DoV 5/5 Pass；无阻塞 Fail / Partial。** IO 已于 2026-11-17 具名签核（G1 = Pass）；P3 fixture 补充、既有测试改写与 OQ-9/OQ-10 定稿作为 P3 承接项跟踪。
+
+## Revision 补记（2026-11-17，BQ-10）
+
+- 触发：用户 2026-11-17 指令「所有人都能编辑分组……点击头像换到另外一个分组」，取代原「仅本人改组」。
+- 口径变化：原 A9-N（不能替他人选择）拆为 **A9（任意成员可移动任意成员，body 可选 `memberId`）+ A9b-N（目标非成员 403 `NOT_A_MEMBER`）**；Screen 13 改为头像 chip 点击切组；场景总数 **38 → 39**。
+- 上方 R7（不可替他人改组）与 AC-1「共 38 条」为 G1 当时口径，Revision 后以 delta A9/A9b-N 为准；`design.md` TS-7 与 `g1-decision.md` Revision 段记录同一变更。
+- AC/DoV 复核：Revision 未引入新 requirement，AC 4/4 与 DoV 5/5 结论维持；IO 具名复核签核（C8）仍待补。
