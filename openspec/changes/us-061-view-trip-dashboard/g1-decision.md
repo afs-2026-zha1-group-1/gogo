@@ -1,6 +1,42 @@
 # G1 decision — us-061-view-trip-dashboard
 
-## Current decision — interim scope
+## Current decision — revised milestone scope
+
+- **Gate:** G1 (Align)
+- **Decision:** Conditional
+- **Recorded:** 2026-11-17 11:21:33 +08:00
+- **Approvers:** IO Emily Li; SA Sammi Ng. The requester reported that both
+  approved a Conditional decision for the revised scope; this is reported
+  approval, not a direct signature.
+
+### Inputs and findings
+
+- [Proposal](proposal.md), [trip-dashboard delta](specs/trip-dashboard/spec.md),
+  [app-shell delta](specs/app-shell/spec.md), [design](design.md), and
+  [ATDD design](atdd-design.md).
+- The revised scope displays source-backed planning milestones and safe,
+  source-backed recommendations. Reunion and completion remain unknown
+  without authoritative reads; trip completion is not inferred.
+- `openspec validate us-061-view-trip-dashboard --strict` reports three
+  app-shell modified-requirement errors involving omitted existing scenarios.
+  The earlier [AC / DoV review](dov-ac-review.md), [alignment self-check](alignment-self-check.md),
+  and [local requirement](../../../requirement-workspace/requirements/US-061.md)
+  describe the superseded interim scope and need reconciliation.
+- The previous Pass below applies only to the earlier interim scope. The
+  revised scope has not passed G1 and is not authorized by that earlier Pass.
+
+### Conditions and owner
+
+| Remediation | Owner | Required outcome |
+|---|---|---|
+| Reconcile the app-shell delta with the current shell specification and resolve strict validation errors. | Sammi Ng | A coherent, validated shell delta preserving the intended four-tab behavior and explicitly addressing affected existing scenarios. |
+| Reconcile the requirement, AC / DoV review, alignment check and ATDD with the revised scope. | Sammi Ng | Consistent, reviewable acceptance and test artifacts covering verified milestones, unknown states and safe recommendations. |
+| Return the revised change to the named IO and SA for G1 reassessment. | Sammi Ng | Record a new human decision after the conditions are resolved; do not treat this Conditional decision as a Pass. |
+
+No remediation deadline was supplied. Implementation and acceptance remain
+subject to the applicable gate and test prerequisites.
+
+## Earlier decision — interim scope
 
 - **Gate:** G1 (Align)
 - **Decision:** Pass
