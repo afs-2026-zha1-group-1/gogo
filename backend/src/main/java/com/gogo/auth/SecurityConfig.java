@@ -53,7 +53,8 @@ public class SecurityConfig {
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/api/auth/csrf", "/api/greeting").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/csrf",
+                                "/api/greeting").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/invitations/*").permitAll()
                         .requestMatchers("/api/trips/*/split-draft", "/api/trips/*/split-draft/**",
                                 "/api/trips/*/split-draft:confirm", "/api/trips/*/split-draft:cancel").permitAll()
