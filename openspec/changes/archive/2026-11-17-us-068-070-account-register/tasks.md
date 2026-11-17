@@ -74,10 +74,10 @@
 
 ## 10. 文档与归档承接（P5）
 
-- [ ] 10.1 `tech-stack-plan` 补注册/退出/改名 API 与 4 个 400 错误码，收敛“MVP 不做注册登录”偏差；`_LOG.md` 追加（`openspec/config.yaml` 的最终任务）
+- [x] 10.1 `tech-stack-plan` 补注册/退出/改名 API 与 4 个 400 错误码，收敛“MVP 不做注册登录”偏差；`_LOG.md` 追加（`openspec/config.yaml` 的最终任务）
 - [x] 10.2 `registry.md` / `handoff.md` 状态更新；US-068/069/070 看板卡在 G3 后转 Done
 - [x] 10.3 归档时以 delta Purpose 覆盖 Living Purpose；旧场景标题（四 tab / identity switcher）做 Living Spec 卫生改名
-- [ ] 10.4 P4 前确认 issue #40（US-068）卡片交接（当前指派 `DENGLU-OOCL`，流程事项）
+- [x] 10.4 2026-11-17 用户指令将 US-068/069/070（#40/#41/#43）看板卡转 Done；#40 原指派 DENGLU-OOCL 已完成交接决策
 
 ## 决策映射（design → tasks）
 
