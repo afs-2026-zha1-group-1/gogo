@@ -86,3 +86,23 @@ C1–C7（除 C3 转 P3 承接）均已关闭，Decision = `Pass`；后续任何
 - 当前 **Pass** → 进入 `/sdd:atdd-design`（补 `acceptance-test-fixtures.md` §US-040）+ `/sdd:task-plan`，再进 P4。
 - P3 必须带走：C3（OQ-9/OQ-10 定稿）、单成员存量草稿口径、陈旧路线提示落地、旧测试改写（`groups:move` 负向用例、`prepareConfirmableDraftAs` 分组步）、US-040 新 E2E。
 - 若实现阶段发现 delta 需要语义变化，回到 `/sdd:delta-craft` 修补后重开本记录；不得以已关闭的 C1–C7 覆盖新增业务级问题。
+
+## Revision re-review（2026-11-17，任意成员可编辑分组 + 头像切组）
+
+- 触发：用户 2026-11-17 指令「现在需要所有人都能编辑分组……点击头像换到另外一个分组」，取代原 A9-N「不能替其他成员选择」。
+- delta 变化：ADDED requirement 描述改为「任意成员可移动任意成员（body 可选 `memberId`，缺省为调用者；目标非成员 `403 NOT_A_MEMBER`）」；A9-N 拆为「可移动他人（A9）」+「目标非成员拒绝（A9b-N）」；Screen 13 场景改为头像 chip 点击切组。场景总数 38 → **39**。
+- 已同步：`proposal.md` `Supersedes ③`、`requirements/US-040.md` OQ-14/BQ-10 + Revision 段、`design.md` DD1/DD2/DD13 + TS-7、`atdd-design.md` A9 行、`acceptance-test-fixtures.md` §US-040、`tasks.md` 11.5、代码与 `SplitAssignmentApiTest`。
+- 签核：SA Leo **Pass**（用户 2026-11-17 指令代记）；**IO 待复核补签**（C8 open）。
+
+| # | Condition | Owner | Deadline | Status |
+|---|---|---|---|---|
+| C8 | IO 对 Revision delta（A9/A9b-N、Screen 13 头像交互、memberId 入参）复核并具名签核 | Emily（IO） | 合并 PR 前 | **open** |
+
+### Revision 签核区
+
+| Role | Name | Decision | Date |
+|---|---|---|---|
+| SA | Leo | **Pass** | 2026-11-17 |
+| IO | （待复核补签） | | |
+
+**Revision Decision: Conditional** —— 原 G1 Pass 仍覆盖原范围；Revision 待 C8 关闭后与其合并生效。

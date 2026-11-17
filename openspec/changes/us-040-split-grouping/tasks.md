@@ -78,6 +78,7 @@
 - [x] 11.2 Screen 14：底部主按钮改为「前往复核并确认」；正文的「校验时间窗」降为 outline 次按钮（仅 active 显示）
 - [x] 11.3 404 诊断：无 envelope 的 404 映射为 `ENDPOINT_NOT_FOUND`，错误卡提示「后端需更新并重启」
 - [x] 11.4 成员不足前置拦截：行程详情「进入分队规划」点击时先查成员数（< 2 就地提示并阻止跳转）；Screen 11 与 Screen 13 同步阻断页并隐藏发起/生成按钮
+- [x] 11.5 **2026-11-17 用户修订（BQ-10）**：分组权限改为「任意成员可移动任意成员」（入参可选 `memberId`，目标非成员 403）；Screen 13 成员改为头像 chip，点击切到另一组（对齐原型）；`SplitAssignmentApiTest` 的 A9-N 改为 A9 + A9b-N（ 11/11 绿）；delta/proposal/requirements/design/atdd/fixtures 同步；G1 开 Revision 复审（C8 待 IO 签）
 
 ## 对齐自检（Spec ↔ Design ↔ Tasks ↔ ATDD）
 | 检查项 | 结果 | 证据 |

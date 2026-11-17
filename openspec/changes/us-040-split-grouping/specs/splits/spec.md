@@ -20,7 +20,7 @@
 
 ### Requirement: Member group assignment
 
-系统 SHALL 提供 `PUT /api/trips/{tripId}/split-draft/assignment`（认证会话，body 含 `groupLabel` 与 `draftVersion`），允许任意行程成员把**本人**在草稿 `groups` 中移到 A 组或 B 组。服务端 SHALL 依序校验成员资格、活跃草稿、版本一致、组别合法，MUST NOT 接受或使用请求体中的其他成员标识。成功后 SHALL 以版本条件更新写入文档并令 `draftVersion + 1`，同时原样保留边界与已生成路线；`confirmed` / `cancelled` 草稿 SHALL 以 `SPLIT_DRAFT_NOT_ACTIVE` 拒绝；任何拒绝 SHALL 不改动 `groups`、版本与路线。
+系统 SHALL 提供 `PUT /api/trips/{tripId}/split-draft/assignment`（认证会话，body 含可选 `memberId`、`groupLabel` 与 `draftVersion`），允许任意行程成员把**任意行程成员**在草稿 `groups` 中移到 A 组或 B 组（对齐原型头像切组交互）。`memberId` 指定被移动成员，缺省为调用者本人；目标成员 SHALL 属于本行程（否则 `403 NOT_A_MEMBER`）。服务端 SHALL 依序校验成员资格、活跃草稿、版本一致、组别合法、目标成员归属。成功后 SHALL 以版本条件更新写入文档并令 `draftVersion + 1`，同时原样保留边界与已生成路线；`confirmed` / `cancelled` 草稿 SHALL 以 `SPLIT_DRAFT_NOT_ACTIVE` 拒绝；任何拒绝 SHALL 不改动 `groups`、版本与路线。
 
 #### Scenario: 成员把自己切到另一组（A1）
 
@@ -78,19 +78,26 @@
 - **THEN** 响应 `400`（错误码按 OQ-9 在 P3 定稿，候选 `INVALID_GROUP_LABEL`）
 - **AND** 无持久化，`groups` 与版本不变
 
-#### Scenario: 不能替其他成员改组（A9-N）
+#### Scenario: 任意成员可移动其他成员（A9）
 
-- **GIVEN** 请求体额外携带 `memberId` / `userId` / 他人 `groups` 字段
-- **WHEN** 由成员 Chloe 调用
-- **THEN** 服务端忽略这些字段或返回 `400`，任何情况下只移动 Chloe 本人
-- **AND** 其他成员的分组归属不变
+- **GIVEN** 活跃草稿版本 1，Ben 与 Chloe 都是行程成员，两人当前都在 A 组
+- **WHEN** Ben 携带 `{"memberId": <Chloe>, "groupLabel": "B", "draftVersion": 1}` 调用 assignment
+- **THEN** 响应 `200`，`groups.B` 恰含 Chloe、`groups.A` 不含 Chloe，`data.draftVersion = 2`
+- **AND** 调用者 Ben 自己的分组不变（仍在 A 组）
+
+#### Scenario: 目标成员不属于本行程拒绝（A9b-N）
+
+- **GIVEN** Eve 不是该行程成员
+- **WHEN** Ben 携带 `{"memberId": <Eve>, "groupLabel": "B", "draftVersion": <当前版本>}` 调用
+- **THEN** 响应 `403` 且 `error.code = NOT_A_MEMBER`
+- **AND** `groups` 与版本不变
 
 #### Scenario: 分组卡展示与切组契约（Screen 13）
 
 - **GIVEN** 查看者为该行程成员，草稿为 `active`
 - **WHEN** 打开「分组与路线」屏幕
-- **THEN** 分组卡呈现 A/B 两组的人数与成员 `displayName` 列表，查看者所在组带「我」标记
-- **AND** 提供 A/B 切组控件；成功后页面提示「分组已更新，路线仍为上次生成的版本，可点击重新生成」并刷新草稿
+- **THEN** 分组卡把成员渲染为头像 chip（首字头像 + 显示名），点击 chip 把该成员移到另一组（A ↔ B）；所有行程成员都可操作
+- **AND** 改组成功后页面提示「分组已更新，路线仍为上次生成的版本，可点击重新生成」并刷新草稿
 - **AND** 任一组为空时卡内提示「至少一人加入另一组后才能生成路线与确认」
 - **AND** `confirmed` / `cancelled` 终态不显示切组控件；loading / empty / permission / error 态均可观察
 - **AND** 合法性判定归后端，前端不自行宣布改组成功

@@ -8,7 +8,7 @@ US-040 合并了原 US-041（#85）与 US-076（#55）：成员要能把自己�
 
 ## What Changes
 
-- 新增分组写入：`PUT /api/trips/{tripId}/split-draft/assignment`，body 仅 `{groupLabel, draftVersion}`；服务端按**会话身份**把调用者本人从原组移出并加入目标组，**不能替他人选择**；成功后 `draftVersion + 1`，**不改动**已保存边界与已生成路线。
+- 新增分组写入：`PUT /api/trips/{tripId}/split-draft/assignment`，body 为 `{memberId?, groupLabel, draftVersion}`；任意行程成员可移动**任意行程成员**（`memberId` 缺省为调用者；目标不属于本行程 → `403 NOT_A_MEMBER`），UI 为原型头像 chip 点击切组（**2026-11-17 用户修订**：原「仅本人」权限已被取代）；成功后 `draftVersion + 1`，**不改动**已保存边界与已生成路线。
 - 草稿初始分组改为「A = 全部行程成员、B 为空」（取代 `partitionGroups` 前后均分）；取消后重建同样适用。
 - 发起前置新增「当前成员数至少 2」：单人行程无法满足「两组非空」，创建与重建均返回 `409 SPLIT_MEMBERS_INSUFFICIENT`（新错误码），不创建或改写草稿行；Screen 11 既有错误态按 `code` 渲染。
 - `POST .../split-draft/routes:generate` 增加分组完整性前置：任一组为空、成员漏分组或重复分组 → `409 SPLIT_DRAFT_INCOMPLETE`（`error.details.missing` 含 `groups.A` / `groups.B` / `groups.unassigned` / `groups.duplicate`）；补齐后才按**当前**分组标签成对生成。
@@ -42,6 +42,6 @@ US-040 合并了原 US-041（#85）与 US-076（#55）：成员要能把自己�
 | Impact brief | `requirement-workspace/impact-brief.md` §US-040 |
 | Story | GitHub issue #84（`Iteration 1`、`Priority - Must`、`Type - Split Planning`；并入 US-041 #85 / US-076 #55） |
 | Effort | 中：后端 1 端点 + 1 域方法 + 三处门禁（发起成员数 / 生成 / 确认）；前端 1 卡改造 + 2 屏文案；零迁移 |
-| Supersedes | ① issue #84 AC 第 2 条的「分组变化使旧路线失效或要求重新生成」由用户裁决（2026-11-17 BQ-2）取代：**保留已生成路线**，仅 `draftVersion + 1`；重新生成时按当前分组标签重建。已写入 `requirements/US-040.md` S14/R10 与 `impact-brief.md` §US-040 R2。② US-049/050 的验收基线：`docs/feedback/e2e-us-049-050.md` 的 E2/E3/E5/E8/E10 记录的是「发起 v1 → 边界 v2 → 生成 v3 → 确认 v3」与「A 组 1/2、B 组 3/4」，本变更后同一任务需插入分组步（发起 v1 → 切组 v2 → 边界 v3 → 生成 v4），且 A/B 成员由成员自选；旧 E2E 表仅作历史证据，归档时以 Living Spec 为准 |
+| Supersedes | ① issue #84 AC 第 2 条的「分组变化使旧路线失效或要求重新生成」由用户裁决（2026-11-17 BQ-2）取代：**保留已生成路线**，仅 `draftVersion + 1`；重新生成时按当前分组标签重建。已写入 `requirements/US-040.md` S14/R10 与 `impact-brief.md` §US-040 R2。② US-049/050 的验收基线：`docs/feedback/e2e-us-049-050.md` 的 E2/E3/E5/E8/E10 记录的是「发起 v1 → 边界 v2 → 生成 v3 → 确认 v3」与「A 组 1/2、B 组 3/4」，本变更后同一任务需插入分组步（发起 v1 → 切组 v2 → 边界 v3 → 生成 v4），且 A/B 成员由成员自选；旧 E2E 表仅作历史证据，归档时以 Living Spec 为准。③ **（2026-11-17 用户修订）** issue #84 AC 第 2 条的「不能替其他成员选择」被取代：任意行程成员可编辑分组（body 新增可选 `memberId`，缺省为调用者），交互对齐原型 `ui-design-reference/gogo-mvp-prototype.html` 的头像点击切组；A9-N 改为「可移动他人 + 目标非成员 403」，旧「仅本人」口径仅作历史证据 |
 | Regression risk | 既有 splits 测试与夹具普遍假设 A/B 各 2 人；`AbstractSplitApiTest.prepareConfirmableDraftAs` 缺分组步；`SplitRouteGenerationApiTest` 还有 `groups:move` 不存在的负向断言。P3/P4 必须同步调整（见 impact §4） |
 | Open design items | OQ-9 非法 `groupLabel` 的错误码、OQ-10 同组重复提交是否递增版本、OQ-11 头像首字母、OQ-12 空 B 组引导文案——均非阻塞，P3 定 |

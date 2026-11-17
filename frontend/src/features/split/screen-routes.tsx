@@ -13,11 +13,12 @@ import { formatClock, shortId } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
 /**
- * Screen 13 — group routes (spec US-040 + US-042). The group card lists each group's members by display name
- * (roster from GET /api/trips/{id}/members), marks the caller's group and lets the caller move only themselves;
- * group changes bump the draft version and never touch the saved route pair, so the stale-route notice stays visible
- * until the initiator regenerates. Generate wires POST routes:generate (paired atomic); incomplete groups are
- * rejected with SPLIT_DRAFT_INCOMPLETE and its groups.* details.
+ * Screen 13 — group routes (spec US-040 + US-042). The group card lists each group's members as avatar chips by
+ * display name (roster from GET /api/trips/{id}/members); clicking a member moves that member into the other group
+ * (any trip member may adjust the split, user ruling 2026-11-17 — the prototype's avatar-click interaction). Group
+ * changes bump the draft version and never touch the saved route pair, so the stale-route notice stays visible until
+ * the initiator regenerates. Generate wires POST routes:generate (paired atomic); incomplete groups are rejected with
+ * SPLIT_DRAFT_INCOMPLETE and its groups.* details.
  */
 export function ScreenRoutes() {
   const { tripId = "" } = useParams()
@@ -57,7 +58,7 @@ export function ScreenRoutes() {
   return (
     <SplitLayout
       title="分组与路线"
-      subtitle="成对生成 · 成员可自选小组"
+      subtitle="成对生成 · 成员可调整分组"
       step={2}
       backTo={`/trips/${tripId}/split/boundaries`}
       action={action}
@@ -115,10 +116,10 @@ export function ScreenRoutes() {
             hasRoutes={hasPair}
             assigning={assign.isPending}
             notice={notice}
-            onAssign={(label) => {
+            onAssign={(memberId, label) => {
               setNotice(null)
               assign.mutate(
-                { groupLabel: label, draftVersion: detail.draftVersion },
+                { memberId, groupLabel: label, draftVersion: detail.draftVersion },
                 { onSuccess: () => setNotice("分组已更新，路线仍为上次生成的版本，可点击重新生成。") },
               )
             }}
@@ -154,9 +155,10 @@ export function ScreenRoutes() {
 }
 
 /**
- * Group card (US-040 DD13/DD14): members by display name, the caller's marker and a self-only move button.
- * An emptied group that still has saved routes is flagged "需重新生成"; any saved pair carries the stale-route
- * notice because the document does not record which group version produced the routes.
+ * Group card (US-040 DD13/DD14 + revision 2026-11-17): members are avatar chips grouped by A/B. Clicking a chip
+ * moves that member into the other group (any trip member may adjust the split, matching the prototype). An emptied
+ * group that still has saved routes is flagged "需重新生成"; any saved pair carries the stale-route notice because
+ * the document does not record which group version produced the routes.
  */
 function GroupCard({
   groups,
@@ -175,14 +177,11 @@ function GroupCard({
   hasRoutes: boolean
   assigning: boolean
   notice: string | null
-  onAssign: (label: "A" | "B") => void
+  onAssign: (memberId: string, label: "A" | "B") => void
 }) {
   const nameOf = (id: string) =>
     members?.find((member) => String(member.userId) === id)?.displayName ?? shortId(id)
-  const myGroup =
-    myId == null
-      ? null
-      : (Object.entries(groups).find(([, ids]) => ids.includes(myId))?.[0] ?? null)
+  const initialOf = (id: string) => nameOf(id).slice(0, 1).toUpperCase()
   const hasEmptyGroup = Object.values(groups).some((ids) => ids.length === 0)
 
   return (
@@ -195,38 +194,44 @@ function GroupCard({
           const box =
             label === "A" ? "border-a-line bg-a-soft" : label === "B" ? "border-b-line bg-b-soft" : "border-line bg-surface-3"
           const ink = label === "A" ? "text-a" : label === "B" ? "text-b" : "text-ink"
-          const isMine = myGroup === label
+          const avatar = label === "A" ? "bg-a-soft text-a" : label === "B" ? "bg-b-soft text-b" : "bg-surface-3 text-ink"
+          const target: "A" | "B" = label === "B" ? "A" : "B"
           return (
             <div key={label} className={cn("rounded-card border p-3", box)}>
               <div className={cn("flex items-center justify-between gap-1 text-[13px] font-extrabold", ink)}>
-                <span>
-                  {label} 组
-                  {isMine ? <span className="ml-1 text-[10px] font-bold text-ink-2">（我）</span> : null}
-                </span>
+                <span>{label} 组</span>
                 <span className="text-[11px] font-semibold text-ink-2">{ids.length} 人</span>
               </div>
-              <ul className="mt-1.5 space-y-0.5 text-[11.5px] text-ink-2">
+              <div className="mt-2 flex flex-wrap gap-1.5">
                 {ids.length === 0 ? (
-                  <li className="text-ink-3">暂无成员</li>
+                  <span className="text-[11px] text-ink-3">暂无成员</span>
                 ) : (
-                  ids.map((id) => (
-                    <li key={id} className={cn(id === myId && "font-bold text-ink")}>
-                      {nameOf(id)}
-                    </li>
-                  ))
+                  ids.map((id) => {
+                    const isMe = id === myId
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        disabled={!assignable || assigning}
+                        onClick={() => onAssign(id, target)}
+                        title={assignable ? `点击移到 ${target} 组` : undefined}
+                        className={cn(
+                          "flex items-center gap-1.5 rounded-full border px-1.5 py-1 text-[11px] font-semibold transition-colors",
+                          isMe ? "border-brand bg-surface text-ink" : "border-line bg-surface/80 text-ink-2",
+                          assignable && "hover:border-brand hover:text-ink",
+                          !assignable && "cursor-default opacity-80",
+                        )}
+                      >
+                        <span className={cn("grid size-5 shrink-0 place-items-center rounded-full text-[10px] font-bold", avatar)}>
+                          {initialOf(id)}
+                        </span>
+                        <span className="max-w-[72px] truncate">{nameOf(id)}</span>
+                        {isMe ? <span className="text-[9.5px] font-bold text-brand">我</span> : null}
+                      </button>
+                    )
+                  })
                 )}
-              </ul>
-              {assignable ? (
-                <Button
-                  variant={isMine ? "outline" : "primary"}
-                  size="sm"
-                  className="mt-2 w-full"
-                  disabled={isMine || assigning}
-                  onClick={() => onAssign(label === "B" ? "B" : "A")}
-                >
-                  {isMine ? "我在本组" : `加入 ${label} 组`}
-                </Button>
-              ) : null}
+              </div>
               {hasRoutes && ids.length === 0 ? (
                 <div className="mt-1.5 text-[10.5px] font-semibold text-warn">需重新生成</div>
               ) : null}
@@ -234,9 +239,14 @@ function GroupCard({
           )
         })}
       </div>
+      {assignable ? (
+        <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
+          点击成员头像可把他移到另一组；所有行程成员都可以调整分组。
+        </p>
+      ) : null}
       {hasEmptyGroup ? (
         <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
-          至少一名成员加入另一组后才能生成路线与确认；只能由成员本人切换自己的小组。
+          至少一名成员加入另一组后才能生成路线与确认。
         </p>
       ) : null}
       {notice ? <p className="mt-1.5 text-[11px] font-semibold text-ok">{notice}</p> : null}

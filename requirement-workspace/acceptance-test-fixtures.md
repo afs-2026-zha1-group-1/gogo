@@ -597,7 +597,8 @@ Alice 的预期顺序（以 2026-11-16 为“今天”，2026-11-17 修订：**�
 | A6-N 过期版本 | 草稿 v4 时传 `draftVersion: 2` | `409 STALE_DRAFT_VERSION`；分组与版本不变 |
 | A7-N 守卫 | 无会话 / trip 999 / Eve | `401 MEMBER_REQUIRED` / `404 TRIP_NOT_FOUND` / `403 NOT_A_MEMBER`；`data = null` |
 | A8-N 非法组别 | `{"groupLabel":"C"}` | `400 INVALID_GROUP_LABEL`；无持久化 |
-| A9-N 替他人 | body 额外带 `memberId: "2"`（或 `userId`/`groups`） | 200/400，但只有调用者本人被移动；Ben 归属不变 |
+| A9 移动他人 | Ben 调 `{"memberId": <Chloe>, "groupLabel":"B", "draftVersion":1}` | `200`；Chloe 移到 B；Ben 仍在 A；`draftVersion` = 2 |
+| A9b-N 目标非成员 | body `memberId` = Eve | `403 NOT_A_MEMBER`；分组与版本不变 |
 | S9 初始分组 | 任一成员 `POST split-draft` | `201`；`groups.A` = 4 人、`groups.B` = `[]`；两键均存在 |
 | S10-N 单成员发起 | 单成员行程成员 `POST split-draft` | `409 SPLIT_MEMBERS_INSUFFICIENT`；不建行；`cancelled` 行也不重建 |
 | G6-N 空组生成 | Ben 在 B 空的草稿上 `POST routes:generate` | `409 SPLIT_DRAFT_INCOMPLETE`；`details.missing` 含 `groups.B`；无 `split-a/b` 行；版本不变 |

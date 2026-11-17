@@ -17,7 +17,8 @@
 | A6-N | 版本过期拒绝（A6-N） | **API** | - | 409 `STALE_DRAFT_VERSION` |
 | A7-N | 守卫顺序（A7-N） | **API** | Security | 401 / 404 / 403 三连 |
 | A8-N | 非法组别拒绝（A8-N） | **API** | - | 400 `INVALID_GROUP_LABEL`（P3 定稿，见 DD3） |
-| A9-N | 不能替其他成员改组（A9-N） | **API** | Security | 请求体夹带他人字段仍只动本人 |
+| A9 | 任意成员可移动其他成员（A9） | **API** | Security | 任何成员可移动任意行程成员（BQ-10） |
+| A9b-N | 目标成员不属于本行程拒绝（A9b-N） | **API** | Security | 403 `NOT_A_MEMBER` |
 | S1 | 成员发起唯一草稿（S1） | **API** | - | 回归 + 201 |
 | S9 | 初始分组为全员 A 组（S9） | **API** | - | `groups.A` = 4 人、`groups.B` = `[]` |
 | S10-N | 成员不足两人拒绝发起（S10-N） | **API** | - | 409 `SPLIT_MEMBERS_INSUFFICIENT`（IO-1） |
@@ -37,7 +38,7 @@
 | CF8-N | 分组不完整无确认（CF8-N） | **API** | - | 新增：`groups.B` / `groups.unassigned` / `groups.duplicate` |
 | CF4-N–CF6-N | 过期版本 / 非组织者 / 无活跃草稿 | **API** | Security | 既有回归 |
 | Screen 11 | 发起屏幕展示契约 | **E2E** | - | 新错误态：成员不足两人 |
-| Screen 13 | 分组路线屏幕展示契约 | **E2E** | - | 分组卡 + 切组 + 空组标注 + 陈旧路线提示 |
+| Screen 13 | 分组路线屏幕展示契约 | **E2E** | - | 分组卡头像 chip + 点击切组 + 空组标注 + 陈旧路线提示 |
 | Screen 15 | 确认屏幕展示契约 | **E2E** | - | 成员名 + 陈旧路线提示 |
 
 **Deferred to `/sdd:atdd-apply`（unit-level TDD）**
@@ -51,7 +52,7 @@
 
 | 顺序 | 先写的验收代码 | 期望（红） |
 |---|---|---|
-| 1 | `SplitAssignmentApiTest`（A1–A9-N，9 例） | 端点 404/405 → 全部失败 |
+| 1 | `SplitAssignmentApiTest`（A1–A9、A9b-N，8 例 → 10 例含修订） | 端点 404/405 → 全部失败 |
 | 2 | `SplitDraftStartApiTest` 增 S9/S10-N | S9 期望 A=4/B=0（现均分 2/2 失败）；S10-N 期望 409（现 201） |
 | 3 | `SplitRouteGenerationApiTest` 增 G6-N | 期望 409 `SPLIT_DRAFT_INCOMPLETE`（现仅夹具前置，无此分支） |
 | 4 | `SplitConfirmApiTest` 增 CF8-N | 期望 409 + `groups.*`（现 `missingDraftParts` 不含分组） |

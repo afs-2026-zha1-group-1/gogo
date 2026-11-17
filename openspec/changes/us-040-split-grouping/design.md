@@ -9,7 +9,7 @@
 ### DD1 端点与 DTO
 
 - `PUT /api/trips/{tripId}/split-draft/assignment`，`@RequestMapping("/api/trips/{tripId}")` 下新增 `@PutMapping("/split-draft/assignment")`。
-- 请求：新增 `AssignmentRequest(String groupLabel, int draftVersion)`（与 `DraftVersionRequest` 同风格，只含这两个字段——**刻意不接收 `memberId`**，越权在契约层不可能）。
+- 请求：新增 `AssignmentRequest(String memberId, String groupLabel, int draftVersion)`。`memberId` 可选，指定被移动成员（缺省为调用者）——**2026-11-17 用户修订**：任意行程成员可编辑分组（对齐原型头像切组），目标不属于本行程 → `403 NOT_A_MEMBER`；原「刻意不接收 `memberId`」已作废（见 TS-7）。
 - 响应：复用 `SplitDraftDetailResponse`，与 `:confirm` / `:cancel` 一致，一次返回 `groups`、`draftVersion`、`routes`、边界与窗口，前端无需二次 GET。
 - 调用者：沿用 `caller(Authentication)` → `service.assign(tripId, memberId, request)`。
 
@@ -22,9 +22,10 @@
 3. `status != "active"` → `SPLIT_DRAFT_NOT_ACTIVE`（含 confirmed / cancelled）；
 4. `request.draftVersion()` ≠ 文档版本 → `STALE_DRAFT_VERSION`；
 5. `groupLabel` ∉ {A, B} → `INVALID_GROUP_LABEL`（400）；
-6. 幂等分支：调用者已在目标组 → 直接返回 `getDraftDetail`，**不写库、不递增版本**；
-7. `draft.withAssignment(label, memberId, now)` → `updateDraftIfVersion(...)`；CAS 返回 0 → `STALE_DRAFT_VERSION`；
-8. 返回 `getDraftDetail(tripId, memberId)`，响应 `200`。
+6. 目标成员 = `request.memberId()`（空则调用者）；目标非本行程成员 → `NOT_A_MEMBER`（403）；
+7. 幂等分支：目标已在目标组 → 直接返回 `getDraftDetail`，**不写库、不递增版本**；
+8. `draft.withAssignment(label, target, now)` → `updateDraftIfVersion(...)`；CAS 返回 0 → `STALE_DRAFT_VERSION`；
+9. 返回 `getDraftDetail(tripId, memberId)`，响应 `200`。
 
 顺序约束：状态与版本校验先于组别校验，保证终态草稿收到 `409 SPLIT_DRAFT_NOT_ACTIVE` 而不是 400（A5-N）。
 
@@ -90,16 +91,16 @@ withAssignment(String groupLabel, String memberId, String now)
 ### DD12 成员名映射
 
 - `features/split/screen-routes.tsx` 与 `screen-confirm.tsx` 共用新增 hook `useTripMembers(tripId)`（`GET /api/trips/{id}/members`），构建 `Map<userId, displayName>`。
-- 无名字时回退 `shortId`；不使用头像首字母（OQ-11 留后续）。
+- 无名字时回退 `shortId`；分组卡显示首字头像（OQ-11 经 2026-11-17 Revision 改为显示首字头像）。
 
-### DD13 分组卡与切组（Screen 13）
+### DD13 分组卡与切组（Screen 13，2026-11-17 修订）
 
-- 卡片标题由「自动分组」改为「分组」；两列 A/B：组名、人数、成员名列表（「我」标记当前账号）。
-- 每列底部按钮：「加入 A 组」/「加入 B 组」；已在本组时按钮禁用（避免无意义幂等请求）。
-- 调 `useAssignGroup`（`assignGroup(tripId, {groupLabel, draftVersion})`），成功 → `invalidate` detail + 内联提示「分组已更新，路线仍为上次生成的版本，可点击重新生成」。
-- 终态（`confirmed` / `cancelled`）不渲染切组按钮。
+- 卡片标题「分组」；两列 A/B：组名、人数、成员头像 chip（首字头像 + 显示名，「我」标记）。
+- **点击成员 chip 把该成员移到另一组**（A ↔ B），对齐原型 `gogo-mvp-prototype.html` 的 `groupA`/`groupB` chip 点击实现；**任意行程成员都可操作**（不再限制本人）。
+- 调 `useAssignGroup`（`assignGroup(tripId, {memberId, groupLabel, draftVersion})`），成功 → `invalidate` detail + 内联提示「分组已更新，路线仍为上次生成的版本，可点击重新生成」。
+- 终态（`confirmed` / `cancelled`）chip 不可点（`disabled`），不显示操作提示。
 - 副标题去掉「分组移动本期不开放」；删除「no members endpoint」过时注释。
-- 空组引导：任一组为空时显示「至少一名成员加入另一组后才能生成路线与确认；只能由成员本人切换自己的小组」（OQ-12）。
+- 空组引导：任一组为空时显示「至少一名成员加入另一组后才能生成路线与确认」+「点击成员头像可把他移到另一组；所有行程成员都可以调整分组」（OQ-12）。
 
 ### DD14 陈旧路线提示（IO-3，不新增字段）
 
@@ -144,3 +145,4 @@ withAssignment(String groupLabel, String memberId, String now)
 | TS-4 | 分组写入不触发路线重算、不删除 `plan_node` | 与 BQ-2 / A4 一致；旧路线仍可展示并标注 |
 | TS-5 | 成员名走 `GET /api/trips/{id}/members`，detail 不新增名字段 | 复用 US-013；两屏各一次额外请求，MVP 接受 |
 | TS-6 | 未新增分组路由/页面 | 分组卡落在 Screen 13；E2E 反向断言 `#/trips/{id}/split/groups` 不存在 |
+| TS-7 | **2026-11-17 修订**：分组编辑权限由「仅本人」改为「任意行程成员可移动任意成员」（原 A9-N 作废），入参新增可选 `memberId` | 已同步 delta A9/A9b-N、Screen 13 头像 chip、requirements OQ-14/BQ-10、fixtures 与 `SplitAssignmentApiTest`；G1 开 Revision 复审（C8 待 IO 签） |

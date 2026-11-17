@@ -138,8 +138,10 @@ public class SplitDraftService {
     }
 
     /**
-     * Moves the authenticated member into the target group (US-040 A1-A9, design DD2/DD4/DD7). After the shared guard
-     * it requires an active draft, the current version and an A/B label. Reassigning to the group the caller already
+     * Moves a trip member into the target group (US-040 A1-A9, design DD2/DD4/DD7). After the shared guard it requires
+     * an active draft, the current version and an A/B label. Any trip member may move any trip member (user ruling
+     * 2026-11-17, prototype avatar click); the optional {@code memberId} names the moved member and defaults to the
+     * caller, while a target outside the trip is rejected with NOT_A_MEMBER. Moving a member into the group it already
      * belongs to is idempotent: 200 with no write and no version bump (design DD4). Otherwise the conditional update
      * bumps draftVersion and leaves the saved boundaries and generated routes untouched.
      */
@@ -153,11 +155,17 @@ public class SplitDraftService {
         if (!"A".equals(groupLabel) && !"B".equals(groupLabel)) {
             throw new ApiException(ErrorCode.INVALID_GROUP_LABEL, "group label must be A or B");
         }
+        String target = request.memberId() == null || request.memberId().isBlank()
+                ? memberId
+                : request.memberId();
+        if (!target.equals(memberId) && !repository.findMemberIdsOrdered(tripId).contains(target)) {
+            throw new ApiException(ErrorCode.NOT_A_MEMBER, "the target member does not belong to this trip");
+        }
         if (draft.groups() != null
-                && draft.groups().getOrDefault(groupLabel, List.of()).contains(memberId)) {
+                && draft.groups().getOrDefault(groupLabel, List.of()).contains(target)) {
             return getDraftDetail(tripId, memberId);
         }
-        SplitDraftDocument updated = draft.withAssignment(groupLabel, memberId, Instant.now().toString());
+        SplitDraftDocument updated = draft.withAssignment(groupLabel, target, Instant.now().toString());
         if (repository.updateDraftIfVersion(tripId, toJson(updated), draft.draftVersion()) == 0) {
             throw new ApiException(ErrorCode.STALE_DRAFT_VERSION, "draft version is stale");
         }

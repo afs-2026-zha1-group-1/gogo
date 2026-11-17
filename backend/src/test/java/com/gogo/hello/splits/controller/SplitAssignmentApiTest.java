@@ -156,29 +156,35 @@ class SplitAssignmentApiTest extends AbstractSplitApiTest {
     }
 
     @Test
-    @DisplayName("assign_bodyCannotMoveAnotherMember")
-    void assign_bodyCannotMoveAnotherMember() throws Exception {
+    @DisplayName("assign_anyTripMemberMayMoveAnotherMember")
+    void assign_anyTripMemberMayMoveAnotherMember() throws Exception {
         startDraftAs("Ben");
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("groupLabel", "B");
-        payload.put("draftVersion", 1);
-        payload.put("memberId", memberId("Chloe"));
-        payload.put("userId", memberId("Chloe"));
-        int status = mockMvc.perform(put("/api/trips/{tripId}/split-draft/assignment", sgfTripId())
+        String chloe = memberId("Chloe");
+        mockMvc.perform(put("/api/trips/{tripId}/split-draft/assignment", sgfTripId())
                         .with(TestAuth.asUser(memberId("Ben")))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(payload)))
-                .andReturn().getResponse().getStatus();
-        assertThat(status).isIn(200, 400);
+                        .content(moveBody(chloe, "B", 1)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.draftVersion").value(2))
+                .andExpect(jsonPath("$.data.groups.B[0]").value(chloe))
+                .andExpect(jsonPath("$.data.groups.A.length()").value(3));
         JsonNode draft = objectMapper.readTree(draftJson());
-        JsonNode groupA = draft.get("groups").get("A");
-        JsonNode groupB = draft.get("groups").get("B");
-        String chloe = memberId("Chloe");
-        assertThat(contains(groupA, chloe)).isTrue();
-        assertThat(contains(groupB, chloe)).isFalse();
-        if (status == 200) {
-            assertThat(contains(groupB, memberId("Ben"))).isTrue();
-        }
+        assertThat(contains(draft.get("groups").get("A"), chloe)).isFalse();
+        assertThat(contains(draft.get("groups").get("B"), chloe)).isTrue();
+    }
+
+    @Test
+    @DisplayName("assign_targetOutsideTrip_returns403NotAMember")
+    void assign_targetOutsideTrip_returns403NotAMember() throws Exception {
+        startDraftAs("Ben");
+        String before = draftJson();
+        mockMvc.perform(put("/api/trips/{tripId}/split-draft/assignment", sgfTripId())
+                        .with(TestAuth.asUser(memberId("Ben")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(moveBody(eveId(), "B", 1)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("NOT_A_MEMBER"));
+        assertThat(draftJson()).isEqualTo(before);
     }
 
     private ResultActions putAssignment(String displayName, String groupLabel, int draftVersion) throws Exception {
@@ -190,6 +196,15 @@ class SplitAssignmentApiTest extends AbstractSplitApiTest {
 
     private String body(String groupLabel, int draftVersion) throws Exception {
         Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("groupLabel", groupLabel);
+        payload.put("draftVersion", draftVersion);
+        return objectMapper.writeValueAsString(payload);
+    }
+
+    /** Move body naming the member to move (any trip member may move any member, user ruling 2026-11-17). */
+    private String moveBody(String targetMemberId, String groupLabel, int draftVersion) throws Exception {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("memberId", targetMemberId);
         payload.put("groupLabel", groupLabel);
         payload.put("draftVersion", draftVersion);
         return objectMapper.writeValueAsString(payload);
