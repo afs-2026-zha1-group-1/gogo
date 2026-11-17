@@ -82,7 +82,7 @@ export function ScreenStart() {
     <SplitLayout
       title="队伍路线"
       subtitle="本次行程仅一次分队"
-      backTo={`/#/trips/${tripId}`}
+      showTabBar
       right={
         <Button
           size="sm"
