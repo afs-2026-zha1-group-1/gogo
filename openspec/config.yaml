@@ -1,32 +1,21 @@
 schema: spec-driven
 
-# Project context (optional)
-# Add only constraints that should guide OpenSpec artifacts and workflows.
-# Include constraints an agent cannot infer by reading the code.
-# Keep general project documentation and discoverable codebase facts out.
-# Example:
-#   context: |
-#     Designs and tasks must cover Windows, macOS, and Linux
-#     Write all artifacts in Spanish
+# Project context: constraints that guide artifacts and workflows.
+context: |
+  Tech baseline: docs/knowledge/architecture/tech-stack-plan.md is binding for
+  implementation. Read it before proposing or coding. If a change needs to
+  deviate from its stack, data model, or API list, record the conflict in the
+  proposal or design instead of deviating silently.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always state what is out of scope
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+# Per-artifact rules.
+rules:
+  tasks:
+    - Add a final task before archive to reconcile docs/knowledge/architecture/tech-stack-plan.md with what this change actually shipped (implemented capabilities, API list, data model).
+    - "Reconcile only features completed by an archived change. Do not sync planned or still-unarchived work into the plan."
+    - Append a row to docs/knowledge/_LOG.md whenever the plan is updated.
 
-# Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-#   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
-#     archive:
-#       guidance:
-#         - Summarize the archive outcome before finishing
+# Per-operation guidance.
+operations:
+  archive:
+    guidance:
+      - Confirm the tech-stack-plan reconciliation task is closed. If the change altered stack, data model, or API, update the plan or record the deviation there.

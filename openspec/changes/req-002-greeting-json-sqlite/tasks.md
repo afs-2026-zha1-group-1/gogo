@@ -76,7 +76,7 @@ Verification is stated inside each checkbox.
 - [x] 3.4 Confirm `.github/workflows/ci.yml` needs no edit (D7) and still parses
   with exactly the `backend` and `frontend` jobs — verify the YAML check in the
   whitelist passes and no placeholder harness script is invoked.
-- [ ] 3.5 Commit the implementation increment and push to `origin/main` **only
+- [x] 3.5 Commit the implementation increment and push to `origin/main` **only
   after the user authorizes the push** — verify `git log` shows the commit and
   `git status` is clean for those paths. The REQ-001 push authorization is not
   inherited.

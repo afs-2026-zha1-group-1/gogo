@@ -55,10 +55,12 @@
   Carried forward, not a G1 condition: the JSON ruling changes the merged
   requirement, so `req-002-greeting-json-sqlite` must carry its own delta, G1, G2
   and G3. REQ-001's archive and Living Spec are left intact as history.
-- Approvers: **IO = Johnson**; **SA = Johnson**. One person holds both roles in
-  this single-person project; the concentration is recorded explicitly rather than
-  implied. Signature authorized in session by Johnson: "都签署我的名字即可Johnson".
-  The agent recorded the decision; it did not self-approve.
+- Approvers: **IO = Johnson**; **SA = Johnson, Leo**. Johnson's signature was
+  authorized in session: "都签署我的名字即可Johnson"; at that time one person held
+  both roles in this single-person project, and the concentration was recorded
+  explicitly rather than implied. **Leo co-signed as the second SA approver on
+  2026-11-14** under the user instruction "补一下另外一个签名，签Leo". The agent
+  recorded the decision; it did not self-approve.
 - Timestamp: decision recorded 2026-11-13 15:35 (UTC+08:00) as **Conditional**;
   re-recorded as **Pass** at 2026-11-13 15:58 (UTC+08:00) after the IO rulings closed
   both conditions. Draft prepared 2026-11-13 14:40:38.

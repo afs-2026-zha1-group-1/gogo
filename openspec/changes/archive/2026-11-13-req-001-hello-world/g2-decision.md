@@ -47,10 +47,12 @@
   that the migration-tooling non-goal governs, Flyway must be replaced and this G2
   decision re-run — the verified behavior would change. That risk is recorded in
   the local-verify residual risks (#4) and in `change-summary.md`.
-- Approvers: **VL = Johnson**. Signature authorized in session: "没问题，ci全绿。
-  都签署我的名字即可Johnson". Johnson also holds IO and SA for this change; one
-  person covers all three roles in this single-person project, recorded explicitly.
-  The agent recorded the decision and did not self-approve.
+- Approvers: **VL = Johnson, Leo**. Johnson's signature was authorized in session:
+  "没问题，ci全绿。都签署我的名字即可Johnson". Johnson also holds IO and SA for
+  this change; at signing time one person covered all three roles in this
+  single-person project, recorded explicitly. **Leo co-signed as the second VL on
+  2026-11-14** under the user instruction "补一下另外一个签名，签Leo". The agent
+  recorded the decision and did not self-approve.
 - Timestamp: decision recorded 2026-11-13 15:35 (UTC+08:00). Unsigned draft prepared
   2026-11-13 14:56; superseded by this record.
 

@@ -52,9 +52,9 @@ class GreetingApiTest {
 
     @Test
     void rejectsWriteMethods() throws Exception {
-        mockMvc.perform(post("/api/greeting")).andExpect(status().isMethodNotAllowed());
-        mockMvc.perform(put("/api/greeting")).andExpect(status().isMethodNotAllowed());
-        mockMvc.perform(delete("/api/greeting")).andExpect(status().isMethodNotAllowed());
+        mockMvc.perform(post("/api/greeting").with(com.gogo.auth.TestAuth.csrfOnly())).andExpect(status().isMethodNotAllowed());
+        mockMvc.perform(put("/api/greeting").with(com.gogo.auth.TestAuth.csrfOnly())).andExpect(status().isMethodNotAllowed());
+        mockMvc.perform(delete("/api/greeting").with(com.gogo.auth.TestAuth.csrfOnly())).andExpect(status().isMethodNotAllowed());
 
         mockMvc.perform(get("/api/greeting"))
                 .andExpect(status().isOk())

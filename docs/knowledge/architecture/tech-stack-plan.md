@@ -43,7 +43,7 @@
 | 迁移 | Flyway（core + SQLite 社区模块） | 11.x | 两模块版本严格一致 |
 | 连接池 | HikariCP | 随 Boot | `maximum-pool-size=1`（硬约束） |
 | 前端 | React + TypeScript + Vite | 19 / 5.x / 7.x | SPA |
-| UI | Ant Design | 5.x | 表单、列表、日期选择直接用 |
+| UI | shadcn/ui（`components.json`，new-york 风格）+ Tailwind CSS | Tailwind 4.3.x | 组件源码在 `frontend/src/components/ui/`，主题令牌在 `src/index.css` 的 `@theme`；不引入第二个 UI 库（Ant Design 5 为旧口径，2026-11-15 由 G1 C4 / Leo 裁定取代） |
 | 数据请求 | TanStack Query | v5 | 缓存 + 轮询（`refetchInterval`） |
 | 路由 | React Router | 7.x | 5 个页面足够 |
 | 全局状态 | 不引入 | — | Query 缓存 + Context 已够；Zustand 留到 R2 |
@@ -65,7 +65,6 @@ user journey/
 │       │   ├── trip/              # Trip/TripMember：Controller·Service·Repository·dto
 │       │   ├── preference/        # 偏好录入与对比
 │       │   ├── plan/              # PlanNode + PlanGenerator（Llm / Template 两实现）
-│       │   ├── catalog/           # 景点与标签：只读种子数据 + 候选打分
 │       │   └── common/            # ApiResponse、GlobalExceptionHandler、WebConfig
 │       └── resources/
 │           ├── application.yml
@@ -80,10 +79,9 @@ user journey/
 
 分层原则：Controller 只做参数校验与 DTO 转换，Service 承载用例，Repository 只放 SQL。**领域逻辑不跨包直接调 Repository**，为 R2 拆 Modulith 留缝。
 
-## 5. 数据模型（7 张表）
+## 5. 数据模型（4 张表）
 
-> 完整 ER 图、逐列含义、外键与索引清单见 `data-model.md`。
-> 4 张业务主表（`trip` / `trip_member` / `member_preference` / `plan_node`）+ 3 张景点库表（`attraction` / `tag` / `attraction_tag`）。
+> 完整 ER 图、逐字段明细、外键与索引清单见 `data-model.md`。
 
 SQLite 类型约定：时间一律 `TEXT`（ISO-8601 UTC，如 `2026-11-13T10:00:00Z`）；金额用 `INTEGER` 分；坐标用 `REAL`；结构化字段用 `TEXT` 存 JSON。
 
@@ -92,10 +90,7 @@ SQLite 类型约定：时间一律 `TEXT`（ISO-8601 UTC，如 `2026-11-13T10:00
 | `trip` | `id`(PK, UUID TEXT), `title`, `destination`, `start_date`, `end_date`, `invite_code`(UNIQUE), `plan_version`(INTEGER, 当前方案版本), `created_at` | 一个行程一行 |
 | `trip_member` | `id`(PK), `trip_id`(FK), `display_name`, `role`(`owner`/`member`), `plan_ack_version`(INTEGER, 已确认的方案版本), `joined_at` | 轻量身份：不带密码 |
 | `member_preference` | `id`(PK), `trip_id`, `member_id`, `kind`(`interest`/`must_do`/`constraint`/`budget`), `payload`(TEXT JSON), `updated_at` | 一张表装四类偏好，避免四张宽表 |
-| `plan_node` | `id`(PK), `trip_id`, `plan_version`, `parent_id`(自引用), `branch_id`(默认 `main`), `node_type`(`day`/`activity`), `title`, `attraction_id`(FK, 可空), `start_at`, `end_at`, `location_name`, `lat`, `lng`, `sort_order`, `created_at` | 方案是树不是列表 |
-| `attraction` | `id`(PK, 业务 ID 如 `hz_xihu`), `city`(与 `trip.destination` 同词表), `name`, `summary`, `stay_minutes`, `price_cny`, `open_time`, `close_time`, `lat`, `lng`, `cover_url` | 只读种子数据：10 城 × 8~10 个景点 |
-| `tag` | `code`(PK), `name`, `dimension`(`interest`/`constraint`), `aliases`(JSON), `sort_order` | 受控词表，用户偏好与景点共用同一套码 |
-| `attraction_tag` | `attraction_id`(PK,FK), `tag_code`(PK,FK), `weight`(1~5) | 景点打标；`weight` 是匹配打分的权重 |
+| `plan_node` | `id`(PK), `trip_id`, `plan_version`, `parent_id`(自引用), `branch_id`(默认 `main`), `node_type`(`day`/`activity`), `title`, `start_at`, `end_at`, `location_name`, `lat`, `lng`, `sort_order`, `created_at` | 方案是树不是列表 |
 
 要点：
 
@@ -103,7 +98,6 @@ SQLite 类型约定：时间一律 `TEXT`（ISO-8601 UTC，如 `2026-11-13T10:00
 - `parent_id` + `branch_id` **建表时就留好**（SQLite 改表能力弱，R2 的 Fork 直接复用，不用迁移结构）。
 - 方案重新生成时 `trip.plan_version + 1`，旧版本行不删（天然可回溯、可对比）。
 - 不做软删除、不做审计字段堆叠，只留 `created_at`/`updated_at`。
-- 用户偏好的 `interest.tags` 只存 `tag.code`（不存自由文本）；景点池仅 80~100 行，启动后全量载入内存打分，匹配不落 SQL（打分规则见 `data-model.md` 第 6 章）。
 
 ## 6. API 清单（MVP）
 
@@ -121,9 +115,6 @@ SQLite 类型约定：时间一律 `TEXT`（ISO-8601 UTC，如 `2026-11-13T10:00
 | POST | `/api/trips/{tripId}/plan:generate` | 生成主线方案（同步，前端 30s 超时） |
 | GET | `/api/trips/{tripId}/plan` | 当前版本 `plan_node` 树 |
 | POST | `/api/trips/{tripId}/plan:ack` | 当前成员确认当前方案版本 |
-| GET | `/api/tags` | 兴趣/约束标签字典（前端选择器数据源） |
-| GET | `/api/attractions/cities` | 可选目的地城市（`DISTINCT city`） |
-| GET | `/api/attractions?city=&tags=` | 候选景点（必做项搜索/调试用，方案生成内部复用） |
 
 ## 7. 关键实现约定
 
@@ -186,7 +177,6 @@ spring:
 - 契约先行：LLM 只输出受约束的 JSON（按天/按活动，含 `start_at`/`end_at`/`title`）；后端用 Jackson 反序列化 + Jakarta Validation 校验，不合法即丢弃。
 - 必须可降级：`PlanGenerator` 接口两实现——`LlmPlanGenerator`、`TemplatePlanGenerator`（按偏好模板拼装）。LLM 超时/报错/校验失败自动落模板，保证演示永远有结果。
 - 一次生成 = 一次调用，不做多轮反思、不做函数调用、不做 agent 编排（R2 再谈求解器）。
-- 候选池先行：生成前由 `catalog` 按「目的地 + 成员标签打分」产出 Top 12 景点，作为**唯一允许引用**的景点集合；LLM 只做排序与串联，不得自创景点。
 
 **前后端联调**
 
@@ -221,15 +211,14 @@ cd frontend; npm install; npm run dev
 
 M0 通过后，后续每个 Activity 只追加 Flyway 迁移与业务包，不回改脚手架配置。
 
-## 9. 里程碑（约 10 人日，2 人并行）
+## 9. 里程碑（约 8.5 人日，2 人并行）
 
 | 阶段 | 交付 | 人日 |
 | --- | --- | --- |
 | M0 | 脚手架 Hello World 全链路（含 Flyway/SQLite/Vite 代理） | 0.5 |
 | M1 | Activity 1：建行程、邀请码加入、成员列表 | 2 |
-| M2 | Activity 2：偏好录入（标签选择器）+ 共同/差异对比 | 2 |
-| M2.5 | 景点库种子数据：10 城 80~100 景点 + 24 个标签（`V5`/`V6` 迁移） | 1 |
-| M3 | Activity 3：景点候选打分 + 方案生成（LLM + 模板降级）+ 方案页 + 确认 | 3.5 |
+| M2 | Activity 2：偏好录入 + 共同/差异对比 | 2 |
+| M3 | Activity 3：方案生成（LLM + 模板降级）+ 方案页 + 确认 | 3 |
 | M4 | 联调、错误态打磨、单机部署与备份脚本 | 1 |
 
 ## 10. 风险与对策
@@ -241,7 +230,6 @@ M0 通过后，后续每个 Activity 只追加 Flyway 迁移与业务包，不�
 | LLM 输出不可用 | 模板降级 + 30s 超时 + 生成结果落库后可人工微调（R2 再做编辑能力） |
 | 轻量身份被猜中 | 邀请码用 6 位大写字母数字且一码一行程；MVP 接受该风险，R2 换 JWT |
 | 多人同时确认方案 | `plan_ack_version` 与 `trip.plan_version` 条件更新，版本不一致返回 409 |
-| 景点/标签种子数据质量参差 | 景点 ID 用可读业务 ID 便于人工核对；每景点至少 1 个 `weight>=4` 标签；种子数据同样走迁移文件，改数据留版本 |
 
 ## 11. 已定决策（DR）
 
@@ -258,9 +246,203 @@ M0 通过后，后续每个 Activity 只追加 Flyway 迁移与业务包，不�
 | DR-09 | schema 变更由 Flyway 独占；"非目标：数据库迁移工具"仅指不引入第二套迁移工具/平台 | 双轨（Flyway + 手工 DDL/schema.sql）必然漂移；代价是必须显式对齐社区模块版本 |
 | DR-10 | `/api/greeting` 返回 JSON 包封套，不用 `text/plain` | M0 要验证的是统一契约与错误分支，纯文本会让前端 `client.ts` 之后返工；只有 `/api/health` 这类探针才用 `text/plain` |
 | DR-11 | 旧 `TODO.md` 归档为历史记录，不重写为 H2 口径 | H2 是已被 DR-03 替换的过渡选型，重写会把废弃选型拉回主线；任务权威源只保留本方案的里程碑与 DR |
-| DR-12 | 景点与偏好标签共用 `tag` 受控词表，景点侧用 `attraction_tag.weight`(1~5) 表达代表性 | 自由文本对不上；受控词代价是新增主题要同时补字典与打标，MVP 固定 24 个码 |
-| DR-13 | 景点库只读、随迁移种子化，全量内存打分，不建城市维表/搜索索引服务 | 80~100 行数据不值得优化；代价是景点规模上千后必须换成分页查询 + 缓存 |
 
 ## 12. R2 预留（本期不实现）
 
 PostgreSQL/PostGIS 替换 SQLite（Repository 层已隔离 SQL 与方言）→ Fork/Join 用现成 `branch_id` → 求解器替代模板排期 → STOMP WebSocket 替代轮询 → JWT 账号体系 → 编辑态协同与冲突提示。
+
+## 13. Landed reconciliation — US-031-037 main itinerary (archived 2026-11-16)
+
+> Scope discipline (per `openspec/config.yaml`): this addendum records **only what
+> the `us-031-037-main-itinerary` change actually shipped** and how it diverges from
+> the aspirational design above. It deliberately does **not** rewrite sections that
+> belong to earlier changes (trip/invitation identity, envelope, provider) — those
+> alignments are out of this change's scope and are left as recorded observations.
+
+**Main-plan capability (US-031 generate + US-037 confirm), as shipped:**
+
+- Data model (Flyway `V5__create_main_plan.sql`) — §5 of this plan described a
+  `plan_node` tree with `trip.plan_version` / `trip_member.plan_ack_version`. What
+  actually landed for the main plan is different and self-contained:
+  - new tables `main_plan_draft` (one row per generated version, `status`
+    `draft`/`confirmed`, `cost_per_person_cents`, `input_revisions`) and
+    `main_plan_stop` (ordered stops: `seq`, `name`, `start_time`, `end_time`,
+    `travel_minutes_to_next`, per-stop `lat`/`lng`);
+  - new `trip_member` columns `ready` and `preference_revision` (readiness gate +
+    staleness source); the confirmed version is the draft row marked
+    `status='confirmed'` — there is **no** `trip.plan_version` bump and **no**
+    `plan_node` tree for this capability;
+  - a read-only `member_preference` stand-in table is created `IF NOT EXISTS` so
+    the migration is self-contained until REQ-019 lands its authoritative
+    kind/payload `member_preference` at `V4` (this change renumbers to `V5` per
+    G1 C2; REQ-019 renumbered again to `V6` when the two branches met, so on a
+    merged database this stand-in is the first and only declaration and the
+    preference migration is a no-op).
+- API (§6 listed `POST /plan:generate`, `GET /plan`, `POST /plan:ack`). The main
+  plan instead ships four endpoints under the trip resource:
+  - `POST /api/trips/{id}/main-plan` → 201 draft projection (readiness-gated;
+    rejects with 409 `MEMBERS_NOT_READY` / `ALREADY_CONFIRMED`);
+  - `GET /api/trips/{id}/main-plan` → 200 current-or-confirmed projection (404
+    `NO_DRAFT`; `stale` computed on read, confirmed version frozen);
+  - `GET /api/trips/{id}/main-plan/inputs` → 200 member-readable generation
+    summary (ready count, common interests, must-do, budgets, rules);
+  - `POST /api/trips/{id}/main-plan/confirm` → 200 same projection, gated by
+    schedule + hard-budget + staleness validation (422 `VALIDATION_FAILED` with
+    `scheduleErrors`/`overruns`, 409 `STALE_DRAFT`), closes joining on success.
+- Provider (§7 planned a real LLM `PlanGenerator` with `TemplatePlanGenerator`
+  fallback). MVP ships a `MainPlanProvider` port with a deterministic
+  `FakeMainPlanProvider` (four fixture stops) behind the seam; the real provider is
+  deferred, consistent with the signed fake-provider MVP ruling.
+- Identity / envelope: main-plan calls reuse the trip capability's established
+  `X-User-Id` header and `{code, message}` error envelope (introduced by earlier
+  changes, not by this one) rather than the `X-Member-Id` header / `{data, error}`
+  envelope sketched in §6–§7. Noted as a pre-existing divergence, out of scope here.
+- Frontend: Screens 9/10 (`MainPlanInputs.tsx`, `MainPlan.tsx`) added as
+  join-style full-page routes on the shared TypeScript `api<T>()` client (§4
+  sketch of `client.ts` was not adopted; the shell already provides `api.ts`).
+
+No other section of this plan was modified by this change.
+
+## 14. US-066 登录与会话（2026-11-16，偏差记录）
+
+US-066 按 IO/SA 决策把 `X-User-Id` scaffold 替换为已验证登录；这是对 §2
+“MVP 不做账号体系 / 权限 / 注册登录”的明确偏差。
+
+- **技术栈新增**：Spring Security 6（`spring-boot-starter-security`）+ 服务端
+  HTTP Session（JSESSIONID，30 分钟空闲超时）+ BCrypt；不引入 JWT/Spring Session。
+- **数据模型新增**：`V6__create_account_credential.sql` 增加
+  `account_credential(user_id PK/FK, email UNIQUE, password_hash)`，只存 BCrypt
+  哈希；五个夹具账号（Alice…Eve）共享演示密码 `gogo-demo-2026`，不做注册。
+- **API 新增**：`POST /api/auth/login`、`GET /api/auth/me`、
+  `GET /api/auth/csrf`；CSRF cookie `XSRF-TOKEN` + `X-XSRF-TOKEN` 头。
+- **身份**：所有受保护 trip/invitation/main-plan/splits 端点从 session principal
+  取 `app_user.id`；`X-User-Id` 不再认证。公开面仍为 `/api/greeting`、
+  `GET /api/invitations/{token}`、登录/CSRF。
+- **错误契约**：auth/trip/invitation/main-plan + Security handler 用扁平
+  `{code,message}`；splits 保留 `{data,error}` 与 `401 MEMBER_REQUIRED` 作为唯一例外。
+- **前端**：`#/login` 与 React Router `/login` 共用登录页；hash shell 与 split
+  router 共用 AuthProvider；移除 scaffold 切换器与 split 身份栏；待邀请 token
+  存 sessionStorage，登录后恢复 preview，不自动 join。
+- **测试**：`AuthApiTest`、`SessionExpiryApiTest` 及全部既有 trip/invitation/
+  main-plan/splits API 测试改为 session/principal；C5 覆盖 CSRF、短超时（以失效
+  session 等价验证，Tomcat 超时粒度为分钟）与 greeting/preview 公开 matcher。
+
+## 15. US-013 成员列表（2026-11-16，归档对齐）
+
+US-013 在 US-066 会话认证基线上新增成员名册读取；不新增迁移。
+
+- **API 新增**：`GET /api/trips/{id}/members`，仅行程成员可读，身份取 session
+  principal（不使用已退役的 `X-User-Id`）。成功 200 返回
+  `{tripId, members:[{userId, displayName, organizer}]}`，按 `userId` 升序；
+  未登录 401 `USER_REQUIRED`、非成员 403 `NOT_A_MEMBER`、未知行程 404
+  `TRIP_NOT_FOUND`；拒绝响应不含成员身份。只读，无写路径。
+- **数据**：复用 `V2` 的 `trip_member` / `app_user` / `trip.organizer_id`；无新表、
+  无新列、无种子变更。
+- **前端**：成员 Tab（`#/members`）渲染真实名册（头像首字母、姓名、组织者徽章、
+  成员数）及 loading/empty/error/permission/no-trip 状态；不展示就绪、偏好、预算
+  或生成主线操作。
+- **App shell**：Living Spec 的 `Placeholder tabs` 被移除，新增 `Tab content`：
+  分队渲染已上线的 split entry，成员渲染本名册；shell frame/dock/active-tab/
+  登录账号栏不变。
+- **身份口径**：trips/members 使用 session principal + `USER_REQUIRED`；split
+  端点使用 session 但匿名时返回 `MEMBER_REQUIRED`。该差异已接受为后续项 F2，
+  本 change 不改 split 代码。
+
+本 change 未修改技术栈、其他数据模型或其他 API。
+## 16. Landed reconciliation — US-067 QR scanner (P4 apply, not yet archived)
+
+> Scope discipline: this addendum records what the `us-067-qr-scanner` change
+> actually shipped on the frontend. It is a **pre-archive** note; living-merge
+> at G3 will fold it into §7 (关键实现约定) and the §3 stack table once the
+> change lands on `main`.
+
+**Scanner capability (US-067), as shipped:**
+
+- **Frontend stack alignment with the shell's shipped conventions.** US-067
+  keeps the existing shell conventions rather than the aspirational plan:
+  - The scanner routes on the **hash** `#/scan` (no router). `App.tsx
+    parseRoute` matches `/scan` BEFORE the generic `/trips/<id>` regex so
+    the scanner top-level hash cannot be swallowed by the details route
+    (design D1, G1 C2). `react-router-dom` in the merged tree belongs to
+    US-065/US-066 (splits + login), not to US-067.
+  - The three scan entry points (camera rAF loop, image picker, manual link)
+    call **no** `/api/*` endpoint; they hand off to the existing Join page,
+    which reuses REQ-004 `GET /api/invitations/{token}` / `POST …/accept`.
+    The added **demo-only** “模拟扫描” mode (for camera-less desktops) is the
+    one exception: it issues a single `POST /api/trips/1/invitation` as the
+    signed-in organizer to obtain a real token, then pipes the resulting link
+    through the same matcher — a UI aid, not part of the AC scan paths.
+  - **Dashboard scan entry (AC S1–S2, landed).** A `.iconbtn` button (`scan`
+    icon, `aria-label` "扫码加入行程") sits to the right of the `我的行程`
+    title in the Home appbar and links to `#/scan`. It is a plain hash link:
+    no new backend call, permission gate, or router (design D1).
+  - Styling stays CSS tokens in `frontend/src/app.css` (`.screen`, `.appbar`,
+    `.card`, `.btn`, `.field`, `--brand / --warn-soft / --err-soft`). No
+    `antd` import; Ant Design is a **semantic** reference (primary + secondary
+    action row, error panel with retry) per G1 C5.
+- **QR decode library.** `jsqr ^1.4.0` is a production `dependency` in
+  `frontend/package.json`. Decoding uses two paths behind a single matcher:
+  - Camera: `navigator.mediaDevices.getUserMedia({video:{facingMode:
+    'environment'}})` → `requestAnimationFrame` loop drawing video into a
+    480×360 canvas → `jsQR(...)`.
+  - Image file: hidden `<input type="file" accept="image/*">` →
+    `createImageBitmap(file)` → offscreen canvas → `jsQR(..., {
+    inversionAttempts: 'attemptBoth'})`. `bitmap.close?.()` releases the decoder.
+- **Invitation-link matcher (single source of truth, G1 C3).** New
+  `frontend/src/scan.ts` exports `parseJoinHash(text, appOrigin)`. Contract
+  locked at the module header: token form is exactly `#/join/<32-char
+  lowercase-hex>` (backend `InvitationTokens.next()` = `HexFormat.of().
+  formatHex(new byte[16])`), absolute URLs are same-origin only, and
+  cross-origin inputs are rejected before the token regex is even reached.
+  All Scanner entry points (camera, image, manual link, demo mode) call this
+  one function so behavior cannot drift.
+- **Route / type surface.** `frontend/src/types.ts` extends `Route` with
+  `{ page: 'scan'; from: string | null }`; `InAppPage` is
+  `Exclude<Route['page'], 'join' | 'login' | 'main-plan' | 'main-plan-inputs' |
+  'scan'>`, so `TAB_FOR_PAGE: Record<InAppPage, TabId>` stays total and
+  the scanner is guaranteed not to receive a dock tab. Closing the scanner
+  restores the last non-scanner hash tracked by `App.tsx`, or falls back
+  to `#/` (spec S-5).
+- **Backend impact.** None from US-067. The scanner adds no `backend/**`
+  change and no `V*.sql` migration; its demo mode rides on the US-066 session
+  model for the organizer-scoped `POST /api/trips/1/invitation`.
+
+No other section of this plan is modified by US-067. Sections §5 (data
+model) and §6 (API) remain accurate because the scanner introduces
+neither tables nor endpoints.
+
+## 17. REQ-019 成员兴趣（2026-11-16，归档对齐）
+
+REQ-019 在 US-066 会话认证基线上落地 `preferences` 能力的兴趣段：一张新表、两个端点。
+
+- **API 新增**：`GET` / `PUT /api/trips/{tripId}/preferences`。身份取 session principal
+  （`AccountPrincipal`；US-066 已退役 `X-User-Id`，匿名 401 `USER_REQUIRED`），仅本行程
+  成员可读写（非成员 403 `NOT_A_MEMBER`，未知行程 404 `TRIP_NOT_FOUND`）。
+  - `PUT` 接受 `{"interests": string[]}`，整集替换并按首次出现顺序去重；写入前完成
+    校验：清单外元素 400 `INTEREST_NOT_ALLOWED`，畸形 body 400 `INVALID_REQUEST`
+    （`StrictStringListDeserializer` 拦数字/`null` 元素）；成功 200 返回去重后的集合，
+    `[]` 清空兴趣但保留记录。
+  - `GET` 返回 `{members:[{userId, interests:[label…]}]}`，按 `userId` 升序，每个对象
+    只有这两个字段；从未保存过的成员为 `interests: []`；只读。
+- **兴趣清单**：`InterestCatalogue` 十个中文标签（`水上运动`/`潜水`/`摄影`/`美食`/
+  `咖啡`/`历史人文`/`手作`/`自然风景`/`冒险`/`慢游`）↔ 十个 code（`water`/`diving`/
+  `photo`/`food`/`coffee`/`heritage`/`craft`/`nature`/`adventure`/`slow`）；线上传标签、
+  库里存 code，字面匹配（不做大小写折叠、去空白、别名或子串）。清单是代码常量，
+  不依赖 `tag` 表或 `/api/tags`。
+- **数据**：`V7__create_member_preference.sql`（两次改号：`main` 先取 `V4` 给 splits、
+  再取 `V6` 给账号凭证）建 `member_preference(id, trip_id→trip, user_id→app_user,
+  kind, payload TEXT JSON, updated_at TEXT)` + `UNIQUE(trip_id, user_id, kind)`；
+  `V5__create_main_plan.sql` 已以 `IF NOT EXISTS` 预先声明该表，故本迁移在原基线上是 no-op。
+  与 §5 的差异：列名是 `user_id` 而非 `member_id`，去重键是唯一约束
+  `UNIQUE(trip_id,user_id,kind)` 而非普通索引。
+- **前端**：`frontend/src/pages/PreferencesPage.tsx`（`#/trips/{tripId}/preferences`，行程
+  详情页的「旅行偏好」卡片给入口），只实现 `screen-08-preferences.png` 的兴趣段；选中态
+  来自 `GET` 中与当前身份匹配的条目，保存是单次 `PUT` 并采用响应，失败回滚并显示服务端
+  `message`。沿用 main 的 `api()` + `useAuth()` + `lib/csrf`，无新依赖。
+- **CI**：前端 job 在 `npm ci` 与 `npm run build` 之间增加 `npm run typecheck`。
+- **已登记偏差**：该 change 的 delta spec 文本沿用 G1 原文的 `X-User-Id` 口径，实现在合并后
+  改取会话（两条反向用例钉住匿名 401 与头/会话不一致）；`flyway-database-nc-sqlite` 在受管
+  Flyway 版本下无发布物，维持 `flyway-core` 单模块（TS-2 / TS-11）。
+
+§3 技术栈表与 §7 关键实现约定无需改动；§5/§6 中计划期的 `member_id`、普通索引与
+`X-Member-Id` 口径以本节为准。本 change 未修改其他数据模型或其他 API。

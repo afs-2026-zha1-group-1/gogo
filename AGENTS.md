@@ -1,6 +1,6 @@
 # Agent engineering guide
 
-This guide applies to coding agents working in this repository. Read the relevant spec, implementation, and tests before editing. Write repository documentation in English.
+This guide applies to coding agents working in this repository. Read the relevant spec, implementation, and tests before editing. Write repository documentation in Chinese.
 
 ## Four development principles
 
@@ -13,4 +13,13 @@ This guide applies to coding agents working in this repository. Read the relevan
 Please refer to the [knowledge base](docs/knowledge/_INDEX.md) for additional information.
 
 ## Reference
-UI design please refer to [shadcn/ui](https://ui.shadcn.com/docs)
+UI design please refer to [shadcn/ui](https://ui.shadcn.com/docs): components live in
+`frontend/src/components/ui/` and tokens in `frontend/src/index.css` (`@theme`). Do not add a
+second UI library.
+
+## Rules pointers
+
+- Authority: `docs/knowledge/rules/` (MECE categories)
+- Prefer `@rule:<id>` references; do not paste rule bodies here.
+- Host projections are derived copies — authority wins on conflict.
+

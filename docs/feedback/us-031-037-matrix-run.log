@@ -1,0 +1,72 @@
+﻿=== US-031-037 runtime matrix 2026-11-15 23:24:39 ===
+--- Phase A: baseline reads, identity/trip/role negatives (no draft) ---
+PASS M7 inputs no draft (Ben) -> 200
+PASS M11 read no draft (Ben) -> 404
+PASS V6 confirm no draft (Alice) -> 404
+PASS M-N identity missing POST /api/trips/1/main-plan -> 401
+PASS M-N identity unknown POST /api/trips/1/main-plan -> 401
+PASS M-N identity missing POST /api/trips/1/main-plan/confirm -> 401
+PASS M-N identity unknown POST /api/trips/1/main-plan/confirm -> 401
+PASS M-N identity missing GET /api/trips/1/main-plan -> 401
+PASS M-N identity unknown GET /api/trips/1/main-plan -> 401
+PASS M-N identity missing GET /api/trips/1/main-plan/inputs -> 401
+PASS M-N identity unknown GET /api/trips/1/main-plan/inputs -> 401
+PASS M-N unknown trip POST -> 404
+PASS M-N unknown trip POST -> 404
+PASS M-N unknown trip GET -> 404
+PASS M-N unknown trip GET -> 404
+PASS M8 inputs non-member (Eve) -> 403
+PASS M-N generate non-member (Eve) -> 403
+PASS V-N confirm non-member (Eve) -> 403
+PASS M-N read non-member (Eve) -> 403
+PASS M4 generate non-organizer (Ben) -> 403
+PASS R inputs read-only (POST inputs) -> 405
+PASS A state: no drafts -> 0
+--- Phase B: generation, reads, regen, pending, completion ---
+PASS M1 generate (Alice) -> 201
+PASS M1 flag stays 0 -> 0
+PASS M9 draft read (Ben) -> 200
+PASS M6 inputs read (Ben) -> 200
+PASS M5 regen (Alice) -> 201
+PASS M5 v1 superseded -> superseded
+PASS M5 v2 current -> current
+PASS M2 pending Daniel blocks generate -> 409
+PASS M2 no new draft -> 2
+PASS M3 null-location generate -> 201
+PASS M3 completion preferences-first -> 200
+PASS M3 supplied-location generate -> 201
+PASS M3 supplied locations preserved -> 200
+--- Phase C: validation blocks on a fresh draft ---
+PASS C setup generate v1 -> 201
+PASS V2 hard-budget overrun blocks -> 422
+PASS V2 stays current -> current
+PASS V2 flag stays 0 -> 0
+PASS V3 OUT_OF_ORDER seq2 -> 422
+PASS V3 OVERLAP seq2 -> 422
+PASS V3 MISSING_LEG seq1 -> 422
+PASS V3 TRAVEL_EXCEEDS_GAP seq1 -> 422
+PASS V3 OUT_OF_DAY seq3 -> 422
+PASS V5 confirm non-organizer (Ben) -> 403
+PASS R soft budget invisible in inputs -> 200
+--- Phase D: stale -> confirm -> frozen -> J4 closure ---
+PASS M10 draft read stale -> 200
+PASS V4 stale confirm blocked -> 409
+PASS V4 regenerate -> 201
+PASS V1/V4 confirm passes -> 200
+PASS V1 draft status confirmed -> confirmed
+PASS V1 trip flag 1 -> 1
+PASS M12 confirmed read -> 200
+PASS M13 confirmed frozen after bump -> 200
+PASS V7 re-confirm rejected -> 409
+PASS V7 no state change -> 2
+PASS M14 generate after confirm rejected -> 409
+PASS M14 no new draft -> 2
+PASS J4 issue still works after confirm -> 200
+PASS J4 accept closed (Eve) -> 403
+PASS J4 Eve not a member -> 0
+PASS R no preference write route -> 404
+--- Phase E: restore default dev state for browser E2E ---
+PASS E drafts cleared -> 0
+PASS E flag 0 -> 0
+PASS E members ready rev1 -> 4
+=== RESULT: 65 passed, 0 failed ===
