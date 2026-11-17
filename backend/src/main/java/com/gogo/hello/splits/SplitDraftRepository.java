@@ -127,6 +127,13 @@ public class SplitDraftRepository {
         return ids.stream().findFirst();
     }
 
+    /** Trip destination, used to pick the city fixture for branch candidates and the display zone. */
+    public Optional<String> findDestination(String tripId) {
+        List<String> values = jdbcTemplate.queryForList(
+                "SELECT destination FROM trip WHERE id = ?", String.class, tripId);
+        return values.stream().findFirst();
+    }
+
     /**
      * Conditional confirmation (design D4/D5/D11): succeeds only while the stored draft is active at the expected
      * version. The JSON status is part of the predicate so a concurrent cancel/confirm cannot be overwritten, and the

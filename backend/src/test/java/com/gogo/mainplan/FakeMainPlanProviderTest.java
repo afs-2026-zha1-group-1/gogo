@@ -19,6 +19,11 @@ class FakeMainPlanProviderTest {
         return provider.plan(trip, List.of());
     }
 
+    private MainPlanResult planFor(String destination, String startDate, String endDate) {
+        return provider.plan(new TripContext(2, destination, startDate, endDate,
+                "起点", "终点"), List.of());
+    }
+
     @Test
     void suppliesTheFourFixtureStopsInOrder() {
         MainPlanResult result = plan();
@@ -53,5 +58,23 @@ class FakeMainPlanProviderTest {
     void costsFiftySgdPerPersonAndIsDeterministic() {
         assertEquals(5000, plan().costPerPersonCents());
         assertEquals(plan(), plan());
+    }
+
+    @Test
+    void hongKongDestinationReturnsCityFixtures() {
+        MainPlanResult result = planFor("香港", "2026-11-21", "2026-11-22");
+        assertEquals(6, result.stops().size());
+        assertEquals("西九文化区 M+ 博物馆", result.stops().get(0).name());
+        assertEquals("尖沙咀海滨长廊与星光大道", result.stops().get(5).name());
+        assertEquals(68000, result.costPerPersonCents());
+    }
+
+    @Test
+    void londonDestinationReturnsCityFixtures() {
+        MainPlanResult result = planFor("伦敦", "2026-11-23", "2026-11-29");
+        assertEquals(7, result.stops().size());
+        assertEquals("大英博物馆", result.stops().get(0).name());
+        assertEquals("伦敦眼与南岸夜景", result.stops().get(6).name());
+        assertEquals(9500, result.costPerPersonCents());
     }
 }

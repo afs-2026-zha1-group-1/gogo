@@ -6,6 +6,7 @@
 export interface TripSummary {
   id: number
   name: string
+  destination: string
   startDate: string
   organizerId: number
   // Set by US-037's confirmation; a confirmed plan cannot be regenerated.

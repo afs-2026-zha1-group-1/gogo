@@ -46,8 +46,8 @@ export function ScreenStart() {
       ? detail.mainPlanStops.map((stop) => ({
           id: stop.id,
           name: stop.name,
-          startLabel: formatTime(stop.startAt, "iso"),
-          endLabel: formatTime(stop.endAt, "iso"),
+          startLabel: formatTime(stop.startAt, "iso", detail?.destination),
+          endLabel: formatTime(stop.endAt, "iso", detail?.destination),
         }))
       : (mainPlanQuery.data?.stops ?? []).map((stop) => ({
           id: String(stop.seq),
@@ -200,9 +200,9 @@ export function ScreenStart() {
               {hasBoundaries && detail ? (
                 <div className="flex items-center gap-2 px-1 text-[10.5px] font-semibold text-ink-2">
                   <IconClock className="size-3.5 shrink-0 text-brand" />
-                  <span className="shrink-0">{formatTime(detail.departureAt, "iso")} 分头</span>
+                  <span className="shrink-0">{formatTime(detail.departureAt, "iso", detail.destination)} 分头</span>
                   <span className="min-w-4 flex-1 border-t border-dashed border-a-line" />
-                  <span className="shrink-0">{formatTime(detail.reunionAt, "iso")} 会合</span>
+                  <span className="shrink-0">{formatTime(detail.reunionAt, "iso", detail.destination)} 会合</span>
                   {detail.windowMinutes != null ? (
                     <span className="shrink-0 text-ink-3">{formatWindow(detail.windowMinutes)}</span>
                   ) : null}

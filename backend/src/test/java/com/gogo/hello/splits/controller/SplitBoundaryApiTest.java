@@ -19,14 +19,14 @@ import org.springframework.test.web.servlet.ResultActions;
 /**
  * API acceptance tests for split boundary selection (spec REQ-005 B1/B2-N/B3-N/B4-N/B5-N/B6-N + half-boundary
  * reverse, design D7/D8/D9, tasks 3.1/3.3). MockMvc + real in-memory SQLite, reset to seed before each test.
- * Window = reunion.start - departure.end (minutes) derived from main-plan stop rows; only the initiator may
+ * Window = reunion.start - departure.start (minutes) derived from main-plan stop rows; only the initiator may
  * save a complete pair within the confirmed main plan with a positive window and the current draftVersion.
  */
 class SplitBoundaryApiTest extends AbstractSplitApiTest {
 
     @Test
-    @DisplayName("saveBoundaries_initiatorPositiveWindow_returns200Window120AndVersion2")
-    void saveBoundaries_initiatorPositiveWindow_returns200Window120AndVersion2() throws Exception {
+    @DisplayName("saveBoundaries_initiatorPositiveWindow_returns200Window150AndVersion2")
+    void saveBoundaries_initiatorPositiveWindow_returns200Window150AndVersion2() throws Exception {
         startDraft();
         String cityHall = stopId("City Hall MRT");
         String merlion = stopId("Merlion Park");
@@ -35,9 +35,9 @@ class SplitBoundaryApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.error").doesNotExist())
                 .andExpect(jsonPath("$.data.departureStopId").value(cityHall))
                 .andExpect(jsonPath("$.data.reunionStopId").value(merlion))
-                .andExpect(jsonPath("$.data.departureAt").value("2026-12-05T01:30:00Z"))
+                .andExpect(jsonPath("$.data.departureAt").value("2026-12-05T01:00:00Z"))
                 .andExpect(jsonPath("$.data.reunionAt").value("2026-12-05T03:30:00Z"))
-                .andExpect(jsonPath("$.data.windowMinutes").value(120))
+                .andExpect(jsonPath("$.data.windowMinutes").value(150))
                 .andExpect(jsonPath("$.data.draftVersion").value(2));
         JsonNode draft = objectMapper.readTree(draftJson());
         assertThat(draft.get("draftVersion").asInt()).isEqualTo(2);

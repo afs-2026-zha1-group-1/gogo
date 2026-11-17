@@ -59,14 +59,14 @@ class SplitConfirmApiTest extends AbstractSplitApiTest {
     @DisplayName("confirmDraft_routeOverWindow_returns409TimingInfeasibleWithPerRouteDetails")
     void confirmDraft_routeOverWindow_returns409TimingInfeasibleWithPerRouteDetails() throws Exception {
         int version = prepareConfirmableDraftAs("Ben");
-        setRouteLastTravelLeg("A", 40);
+        setRouteLastTravelLeg("A", 80);
         confirm(memberId("Alice"), version)
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("SPLIT_TIMING_INFEASIBLE"))
                 .andExpect(jsonPath("$.error.details.routes.length()").value(2))
                 .andExpect(jsonPath("$.error.details.routes[0].groupLabel").value("A"))
-                .andExpect(jsonPath("$.error.details.routes[0].totalMinutes").value(125))
-                .andExpect(jsonPath("$.error.details.routes[0].overrunMinutes").value(5))
+                .andExpect(jsonPath("$.error.details.routes[0].totalMinutes").value(215))
+                .andExpect(jsonPath("$.error.details.routes[0].overrunMinutes").value(65))
                 .andExpect(jsonPath("$.error.details.routes[0].missingInputs.length()").value(0))
                 .andExpect(jsonPath("$.error.details.routes[1].groupLabel").value("B"))
                 .andExpect(jsonPath("$.error.details.routes[1].totalMinutes").value(110))
