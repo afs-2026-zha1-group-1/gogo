@@ -4,7 +4,9 @@
 - Stage: P2 `/sdd:delta-craft` (step = all)
 - Target: `openspec/changes/req-020-manage-must-do/specs/preferences/spec.md`
 - Size: 3 requirements, 42 scenarios (existing capability `preferences`: 2 ADDED, 1 MODIFIED
-  page requirement at revision 2, updated with confirmation/cancellation)
+  page requirement at revision 2, updated with confirmation/cancellation). **Superseded 2026-11-16**:
+  3 requirements, 44 scenarios after the two amendments in §8, re-signed by both roles the same day;
+  the numbers below are the ones this review pass examined
 - Baseline: the unarchived delta of `req-019-save-interests`; identity, trip existence and
   membership are inherited and deliberately not restated
 - Nature: AC/DoV review record, **not** a G1 decision; G1 is signed by a human
@@ -85,11 +87,11 @@
 |---|---|---|
 | IO | User accepted 2026-11-15: location and time may both be supplied, overriding reference wording | C5 confirmed; Emily subsequently approved revised package by separate explicit instruction |
 | IO | User rejected immediate delete 2026-11-15: confirmation dialog required | C6 and page scenarios updated; Emily IO Pass recorded 2026-11-15 for 42 scenarios; revised SA review passed 2026-11-16 (evelyn.huang) |
-| SA | The change is zero-migration but hard-depends on REQ-019's `V4__create_member_preference.sql` and on the preferences page, neither of which is on disk yet | No for the delta, yes for P4/merge; recorded as condition 1 of the G1 draft |
+| SA | The change is zero-migration but hard-depends on REQ-019's `V4__create_member_preference.sql` and on the preferences page, neither of which is on disk yet | No for the delta, yes for P4/merge; recorded as condition 1 of the G1 draft. **Updated 2026-11-16**: both landed on the branch — the migration as `V6__create_member_preference.sql` (renumbered) and `frontend/src/pages/PreferencesPage.tsx` — so condition 1 is closed and only the merge to `main` behind PR #44 remains |
 | SA | `TripErrorAdvice` covers `com.gogo.trip` only, so `INVALID_REQUEST` and the `MUST_DO_*` codes need a preference-owned advice or a widened scope | No, decided in P3 |
 | SA | C1 (ids may be reused after the list is emptied) narrows the proposal's earlier wording. Confirm it, or switch to a durable counter before P4, because the payload shape changes | No, but it should be confirmed at G1 |
 | Dev/QA | Item ids live inside the JSON payload, so the database cannot enforce uniqueness; assertions must compare the id set and the item count, not just the HTTP status | No; already stated in the scenarios |
-| Dev/QA | Strict validation executed 2026-11-15, exit 1: ADDED body length and archive/preamble/Clarifications warnings; Living Spec awaits REQ-019 | Not passed; remediation tracked in G1 condition 6 |
+| Dev/QA | Strict validation executed 2026-11-15, exit 1: ADDED body length and archive/preamble/Clarifications warnings; Living Spec awaits REQ-019 | Not passed; remediation tracked in G1 condition 6. **Updated 2026-11-16**: the ADDED body length part is fixed (see §8.3); the remaining warnings and the rerun are not |
 | Team | `docs/knowledge/architecture/tech-stack-plan.md` §5/§6 still describes envelopes, `X-Member-Id`, `JdbcClient` and Ant Design 5 while the code uses bare DTOs, `X-User-Id`, `JdbcTemplate` and hand-written CSS | No; REQ-020 OQ-14, team-owned |
 
 ## 7. Conclusion
@@ -99,3 +101,64 @@
 - Blocking ambiguities: 0
 - Ready for `/sdd:g1-decision-record`. This file is not a G1 decision and does not claim that any
   code is implemented.
+
+## 8. Revision (2026-11-16, P3) — page re-basing and the R4 storage mirror
+
+Two amendments were made while starting `/sdd:atdd-design`. Neither is an IO or SA statement.
+
+**8.1 The MODIFIED `Preferences page` requirement was re-based.** It had been written against
+REQ-019's page requirement **before** its 2026-11-16 revision, so it drifted from both the signed
+baseline and the shipped code.
+
+| Point | Before | After the re-basing |
+|---|---|---|
+| Catalogue | "seven predefined interests", `Art` / `Nature`, "the other five" | ten Chinese labels (`水上运动` … `慢游`), `摄影` / `自然风景`, "the other eight" — matches `INTEREST_OPTIONS` in `frontend/src/types/preferences.ts` |
+| Layout | absent | the `screen-08-preferences.png` paragraph of revision 1, extended with the must-do section (heading `必做项（US-020 · 可增删改）`, `添加必做项`, the `活动名称` / `地点` / `固定时间` form, `取消` / `保存`, pin and clock markers); archiving the old text would have dropped revision 1's layout out of the Living Spec |
+| Save actions | the `Loading` scenario disabled "both 'Save' actions" | one interest save action in the bottom bar; must-do persists per action (R3 scopes the badge to the interests section) |
+| Subtitle | inherited `· US-019` | `<display name> · US-019~020` (R1) |
+| Clarifications | C1–C6 | C1–C6 unchanged, C6's rationale now also records that the reference screen deletes a row immediately, plus R1–R3 from the re-basing |
+
+**8.2 A storage-only `name` mirror was added (R4, user ruling 2026-11-16).**
+
+| Point | Before | After |
+|---|---|---|
+| Payload | `{"items": [{id, activity, location, time}]}` | `{"items": [{id, activity, name, location, time}]}`, `name` = `activity`, written on create, updated on edit, gone with its item |
+| Response | four keys per item | unchanged — four keys; `name` SHALL NOT appear in any response |
+| Reason | — | `MainPlanService.mustDoItems`, merged to `main`, reads `item.path("name")`, and `V5__create_main_plan.sql` seeds `must_do` rows in that shape; without the mirror, items saved through this change would reach main-plan generation as empty strings while `MainPlanApiTest` (which asserts only `$.mustDo.length()`) stayed green |
+| New scenarios | — | "The stored payload mirrors the activity under `name`" (Save) and "The storage mirror never reaches a response" (Read, which also asserts `GET .../main-plan/inputs` still lists the activity) |
+| Rejected alternatives | — | changing the merged reader to `activity`-first with a `name` fallback (touches another capability's code), and a `V7` rewrite of the seeds (breaks the zero-migration claim and `MainPlanApiTest`) |
+| Legacy seeded rows | — | REQ-019 DD1 precedent: seeds stay, the API tests clear `member_preference` per case, the development database is re-seeded by hand at P4; no tolerance branch for the `name`-only shape |
+
+- DoV re-check on both amendments: AC-2 still Pass — the mirror is observable (payload read through
+  `JdbcClient`, response key set asserted, main-plan inputs asserted), not an internal claim. DoV-1
+  carries a **closed deviation**: the proposal's payload shape, its Database impact and its test count
+  were amended in the same round, so proposal and delta agree again, but the amended text was not the
+  text the SA had signed — both roles then signed it on 2026-11-16. DoV-4 still Pass — documentation
+  only, nothing under `backend/` or `frontend/` changed.
+- **Counts superseded**: §1's "18, 5 and 19 scenarios, 42 total" and AC-3's "8 edge scenarios on
+  save" are the numbers this review examined. The delta now holds 19 + 6 + 19 = **44** scenarios, with
+  9 save edge cases, and that is the re-signed total. §1 is kept as the record of what was reviewed.
+- **Re-signed 2026-11-16.** Both amendments were re-reviewed and passed by IO Emily and SA
+  evelyn.huang on 2026-11-16, relayed by the change author under explicit user instruction, with no
+  finding; condition 8 of `g1-decision.md` ("Revision re-review (2026-11-16) — Pass") is closed, so
+  P4 may start and G2 may cite the gate on the 44-scenario package. Two limitations are recorded
+  there and are not hidden here: the signature is relayed rather than documented, and it was given on
+  the working-tree text, which the user instructed not to commit or push while REQ-019's G2 was open.
+  Part of it has since been committed and pushed — the header amendments, the R4 mirror and the
+  shortened ADDED bodies — while the re-based page requirement and R1–R4 are still uncommitted; the
+  commit that carries them must not alter the signed wording. Strict validation remains exit 1
+  (condition 6, an archive blocker).
+
+**8.3 The two ADDED requirement bodies were shortened (2026-11-16, G1 condition 6).**
+
+A formatting change made after the signatures, not a third amendment, so it does not reopen
+condition 8.
+
+| Point | Before | After |
+|---|---|---|
+| `Save member must-do items` body | 3,267 characters | 493 characters |
+| `Read member must-do items` body | 740 characters | 432 characters |
+| Contract | — | unchanged: every statement the compression dropped is asserted by a scenario of the same requirement (200 and the four response keys, trim and blank→`null`, the empty-list row, single-row upsert, idempotence, zero write on rejection with the six `MUST_DO_*` / `INVALID_REQUEST` codes, body shape, list-local ids, the two-key/ascending read response) |
+| Scenarios and counts | 19 + 6 + 19 = 44 | unchanged, 44 |
+| Evidence | — | measured locally by joining the lines between `### Requirement:` and the first `#### Scenario:`; no `openspec` CLI is available in this environment, so the strict rerun is still owed and strict is not reported as passed |
+| Not touched | — | the MODIFIED `Preferences page` body is still 3,247 characters. Strict reported only the two ADDED bodies, and that text is signed, so shortening it would alter signed wording and reopen condition 8; it needs a ruling first |

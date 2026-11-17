@@ -11,6 +11,35 @@ are unchanged. Emily IO approval of the revised 42-scenario package is recorded
 covers the previous contract. SA evelyn.huang re-reviewed the revised contract and
 passed it on 2026-11-16, relayed by the change author; G1 closed 2026-11-16.
 
+## G1 re-review of the two P3 amendments (2026-11-16)
+
+Two amendments were made while starting P3: the MODIFIED page requirement was re-based on
+REQ-019's revised revision 1 (ten Chinese labels, the `screen-08` layout paragraph, R1–R3), and the
+R4 storage mirror was added. Both were re-reviewed and passed on 2026-11-16 by IO Emily and SA
+evelyn.huang, relayed by the change author under the user's explicit instruction, with no finding.
+Condition 8 of `g1-decision.md` is closed and the signed package is now 3 requirements / 44
+scenarios, so P4 is unblocked. Recorded as limitations, not as passes: the signature is relayed
+rather than documented, and it was given on the working-tree text (the user instructed that this
+round not be committed or pushed while REQ-019's G2 was open); part of it has since been committed
+and pushed — the header amendments, the R4 mirror and the shortened ADDED bodies — while the re-based
+page requirement and R1–R4 are still uncommitted, so the commit carrying them must not alter the
+signed wording. `openspec validate --strict` still exits 1 (condition 6, archive blocker).
+
+## Condition 6 formatting fix: the two ADDED bodies shortened (2026-11-16)
+
+The last strict run reported two overlong ADDED requirement bodies. Both were shortened to the
+500-character limit — `Save member must-do items` from 3,267 to 493 characters, `Read member must-do
+items` from 740 to 432 — measured locally by joining the lines between `### Requirement:` and the
+first `#### Scenario:`. This is a formatting change, not a third amendment: every statement the
+compression dropped is asserted by a scenario of the same requirement (200 and the four response
+keys, trim and blank→`null`, the empty-list row, single-row upsert, idempotence, zero write on
+rejection with the six `MUST_DO_*` / `INVALID_REQUEST` codes, body shape, list-local ids, the
+two-key ascending read response), so no contract, no scenario and no count changed — still 44 — and
+condition 8 is not reopened. Two things stay open and are not claimed as passes: the remaining
+archive/preamble/Clarifications warnings, and the strict rerun itself, which needs an environment
+with the `openspec` CLI. The MODIFIED page body is still 3,247 characters; strict did not report it,
+and it is signed text, so shortening it would need a ruling first.
+
 ## Why
 
 `preferences` 能力由 REQ-019 引入，但只覆盖「兴趣」一种偏好。US-020 要求成员能
@@ -48,14 +77,21 @@ blocking 开放问题为 0、DoR BLOCKER 为 0、A0 深潜四项 Pass，因此�
 - 错误码：新增 `MUST_DO_ACTIVITY_REQUIRED`、`MUST_DO_PLACE_OR_TIME_REQUIRED`、
   `MUST_DO_TIME_INVALID`、`MUST_DO_ITEM_UNKNOWN`、`MUST_DO_ITEM_DUPLICATE_ID`；
   复用 `USER_REQUIRED` / `NOT_A_MEMBER` / `TRIP_NOT_FOUND` / `INVALID_REQUEST`。
+- **存储镜像 `name`（2026-11-16 用户裁定，delta R4）**：写入 `payload` 的每个条目除 `activity`
+  外再存一份同值的 `name`，新增时写入、编辑时同步、随条目删除。原因是已合入 `main` 的
+  `MainPlanService.mustDoItems()` 读的是 `item.path("name")`，且 `V5__create_main_plan.sql`
+  已按该形状为 fixture 行程种子了 `must_do` 行；不双写则本变更存进去的条目在主线生成时
+  会变成空字符串，而 `MainPlanApiTest` 只断言条数、不会变红。**HTTP 响应仍只出
+  `id`/`activity`/`location`/`time` 四键，`name` 永不上线**；不改动 `com.gogo.mainplan`，
+  不改种子，不新增迁移。
 - **MODIFIED** 能力 `preferences` 的页面契约：`#/trips/{tripId}/preferences` 在同一页新增
   「必做项」段（列表 + 内联添加/编辑表单 + 删除），且**每个动作即时 PUT 落库**；
   兴趣段仍保持「显式保存一次性提交」。两段写入时机不同必须写进契约。
 - 后端在 REQ-019 建立的 `com.gogo.preference` 包内新增 must-do 端点与校验，复用
   `TripRepository.findUserId` / `isMember` 与同一份错误 advice。
 - 前端在该页新增一个区块，复用 `api.js`、`app.css`、`Icons.jsx`；**不新增路由、不新增依赖**。
-- 测试与证据：后端接口测试覆盖 20 个场景（含条数、`id` 稳定、跨成员隔离的写前后断言）；
-  `docs/feedback/verification-*.md` 与 `README.md` 增行。
+- 测试与证据：后端接口测试覆盖 25 个场景（19 保存 + 6 读取，含条数、`id` 稳定、跨成员隔离、
+  `name` 镜像的写前后断言）；`docs/feedback/verification-*.md` 与 `README.md` 增行。
 
 Unchanged：`greeting`、`trips`、`invitations` 的端点与响应形状；`V1`/`V2`/`V3` 迁移；
 `member_preference` 表结构与唯一键；兴趣端点、payload 与保存按钮；CI 两个 job 的结构；
@@ -87,7 +123,10 @@ None。本变更不新建能力，`preferences` 由 REQ-019 的 delta 建立。
   只读复用 `com.gogo.trip.TripRepository`（`findUserId` / `isMember`），不修改其行为；
   前端在 REQ-019 新建的偏好页文件内新增一个区块，`App.jsx` 与路由**不改**。
 - **Database**：**无新增迁移**。只写 `member_preference` 中 `kind = 'must_do'` 的行，
-  `payload` 形状 `{"items":[...]}`；库文件仍是 `backend/data/gogo.db`。
+  `payload` 形状 `{"items":[{id,activity,name,location,time}]}`（`name` 是 `activity` 的存储镜像，
+  不进响应）；库文件仍是 `backend/data/gogo.db`。`V5__create_main_plan.sql` 为 fixture 行程种子的
+  `must_do` 行（只有 `name`、无 `id`）按 REQ-019 DD1 的既有裁定处理：**种子不动**，本变更的接口
+  测试每例清表，开发库在 P4 手工重置；不为遗留形状增加容错分支。
 - **APIs**：新增 2 个端点（`GET`/`PUT .../preferences/must-dos`），`X-User-Id` 身份，
   裸 DTO 成功 + `{"code","message"}` 失败；新增 5 个 `MUST_DO_*` 错误码。
 - **Dependencies**：无新增（不引组件库、路由库、JSON 库）。
@@ -97,8 +136,9 @@ None。本变更不新建能力，`preferences` 由 REQ-019 的 delta 建立。
 - **Docs / harness**：`README.md`、`docs/feedback/verification-*.md`、
   `requirement-workspace/{registry,handoff}.md`。知识库无需新增长期事实。
 - **Collaboration（合入顺序硬前置）**：本变更零迁移，但依赖 REQ-019 的
-  `V4__create_member_preference.sql` 与偏好页先落 main。**合入顺序 REQ-019 → REQ-020，不得颠倒**；
-  若 REQ-019 的 V4 未合入，本变更的接口与页面都无处可落。
+  `V6__create_member_preference.sql`（原 `V4`；2026-11-16 已随 REQ-019 的 P4 落地于
+  `feat/travel_preference`）与偏好页先落 main。**合入顺序 REQ-019 → REQ-020，不得颠倒**；
+  若 REQ-019 未合入 `main`，本变更仍无处可落。
 
 ## Effort and ordering
 
@@ -106,7 +146,7 @@ None。本变更不新建能力，`preferences` 由 REQ-019 的 delta 建立。
 前端 1 个页面区块 + 少量样式。依赖顺序：
 
 ```
-REQ-019 的 V4 与偏好页落库 → must-do 端点与校验（写前整体校验、id 签发）→ GET 回读 → 页面区块 → 验证矩阵/README
+REQ-019 的 `V6`（原 `V4`）与偏好页落库 → must-do 端点与校验（写前整体校验、id 签发）→ GET 回读 → 页面区块 → 验证矩阵/README
 ```
 
 `GET` 回读是 AC1「reload 后仍可见」与 AC2「条数与 id 不变」的唯一证据链，必须早于页面完成。
@@ -131,13 +171,20 @@ REQ-020 是对已有能力的修改，深潜在范围内。`analysis/req-020-dor
   允许两者同时保存（D6）。UI 文案必须同步修改，否则会误导实现。
 - **同页两段写入时机不同**：兴趣段是显式「保存」，必做项段是动作即保存（D7/D12）。
   这是有意的交互差异，需在页面 requirement 里写明，不能在实现时「统一」掉。
-- **零迁移但硬依赖 `V4`**：本变更不提交任何 Flyway 文件；若 REQ-019 的 `V4` 未合入，
-  本变更不可合入（R1）。
+- **零迁移但硬依赖 `V6`（原 `V4`）**：本变更不提交任何 Flyway 文件；表与偏好页已随 REQ-019 的 P4
+  落地于分支，但需等 REQ-019 合入 `main` 后本变更才可合入（R1）。
 - **错误 advice 归属**：`com.gogo.trip.TripErrorAdvice` 只覆盖 `com.gogo.trip`；本变更复用
-  REQ-019 在 `com.gogo.preference` 建立的 advice。若该 advice 不存在，`INVALID_REQUEST` 与
-  `MUST_DO_*` 都不会产生，需在本变更内补齐（DoR WARNING）。
+  REQ-019 在 `com.gogo.preference` 建立的 advice（已落地：`PreferenceErrorAdvice`，
+  `basePackages = "com.gogo.preference"`，含 `PreferenceApiException` / `INVALID_REQUEST` 两个处理分支），
+  `MUST_DO_*` 只需新增异常类型而无需改 advice 作用域。
+- **与已合入的 main-plan 读取端存在键名冲突**：`MainPlanService.mustDoItems()` 读 `name`，本变更契约用
+  `activity`。2026-11-16 用户裁定采用**存储层双写**（R4）而非改读取端或加 `V7` 重写种子；代价是
+  `payload` 内出现两个真值源，增/改/删都必须同步两键，且 delta 因此从 42 条场景变为 44 条。
+  该裁定与页面重基线一起经 G1 condition 8 由 IO Emily / SA evelyn.huang 于 2026-11-16 复审签署（转达），
+  condition 8 已关闭，P4 解锁；签署对象为**未提交的工作区文本**，提交时不得改动已签署措辞。
 - **夹具未回填**：用户与 trip 来自 `acceptance-test-fixtures.md`；US-020 的行为样例写在本需求
-  场景表，是否回填该文件见 OQ-10。
+  场景表。OQ-10 已于 P3 关闭（`atdd-design.md` P3-1）：**不**向该共享文件新增 REQ-020 段，
+  因为它在 PR #44 的改动面内、REQ-019 的 G2 未关闭，只增加冲突面；所需取值全部固定在 delta 场景里。
 - **计划文档漂移**：`tech-stack-plan.md` §5/§6 的 `tag` 表、`{data,error}` 封套、`X-Member-Id`
   与已合并代码不一致；本变更跟随代码，文档修正并入 REQ-019 OQ-16 的团队任务。
 - **编号体系**：需求号沿故事号取 `REQ-020`，变更包 `req-020-manage-must-do`；

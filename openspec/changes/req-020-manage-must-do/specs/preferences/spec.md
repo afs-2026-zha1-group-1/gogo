@@ -30,7 +30,7 @@ no or null `id` is created with `max(current ids)+1`, a known `id` is updated in
 item is deleted. The stored payload mirrors `activity` as `name`, never returned (R4). Validation
 precedes any write, in order: shape, `activity`, place-or-time, `time` as
 `^([01]\d|2[0-3]):[0-5]\d$`, duplicate `id`, `id` ownership (foreign = unknown). No count, length or
-deduplication limit applies.
+dedup limit applies.
 
 #### Scenario: An item is added and read back
 
@@ -236,10 +236,28 @@ The frontend SHALL provide the page `#/trips/{tripId}/preferences` inside the ex
 and SHALL link to it from the trip details page. The page SHALL render two sections in this order:
 the interests section, then the must-do items section.
 
-The **interests section** SHALL render the selected state of the seven predefined interests, whose
+The **interests section** SHALL render the selected state of the ten predefined interests, whose
 only source SHALL be the `GET /api/trips/{tripId}/preferences` response entry matching the current
 identity (the identity selector in the top bar). The user's selection SHALL be submitted as one
 request by an explicit "Save" action; the section SHALL NOT submit on every toggle.
+
+The layout SHALL follow the approved screen `screen-08-preferences.png`, as revision 1 established it
+and extended here with the must-do section: a top app bar with a back control, the title `我的偏好`,
+the subtitle `<display name> · US-019~020` (R1) and a save-state badge; a section heading
+`兴趣（US-019 · 预设列表、不重复）`; one selectable chip per catalogue interest, showing its emoji and
+Chinese label, in the catalogue order (`水上运动`, `潜水`, `摄影`, `美食`, `咖啡`, `历史人文`, `手作`,
+`自然风景`, `冒险`, `慢游`), with the selected chip filled in the dark ink colour and the rest on the
+light surface; a hint line explaining that saved interests are visible to every member; a section
+heading `必做项（US-020 · 可增删改）` listing one row per item, marking an item's `location` with a pin
+and its `time` with a clock and offering an edit and a delete icon button per row; an `添加必做项`
+action opening the inline form whose fields are `活动名称`, `地点` and `固定时间`, with `取消` and
+`保存` (R2); and a fixed bottom action bar holding the primary interest save button. The remaining
+screen-08 blocks (budget, the no-preference switch and ``提交并标记就绪``) belong to other changes and
+SHALL NOT be rendered here.
+
+The save-state badge SHALL describe the interests section only, because must-do items persist per
+action and report inside their own section; its states are `加载中`, `保存中`, `未保存` and `已保存`
+(R3).
 
 The **must-do items section** SHALL render the current member's items only, each showing its
 `activity` and, when present, its `location` and `time`. It SHALL offer an inline add form, an
@@ -264,21 +282,21 @@ The page SHALL NOT use browser local storage as evidence of a saved state.
 
 - **WHEN** the preferences page is opened and the `GET` requests have not returned
 - **THEN** the page shows a loading message
-- **AND** the interest controls, both "Save" actions and the item actions are disabled
+- **AND** the interest controls, the interest "Save" action and the item actions are disabled
 
 #### Scenario: Empty interests
 
 - **GIVEN** the current identity has never saved interests for that trip
 - **WHEN** the page has finished loading
-- **THEN** none of the seven interests is selected
+- **THEN** none of the ten interests is selected
 - **AND** the user can select interests and save right away
 
 #### Scenario: Saved interests are shown again after a reload
 
-- **GIVEN** Ben has saved `Art` and `Nature`
+- **GIVEN** Ben has saved `摄影` and `自然风景`
 - **WHEN** Ben opens the preferences page
-- **THEN** `Art` and `Nature` are selected
-- **AND** the other five interests are not selected
+- **THEN** `摄影` and `自然风景` are selected
+- **AND** the other eight interests are not selected
 
 #### Scenario: Empty must-do list
 
@@ -344,10 +362,10 @@ The page SHALL NOT use browser local storage as evidence of a saved state.
 
 #### Scenario: A rejected interest save shows an inline error and rolls back
 
-- **GIVEN** the server holds `Art` and `Nature` for the current member
+- **GIVEN** the server holds `摄影` and `自然风景` for the current member
 - **WHEN** the interest save returns 400 with `code` equal to `INTEREST_NOT_ALLOWED`
 - **THEN** the page shows the response `message`
-- **AND** the selected state returns to `Art` and `Nature`
+- **AND** the selected state returns to `摄影` and `自然风景`
 
 #### Scenario: A rejected must-do action shows an inline error and rolls back
 
@@ -364,10 +382,10 @@ The page SHALL NOT use browser local storage as evidence of a saved state.
 
 #### Scenario: A must-do action does not touch the interest selection
 
-- **GIVEN** the interest section shows `Art` selected but not yet saved
+- **GIVEN** the interest section shows `摄影` selected but not yet saved
 - **WHEN** the user adds a must-do item
 - **THEN** no interest `PUT` is sent
-- **AND** the interest selection is still `Art`
+- **AND** the interest selection is still `摄影`
 
 #### Scenario: Identity, membership or trip is rejected
 
@@ -389,6 +407,10 @@ The page SHALL NOT use browser local storage as evidence of a saved state.
 
 ## Clarifications
 
+C1–C6 were frozen at G1 and are unchanged by the 2026-11-16 re-basing. R1–R3 were added by that
+re-basing of the page requirement; R4 was added the same day. All four were re-reviewed and signed
+Pass on 2026-11-16 (IO Emily, SA evelyn.huang) — `g1-decision.md`, condition 8 closed.
+
 | id | Decision | Rationale |
 |---|---|---|
 | C1 | Item ids are unique within the caller's list only and may be reassigned after the list is emptied (`max + 1`) | Ids are never referenced outside the list, and a durable counter would require a payload field or a second table; REQ-020's proposal wording "not reused after deletion" is narrowed accordingly |
@@ -396,4 +418,8 @@ The page SHALL NOT use browser local storage as evidence of a saved state.
 | C3 | No item-count limit, field-length limit or name-based deduplication | The ACs define none, and a fabricated limit would be a new product rule |
 | C4 | An absent `location`/`time` is stored as `null`, not omitted | Keeps the stored and returned item shape fixed, so assertions do not depend on key presence |
 | C5 | Both `location` and `time` may be saved together | Overrides the reference screen's "choose one of location or time" wording, as decided in REQ-020's P1 |
-| C6 | Delete requires a confirmation dialog; cancelling or dismissing sends no request | User ruling 2026-11-15 supersedes the earlier immediate-delete decision. Item-count/field-length limits, name-based deduplication and per-item date remain out of scope |
+| C6 | Delete requires a confirmation dialog; cancelling or dismissing sends no request | User ruling 2026-11-15 supersedes the earlier immediate-delete decision, and supersedes the reference screen, whose `rmMustdo` removes a row at once — the same kind of override C5 makes. Item-count/field-length limits, name-based deduplication and per-item date remain out of scope |
+| R1 | The app bar subtitle reads `<display name> · US-019~020` | The reference screen carries the whole range `US-019~027`, while revision 1 shipped `· US-019` because that was all the page rendered; the range now covers both rendered sections. Changes a shipped string, so it was submitted for the 2026-11-16 re-review and is signed |
+| R2 | The must-do strings come from `screen-08-preferences.png` | Fixes what the E2E rows assert: heading `必做项（US-020 · 可增删改）`, action `添加必做项`, fields `活动名称` / `地点` / `固定时间`, buttons `取消` / `保存`, pin and clock markers. The screen's `二选一` marker on `地点` is dropped, because C5 allows both fields |
+| R3 | The save-state badge describes the interests section only | Revision 1 shipped one page-level badge for its single save; must-do persists per action and reports inside its own section, so the badge must not claim to cover it |
+| R4 | The stored payload mirrors `activity` as `name`; the response never carries it | User ruling 2026-11-16. `MainPlanService.mustDoItems`, already merged to `main`, reads `item.path("name")`, and `V5__create_main_plan.sql` seeds `must_do` rows in that shape; without the mirror, every item saved through this change would reach main-plan generation as an empty string while `MainPlanApiTest` stayed green. The alternatives were changing that reader (`activity` first, `name` fallback) or a `V7` rewrite of the seeds; the mirror was chosen because it keeps this change inside its own package and leaves the merged reader and the seeds untouched |

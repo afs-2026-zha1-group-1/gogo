@@ -100,10 +100,11 @@ None. `preferences` is created by the REQ-019 delta and already extended by REQ-
 - **Docs / harness**: `README.md`, `docs/feedback/verification-*.md`,
   `requirement-workspace/{registry,handoff}.md`. No new long-term knowledge-base fact: the money and `kind`
   conventions already exist in `tech-stack-plan.md` §5.
-- **Collaboration (hard merge-order prerequisite)**: this change is stacked on REQ-019 (`V4` plus the
-  preferences page) **and** REQ-020 (first revision of the page requirement).
-  **Merge order REQ-019 → REQ-020 → REQ-024 must not be inverted**; without `V4` there is no table and
-  without the page there is nowhere to render the section.
+- **Collaboration (hard merge-order prerequisite)**: this change is stacked on REQ-019 (`V6`, formerly
+  `V4`, plus the preferences page — both on `feat/travel_preference` since 2026-11-16) **and**
+  REQ-020 (first revision of the page requirement, still pending).
+  **Merge order REQ-019 → REQ-020 → REQ-024 must not be inverted**; without the table there is no
+  storage and without the page there is nowhere to render the section.
 
 ## Effort and ordering
 
@@ -111,7 +112,7 @@ Small: one controller branch, one service method, one DTO group, one interface-t
 one frontend page section plus currency formatting. Ordering:
 
 ```
-REQ-019 V4 + preferences page → REQ-020 page revision → budget endpoint and validation
+REQ-019 V6 (formerly V4) + preferences page → REQ-020 page revision → budget endpoint and validation
 → GET read-back → page section → verification matrix / README
 ```
 

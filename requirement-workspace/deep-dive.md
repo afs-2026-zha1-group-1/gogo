@@ -361,7 +361,7 @@ slice and are not required by any AC. Recorded as a non-blocking item for Dev
 
 | 概念 | 粒度 | 字段 | 状态迁移 |
 |---|---|---|---|
-| `member_preference`（`kind='must_do'`） | 每 (trip, user, kind) 一行；行内 payload 是一个有序条目列表 | 表结构沿用 REQ-019 的 `V4`：`id`、`trip_id`、`user_id`、`kind`、`payload`（JSON）、`updated_at`；payload 形状固定为 `{"items":[{"id":1,"activity":"…","location":"…"\|"null","time":"HH:mm"\|"null"}]}` | 行不存在 → 首次 PUT 插入；行存在 → PUT 覆盖 `payload` 与 `updated_at`；`{"items":[]}` 合法且保留行；本需求无「删除整行」路径 |
+| `member_preference`（`kind='must_do'`） | 每 (trip, user, kind) 一行；行内 payload 是一个有序条目列表 | 表结构沿用 REQ-019 的 `V6`（原 `V4`，2026-11-16 已落地于分支）：`id`、`trip_id`、`user_id`、`kind`、`payload`（JSON）、`updated_at`；payload 形状固定为 `{"items":[{"id":1,"activity":"…","location":"…"\|"null","time":"HH:mm"\|"null"}]}` | 行不存在 → 首次 PUT 插入；行存在 → PUT 覆盖 `payload` 与 `updated_at`；`{"items":[]}` 合法且保留行；本需求无「删除整行」路径 |
 | 条目 `item` | 属于该成员 payload 内的一个元素；`id` 仅在该成员列表内唯一 | `id`：INTEGER ≥ 1，服务端签发（当前最大 id + 1），删除后**不复用**；`activity`：去首尾空白后非空的字符串；`location`：字符串或 `null`；`time`：`HH:mm`（严格 `^([01][0-9]\|2[0-3]):[0-5][0-9]$`）或 `null` | 无 `id` 的入参条目 → 新增并签发 id；带 `id` 的入参条目 → 原地覆盖该条目；请求中缺失的既有条目 → 从 payload 移除；列表顺序 = 请求顺序 |
 
 线上契约：
@@ -414,7 +414,7 @@ slice and are not required by any AC. Recorded as a non-blocking item for Dev
 
 | 触点 | 对方口径 | 本需求口径 | 收敛结论 |
 |---|---|---|---|
-| 偏好表 | REQ-019 的 `V4` 建 `member_preference` + UNIQUE(`trip_id`,`user_id`,`kind`) | 只写 `kind='must_do'`，不建表、不改列 | 一致：同表不同 kind 互不覆盖，唯一键直接支撑幂等覆盖写 |
+| 偏好表 | REQ-019 的 `V6`（原 `V4`）建 `member_preference` + UNIQUE(`trip_id`,`user_id`,`kind`) | 只写 `kind='must_do'`，不建表、不改列 | 一致：同表不同 kind 互不覆盖，唯一键直接支撑幂等覆盖写 |
 | 端点前缀 | REQ-019 的 `GET`/`PUT /api/trips/{tripId}/preferences` | 新增 `GET`/`PUT /api/trips/{tripId}/preferences/must-dos` | 同为路径前缀但资源不同；需在 P3 确认 Spring 的精确匹配不会把子路径落到旧映射 |
 | 页面契约 | REQ-019 的页面要求「兴趣选择由一次显式保存提交」 | 同一页新增必做项段，且**动作即保存** | 需在 P2 把 `Preferences page` 标为 MODIFIED，写明「按段区分写入时机」，否则两条契约互相矛盾 |
 | 错误 advice | REQ-019 计划在 `com.gogo.preference` 建专属 advice | 复用同一包与同一 advice | 一致；若 REQ-019 的 advice 缺失，本需求的错误码不会产生（WARNING） |
@@ -422,7 +422,7 @@ slice and are not required by any AC. Recorded as a non-blocking item for Dev
 | 主线确认 | REQ-004 的 `trip.main_plan_confirmed`；US-037 之前无产品写入路径 | 仅作测试上下文，不设锁定分支 | 一致：AC 的「main plan is unconfirmed」是前提，不是状态机分支 |
 | 生成消费 | US-031 的节点 9 需要「必做项汇总」 | `GET` 返回全员明细即汇总输入 | 一致：本需求只提供数据，不实现生成 |
 | 计划文档 | `tech-stack-plan.md` §5 的 24 码 `tag` 表、§6 的封套与 `X-Member-Id` | 跟随已合并代码（`X-User-Id`、裸 DTO、无 `tag` 表） | 与 REQ-019 OQ-16 同一文档修正任务，不重复登记 |
-| 迁移序列 | `V3` 已随 REQ-004 落 main；`V4` 归 REQ-019 | 本需求零迁移 | 无编号竞争；唯一风险是 `V4` 尚未合入时本变更无法运行（R1） |
+| 迁移序列 | `V3` 已随 REQ-004 落 main；`V6`（原 `V4`）归 REQ-019 | 本需求零迁移 | 无编号竞争；唯一风险是 `V6` 尚未合入 `main` 时本变更无法运行（R1）——表与偏好页已于 2026-11-16 在分支落地 |
 | UI 参考图 | 节点 8 表单写「地点 二选一 / 固定时间」 | 两字段可同时保存，至少一项 | 有意偏离：Design scope 明确要求不得阻止同时保存；文案需改（WARNING） |
 
 ### ⑫ 展示契约
@@ -455,7 +455,7 @@ P2 已关闭 OQ-11：不设上限，P4 也不加防御性分支（delta C3/C6）
 
 | 概念 | 粒度 | 字段 | 状态迁移 |
 |---|---|---|---|
-| `member_preference`（`kind='budget'`） | 每 (trip, user, kind) **一行**；行内 payload 是**单个对象**（不是数组） | 表结构沿用 REQ-019 的 `V4`：`id`、`trip_id`、`user_id`、`kind`、`payload`（JSON）、`updated_at`；payload 已设置态 `{"amount":4000,"currency":"SGD","limitType":"hard"}`，未设置态 `{}` | 行不存在 → 首次 PUT 插入；行存在 → 覆盖 `payload` 与 `updated_at`；`{"amount":null}` → payload 写 `{}` 且**保留行**；GET 不建行 |
+| `member_preference`（`kind='budget'`） | 每 (trip, user, kind) **一行**；行内 payload 是**单个对象**（不是数组） | 表结构沿用 REQ-019 的 `V6`（原 `V4`，2026-11-16 已落地于分支）：`id`、`trip_id`、`user_id`、`kind`、`payload`（JSON）、`updated_at`；payload 已设置态 `{"amount":4000,"currency":"SGD","limitType":"hard"}`，未设置态 `{}` | 行不存在 → 首次 PUT 插入；行存在 → 覆盖 `payload` 与 `updated_at`；`{"amount":null}` → payload 写 `{}` 且**保留行**；GET 不建行 |
 | 预算值对象 | 属于该成员 payload 的唯一对象；无子条目 id | `amount`：INTEGER，`0 ≤ amount ≤ 2147483647`，含义为**最小货币单位**；`currency`：`SGD`/`CNY`/`USD`/`EUR`/`JPY`；`limitType`：`hard`/`soft` | 三字段只有两种合法组合：**全 null（未设置）** 或 **全有值（已设置）**；半个预算（只有 amount、或 amount 为 null 但另两字段有值）→ `400 BUDGET_FIELDS_INCOMPLETE` |
 | 币种小数位 | 币种 → 最小单位的换算常量，前后端共用同一张表 | `SGD = 2`、`CNY = 2`、`USD = 2`、`EUR = 2`、`JPY = 0` | 不参与存储与校验，只决定界面格式化与用户输入的换算；**禁止**硬编码 ×100 |
 
@@ -526,7 +526,7 @@ P2 已关闭 OQ-11：不设上限，P4 也不加防御性分支（delta C3/C6）
 
 | 触点 | 对方口径 | 本需求口径 | 收敛结论 |
 |---|---|---|---|
-| 偏好表 | REQ-019 的 `V4` 建 `member_preference` + UNIQUE(`trip_id`,`user_id`,`kind`) | 只写 `kind='budget'`，不建表、不改列 | 一致：同表不同 kind 互不覆盖；UNIQUE 直接支撑 `ON CONFLICT` 的单行覆盖写 |
+| 偏好表 | REQ-019 的 `V6`（原 `V4`）建 `member_preference` + UNIQUE(`trip_id`,`user_id`,`kind`) | 只写 `kind='budget'`，不建表、不改列 | 一致：同表不同 kind 互不覆盖；UNIQUE 直接支撑 `ON CONFLICT` 的单行覆盖写 |
 | `kind` 取值域 | `tech-stack-plan.md` §5 的枚举含 `interest`/`must_do`/`constraint`/`budget` | 本需求只落地 `budget` | 一致：复用表、零迁移是计划原意，不是偏离 |
 | 金额单位 | `tech-stack-plan.md` §5「金额用 `INTEGER` 分」；`attraction.price_cny` 同口径 | `amount` 为最小货币单位整数 | 一致：US-031 做预算过滤时可直接与 `price_cny` 比较；JPY 零位小数需在换算时按币种表处理 |
 | 端点前缀 | REQ-019 的 `GET`/`PUT /api/trips/{tripId}/preferences`；REQ-020 的 `.../preferences/must-dos` | 新增 `GET`/`PUT /api/trips/{tripId}/preferences/budget` | 同为子资源兄弟路径；需在 P3 确认 Spring 精确匹配，三个映射互不落到对方 |
@@ -538,7 +538,7 @@ P2 已关闭 OQ-11：不设上限，P4 也不加防御性分支（delta C3/C6）
 | 就绪状态 | US-026 的提交与就绪环、US-027 的显式无偏好 | 保存预算**不改变**就绪状态 | 需在 P2 的页面 requirement 里写明，避免实现时顺手把「保存预算」做成「提交就绪」 |
 | 参考图 | 节点 8 预算卡：币种下拉 `CNY/USD/EUR/JPY`、金额默认 `1200`、提交走全页 `submitPref()` | 白名单含 `SGD`、无默认金额、预算段独立保存 | 有意偏离：Design scope 明确要求支持 SGD 且区分未设置与 0；UI 需改（WARNING） |
 | 计划文档 §6 | 计划写「`PUT /preferences` 一次提交四类偏好」 | 独立子资源端点 + 段内显式保存 | 偏离：为不改 REQ-019 已冻结的 payload；文档修正并入 REQ-019 OQ-16 |
-| 迁移序列 | `V3` 已随 REQ-004 落 main；`V4` 归 REQ-019 | 本需求零迁移 | 无编号竞争；唯一风险是 `V4` 未合入时本变更无法运行（R1） |
+| 迁移序列 | `V3` 已随 REQ-004 落 main；`V6`（原 `V4`）归 REQ-019 | 本需求零迁移 | 无编号竞争；唯一风险是 `V6` 未合入 `main` 时本变更无法运行（R1）——表已于 2026-11-16 在分支落地 |
 
 ### ⑫ 展示契约
 

@@ -37,6 +37,35 @@ that item outstanding; it blocks archive, not P4 start. Conditions 1 and 2 are
 implementation prerequisites rather than alignment conditions: neither REQ-019's
 `V4`/page nor REQ-020's page revision 2 exists in the tree yet.
 
+## Implementation prerequisite update (2026-11-16)
+
+REQ-019 reached P4 on this branch, so condition 1 is now satisfied and condition 2 stands
+on a smaller gap. This section re-checks both and **supersedes** the "exists in the tree
+yet" sentence in *G1 closure*:
+
+- Condition 1 is satisfied: the table is on disk at `V6__create_member_preference.sql`
+  (renumbered from `V4`, because `main` took `V4` for splits and `V5__create_main_plan.sql`
+  already declares `member_preference` with `IF NOT EXISTS`), and the page exists as
+  `frontend/src/pages/PreferencesPage.tsx` at revision 1. Shape relied on here is unchanged:
+  `(trip_id, user_id, kind, payload TEXT, updated_at)` with `UNIQUE(trip_id, user_id,
+  kind)`, which is what the `kind='budget'` single-row upsert needs.
+- Condition 2 remains open, but its blocker moved: REQ-020 is no longer gated by REQ-019
+  (its condition 1 closed the same day), so revision 2 can now be built; revision 3 has
+  nothing to reproduce until it is.
+- `PreferenceErrorAdvice` is already scoped to `com.gogo.preference`
+  (`@RestControllerAdvice(basePackages = "com.gogo.preference")`), so the `BUDGET_*` codes
+  and `INVALID_REQUEST` are producible without touching `TripErrorAdvice`.
+- Reuse is **not** free at code level: `PreferenceRepository` hard-codes `kind='interest'`
+  in both `save` and `membersOf`, and `PreferencePayload` is a single `{codes: [...]}`
+  shape, so the budget object `{"amount", "currency", "limitType"}` (and the unset `{}`
+  state) needs its own payload codec plus a kind parameter. `PreferenceService` and the
+  controller's `caller()` identity → trip → membership sequence are reusable as-is.
+- The current page keeps one page-level `.actionbar` save button; revision 3's
+  "one save action per section" therefore changes the shell, not only the section content.
+- REQ-019 stands at G2 (record prepared, named VL unsigned) with PR #44 open against
+  `main`, so this change is implementable on the branch while the merge order 019 → 020 →
+  024 still governs `main`.
+
 ## Inputs
 
 - Delta Spec: `specs/preferences/spec.md` — 3 requirements over the existing capability
@@ -61,7 +90,8 @@ implementation prerequisites rather than alignment conditions: neither REQ-019's
   `main` (PR #31); `member_preference` and `V4__create_member_preference.sql` belong to REQ-019
   and are **not** on disk yet. `kind='budget'` is already named in
   `docs/knowledge/architecture/tech-stack-plan.md` §5, so this change adds no fifth kind and
-  stays inside the planned enum, with zero migration.
+  stays inside the planned enum, with zero migration (superseded 2026-11-16: the table is on
+  the branch as `V6` and the page exists — see *Implementation prerequisite update*).
 - Structural check: `spec.md` follows `# Spec Delta` → `## ADDED Requirements` →
   `## MODIFIED Requirements` → `## Clarifications`, with 3 `### Requirement:` blocks and
   53 `#### Scenario:` blocks. Current strict validation exited 1: two ADDED bodies
@@ -104,9 +134,11 @@ implementation prerequisites rather than alignment conditions: neither REQ-019's
   scenario when this draft was prepared. It was added as "A save is accepted after the main plan
   is confirmed", so every P1 scenario row is now represented except the three inherited
   identity/membership paths.
-- **Retained risks (recorded, not conditions of the delta itself):** (a) the preference error
-  advice package must exist for the `BUDGET_*` codes to be produced; (b) the change cannot be
-  built or merged before REQ-019's `V4` and REQ-020's page revision 2 exist; (c) cross-currency
+- **Retained risks (recorded, not conditions of the delta itself):** (a) **closed
+  2026-11-16** — `PreferenceErrorAdvice` is already scoped to `com.gogo.preference`, so the
+  `BUDGET_*` codes need no new advice package; (b) **narrowed 2026-11-16** — REQ-019's table
+  and page are on the branch (the migration as `V6`), so what remains is REQ-020's page
+  revision 2 plus the 019 → 020 → 024 merge order to `main`; (c) cross-currency
   comparison is out of scope, so US-031 will need a separate change when budgets of different
   currencies must be filtered together (OQ-13); (d) `tech-stack-plan.md` still claims a single
   PUT submits all preference kinds, which this change contradicts by design (OQ-14, team-owned).
@@ -128,8 +160,8 @@ implementation prerequisites rather than alignment conditions: neither REQ-019's
 
 | # | Condition | Owner | State |
 |---|---|---|---|
-| 1 | `req-019-save-interests` reaches a closed G1 and lands `V4__create_member_preference.sql` plus the preferences page; until then this change cannot be implemented, verified or merged | evelyn.huang (SA) / Dev | open as an implementation prerequisite, not a G1 condition — REQ-019's G1 closed 2026-11-16, but `V4` and the page are still absent |
-| 2 | `req-020-manage-must-do` reaches a closed G1 and lands page revision 2, which revision 3 reproduces | evelyn.huang (SA) / Dev | open as an implementation prerequisite, not a G1 condition — REQ-020's G1 closed 2026-11-16, but page revision 2 is still absent |
+| 1 | `req-019-save-interests` reaches a closed G1 and lands the `member_preference` migration plus the preferences page; until then this change cannot be implemented, verified or merged | evelyn.huang (SA) / Dev | closed 2026-11-16 — G1 closed and P4 landed on the branch at `V6__create_member_preference.sql` (renumbered from `V4`) plus `PreferencesPage.tsx` |
+| 2 | `req-020-manage-must-do` reaches a closed G1 and lands page revision 2, which revision 3 reproduces | evelyn.huang (SA) / Dev | open as an implementation prerequisite, not a G1 condition — REQ-020's G1 closed 2026-11-16 and its own prerequisite (REQ-019) is now satisfied, so revision 2 can be built on this branch; revision 3 has nothing to reproduce until it is |
 | 3 | Push current revised delta and approval record on `feat/travel_preference` | Dev | closed 2026-11-16; `origin/feat/travel_preference` at `27b09e6` |
 | 4 | IO approval of revised three-requirement / 53-scenario package | Emily (IO) | closed 2026-11-15; explicit user instruction |
 | 5 | Re-review confirmation dialogs, cancellation and clear failure; sign G1 for revised version | evelyn.huang (SA) | closed 2026-11-16 — Pass on the revised contract, relayed by the change author; no findings |
@@ -151,19 +183,21 @@ implementation prerequisites rather than alignment conditions: neither REQ-019's
 
 ## What this draft does and does not allow
 
-- Allowed: P3 design, and P4 implementation of this change once REQ-019's `V4`/page and
-  REQ-020's page revision 2 exist; presenting `preferences` as G1-aligned in the
-  registry.
-- Not allowed: building, verifying or merging this change before those prerequisites
-  land, reporting strict validation as passed, or archiving before that rerun succeeds.
+- Allowed: P3 design, and P4 implementation and local verification of this change on this
+  branch once REQ-020's page revision 2 exists; presenting `preferences` as G1-aligned in
+  the registry.
+- Not allowed: merging to `main` before 019 and 020 merge, reporting strict validation as
+  passed, or archiving before that rerun succeeds.
 
 ## Next
 
-1. Wait for REQ-019's `V4`/page and REQ-020's page revision 2; this change cannot be
-   built, verified or merged before both land, in that order.
+1. Start P3 now on the parts that do not depend on REQ-020: settle where the per-currency
+   minor-unit table lives (code constant, not a database column), and design the budget
+   payload codec plus the kind parameter that `PreferenceRepository` will need.
 2. The revised delta and approval records are pushed at `27b09e6`; no further push is
    outstanding for review.
-3. Start P3 while waiting: settle where the per-currency minor-unit table lives (code
-   constant, not a database column) and the budget error-advice scope.
-4. Before archive, fix the two overlong ADDED bodies and rerun
+3. Implement revision 3 once REQ-020's revision 2 page exists; until then the page
+   requirement has no baseline to extend.
+4. Merge order to `main` is 019 → 020 → 024; REQ-019's G2 is the first link.
+5. Before archive, fix the two overlong ADDED bodies and rerun
    `openspec validate req-024-set-trip-budget --strict`.
