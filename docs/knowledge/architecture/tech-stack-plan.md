@@ -460,3 +460,16 @@ US-049（确认拆分，issue #21）+ US-050（取消未确认草稿，issue #22
 - **验证**：后端 `mvn -B test` **214/214**；前端 build 绿；E2E 10 Pass / 1 N/A（logout 属 US-069）；CI `43839036207` / `43833884672` 双 job 绿；local-verify Pass。
 
 §5/§6 之外无其他数据模型或 API 变化；确认后不可再拆/不可编辑属产品契约（版本化重拆需新需求）。
+
+## 19. US-068/069/070 账号生命周期（2026-11-17，归档对齐）
+
+US-068（我的）、US-069（退出登录）、US-070（注册）已实现并合并（PR #101，merge `3334e7d`）；单 change、需求 REQ-009。本节覆盖 §14 “不做注册”的历史口径。
+
+- **API 增量**：`POST /api/auth/register`（公开 + CSRF；新邮箱 `200 {"next":"login"}`，重复邮箱 `409 EMAIL_TAKEN`）、`PATCH /api/auth/me`（会话主体，body `{name}`，返回 `{id,name,email}`）、`POST /api/auth/logout`（CSRF，`204`，失效服务端 session）。`GET /api/auth/me` 改为按 principal.id 读库，改名对其他会话在下一次读取时可见。
+- **数据模型**：无新表、无新迁移；复用 V6 `account_credential`（唯一邮箱、BCrypt）与 `app_user.display_name`。注册在同一事务插入 `app_user` + `account_credential`，`app_user.id` 由 SQLite rowid 生成；重复邮箱由唯一索引兜底并回滚半条账号。BCrypt 密码字节数 6–72（前端注册页要求 ≥8 字符 + 确认一致）。
+- **错误契约 +1**：`EMAIL_TAKEN 409`；注册/改名校验码 `INVALID_EMAIL` / `INVALID_NAME` / `INVALID_PASSWORD` / `INVALID_REQUEST`（400）。错误体仍为扁平 `{code,message}`。
+- **已登记偏差**：用户 2026-11-17 明确要求重复邮箱在注册时直接弹窗披露“该邮箱已注册”，覆盖 US-070 原“不披露邮箱是否已注册”的 AC；接受邮箱枚举风险，记录于 G1 addendum，IO 复核待补。
+- **前端**：底部 dock 五 tab（仪表盘/行程/分队/成员/我的）；移除右上角 `AccountBar`；`AccountPage` 按参考稿（头像首字母、名字/邮箱、保存名字、红色描边退出）；`RegisterPage` 按参考稿（确认密码、≥8 字符提示、成功/重复弹窗）；仪表盘问候使用账号名且不追加“组织者”；登录页保留创建账号入口。
+- **验证**：合并 `origin/main` 后后端 `mvn -B test` **279/279**；前端 clean install/build 绿；浏览器 E2E 18 Pass / 1 Skipped；PR #101 CI 双 job 绿（runs 43999674160 / 43999680155）；G1 Pass（IO Emily + SA Elian Jiang）、G2 Pass（VL lumi）。
+
+§3/§4/§7 无需改动；§14 的“不做注册”由本节取代；其余数据模型/API 未变。
