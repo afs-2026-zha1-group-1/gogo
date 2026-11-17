@@ -58,7 +58,8 @@ member-trip aggregation.
   safe dashboard navigation described above; progress remains unavailable.
 - **Upstream:** authentication, membership, readiness, main-plan and split
   reads, plus the separately delivered trip-details fix, supply or constrain
-  dashboard behavior. US-058 is deferred.
+  dashboard behavior. Reuse the session authentication already present in the
+  codebase; US-066 need not be archived before US-061. US-058 is deferred.
 - **Downstream:** authenticated trip members and the shell consume the
   dashboard views; completed trips may appear until completion integration.
 - **Frontend:** `frontend/src/App.tsx`, dashboard/home content, navigation and
@@ -72,7 +73,9 @@ member-trip aggregation.
   automatic invitation issuance must be fixed separately before that
   destination is linked. US-058 and active-only filtering are deferred, not
   required to implement or accept the interim member-trip scope. Applicable
-  authentication and navigation dependencies still require verification.
+  authentication and navigation behavior still require verification. US-061
+  proceeds before the later US-066 shell reconciliation; Sammi Ng coordinates
+  the ordering and preservation of dashboard behavior.
 - **Existing contracts:** `openspec/specs/app-shell/spec.md` says there is no
   dashboard aggregation and contains historical identity-scaffold language.
   Update the applicable shell requirements without restoring that scaffold.

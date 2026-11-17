@@ -4,6 +4,11 @@ Date: 2026-11-16. Inputs: `requirements/US-061.md`,
 `impact-brief.md` section US-061, current code and US-058 issue #24.
 This is a requirement-level contract, not an implementation design.
 
+> Historical analysis: the active-only list and seven-stage projection below
+> were superseded for the interim change on 2026-11-17. See the current scope
+> in [US-061](../requirements/US-061.md) and its dashboard and shell deltas.
+> US-058 integration remains a separately planned follow-up.
+
 ## Data contract
 
 | Concept | Grain and fields | State / transition | Source |

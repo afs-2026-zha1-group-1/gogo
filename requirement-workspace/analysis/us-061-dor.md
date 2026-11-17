@@ -2,6 +2,11 @@
 
 Date: 2026-11-16. This is an entry self-check, not a gate decision.
 
+> Historical self-check for the earlier active-only scope. The 2026-11-17
+> interim scope is recorded in [US-061](../requirements/US-061.md); the
+> completion, archive and details-fix prerequisites described below do not
+> apply to acceptance of the interim blocked/unavailable behavior.
+
 | Item | Status | Evidence |
 |---|---|---|
 | 1. Intent | Pass | `requirements/US-061.md`: display authorized trip information and link to other pages. |

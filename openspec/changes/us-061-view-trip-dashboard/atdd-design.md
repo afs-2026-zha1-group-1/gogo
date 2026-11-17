@@ -6,10 +6,10 @@ This is a test design, not implementation or a gate decision.
 
 ## Layers and red-first examples
 
-Before feature code, reconcile this design and its alignment evidence with the
-interim scope and revisit the Conditional G1 decision with the applicable
-human approvers. Then write each applicable acceptance check, run it to
-demonstrate the expected failure, implement its slice, and rerun it. US-058
+The G1 decision is Pass for the interim scope; its later follow-ups and
+acceptance checks remain open. Before feature code, write each applicable
+acceptance check, run it to demonstrate the expected failure, implement its
+slice, and rerun it. US-058
 completion filtering and completion-dependent progress are deferred; no
 completion-source double establishes or simulates that integration.
 

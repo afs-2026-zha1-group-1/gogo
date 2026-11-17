@@ -1,5 +1,28 @@
 # US-061 AC / DoV review
 
+## Interim-scope review — 2026-11-17
+
+Reviewer: AI. This review supersedes the earlier assessment below for the
+interim scope; it is not a gate decision or evidence of implementation.
+Reported human approval of the updated evidence is recorded in the
+[G1 decision](g1-decision.md).
+
+| Check | Result | Evidence and conclusion |
+|---|---|---|
+| AC: testable, observable and behavioral | Pass | Both delta specs specify member-only listing, source values, unavailable progress, navigation and explicit access/error outcomes. |
+| AC: negative and edge cases | Pass | The deltas cover empty lists, invalid/missing/denied requests, failed or incomplete reads and blocked unsafe details navigation. The [ATDD design](atdd-design.md) adds isolation and no-write checks; [tasks](tasks.md) cover stale responses. |
+| DoV: scope and traceability | Pass | The [proposal](proposal.md), [deltas](specs/trip-dashboard/spec.md), [shell delta](specs/app-shell/spec.md), [design](design.md) and [local requirement](../../../requirement-workspace/requirements/US-061.md) describe all member trips and unavailable progress. |
+| DoV: interim scope decisions | Pass | The user selected the interim scope, reuse of existing session authentication and US-061 before later US-066 reconciliation. Completion filtering, progress integration and archive are deferred; details remain blocked until safe. |
+| DoV: implementation and acceptance | Not assessed | Acceptance still requires actual authentication and owning reads, isolation, browser checks and no-write evidence. No upstream delivery or implementation is claimed. |
+
+Residual follow-ups: Sammi Ng coordinates the later US-066 shell reconciliation
+and external tracker update. The original tracker has not been updated; the
+member-list API deviation is recorded in design and reconciled with the binding
+plan at archive. Historical shell scenario names remain a separately recorded
+follow-up. These are not assertions that those activities are complete.
+
+## Earlier active-only review — superseded
+
 Reviewed: 2026-11-16 23:08 +08:00. Reviewer: AI; IO and SA review pending.
 This review is not a gate decision or evidence of implementation.
 

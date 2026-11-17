@@ -693,6 +693,12 @@ frontend bootstrap/login/guard → invitation resume + header-ignored verificati
 
 # US-061 - Dashboard impact brief (2026-11-16)
 
+> Historical impact analysis for the earlier active-only scope. The current
+> interim scope is recorded in [US-061](requirements/US-061.md) and the
+> [proposal](../openspec/changes/us-061-view-trip-dashboard/proposal.md).
+> US-058 integration and archive are deferred; the unsafe details destination
+> remains blocked until its separate fix is verified.
+
 ## Requirement set
 
 `requirement-workspace/requirements/US-061.md`; base readiness self-check:

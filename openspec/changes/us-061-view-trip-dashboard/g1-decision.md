@@ -1,5 +1,42 @@
 # G1 decision — us-061-view-trip-dashboard
 
+## Current decision — interim scope
+
+- **Gate:** G1 (Align)
+- **Decision:** Pass
+- **Recorded:** 2026-11-17 09:37:24 +08:00
+- **Approvers:** IO Emily Li; SA Sammi Ng. The requester reported that both
+  approved Pass on the updated interim scope and recorded follow-ups on
+  2026-11-17; this is reported approval, not a new direct signature.
+
+### Inputs and findings
+
+- [Proposal](proposal.md), [trip-dashboard delta](specs/trip-dashboard/spec.md),
+  [app-shell delta](specs/app-shell/spec.md), [interim AC / DoV review](dov-ac-review.md),
+  [alignment self-check](alignment-self-check.md), [ATDD design](atdd-design.md),
+  and [local requirement](../../../requirement-workspace/requirements/US-061.md).
+- The interim scope lists all member trips and shows completion-dependent
+  progress as unavailable. US-058 integration and archive are deferred; unsafe
+  details navigation remains blocked. Existing session authentication is reused.
+- The [earlier consistency lint](consistency-lint.md) remains Partial. Its
+  warnings are not represented as fixed: the US-066 shell overlap and historical
+  scenario headings require follow-up, and the original external tracker still
+  differs from the interim scope.
+- US-061 proceeds before the later US-066 shell reconciliation; Sammi Ng
+  coordinates preservation of dashboard behavior and separate external tracker
+  reconciliation. The member-list API deviation is documented in design and
+  must be reconciled with the binding plan at archive.
+- No unresolved scope ambiguity is carried into this interim decision. The
+  follow-ups above remain open; Pass does not claim implementation, completion
+  integration, tracker update, or successful end-to-end acceptance.
+  Acceptance still requires actual authentication and owning reads, browser
+  verification and no-write evidence.
+
+**Conditions for G1 Pass:** None. The named follow-ups and acceptance checks
+above remain required in their respective later workflows.
+
+## Earlier decision — active-only scope (superseded)
+
 - **Gate:** G1 (Align)
 - **Decision:** Conditional
 - **Recorded:** 2026-11-16 23:31:03 +08:00
@@ -49,8 +86,8 @@ is revisited.
 
 The requester reported that both named approvers approved. The Conditional
 decision and remediation ownership were subsequently supplied by the
-requester; the signatures below are intentionally blank and do not claim
-that either approver has signed this record.
+requester. The signature cells below are preserved as previously recorded;
+they are not evidence of direct signatures on the newer decision.
 
 | Role | Name | Signature | Date |
 |---|---|---|---|

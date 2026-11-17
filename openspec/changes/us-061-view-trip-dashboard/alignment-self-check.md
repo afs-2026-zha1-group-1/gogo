@@ -1,5 +1,22 @@
 # US-061 P3 alignment self-check
 
+## Interim-scope update — 2026-11-17
+
+The [local requirement](../../../requirement-workspace/requirements/US-061.md),
+proposal, deltas, design, ATDD and tasks now describe the interim all-member
+list and unavailable progress. Existing session authentication is the chosen
+baseline; US-066 shell reconciliation is sequenced later under Sammi Ng.
+US-058 integration and archive remain deferred, while unsafe details remain
+blocked. The original external tracker has not been updated.
+
+The checks in the mapping below remain applicable. The open-gaps section is
+the earlier assessment, retained for history; the current [G1 decision](g1-decision.md)
+records Pass for the interim scope. Browser E2E and real dependency
+verification remain apply-time acceptance work, not proof provided by this
+planning check.
+
+## Earlier assessment — superseded where noted above
+
 This is a planning check, not a gate approval or proof of implementation.
 Result: **Partial**. The proposal, delta specs, design, ATDD and tasks now map
 the interim member-trip scope, but the Conditional G1 decision has not been

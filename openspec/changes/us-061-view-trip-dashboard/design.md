@@ -7,7 +7,8 @@ See [proposal](proposal.md) and [ATDD design](atdd-design.md). The current
 `App.tsx` routes the dashboard to Home and remembers a details trip for the
 trip tab. The organizer's details page issues an invitation on load. The
 current session principal and existing authenticated shell must be preserved.
-The [G1 decision](g1-decision.md) is Conditional, not a Pass.
+The [G1 decision](g1-decision.md) is Pass for the interim scope; later
+follow-ups and acceptance evidence remain open.
 
 ## Goals / Non-Goals
 
@@ -77,11 +78,9 @@ create/back behavior, browser history and account identity.
 
 ### D4 — Acceptance before code
 
-Before feature implementation, reconcile [ATDD design](atdd-design.md) with
-the interim scope: include all member trips and leave completion-dependent
-progress unavailable. Revisit the Conditional G1 decision with the applicable
-human approvers. Then follow the reconciled ATDD for red-first API and E2E
-slices. The
+Follow the [ATDD design](atdd-design.md) for red-first API and E2E slices:
+include all member trips and leave completion-dependent progress unavailable.
+The
 existing Maven and frontend build CI jobs are real gates; browser acceptance
 has no existing configured runner and needs explicit setup during apply.
 Test against real applicable separately owned dependencies before end-to-end
@@ -93,11 +92,15 @@ deferred and must not be claimed.
 - **Undelivered US-058 read** → all member trips, including potentially
   completed trips, appear and progress is unavailable. A later change must
   establish the real read contract before restoring active-only behavior.
-- **Auth and US-066 shell overlap** → Sammi Ng confirms delivery/sequence and
-  reconciles overlapping complete requirement blocks before archive.
-- **Separate archive and unsafe details page** → Sammi Ng confirms owners and
-  delivery; keep details blocked until its no-write fix is verified and do not
-  claim end-to-end acceptance while applicable prerequisites are missing.
+- **Auth and US-066 shell overlap** → Reuse the session authentication already
+  present in the codebase without waiting for US-066 archive. US-061 proceeds
+  first; Sammi Ng coordinates the later reconciliation of overlapping complete
+  shell requirement blocks so US-066 preserves dashboard behavior. Verify
+  authentication and authorization against the actual code for acceptance.
+- **Separate archive and unsafe details page** → Archive is outside the interim
+  scope. Keep details blocked until its separately owned no-write fix is
+  verified; acceptance of the interim dashboard must verify that the block
+  works and does not depend on delivery of that fix.
 - **Changing source reads during composition** → never claim a cross-source
   atomic snapshot; reject inconsistent combinations and refresh. Validate
   completion/list consistency when the deferred integration is undertaken.

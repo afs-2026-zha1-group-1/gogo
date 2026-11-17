@@ -1,8 +1,8 @@
 # US-061 implementation plan
 
 > Apply-time workers: use the project's OpenSpec apply workflow and red-green
-> TDD; reconcile the ATDD and applicable G1 conditions in task 1.1 before
-> feature implementation.
+> TDD. G1 passed for the interim scope; later follow-ups and acceptance checks
+> remain open.
 
 **Goal:** Deliver an authenticated, read-only member-trip dashboard with
 completion-dependent progress unavailable.
@@ -26,16 +26,16 @@ completion-dependent progress unavailable.
 
 ## 1. Prerequisites and acceptance harness
 
-- [ ] 1.1 **Owner: Sammi Ng.** Reconcile the ATDD design and alignment evidence
-  with the interim member-trip scope, and revisit the existing Conditional G1
-  decision with the applicable human approvers before feature implementation.
-  Record that US-058 filtering and completion-dependent progress require a
-  later integration with verified read, consistency and fixture contracts;
-  verify no date, split or missing-value inference is used.
-- [ ] 1.2 **Owner: Sammi Ng.** Record auth, archive and separate trip-details
-  fix owners, contracts and delivery/acceptance sequencing; record US-066 shell
-  ordering and tracker reconciliation. Verify applicable real dependencies
-  before end-to-end acceptance and retain the G1 conditions until revisited.
+- [ ] 1.1 **Owner: Sammi Ng.** Verify that implementation and acceptance checks
+  retain the approved interim scope. US-058 filtering and completion-dependent
+  progress require a later integration with verified read, consistency and
+  fixture contracts; verify no date, split or missing-value inference is used.
+- [ ] 1.2 **Owner: Sammi Ng.** Coordinate US-061 before the later US-066 shell
+  reconciliation, preserving dashboard behavior. Reuse the session
+  authentication already present without waiting for US-066 archive and
+  verify the real authentication and owning reads before acceptance. Keep
+  archive outside the interim scope and details blocked until its separate
+  no-write fix is verified; record tracker reconciliation separately.
 - [ ] 1.3 **Owner: implementer.** Add a reproducible browser acceptance
   harness following the project Playwright rule, using an isolated backend
   database and authenticated synthetic fixtures; document its exact setup and
@@ -94,8 +94,9 @@ completion-dependent progress unavailable.
   `node --test tests/lockfile.test.mjs` and `npm run build`, plus the recorded
   browser suite locally and in CI. Record actual outcomes and applicable
   real-dependency evidence; do not claim US-058 integration or mark acceptance
-  passed if required prerequisites are missing. Resolve US-066 overlapping
-  shell blocks before archive without restoring scaffold identity.
+  passed if required prerequisites are missing. Coordinate the later US-066
+  shell reconciliation without restoring scaffold identity or losing dashboard
+  behavior.
 
 ## 5. Final pre-archive reconciliation
 
@@ -108,7 +109,7 @@ completion-dependent progress unavailable.
 
 ## Workflow follow-up
 
-- Revisit G1 conditions and obtain the applicable human decisions; run the
-  verification and archive workflows only after their prerequisites are met.
+- Run the verification and archive workflows only after their prerequisites
+  are met.
   Plan the US-058 filtering and completion-dependent progress follow-up
   separately; this interim change does not implement or prove it.
