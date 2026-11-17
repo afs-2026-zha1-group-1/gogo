@@ -17,6 +17,12 @@ UI design please refer to [shadcn/ui](https://ui.shadcn.com/docs): components li
 `frontend/src/components/ui/` and tokens in `frontend/src/index.css` (`@theme`). Do not add a
 second UI library.
 
+## Git workflow
+
+- Land every change through a pull request; direct pushes to `main` are blocked by `.githooks/pre-push`.
+- Do not merge `main` into a change branch just to stay current. Merge the pull request instead; GitHub resolves the base at merge time.
+- Each clone runs `bash scripts/setup-dev.sh` once to enable the hooks.
+
 ## Rules pointers
 
 - Authority: `docs/knowledge/rules/` (MECE categories)
