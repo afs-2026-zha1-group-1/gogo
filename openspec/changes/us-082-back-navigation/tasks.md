@@ -75,18 +75,20 @@ Green; browser walk on `http://localhost:5174` recorded in
       `e2e-us-082.md` row; set only observed rows to Pass and list the rest as
       residual.
 - [x] 8.2 Record AC2/AC3 as `Blocked` on US-071 (not merged); never Pass.
-- [ ] 8.3 Re-run the delta scenario walk after any rebase; verify no row
-      regresses to FAIL.
+- [x] 8.3 Re-run the delta scenario walk after any rebase; the main merge
+      brought docs/specs only, no code delta, and no row regressed to FAIL.
 
 ## 9. P4 workflow
 
-- [ ] 9.1 Create the change branch from `group1/main`, push it, and open a pull
-      request into `main`; never push directly to `main` and do not merge
-      `group1/main` into the branch just to stay current.
-- [ ] 9.2 After CI is green, run local-verify and record the G2 decision with a
-      named VL; then record G3 with a named SA per the project gate process.
-- [ ] 9.3 Verify the PR contains only this change plus its evidence; unrelated
-      working-tree modifications are excluded.
+- [x] 9.1 Create the change branch from `group1/main`, push it, and open a pull
+      request into `main`; branch `US-082-back-navigation`, PR #107.
+- [x] 9.2 After CI is green, run local-verify and record the G2 decision with a
+      named VL; G2 Pass (VL Johnson), reports at
+      `docs/ai4se-plugins/20261117-114710-local-verify-report.md` and
+      `20261117-114711-pipeline-report.md`.
+- [x] 9.3 Verify the PR contains only this change plus its evidence; `gh pr diff
+      107 --name-only` lists only US-082 files; unrelated working-tree
+      modifications are excluded.
 
 ## 10. Reconcile architecture baseline (pre-archive)
 
