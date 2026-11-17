@@ -11,7 +11,7 @@
 | id | topic | choice | rationale | status |
 |----|-------|--------|-----------|--------|
 | C1 | phase | ci | user asked to continue the SDD flow; CI is the next required phase before G2 | done |
-| C2 | target | PR #101 / commit e8c4bd8 / runs 43998974449 + 43999011797 | PR created from `US-068-070-account-register` | done |
+| C2 | target | PR #101 / commit 8de0883 / runs 43999371283 + 43999380196 | PR created from `US-068-070-account-register` | done |
 
 ## Probe
 
@@ -25,7 +25,7 @@
 
 - data_source: API (gh)
 - phases_covered: ci
-- upstream_urls: run 43998974449, run 43999011797 (both on e8c4bd8)
+- upstream_urls: run 43999371283, run 43999380196 (both on 8de0883)
 
 ## Report
 

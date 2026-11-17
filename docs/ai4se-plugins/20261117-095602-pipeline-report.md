@@ -6,14 +6,14 @@
 **Data source:** gh API (GitHub Actions, read-only)
 **Change id:** us-068-070-account-register
 **Target:** PR #101 `US-068-070-account-register` → `main`
-**Pipeline URL:** https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43998974449
-**Commit:** e8c4bd801338dc1496a210158d69c3e3eef31cbc
+**Pipeline URL:** https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43999371283
+**Commit:** 8de088336d72d97c848a64a5dc0d1ba4c017a8fb
 
 ## Summary
 
 | Phase | Status | Conclusion | Upstream URL | Notes |
 |-------|--------|------------|--------------|-------|
-| ci | Pass | Both workflow runs green | run 43998974449 / run 43999011797 | push + pull_request events for the same commit |
+| ci | Pass | Both workflow runs green | run 43999371283 / run 43999380196 | push + pull_request events for the same commit |
 | cd | n/a | — | — | not in scope before merge |
 | **Overall** | Pass | Both jobs green on the PR head | — | E1 全绿 |
 
@@ -32,12 +32,12 @@
 
 | Phase | Job/Stage | Status | Duration | URL | Failure reason |
 |-------|-----------|--------|----------|-----|----------------|
-| ci | Backend tests (run 43998974449) | success | 41s | https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43998974449/job/133757986715 | — |
-| ci | Frontend build (run 43998974449) | success | 24s | https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43998974449/job/133757986938 | — |
-| ci | Backend tests (run 43999011797) | success | 32s | https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43999011797/job/133758111309 | — |
-| ci | Frontend build (run 43999011797) | success | 17s | https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43999011797/job/133758110870 | — |
+| ci | Backend tests (run 43999371283) | success | 53s | https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43999371283/job/133759307606 | — |
+| ci | Frontend build (run 43999371283) | success | 22s | https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43999371283/job/133759306974 | — |
+| ci | Backend tests (run 43999380196) | success | 38s | https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43999380196/job/133759334367 | — |
+| ci | Frontend build (run 43999380196) | success | 21s | https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/43999380196/job/133759334875 | — |
 
-Both runs target the same head SHA `e8c4bd8`; the PR is `MERGEABLE` at the time of this report.
+Both runs target the same head SHA `8de0883`; the PR is `MERGEABLE` at the time of this report.
 
 ## 失败详情 (when any failed)
 
@@ -63,7 +63,7 @@ None.
 ## Artifacts (if any)
 
 - PR #101: https://github.com/afs-2026-zha1-group-1/gogo/pull/101
-- CI runs: 43998974449, 43999011797
+- CI runs: 43999371283, 43999380196 (latest head; previous docs-only commit e8c4bd8 also green)
 - Local verify: `docs/ai4se-plugins/20261117-091109-local-verify-report.md`
 
 ## Human confirmation
