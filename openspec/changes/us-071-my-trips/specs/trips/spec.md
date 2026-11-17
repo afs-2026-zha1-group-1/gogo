@@ -24,6 +24,7 @@ An authenticated caller SHALL read the trips they belong to as one list. The res
 - **WHEN** Alice reads the list containing one trip she created and one she joined
 - **THEN** `organizer` is true for the created trip
 - **AND** `organizer` is false for the joined trip
+- **AND** the flag states the caller's own relation only and grants no permission: the member roster keeps reporting each member's own `organizer` flag
 
 #### Scenario: An account without trips reads an empty list
 
@@ -36,6 +37,13 @@ An authenticated caller SHALL read the trips they belong to as one list. The res
 
 - **WHEN** one of the caller's trips has `mainPlanConfirmed` true
 - **THEN** the trip still appears in the list with `mainPlanConfirmed` true
+- **AND** the field is a read-only projection: it filters nothing out and changes no other row value
+
+#### Scenario: A finished end date changes no behaviour
+
+- **WHEN** one of the caller's trips has an `endDate` before today
+- **THEN** it is still returned with the same fields and no server-side finished status
+- **AND** invitation joining, main-plan generation and confirmation, and splits behave exactly as they do for a trip that has not ended
 
 #### Scenario: An unauthenticated request is rejected
 

@@ -1369,7 +1369,7 @@ the merged head). No critical blocker remains for the US-013 slice.
 | 后端 trip 包 | `backend/src/main/java/com/gogo/trip/TripController.java`、`TripRepository.java` | create / read / members / confirm 四个入口；无按用户列行程的查询 |
 | 后端认证 | `backend/src/main/java/com/gogo/auth/SecurityConfig.java` | `/api/**` 已 `authenticated()`；新 GET 自动受保护 |
 | 前端路由与 tab | `frontend/src/App.tsx`、`TabBar.tsx`、`types.ts` | `#/trips` → `trips-empty`；`tripsHref = lastTripId ? #/trips/{id}/main-plan : #/trips`（同时驱动 TabBar、分队未选行程、成员页、创建页返回） |
-| 前端页面 | `frontend/src/pages/TripsEmpty.tsx`、`TripDetails.tsx` | TripsEmpty = 「按编号打开行程」占位；TripDetails 只有「设置我的兴趣」入口，**无主线方案链接** |
+| 前端页面 | `frontend/src/pages/TripsEmpty.tsx`、`TripDetails.tsx` | TripsEmpty = 「按编号打开行程」占位；参考时 TripDetails 尚无主线方案链接，**该入口已由 US-072（2026-11-16 21:22，`22a2d3c`）交付并归档**，本变更不再重复实现 |
 | 知识库 | `docs/knowledge/architecture/tech-stack-plan.md`、`docs/knowledge/rules/` | 技术栈与规则载体；本次不新增规则 |
 | UI 参考 | issue #45 附件 `us-071-my-trips`；`ui-design-reference/gogo-mvp-prototype.html` | 无本地截图文件；原型为内存态，仅界面参考 |
 | 验收夹具 | `requirement-workspace/acceptance-test-fixtures.md` | 尚无 §US-071（P3 ATDD 设计时补） |
@@ -1378,9 +1378,9 @@ the merged head). No critical blocker remains for the US-013 slice.
 
 ### 3.1 `trips` 能力（后端 + 前端详情入口）
 
-**As-is**：4 个端点；无列表；详情页无主线方案入口。
+**As-is**：4 个端点；无列表；详情页主线入口已由 US-072 交付（Living requirement）。
 
-**Proposed delta**：ADDED「Trip list read」——`GET /api/trips` 返回 `{trips:[{id,name,destination,startDate,endDate,organizer,mainPlanConfirmed}]}`，只含当前会话账号为成员的行程，按 `start_date` 升序、同日 `id` 升序；不改既有四个端点。详情页新增「主线方案」卡片（纯前端链接）。
+**Proposed delta**：ADDED「Trip list read」——`GET /api/trips` 返回 `{trips:[{id,name,destination,startDate,endDate,organizer,mainPlanConfirmed}]}`，只含当前会话账号为成员的行程，按 `start_date` 升序、同日 `id` 升序；不改既有四个端点。详情页主线入口：**不新增**（US-072 已交付），仅回归验证 tab 收敛后仍可达。
 
 ### 3.2 `app-shell` 能力
 
@@ -1392,7 +1392,7 @@ the merged head). No critical blocker remains for the US-013 slice.
 
 **As-is**：`tripsHref` 依赖 `lastTripId` 跳 main-plan；`#/trips` 渲染 `TripsEmpty`。
 
-**Proposed delta**：`tripsHref` 恒为 `#/trips`；`#/trips` 渲染新列表页（替换 TripsEmpty 的编号输入）；TabBar 的行程 tab 随之指向列表；分队页「去行程」、成员页与创建页返回均指向列表（语义一致）。`lastTripId` 仍用于分队 tab 的进入逻辑，不改。
+**Proposed delta**：行程 tab 目标恒为 `#/trips`；`#/trips` 渲染新列表页（替换 TripsEmpty 的编号输入）；`tripsHref` 不再单一复用：TabBar 的行程 tab、分队无行程时的「去行程」与创建页返回指向列表，**成员名册「返回行程」保持指向 `#/trips/{id}`**（行程内页面不丢行程上下文，已写入 app-shell delta）。`lastTripId` 仍用于分队 tab 的进入逻辑，不改。
 
 ### 3.4 认证 / 数据 / 迁移
 
@@ -1405,7 +1405,7 @@ the merged head). No critical blocker remains for the US-013 slice.
 | 资产 | 结论 |
 |---|---|
 | `invitations`（预览/接受）与 Join 页 | 无改动；接受后回 `#/`，再进列表自然可见新行程（组合验证） |
-| `main-itinerary`（`#/trips/{id}/main-plan`） | 端点与页面不改；仅入口从 tab 迁移至详情页卡片 |
+| `main-itinerary`（`#/trips/{id}/main-plan`） | 端点与页面不改；入口由 US-072 已交付的详情页卡片提供，本变更不再迁移入口 |
 | `splits`（分队屏） | 无改动；「去行程」按钮指向由 `tripsHref` 变化自动指向列表 |
 | `auth` 能力 | 无改动（logout 属 US-069 / issue #41） |
 | `greeting` | 无影响 |
@@ -1414,7 +1414,7 @@ the merged head). No critical blocker remains for the US-013 slice.
 ## 4. Blast radius
 
 - 后端：`trip` 包新增一个只读查询与 DTO；无新包、无迁移、无新依赖。
-- 前端：`App.tsx`（路由键与 `tripsHref`）、`TabBar.tsx`（无代码改动，仅指向变化）、新增列表页组件替换 `TripsEmpty`、`TripDetails.tsx` 增卡片、`types.ts` 增类型。
+- 前端：`App.tsx`（路由键与 tab 目标/页内返回链接区分）、`TabBar.tsx`（无代码改动，仅指向变化）、新增列表页组件替换 `TripsEmpty`、`Members.tsx`（返回链接改为 `#/trips/{id}`）、`types.ts` 增类型；`TripDetails.tsx` 不改（US-072 已交付）。
 - 运行时：无新服务/端口；仍是 Vite + Spring Boot 单实例 + SQLite。
 - 用户可见面：行程 tab 的首屏语义改变（从「空态/上次行程」变为列表），是本次最大的行为变更。
 
@@ -1437,18 +1437,20 @@ the merged head). No critical blocker remains for the US-013 slice.
 | id | 风险 | 严重度 | 状态 |
 |---|---|---|---|
 | R1 | `app-shell` 明文禁令与 AC1 冲突 | spec 冲突 | 已由 MODIFIED 收敛（本变更核心）；归档时必须合并 |
-| R2 | tab 改列表后 main-plan 失去入口 | 回归 | 已裁决：详情页卡片（S13） |
+| R2 | tab 改列表后 main-plan 失去入口 | 回归 | 已由 US-072 交付的详情页入口覆盖（2026-11-16 归档）；本变更仅回归验证，不新增入口 |
 | R3 | AC7 UI 层依赖 logout | 验证缺口 | US-069（issue #41）覆盖；本变更 API 层验收 + UI 补测登记 |
-| R4 | `tripsHref` 一处改动影响四处导航 | 回归面 | E2E 覆盖分队「去行程」、成员页、创建返回、TabBar |
+| R4 | `tripsHref` 一处改动影响四处导航 | 回归面 | 已拆分：tab/分队/创建返回 → `#/trips`；成员名册返回 → `#/trips/{id}`；E2E 四处均需覆盖 |
 | R5 | 「已结束」按客户端时区判定 | 显示差异 | 接受；仅显示层，无数据影响 |
 | R6 | 无分页的极端账号 | 性能 | 非阻塞；已定 OQ-5 不做，超预算再立项 |
 | R7 | `TripsEmpty` 被删除后是否有其他引用 | 代码完整性 | 实施前 grep 确认；由列表页取代 |
+| R8 | 本变更使 REQ-005（US-064）TR2/T3/T4/T5 四条已 Pass 的验收口径失效 | 溯源性 | 2026-11-17 IO 复核已显式 supersede（proposal `Supersedes` 行 + `g1-decision.md` C3）；归档时以 Living Spec 为准，旧记录仅作历史证据 |
+| R9 | 排序按 `start_date` 升序会把已结束行程排在首屏 | 可用性 | 按用户裁决接受；已结束仅展示语义（不改变邀请/主线/分队写能力），若后续需「未结束优先」另立变更 |
 
 无 critical blocker 使需求失效，可进入 `/sdd:proposal-split`。
 
 ## 8. Suggested split boundaries
 
-单 change（建议 `us-071-my-trips`）：`trips` ADDED 列表读 + `app-shell` MODIFIED 行程 tab 放置 + 前端列表页 + 详情页主线入口。工作量：后端一个 repository 查询 + 一个 controller 方法 + 两个 DTO（包封套与行）；前端一个列表页 + 路由/`tripsHref` 调整 + 详情页卡片 + 类型；零迁移。建议 P3 拆两组：① 后端端点与测试；② 前端列表/路由/详情卡与 E2E——两组在同一 change 内顺序实现，不跨 PR 拆分（列表页依赖端点，端点通过列表页验收）。
+单 change（建议 `us-071-my-trips`）：`trips` ADDED 列表读 + `app-shell` MODIFIED 行程 tab 放置 + 前端列表页（详情页主线入口由 US-072 已交付，不重复实现）。工作量：后端一个 repository 查询 + 一个 controller 方法 + 两个 DTO（包封套与行）；前端一个列表页 + 路由/tab 目标与页内返回链接调整 + 类型；零迁移。建议 P3 拆两组：① 后端端点与测试；② 前端列表/路由/返回链接与 E2E——两组在同一 change 内顺序实现，不跨 PR 拆分（列表页依赖端点，端点通过列表页验收）。
 
 
 ---
