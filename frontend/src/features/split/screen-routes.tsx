@@ -37,18 +37,26 @@ export function ScreenRoutes() {
   const routes = detail?.routes ?? []
   const hasPair = routes.length === 2
   const boundariesSaved = detail?.windowMinutes != null
+  // Generation and confirmation both require a complete partition (design DD8/DD9/DD10); disable the
+  // CTAs instead of letting the user hit a 409 SPLIT_DRAFT_INCOMPLETE.
+  const groupsComplete =
+    (detail?.groups.A?.length ?? 0) > 0 && (detail?.groups.B?.length ?? 0) > 0
 
   const action = tooFewMembers ? null : (
     <>
       <Button
         variant="outline"
         className="flex-1"
-        disabled={!boundariesSaved || generate.isPending}
+        disabled={!boundariesSaved || !groupsComplete || generate.isPending}
         onClick={() => detail && generate.mutate({ draftVersion: detail.draftVersion })}
       >
         {generate.isPending ? "生成中…" : hasPair ? "重新生成" : "生成两条路线"} <IconSparkle />
       </Button>
-      <Button className="flex-1" disabled={!hasPair} onClick={() => navigate(`/trips/${tripId}/split/timing`)}>
+      <Button
+        className="flex-1"
+        disabled={!hasPair || !groupsComplete}
+        onClick={() => navigate(`/trips/${tripId}/split/timing`)}
+      >
         下一步 <IconArrowRight />
       </Button>
     </>
@@ -182,7 +190,9 @@ function GroupCard({
   const nameOf = (id: string) =>
     members?.find((member) => String(member.userId) === id)?.displayName ?? shortId(id)
   const initialOf = (id: string) => nameOf(id).slice(0, 1).toUpperCase()
-  const hasEmptyGroup = Object.values(groups).some((ids) => ids.length === 0)
+  const emptyGroups = Object.entries(groups)
+    .filter(([, ids]) => ids.length === 0)
+    .map(([label]) => `${label} 组`)
 
   return (
     <div>
@@ -250,8 +260,10 @@ function GroupCard({
           点击成员头像可把他移到另一组；所有行程成员都可以调整分组。
         </p>
       ) : null}
-      {hasEmptyGroup ? (
-        <p className="mt-1.5 text-[11px] leading-relaxed text-ink-3">两组都有成员后才能生成路线与确认。</p>
+      {emptyGroups.length > 0 ? (
+        <p className="mt-1.5 text-[11px] leading-relaxed text-ink-3">
+          {emptyGroups.join("、")}暂无成员：两组都有成员后才能生成路线与确认，点上方成员头像可换组。
+        </p>
       ) : null}
       {notice ? <p className="mt-1.5 text-[11px] font-semibold text-ok">{notice}</p> : null}
       {hasRoutes ? (
