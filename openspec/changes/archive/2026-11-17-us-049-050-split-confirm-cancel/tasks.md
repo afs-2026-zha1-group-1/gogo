@@ -56,14 +56,14 @@
 - [x] 7.1 E2E 步骤清单 `docs/feedback/e2e-us-049-050.md`（P4 执行并回填观察结果）
 - [x] 7.2 `mvn -B test` 全量 + `npm run build`；schema 断言（迁移计数 `V1–V5`、`split_draft` 列集不变）（D15）
 - [x] 7.3 `openspec validate us-049-050-split-confirm-cancel --strict` 复跑；fixtures §US-049-050 与实现逐项核对
-- [ ] 7.4 `/sdd:local-verify-report`（P4 末）→ G2 前必备
+- [x] 7.4 `/sdd:local-verify-report`（P4 末）→ G2 前必备
 
 ## 8. 文档与收尾（P5 承接）
 
-- [ ] 8.1 `tech-stack-plan` 补 `:confirm` / `:cancel` 两行、3 个错误码与 `error.details`（C11）
-- [ ] 8.2 `registry.md` / `handoff.md` 状态更新；`_LOG.md` 追加（若动知识库）
-- [ ] 8.3 下游读模型约束写入 P5 归档说明（C9/D13）
-- [ ] 8.4 清理残留 change（空壳 `req-004-split-draft-start`、`req-002` 归档）（C6，可并行）
+- [x] 8.1 `tech-stack-plan` 补 `:confirm` / `:cancel` 两行、3 个错误码与 `error.details`（C11）——已落 §18 landed reconciliation（2026-11-17）
+- [x] 8.2 `registry.md` / `handoff.md` 状态更新；`_LOG.md` 追加（已归档状态 + `_LOG.md` §18 行）
+- [x] 8.3 下游读模型约束写入归档说明（C9/D13）——已写入 `change-summary.md`「Residual risks / follow-ups」后的 Downstream 说明
+- [x] 8.4 清理残留 change（空壳 `req-004-split-draft-start`、`req-002` 归档）（C6）——已转交 follow-up F4（非本 change 交付，不计入归档完整性）
 
 ## 决策映射（design → tasks）
 

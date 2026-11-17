@@ -101,7 +101,7 @@ export default function MainPlanInputs({ tripId }: MainPlanInputsProps) {
 
   const appbar = (
     <header className="appbar">
-      <a className="iconbtn" href={`#/trips/${tripId}`} aria-label="Back"><Icon name="left" /></a>
+      <a className="iconbtn" href={`#/trips/${tripId}/main-plan`} aria-label="Back"><Icon name="left" /></a>
       <div className="grow">
         <div className="title">生成主线方案</div>
         <div className="sub">US-031 · 仅组织者可生成 · 基于就绪成员</div>
@@ -181,7 +181,7 @@ export default function MainPlanInputs({ tripId }: MainPlanInputsProps) {
           </div>
         </section>
 
-        <div className="sec-title"><Icon name="info" className="sm" /> 生成输入</div>
+        <div className="sec-title"><Icon name="sparkle" className="sm" /> 生成输入</div>
         <section className="card pad">
           <div className="label" style={{ marginBottom: 8 }}>共同兴趣</div>
           {inputs.commonInterests.length > 0 ? (
@@ -217,7 +217,7 @@ export default function MainPlanInputs({ tripId }: MainPlanInputsProps) {
           </div>
         </section>
 
-        <div className="sec-title"><Icon name="flag" className="sm" /> 生成规则（可解释）</div>
+        <div className="sec-title"><Icon name="route" className="sm" /> 生成规则（可解释）</div>
         <section className="card pad">
           <div className="valid">
             {inputs.rules.map((rule, index) => (
@@ -242,7 +242,7 @@ export default function MainPlanInputs({ tripId }: MainPlanInputsProps) {
             disabled={generating}
             onClick={generate}
           >
-            <Icon name="nav" className="sm" />
+            <Icon name="sparkle" className="sm" />
             {generating ? '正在生成…' : '一键生成主线方案'}
           </button>
         ) : (

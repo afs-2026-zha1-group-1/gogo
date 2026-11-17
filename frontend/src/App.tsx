@@ -5,15 +5,21 @@ import Home from './pages/Home'
 import CreateTrip from './pages/CreateTrip'
 import TripDetails from './pages/TripDetails'
 import TripsEmpty from './pages/TripsEmpty'
-import Placeholder from './pages/Placeholder'
 import Join from './pages/Join'
 import MainPlan from './pages/MainPlan'
 import MainPlanInputs from './pages/MainPlanInputs'
+import Scanner from './pages/Scanner'
+import PreferencesPage from './pages/PreferencesPage'
+import Members from './pages/Members'
 import LoginPage from './features/auth/LoginPage'
 import { useAuth } from './features/auth/AuthProvider'
 
 function parseRoute(hash: string): Route {
   const path = hash.replace(/^#/, '') || '/'
+  // Scanner owns its top-level hash and must be matched before the
+  // generic `/trips/<id>` regex (design D1); `from` is filled in by the
+  // App state tracker below, so parseRoute only signals the shape here.
+  if (path === '/scan') return { page: 'scan', from: null }
   const joinMatch = path.match(/^\/join\/([^/]+)$/)
   if (joinMatch) return { page: 'join', token: decodeURIComponent(joinMatch[1]) }
   if (path === '/login') return { page: 'login' }
@@ -21,6 +27,8 @@ function parseRoute(hash: string): Route {
   if (mainPlanInputsMatch) return { page: 'main-plan-inputs', tripId: Number(mainPlanInputsMatch[1]) }
   const mainPlanMatch = path.match(/^\/trips\/(\d+)\/main-plan$/)
   if (mainPlanMatch) return { page: 'main-plan', tripId: Number(mainPlanMatch[1]) }
+  const preferencesMatch = path.match(/^\/trips\/(\d+)\/preferences$/)
+  if (preferencesMatch) return { page: 'preferences', tripId: Number(preferencesMatch[1]) }
   const tripMatch = path.match(/^\/trips\/(\d+)$/)
   if (tripMatch) return { page: 'details', tripId: Number(tripMatch[1]) }
   if (path === '/trips') return { page: 'trips-empty' }
@@ -51,18 +59,38 @@ export default function App() {
   const { status, account } = useAuth()
   const [route, setRoute] = useState<Route>(() => parseRoute(window.location.hash))
   const [lastTripId, setLastTripId] = useState<number | null>(null)
+  // Tracks the last non-scanner hash so closing the scanner can restore
+  // the originating route (spec S-5 / design D2). Falls back to `#/` via
+  // the Scanner close handler when this is null (user typed `#/scan`).
+  const [lastNonScanHash, setLastNonScanHash] = useState<string | null>(() => {
+    const initial = window.location.hash
+    return initial && initial.replace(/^#/, '') !== '/scan' ? initial : null
+  })
 
   useEffect(() => {
-    const onHash = () => setRoute(parseRoute(window.location.hash))
+    const onHash = () => {
+      const next = window.location.hash
+      const parsed = parseRoute(next)
+      if (parsed.page === 'scan') {
+        setRoute({ ...parsed, from: lastNonScanHash })
+      } else {
+        setLastNonScanHash(next || '#/')
+        setRoute(parsed)
+      }
+    }
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
-  }, [])
+  }, [lastNonScanHash])
 
   useEffect(() => {
-    if (route.page === 'details') setLastTripId(route.tripId)
+    if (route.page === 'details' || route.page === 'main-plan' || route.page === 'main-plan-inputs') {
+      setLastTripId(route.tripId)
+    }
   }, [route])
 
-  const tripsHref = lastTripId != null ? `#/trips/${lastTripId}` : '#/trips'
+  // The bottom "行程" tab is the entry point to the main plan (design: tab ->
+  // US-037 review). Fall back to the empty list only when no trip is open.
+  const tripsHref = lastTripId != null ? `#/trips/${lastTripId}/main-plan` : '#/trips'
 
   if (route.page === 'login') return <LoginPage />
 
@@ -86,20 +114,24 @@ export default function App() {
     return <LoginPage />
   }
 
-  if (route.page === 'main-plan') {
+  // Scanner is a full-screen flow outside the shell + TabBar (design D1, C2).
+  // Task 4.1 fills the UI surface and task 4.2 registers the #/scan hash
+  // route in parseRoute. Scaffolding this branch here keeps InAppPage and
+  // TAB_FOR_PAGE in sync so the union narrowing at line 117 stays sound.
+  if (route.page === 'scan') {
     return (
       <div className="app">
         <AccountBar name={account.name} />
-        <MainPlan tripId={route.tripId} />
+        <Scanner from={route.from} />
       </div>
     )
   }
 
-  if (route.page === 'main-plan-inputs') {
+  if (route.page === 'preferences') {
     return (
       <div className="app">
         <AccountBar name={account.name} />
-        <MainPlanInputs tripId={route.tripId} />
+        <PreferencesPage tripId={route.tripId} />
       </div>
     )
   }
@@ -111,6 +143,10 @@ export default function App() {
         {route.page === 'home' && <Home />}
         {route.page === 'create' && <CreateTrip backHref={tripsHref} />}
         {route.page === 'details' && <TripDetails tripId={route.tripId} />}
+        {/* US-031/037: the main plan lives inside the shell so the bottom
+            navigation stays visible when users arrive from the "行程" tab. */}
+        {route.page === 'main-plan' && <MainPlan tripId={route.tripId} />}
+        {route.page === 'main-plan-inputs' && <MainPlanInputs tripId={route.tripId} />}
         {route.page === 'trips-empty' && <TripsEmpty />}
         {route.page === 'split' && (
           <div className="screen">
@@ -146,10 +182,17 @@ export default function App() {
           </div>
         )}
         {route.page === 'members' && (
-          <Placeholder title="成员" tripsHref={tripsHref} />
+          <Members tripId={lastTripId} tripsHref={tripsHref} />
         )}
       </div>
-      <TabBar active={TAB_FOR_PAGE[route.page]} tripsHref={tripsHref} />
+      <TabBar
+        active={
+          route.page === 'main-plan' || route.page === 'main-plan-inputs'
+            ? 'trips'
+            : TAB_FOR_PAGE[route.page]
+        }
+        tripsHref={tripsHref}
+      />
     </div>
   )
 }

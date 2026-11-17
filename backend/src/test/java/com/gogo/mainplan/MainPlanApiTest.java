@@ -588,12 +588,13 @@ class MainPlanApiTest {
         org.junit.jupiter.api.Assertions.assertFalse(tripConfirmed());
     }
 
-    // Reverse (ATDD §5): no preference write route exists in this change.
+    // Reverse (ATDD §5): this change adds no preference write route. REQ-019 owns
+    // PUT /api/trips/{id}/preferences, so only the other verbs and the member-scoped
+    // paths must stay absent.
     @Test
     void preferenceWritePathsAreAbsent() throws Exception {
         for (MockHttpServletRequestBuilder request : List.of(
                 post("/api/trips/" + tripId + "/preferences"),
-                put("/api/trips/" + tripId + "/preferences"),
                 patch("/api/trips/" + tripId + "/preferences"),
                 post("/api/trips/" + tripId + "/members/2/preferences"),
                 put("/api/trips/" + tripId + "/members/2/preferences"),

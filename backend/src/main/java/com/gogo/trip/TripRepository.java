@@ -73,6 +73,19 @@ public class TripRepository {
         return count != null && count > 0;
     }
 
+    public TripMemberListResponse findMembers(long tripId) {
+        List<TripMember> members = jdbc.query(
+                "SELECT u.id, u.display_name, CASE WHEN u.id = t.organizer_id THEN 1 ELSE 0 END AS organizer "
+                        + "FROM trip_member tm "
+                        + "JOIN app_user u ON u.id = tm.user_id "
+                        + "JOIN trip t ON t.id = tm.trip_id "
+                        + "WHERE tm.trip_id = ? ORDER BY u.id",
+                (rs, rowNum) -> new TripMember(rs.getLong("id"), rs.getString("display_name"),
+                        rs.getInt("organizer") != 0),
+                tripId);
+        return new TripMemberListResponse(tripId, members);
+    }
+
     /** Confirms the trip's main plan so the split flow (REQ-004 precondition) can start. */
     public int confirmMainPlan(long tripId) {
         return jdbc.update("UPDATE trip SET main_plan_confirmed = 1 WHERE id = ?", tripId);

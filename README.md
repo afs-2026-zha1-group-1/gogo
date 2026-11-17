@@ -33,9 +33,9 @@ Bash (for example Git Bash on Windows); their use depends on the selected skill.
 
 CI runs on GitHub Actions (`.github/workflows/ci.yml`) for pushes and pull
 requests to `main`: a backend job runs `mvn -B test` on Java 21, and a frontend
-job runs `npm ci && npm run build` on Node 24. The four original harness scripts
-are intentional placeholders and exit with a message until the project supplies
-an implementation, so CI does not invoke them.
+job runs `npm ci && npm run typecheck && npm run build` on Node 24. The four
+original harness scripts are intentional placeholders and exit with a message
+until the project supplies an implementation, so CI does not invoke them.
 
 ## Run the application
 
@@ -59,8 +59,24 @@ with the invitation link, a copy action and a QR encoding the same absolute URL
 (`/api/trips/{id}/invitation`). Guests open `#/join/<token>` to preview the five
 public fields and accept once (`/api/invitations/{token}` and
 `/api/invitations/{token}/accept`); joining closes once the trip's main plan is
-confirmed, and unknown links render a generic unusable page. `main_plan_confirmed`
-has no product mutation path until US-037, so tests set it directly in SQLite.
+confirmed, and unknown links render a generic unusable page. The only product
+path that sets `main_plan_confirmed` is the US-037
+`/api/trips/{id}/main-plan/confirm` endpoint, so the invitation tests still write
+the flag directly in SQLite.
+
+REQ-019 adds member interests (US-019): `GET` and `PUT
+/api/trips/{tripId}/preferences`. The `PUT` body is `{"interests":[<label>...]}`
+over exactly ten Chinese labels (`水上运动`, `潜水`, `摄影`, `美食`, `咖啡`,
+`历史人文`, `手作`, `自然风景`, `冒险`, `慢游`); matching is literal, duplicates
+collapse keeping the first occurrence, and the array replaces the stored set as a whole (`[]`
+clears it and keeps the row). One row per `(trip_id, user_id, kind)` stores
+`{"codes":[...]}`, so labels are presentation and codes are storage. The `GET`
+answers `{"members":[{"userId":n,"interests":[...]}]}` for every member of the
+trip, ordered by `userId`, with `[]` for anyone who has not saved yet. The page
+lives at `#/trips/<id>/preferences`, is linked from `#/trips/<id>`, follows
+`ui-design-reference/screenshots/screen-08-preferences.png`, and is the
+first TypeScript/Ant Design page: Save is explicit, a failed save rolls back to
+the acknowledged set, and a failed load offers Retry instead of an empty state.
 
 US-031-037 adds main itinerary planning. `GET /api/trips/{id}/main-plan/inputs`
 aggregates ready members, common interests, the deduplicated must-do union, hard
@@ -74,33 +90,48 @@ and hard budgets first (422 `VALIDATION_FAILED` with both error lists, 409
 `STALE_DRAFT`), then freezes the draft and closes joining. The frontend adds
 `#/trips/<id>/main-plan/inputs` (Screen 9) and `#/trips/<id>/main-plan`
 (Screen 10), each with loading, empty, failure and permission states. The plan
-provider is a fixture-backed fake (`FakeMainPlanProvider`); preference rows are
-a read-only stand-in until REQ-019 lands.
+provider is a fixture-backed fake (`FakeMainPlanProvider`); it reads the
+`member_preference` rows that REQ-019 writes.
 
 US-066 replaces the scaffold identity with verified login. `POST /api/auth/login`
 accepts an email and password, establishes a server-side session cookie and
 returns the account; `GET /api/auth/me` reports the current account and
 `GET /api/auth/csrf` bootstraps the CSRF token used by state-changing requests.
-Protected trip, invitation, main-plan and split endpoints derive the caller from
-the session; `X-User-Id` no longer authenticates anything. The frontend serves a
-full-screen `#/login` (and `/login` for the split router) and sends signed-out
-visitors there, except the public invitation preview, which resumes after login
-without joining automatically. Demo-only seeded accounts (shown on the login page in this demo build)
-share the password `gogo-demo-2026`: `alice@example.com`, `ben@example.com`,
-`chloe@example.com`, `daniel@example.com`, `eve@example.com`. There is no
-registration, password reset or logout yet (US-067/068/069 own those).
+Protected trip, invitation, main-plan, split and preference endpoints derive the
+caller from the session; `X-User-Id` no longer authenticates anything. The
+frontend serves a full-screen `#/login` (and `/login` for the split router) and
+sends signed-out visitors there, except the public invitation preview, which
+resumes after login without joining automatically. Demo-only seeded accounts
+(shown on the login page in this demo build) share the password `gogo-demo-2026`:
+`alice@example.com`, `ben@example.com`, `chloe@example.com`,
+`daniel@example.com`, `eve@example.com`. There is no registration, password
+reset or logout yet (US-067/068/069 own those).
 
 US-038–043 add the split flow under `/trips/:tripId/split`: members start one
 draft, select boundaries, generate paired routes and check the reunion window.
 The split API keeps its `{data,error}` envelope and `401 MEMBER_REQUIRED`
 contract, now with the caller taken from the session.
 
-The database is SQLite at `backend/data/gogo.db`. The Flyway migrations create the
-schema and seed data on first start (`V1` greeting, `V2` users/trips/members,
-`V3` invitations and the main-plan column, `V4` splits, `V5` main-plan
-drafts/stops plus readiness and preference seeds, `V6` account credentials); the
-application creates the `data/` directory itself, because the SQLite driver
-creates the file but not its parent. Delete `backend/data/` to rebuild it.
+US-013 adds the member roster. `GET /api/trips/{id}/members` returns each
+member once with `userId`, `displayName` and an `organizer` flag to an
+authenticated member (401 `USER_REQUIRED` when signed out, 403 `NOT_A_MEMBER`
+for an outsider, 404 `TRIP_NOT_FOUND`; denial bodies carry no member identity).
+The 成员 tab (`#/members`) renders the roster with an organizer badge and
+loading, empty, error, permission-denied and no-trip states; it deliberately
+omits readiness, preference summaries and generation actions.
+
+The database is SQLite at `backend/data/gogo.db`, opened with
+`journal_mode=WAL`, `busy_timeout=5000` and `foreign_keys=on`, and the pool is
+pinned to one connection because SQLite has a single writer. The Flyway
+migrations create the schema and seed data on first start (`V1` greeting, `V2`
+users/trips/members, `V3` invitations and the main-plan column, `V4` splits, `V5`
+main-plan drafts/stops plus readiness and preference seeds, `V6` account
+credentials, `V7` the `member_preference` table the preferences page writes with
+`IF NOT EXISTS`); the application creates the `data/` directory itself, because
+the SQLite driver creates the file but not its parent. `flyway-core` alone is on
+the classpath: `flyway-database-nc-sqlite` has no published artifact for the
+managed Flyway version, a gap recorded as TS-11 in the REQ-019 design. Delete
+`backend/data/` to rebuild it.
 
 Backend on port 8080:
 
@@ -116,6 +147,11 @@ cd frontend
 npm install
 npm run dev
 ```
+
+Typecheck the TypeScript sources with `cd frontend && npm run typecheck`
+(`tsc --noEmit`). `checkJs` is off, so the four un-migrated `.jsx` pages are not
+typechecked yet; the preferences page is TypeScript and is. The CI job runs the
+same command after `npm ci` and before the build.
 
 If Vite reports a missing native binding after updating the lockfile, run
 `npm install --include=optional` in `frontend/` and start it again. Native
@@ -141,10 +177,21 @@ curl -s -b /tmp/gogo-cookies -c /tmp/gogo-cookies \
   http://localhost:8080/api/trips
 ```
 
+Get or set the signed-in caller's interests with:
+
+```sh
+curl -s -b /tmp/gogo-cookies http://localhost:8080/api/trips/1/preferences
+curl -s -b /tmp/gogo-cookies \
+  -H "Content-Type: application/json" \
+  -H "X-XSRF-TOKEN: $(awk '$6=="XSRF-TOKEN" {print $7}' /tmp/gogo-cookies)" \
+  -X PUT -d '{"interests":["摄影","自然风景"]}' \
+  http://localhost:8080/api/trips/1/preferences
+```
+
 Run the backend tests with `cd backend && mvn test` (`AuthApiTest`,
 `SessionExpiryApiTest`, `GreetingApiTest`, `TripApiTest`, `InvitationApiTest`,
-`MainPlanApiTest`, the split API suites and the unit suites); they use the same
-SQLite engine and migrations as production.
+`PreferenceApiTest`, `MainPlanApiTest`, the split API suites and the unit
+suites); they use the same SQLite engine and migrations as production.
 
 Inspect the stored row without stopping the app (Python 3 ships `sqlite3`; no
 separate CLI is needed):
