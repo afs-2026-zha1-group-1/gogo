@@ -6,10 +6,11 @@ Provide verified account access from sign-up through sign-out: a signed-out
 traveler can register an account from the login page without email verification;
 a signed-in traveler can read their profile, update their display name and log
 out from My Account; every protected surface still derives the caller from the
-server-side session. Registration never discloses whether an email exists, never
-signs the traveler in automatically, and never creates a second account for the
-same email. Logout ends only the current session and leaves the account, name,
-memberships and shared trip data intact.
+server-side session. A duplicate email returns `409 EMAIL_TAKEN` and the
+registration page shows a duplicate-email dialog, per the user's 2026-11-17
+direction (replacing the earlier non-disclosure response). Logout ends only the
+current session and leaves the account, name, memberships and shared trip data
+intact.
 
 ## ADDED Requirements
 
