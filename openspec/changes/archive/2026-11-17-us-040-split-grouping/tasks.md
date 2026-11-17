@@ -64,14 +64,14 @@
 
 - [x] 9.1 `openspec validate us-040-split-grouping --strict` = valid（若需语义调整，回 `/sdd:delta-craft` 并重开 G1）
 - [x] 9.2 更新 `requirement-workspace/registry.md`（US-040 行：P4 实现完成与测试计数）与 `handoff.md`
-- [ ] 9.3 `docs/knowledge/architecture/tech-stack-plan.md` 增 §US-040（assignment 端点、分组完整性门禁、零迁移）+ `docs/knowledge/_LOG.md` 一行
+- [x] 9.3 `docs/knowledge/architecture/tech-stack-plan.md` 增 §US-040（assignment 端点、分组完整性门禁、零迁移）+ `docs/knowledge/_LOG.md` 一行（2026-11-17：§24 + A24 已对账）
 
 ## 10. 验证与门禁
 
 - [x] 10.1 `/sdd:local-verify-report`：Overall **Partial**（Build/Static/Code review/Evidence 均 Pass；E1 Missing 因未 push、E3 Pending），报告 `docs/ai4se-plugins/20261117-162107-local-verify-report.md`，白名单 6/6
 - [x] 10.2 PR CI 双 job 绿（run [44046339433](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/44046339433)：Backend tests pass 38s、Frontend build pass 20s；E1 机器读取）；报告 `docs/ai4se-plugins/20261117-162544-pipeline-report.md` + `ci-report.md`
 - [x] 10.3 `/sdd:g2-decision-record`：**G2 = Pass**（VL Leo，2026-11-17，按用户签署指令代记；输入含 local-verify、两次 CI run、E2E 台账；发现 F1–F6 已入记录）
-- [ ] 10.4 关 C8（IO 补签）与 PR #117 冲突后合并 → P5 归档时把 delta 合入 Living Spec，并补 `tech-stack-plan.md` §US-040 + `_LOG.md`（9.3）
+- [x] 10.4 关 C8（IO 复核 Pass，2026-11-17）与合并 PR #117（merge `3bcf7b9`）→ P5 归档：`openspec archive us-040-split-grouping -y` 完成（Living `splits` +1/~3，8 requirements；Purpose 已手动补「成员分组」），`tech-stack-plan.md` §24 + `_LOG.md` A24 已对账
 
 ## 11. P4 打磨（2026-11-17，用户反馈）
 
