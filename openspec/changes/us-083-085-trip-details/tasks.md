@@ -78,7 +78,7 @@
 （与 sharedItem 同逻辑）；新增 P11 回归测试，31/31 绿 + build 绿，Round 1b 浏览器复验通过。
 
 版式对照：两张参考截图逐区块结构一致；差异均为 AC 强制移除项（微信/有效期/撤销）或真实数据差异。
-截图证据：`ui-design-reference/screenshots/us-083-085-acceptance/`（29 张）。
+截图证据：`ui-design-reference/screenshots/us-083-085-acceptance/`（29 张，仅本地留存不入库，目录已 gitignore）。
 注入助手：`backend/target/t73-flip.py`（gitignored，test-only）；cancelled 文档 routes 必须为 null
 （SplitDraftDocument.cancelled()），写 [] 会致读侧 Jackson 500。
 
