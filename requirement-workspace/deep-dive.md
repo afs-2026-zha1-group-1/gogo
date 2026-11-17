@@ -1261,3 +1261,84 @@ MODIFIED 放置 requirement + 详情页一个入口卡片）。单故事、单�
 
 AC 未声明保留期、SLA 或容量指标。列表是既有行的只读投影，按用户维度过滤，规模为
 个位数到几十，MVP 不分页（OQ-5 deferred）。若后续出现首屏预算压力，再单独立项。
+
+## US-040
+
+触发：impact 方向为 **extend + modify**（`splits` 新增一条分组写入能力，并修改初始分组、
+生成前置与确认完整性）。单故事、单 change，零迁移、零新依赖、无新表。
+
+### ⑨ Data contract
+
+| 概念 | 粒度 | 字段 | 状态迁移 | 来源 |
+|---|---|---|---|---|
+| 草稿分组 | 每草稿一份（`split_draft.document.groups`） | `{"A": [app_user.id...], "B": [...]}`，两个键恒存在、允许空数组 | 发起时 `A = 全部成员 / B = []`；每次 assignment 移动一人并 `draftVersion + 1`；确认冻结；取消保留 | `SplitDraftDocument.groups`（既有字段，无迁移） |
+| 分组写入请求 | 每次调用一份 | `groupLabel`（`A`\|`B`）、`draftVersion` | 服务端解析调用者 `AccountPrincipal.id`；不接收 `memberId` | 新 `AssignmentRequest` DTO |
+| 草稿版本 | 每草稿一个整数 | `draftVersion`（文档字段）+ `split_draft.draft_version`（CAS 列） | assignment `+1`；boundaries/generate `+1`；confirm/cancel 不变 | `V4__splits.sql` + 文档字段 |
+| 已生成路线 | 每组一对（文档 `routes` + `plan_node` 行） | `RouteDurations{activityMinutes, travelLegsMinutes[], bufferMinutes}` | assignment **不改动**；generate 成对替换并 `draftVersion + 1` | 既有 `withRoutes` |
+| 行程成员集合 | 一行 per (trip, user) | `trip_member.user_id`（= `app_user.id`） | 本变更只读；不增删成员 | `V2__create_trip.sql`；`findMemberIdsOrdered` |
+| 完整性明细 | 每次拒绝一份 | `error.details.missing: string[]`，取值 `groups.A` / `groups.B` / `groups.unassigned` / `groups.duplicate` | 生成与确认共用 | 新 `groupProblems()` 投影 |
+| 成员名投影 | 每次渲染一份 | `displayName`（按 `app_user.id` 查名册） | 前端派生，不落库 | `GET /api/trips/{id}/members` |
+
+无 `{TBD}` 字段。不变式：`groups` 的两个键集合恒为 `{A, B}`；任一成员至多出现在一个组；
+`groups` 元素必为当前行程成员（否则按 `groups.unassigned` 反例处理）。
+
+### ⑩ Boundary enumeration
+
+| 规则 | 分支 | In / Out | 依据 |
+|---|---|---|---|
+| 调用者身份 | 无认证会话 | Out — `401 MEMBER_REQUIRED` | R1；链级约定 |
+| 行程归属 | 未知 tripId | Out — `404 TRIP_NOT_FOUND` | R3 |
+| 成员资格 | 已知账号但非该行程成员 | Out — `403 NOT_A_MEMBER`，无分组数据 | R2 |
+| 草稿状态 | 无草稿行 | Out — `409 SPLIT_DRAFT_NOT_ACTIVE` | R4 |
+| 草稿状态 | `confirmed` / `cancelled` | Out — `409 SPLIT_DRAFT_NOT_ACTIVE` | R4 / S10 / S11 / BQ-6 |
+| 版本 | `draftVersion` 不等于当前 | Out — `409 STALE_DRAFT_VERSION`，无持久化 | R5 |
+| 组别 | `groupLabel` ∉ {A, B} | Out — `400`（码见 OQ-9） | R6 |
+| 目标人 | 请求体夹带 `memberId` / `groups` | 忽略或 `400`；**永不移动他人** | R7 / AC「不能替其他成员选择」 |
+| 正常改组 | 调用者在 A，目标 A | In — `200` 幂等，是否 `+1` 见 OQ-10 | S4 |
+| 正常改组 | 调用者在 A，目标 B | In — `200`，从 A 移除、加入 B，`draftVersion + 1` | S2 / S3 |
+| 路线保留 | 改组时已有 `routes` | In — `routes` 与边界字段逐字不变 | S14 / R8 / BQ-2 |
+| 空组 | `groups.A` 或 `groups.B` 为空 | In（草稿态允许）；生成 Out（`409 SPLIT_DRAFT_INCOMPLETE`）；确认 Out（同码） | S6 / S12 / BQ-3 / BQ-8 |
+| 漏分组 | 成员不在任何组 | 仅可由构造数据产生；生成/确认 Out（`groups.unassigned`） | S7 |
+| 重复分组 | 同一成员同时在 A、B | 仅可由构造数据产生；生成/确认 Out（`groups.duplicate`） | S8 |
+| 生成权限 | 非发起人调 generate | Out — `403 NOT_SPLIT_INITIATOR` | S16 / BQ-5 |
+| 确认权限 | 非组织者调 confirm | Out — `403 NOT_SPLIT_ORGANIZER`（既有） | 不在本变更范围 |
+| 确认门禁 | 分组完整、边界与路线齐备 | In — `200`，`status = confirmed` | S9 |
+| 成员表 | 改组对 `trip_member` | 不变 — 不新增/删除成员、不改角色 | R9 |
+
+### ⑪ Cross-REQ consistency
+
+| 能力 | 其他 REQ / 界面 | US-040 行为 | 收敛 |
+|---|---|---|---|
+| `splits` Split draft start | US-038 | 发起后 `groups = {A: 全部成员, B: []}`，其余字段与返回不变 | ✓ MODIFIED（本变更） |
+| `splits` Split boundary selection | US-039 | 保存边界仍保留 `groups`/`routes`；不改边界语义 | ✓ 不改 |
+| `splits` Group route generation | US-042 | 新增分组完整性前置（取代「夹具保证」）；仍只准许发起人、仍按 `groups.keySet()` 成对生成 | ✓ MODIFIED（本变更） |
+| `splits` Reunion timing check | US-043 | 仍按显式快照计算，不读分组 | ✓ 不改 |
+| `splits` Split draft detail read | US-049/050 | `groups` 字段与 member-only 读取不变；前端新增名册映射 | ✓ 不改契约 |
+| `splits` Split confirmation | US-049 | `missingDraftParts` 增加 `groups.*`；错误码不变 | ✓ MODIFIED（本变更） |
+| `splits` Split draft cancellation | US-050 | 取消仍保留 `groups`、清空 `routes`；重建时初始分组改全员 A | ✓ 仅初始分组收敛 |
+| `trips` 成员名册 | US-013 | 前端复用 `displayName`，不新增字段 | ✓ 组合，不改 |
+| `trips` 行程详情/成员 | REQ-003 / US-013 | 无写入变更；Screen 13 入口仍在行程内 | ✓ 不改 |
+| `app-shell` | US-064 / US-082 | 不新增路由、不改 stepbar、不改返回链 | ✓ 不改 |
+| `auth` 会话 | US-066 / REQ-008 | 沿用会话主体与 `/api/**` 认证，新 PUT 自动受保护 | ✓ 不改 |
+| `main-itinerary` / `invitations` / `preferences` | — | 无交叉写入 | ✓ 无影响 |
+
+### ⑫ Notification / display contract
+
+| 界面 | 触发 | 受众 | 内容 + 显示字段 | 通道 | 数量 |
+|---|---|---|---|---|---|
+| Screen 13 分组卡 | 打开分组与路线屏（含草稿/无草稿/终态） | 全部行程成员 | A 组 / B 组标题、人数、成员 `displayName` 列表、「我」标记；副标题去掉「分组移动本期不开放」 | `GET split-draft` + `GET members` | 每次渲染一组 |
+| 切组按钮 | 成员点击目标组 | 操作者本人 | 调 `PUT assignment`（`groupLabel` + `draftVersion`）；成功后 `invalidate` 并重绘，失败按 `code` 显示 | 写入 + 查询失效 | 一次一人一组 |
+| 改组成功提示 | assignment `200` | 操作者本人 | 「分组已更新，路线仍为上次生成的版本，可点击重新生成」 | 页内提示 | 一 |
+| 分组不完整（生成） | `routes:generate` 返回 `SPLIT_DRAFT_INCOMPLETE` | 发起人 | 错误卡：`SPLIT_DRAFT_INCOMPLETE` + 中文说明「分组不完整」+ `details.missing` 映射（`groups.A`=A 组无人、`groups.B`=B 组无人、`groups.unassigned`=有成员未分组、`groups.duplicate`=有成员重复分组） | `ErrorState` | 一 |
+| 分组不完整（确认） | `:confirm` 返回 `SPLIT_DRAFT_INCOMPLETE` | 组织者 | 同上，且同时可含 `boundaries` / `routes.A` / `routes.B` | `ErrorState` | 一 |
+| Screen 15 分组复核 | 打开复核屏 | 全部行程成员 | A 组 / B 组以成员名展示（无名字回退短 id） | `GET split-draft` + `GET members` | 每次渲染一组 |
+| 空组引导 | 草稿 active 且任一组为空 | 全部行程成员 | 分组卡内提示「至少一人加入另一组后才能生成路线与确认」 | 页内文案 | 一 |
+| 权限态 | `403 NOT_SPLIT_INITIATOR` / `NOT_A_MEMBER` / `401` | 操作者 | 现有 `ErrorState` 权限样式；非发起人的「重新生成」不可用 | `ErrorState` | 一 |
+| loading / empty / 终态 | 读取中、无草稿、`confirmed`/`cancelled` | 查看者 | 沿用既有四态；终态不显示切组控件 | 客户端渲染 | 一 |
+
+无通知（邮件/推送/队列）在范围内；分组卡不展示偏好、预算、就绪度等他人私密字段。
+
+### NFR business-policy layer
+
+分组规模 = 行程成员数（MVP 为个位数），单次改组为一次 JSON 文档 CAS 写入；无批量、无分页、
+无 SLA/保留期声明。并发由 `draftVersion` 乐观锁 + 既有 5s 轮询覆盖（后到者 `STALE_DRAFT_VERSION`）。
