@@ -73,7 +73,8 @@ class SplitBoundaryApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.error.code").value("BOUNDARY_NOT_IN_MAIN_PLAN"));
         Integer nodes = jdbc.queryForObject(
                 "SELECT COUNT(*) FROM plan_node WHERE trip_id = ?", Integer.class, sgfTripId());
-        assertThat(nodes).isEqualTo(3);
+        // Four projected main-line stops plus the seeded out-of-main 'optional' node; no split rows yet.
+        assertThat(nodes).isEqualTo(5);
         JsonNode draft = objectMapper.readTree(draftJson());
         assertThat(draft.get("draftVersion").asInt()).isEqualTo(1);
         assertThat(draft.get("departureStopId").isNull()).isTrue();

@@ -8,6 +8,10 @@ import { useAuth } from '../features/auth/AuthProvider'
 interface InvitationPanelProps {
   tripId: number
   isOrganizer: boolean
+  /** US-083: the full-screen invitation page owns the heading; embedded callers keep it. */
+  showTitle?: boolean
+  /** US-083: lets the invitation page drive its 生效中 pill from the issuance state. */
+  onReadyChange?: (ready: boolean) => void
 }
 
 type InvitationState =
@@ -35,7 +39,7 @@ async function copyText(text: string, fallbackField: HTMLInputElement | null): P
   }
 }
 
-export default function InvitationPanel({ tripId, isOrganizer }: InvitationPanelProps) {
+export default function InvitationPanel({ tripId, isOrganizer, showTitle = true, onReadyChange }: InvitationPanelProps) {
   const { account } = useAuth()
   const [state, setState] = useState<InvitationState>({ kind: isOrganizer ? 'loading' : 'denied' })
   const [copied, setCopied] = useState<boolean>(false)
@@ -75,6 +79,10 @@ export default function InvitationPanel({ tripId, isOrganizer }: InvitationPanel
   }, [isOrganizer, load])
 
   useEffect(() => {
+    onReadyChange?.(state.kind === 'ready')
+  }, [state.kind, onReadyChange])
+
+  useEffect(() => {
     if (state.kind !== 'ready' || !canvasRef.current) return
     setQrFailed(false)
     QRCode.toCanvas(canvasRef.current, invitationUrl(state.invitation.joinPath), {
@@ -97,7 +105,7 @@ export default function InvitationPanel({ tripId, isOrganizer }: InvitationPanel
 
   return (
     <>
-      <div className="sec-title"><Icon name="link" className="sm" /> 邀请朋友</div>
+      {showTitle && <div className="sec-title"><Icon name="link" className="sm" /> 邀请朋友</div>}
 
       {state.kind === 'loading' && (
         <section className="card pad"><div className="loading">正在生成邀请链接…</div></section>

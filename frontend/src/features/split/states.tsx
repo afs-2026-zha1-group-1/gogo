@@ -18,7 +18,7 @@ const ERROR_TEXT: Record<string, string> = {
   NOT_A_MEMBER: "你不是该行程的成员，无法查看或操作其分队草稿。",
   NOT_SPLIT_INITIATOR: "仅草稿发起人可执行此操作。",
   NOT_SPLIT_ORGANIZER: "仅行程组织者可确认分队。",
-  SPLIT_DRAFT_INCOMPLETE: "草稿尚不完整：请先保存边界并生成两条路线。",
+  SPLIT_DRAFT_INCOMPLETE: "草稿尚不完整：请补齐边界、路线或分组。",
   SPLIT_TIMING_INFEASIBLE: "路线对不可行：存在超窗或缺失输入，整对无法确认。",
   NONPOSITIVE_SPLIT_WINDOW: "时间窗必须为正：会合时刻需晚于出发时刻。",
   BOUNDARY_NOT_IN_MAIN_PLAN: "边界节点不在已确认主线内，请仅从主线 stop 选择。",
@@ -28,10 +28,25 @@ const ERROR_TEXT: Record<string, string> = {
   SPLIT_DRAFT_NOT_ACTIVE: "当前无活跃草稿，请先发起。",
   STALE_DRAFT_VERSION: "草稿版本已过期，请刷新后重试。",
   SPLIT_BOUNDARIES_REQUIRED: "请先保存出发/会合边界，再生成路线。",
+  INVALID_GROUP_LABEL: "目标组别无效，只能是 A 或 B。",
+  SPLIT_MEMBERS_INSUFFICIENT: "行程至少需要两名成员才能发起与确认分队。",
   ROUTE_GENERATION_FAILED: "路线生成失败，整对已回滚（无半成品路线）。",
+  ENDPOINT_NOT_FOUND: "接口不可用（404）：请确认后端已更新并重启到最新版本。",
 }
 
 const PERMISSION_CODES = new Set(["MEMBER_REQUIRED", "NOT_A_MEMBER", "NOT_SPLIT_INITIATOR", "NOT_SPLIT_ORGANIZER"])
+
+/** Friendly text for the machine-readable `error.details.missing` items (US-040 DD15). */
+const MISSING_TEXT: Record<string, string> = {
+  boundaries: "出发/会合边界未保存",
+  routes: "两条路线未生成",
+  "routes.A": "A 组路线缺失",
+  "routes.B": "B 组路线缺失",
+  "groups.A": "A 组没有成员",
+  "groups.B": "B 组没有成员",
+  "groups.unassigned": "有成员未分组",
+  "groups.duplicate": "有成员重复分组",
+}
 
 export function LoadingState({ label = "加载中…" }: { label?: string }) {
   return (
@@ -104,7 +119,7 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
           ) : null}
           {apiError?.details?.missing?.length ? (
             <p className="mt-1 text-[11px] leading-relaxed text-ink-2">
-              缺失项：{apiError.details.missing.join("、")}
+              缺失项：{apiError.details.missing.map((item) => MISSING_TEXT[item] ?? item).join("、")}
             </p>
           ) : null}
           {apiError ? (

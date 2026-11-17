@@ -1709,6 +1709,136 @@ One dashboard-focused vertical change is the candidate: list, overview, read-onl
 projection and safe navigation together. US-058, archive and the trip-details
 fix are external dependencies, not additional dashboard work. The existing
 US-061 tracker story means a separate story export is not needed by default.
+# Impact brief — US-040（2026-11-17 追加）
+
+- Date: 2026-11-17
+- Workdir: `requirement-workspace/`
+- Mode: embedded at the end of `/sdd:pre-spec-req`（blocking OQ = 0，DoR BLOCKER = 0）
+- Change id：待 P2 创建（建议 `us-040-split-grouping`）
+
+## 1. Requirement set
+
+| id | Path |
+|---|---|
+| US-040 | `requirement-workspace/requirements/US-040.md` |
+
+支撑：`intents/2026-11-17-us-040.md`、`analysis/us-040-dor.md`、`deep-dive.md` §US-040。
+
+## 2. As-is asset inventory（证据路径）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| Living Spec – splits | `openspec/specs/splits/spec.md` | 7 条 requirement；`Group route generation` 以「完整互斥 A/B 组为夹具保证的前置」，Screen 13 场景写「分组移动控件本期不实现」；无分组写入能力 |
+| 归档资产 | `openspec/changes/archive/2026-11-17-us-049-050-split-confirm-cancel/` | 确认/取消与链级约定（draftVersion、状态机、`{data,error}` 包封套）的落地依据 |
+| 后端控制器 | `backend/src/main/java/com/gogo/hello/splits/SplitDraftController.java` | 7 个端点，无分组/assignment 端点 |
+| 后端服务 | `backend/src/main/java/com/gogo/hello/splits/SplitDraftService.java` | `startDraft` 用 `partitionGroups` 写初始分组；`generateRoutes` 只准入发起人、按 `groups.keySet()` 生成；`missingDraftParts` 只查 boundaries/routes.A/routes.B |
+| 域模型 | `backend/src/main/java/com/gogo/hello/splits/domain/SplitDraftDocument.java` | `groups: Map<String, List<String>>`；`partitionGroups` 前后均分；`withBoundaries`/`withRoutes`/`confirmed`/`cancelled` 均原样保留 groups |
+| 仓储 | `backend/src/main/java/com/gogo/hello/splits/SplitDraftRepository.java` | `findMemberIdsOrdered` 返回 `trip_member.user_id`（= `app_user.id`），按 display_name 排序 |
+| 后端测试 | `backend/src/test/java/com/gogo/hello/splits/**` | `AbstractSplitApiTest.prepareConfirmableDraftAs`（start→boundaries→routes）无分组步骤；`SplitDraftDetailApiTest` 断言 `groups.A/B` 各 2 人；`SplitDraftDocumentTest` 断言 `partitionGroups` 均分；`SplitRouteGenerationApiTest` 以夹具完整分组为前提 |
+| 前端 Split 屏 | `frontend/src/features/split/screen-routes.tsx` | 分组卡只显示「A 组 / N 人」，副标题「成对生成 · 分组移动本期不开放」，注释「no members endpoint, so no names are guessed」已过时 |
+| 前端复核屏 | `frontend/src/features/split/screen-confirm.tsx` | A/B 组显示 memberId 原串；错误细节已渲染 `details.missing` |
+| 前端契约层 | `frontend/src/features/split/{api.ts,hooks.ts,types.ts,states.tsx}` | 5+2 个端点封装；`SplitDraftDetail.groups: Record<string,string[]>`；`ErrorState` 会原样打印 `details.missing` 键名 |
+| 成员名册 | `backend/.../trip/TripController.java` `GET /api/trips/{id}/members`；`frontend/src/pages/Members.tsx` | 返回 `displayName`；前端已在消费 |
+| 夹具 | `requirement-workspace/acceptance-test-fixtures.md` §US-049-050 | 四成员（Alice/Ben/Chloe/Daniel）与边界/路线数值；无分组段 |
+| 知识库 | `docs/knowledge/architecture/tech-stack-plan.md`、`docs/knowledge/_LOG.md` | 技术栈与落地对账；P5 需补 §US-040 |
+| UI 参考 | issue #84 附件 `gogo-us-040-grouping`（screen 13） | 布局参考；原型允许改他人，行为以 AC 为准 |
+
+## 3. As-is → proposed delta
+
+### 3.1 后端 `splits`（分组写入）
+
+**As-is**：无分组写入端点；`groups` 只在发起时由 `partitionGroups` 写入。
+
+**Proposed delta**：新增 `PUT /api/trips/{tripId}/split-draft/assignment`（body `{groupLabel, draftVersion}`）：`guard.requireMember` → 读草稿 → 活跃检查（`SPLIT_DRAFT_NOT_ACTIVE`）→ 版本检查（`STALE_DRAFT_VERSION`）→ 组别检查（A/B）→ 把 `AccountPrincipal.id` 从原组移除并加入目标组 → `withAssignment`（`draftVersion + 1`，保留 boundaries/routes）→ CAS 写入。
+
+**认证例外（IO 复核 2026-11-17）**：splits 路径在 `SecurityConfig` 为 `permitAll`，由 `MemberGuard` 产出 401 `MEMBER_REQUIRED` + `{data,error}`；新端点必须命中既有 `"/api/trips/*/split-draft/**"` 匹配器，否则会落回 `/api/**` 的 `authenticated()` → 401 `USER_REQUIRED` + flat body，与 splits 契约冲突。
+
+### 3.2 后端 `splits`（初始分组）
+
+**As-is**：`SplitDraftDocument.partitionGroups(orderedMemberIds)` 前一半 A、余下 B（design D16）。
+
+**Proposed delta**：改为「全员 A 组、B 组空」。`startDraft` 与取消后重建（`initialRebuilt`）两条路径同步；`partitionGroups` 删除或改名为 `initialGroups`。同处新增成员数阈值：当前行程成员数 < 2 时创建/重建均返回 `409 SPLIT_MEMBERS_INSUFFICIENT`（单人行程无法满足「两组非空」，IO 复核 2026-11-17 追加）。
+
+### 3.3 后端 `splits`（生成与确认门禁）
+
+**As-is**：`generateRoutes` 只校验成员/发起人/活跃/边界/版本；`missingDraftParts` 只产出 `boundaries`、`routes.A`、`routes.B`。
+
+**Proposed delta**：抽出 `groupProblems(draft, tripId)`（读 `findMemberIdsOrdered` 对比）：
+- 生成前置新增调用 → 非空则 `409 SPLIT_DRAFT_INCOMPLETE`，`details.missing` 含 `groups.A`/`groups.B`/`groups.unassigned`/`groups.duplicate`；
+- 确认的 `missingDraftParts` 合并同一结果；
+- 生成仍按 `groups.keySet()` 的 A/B 标签成对生成（行为不变）；路线只绑组标签、不携带成员 id，改组不使旧路线失效。
+
+### 3.4 前端 Screen 13（分组卡）
+
+**As-is**：只读卡片 `自动分组 / A 组 N 人 / B 组 N 人` + 「本期不开放」文案。
+
+**Proposed delta**：改为分组卡：两组各列成员名（`GET /api/trips/{id}/members` 的 `displayName` 映射）、人数、「我」标记、A/B 切换按钮（调 `PUT assignment`，携带 `draftVersion`）；成功后 invalidate 并提示「分组已更新，路线仍为上次生成的版本，可点击重新生成」；副标题与说明文案去掉「本期不开放」；生成失败时 `SPLIT_DRAFT_INCOMPLETE` 的 `missing` 键中文化。
+
+### 3.5 前端 Screen 15（成员名）
+
+**As-is**：`A 组 / B 组` 直接用 `groups.A.join(" / ")`（memberId）。
+
+**Proposed delta**：同一份成员名册映射为 displayName；无名字时回退短 id；若分组晚于路线生成，显示与 Screen 13 相同的「分组已更新，路线仍为上次生成的版本」提示（IO 复核 2026-11-17）。
+
+### 3.6 契约层
+
+**Proposed delta**：`types.ts` 增 `AssignmentRequest {groupLabel, draftVersion}`；`api.ts` 增 `saveAssignment`；`hooks.ts` 增 `useAssignGroup`（invalidate detail）；`states.tsx` 的 `SPLIT_DRAFT_INCOMPLETE` 文案改为覆盖「分组不完整」，并把 `groups.*` 键映射为中文短语。
+
+### 3.7 已检查、无影响
+
+| 资产 | 结论 |
+|---|---|
+| `split_draft` / `plan_node` 表结构、Flyway | 不改（`groups` 已在 `document` JSON） |
+| `routes:check-timing` 与 `TimingValidator` | 不改（仍按快照计算） |
+| 确认/取消的权限与状态机 | 不改（只加分组缺失项） |
+| `SecurityConfig` | 不改：splits 路径维持 `permitAll` + `MemberGuard` 例外，新 PUT 需命中同一匹配器（P4 核对） |
+| `trips`、`invitations`、`main-itinerary`、`preferences`、`auth`、`app-shell` | 不改 |
+| `BranchCandidateProvider` 夹具 | 不改（仍按组标签取候选） |
+| CI（`.github/workflows/ci.yml`） | 不改；沿用 `mvn -B test` + `npm run build` |
+
+## 4. Blast radius
+
+- 后端：`splits` 包 1 个新端点 + 域方法 + 三处门禁（发起成员数 / 生成 / 确认）+ 成员集合查询复用；无新包、无迁移、无新依赖。
+- 后端测试：`AbstractSplitApiTest`（新增 assignment helper、`prepareConfirmableDraftAs` 需先分组）、`SplitDraftDetailApiTest`（初始分组断言由 2/2 改为 4/0）、`SplitDraftDocumentTest`（`partitionGroups` 单测重写）、`SplitRouteGenerationApiTest` + `SplitConfirmApiTest`（新增分组前置用例，原通过用例需先分到 B 组）、**`SplitRouteGenerationApiTest.generateRoutes_groupMoveEndpoint_notImplemented`（断言 `groups:move` 不存在）必须删除或改写为 `assignment` 已实现**、新增 `SplitAssignmentApiTest`。
+- 前端：`screen-routes.tsx`（分组卡改造，最大改动）、`screen-confirm.tsx`（成员名 + 陈旧路线提示）、`screen-start`（成员不足错误态）、`api.ts`/`hooks.ts`/`types.ts`/`states.tsx`（新增 `SPLIT_MEMBERS_INSUFFICIENT` 文案）；无新路由、无 stepbar 变更。
+- 用户可见面：初始草稿「B 组为空」是行为变化，成员必须先分到两组才能生成与确认；Screen 13 的分组从只读变为可操作；单人行程将明确不可分队。
+
+## 5. Artifact impact
+
+| 类别 | 影响 |
+|---|---|
+| Specs | `splits` 1 ADDED（Member group assignment）+ 3 MODIFIED（Split draft start / Group route generation / Split confirmation），P2 delta |
+| 夹具 | `acceptance-test-fixtures.md` 新增 §US-040（成员与初始分组、改组序列、空组/漏组/重复组构造、版本序列） |
+| 测试 | 后端集成（401/403/404/409/幂等/保留 routes/生成与确认门禁/成员数门禁）+ 单测（初始分组、withAssignment）+ 前端 `tsc`/build + 浏览器 E2E（S1–S17、R1–R11） |
+| 文档 | `registry.md` 登记行；`docs/knowledge/_LOG.md` 与 `tech-stack-plan.md` §US-040（P5 落地对账）；`screen-routes.tsx` 顶部注释同步 |
+| 归档 | 无（本 change 结束后归档到 `changes/archive/`） |
+
+## 6. Dual-track notes
+
+- OpenSpec：单 change，`splits` 1 ADDED + 3 MODIFIED，vertical slice 完整（写入端点 + 门禁 + 两屏展示）。
+- Agile：issue #84 已存在（Iteration 1 / Priority Must）、看板已 Req Analysis；US-041/US-076 已并入，`/sdd:story-split` 可跳过。
+
+## 7. Risks & blockers
+
+| id | 风险 | 严重度 | 状态 |
+|---|---|---|---|
+| R1 | 既有 splits 测试与夹具普遍假设 A/B 各 2 人，初始分组改全员 A 会连带失败 | 高（实现面） | 已在 Blast radius 列出改动清单；P3 需先把夹具改成分组完整态再跑断言 |
+| R2 | issue AC「分组变化使旧路线失效」与 BQ-2「保留 routes」字面冲突 | 中 | 用户裁决优先；delta MODIFIED 块显式写入取代表述，避免归档 diff 歧义 |
+| R3 | 生成前置新增 `SPLIT_DRAFT_INCOMPLETE`，Screen 13 的错误文案当前只提「保存边界并生成路线」 | 中 | 已列入 3.4/3.6：文案与 `details.missing` 中文化一并改 |
+| R4 | 成员改组与发起人同时生成/确认的并发 | 中 | `draftVersion` 乐观锁已覆盖（后到者 `STALE_DRAFT_VERSION`）；轮询 5s + mutation invalidate 足够，无需新机制 |
+| R5 | `groups` 存 `app_user.id` 而非成员行 id，容易在实现时误映射 | 低 | 已在条目 Constraints 与 3.1 显式写明；`findMemberIdsOrdered` 即取 `trip_member.user_id` |
+| R6 | 既有 `groups:move` 负向测试（断言端点不存在）与本变更的 `assignment` 端点命名冲突 | 中（会直接失败） | BQ-1 已定 `PUT .../assignment`，不采用 `groups:move`；P4 删除或改写该负向用例（已写入条目 Context 与本节 §4） |
+| R7 | 单人行程（成员数 = 1）在新分组完整性判据下永久不可分队 | 中（业务；已关闭） | 2026-11-17 IO 复核：发起/重建返回 `409 SPLIT_MEMBERS_INSUFFICIENT`（BQ-9），不采用「允许单组确认」 |
+| R8 | 本变更推翻 US-049/050 已 Pass 的 E2E 验收基线（`docs/feedback/e2e-us-049-050.md` E2/E3/E5/E8/E10、A/B 1/2·3/4） | 中（溯源性） | proposal `Supersedes` 已显式声明；旧表仅作历史证据，归档以 Living Spec 为准 |
+| R9 | 改组未重新生成时，复核屏可能把旧路线当当前分组结果 | 中 | 已在 delta 的 Screen 15 场景与 3.5 写入「陈旧路线提示」，与 Screen 13 同文案 |
+
+No critical blocker invalidates US-040; split may proceed.
+
+## 8. Suggested split boundaries
+
+- 单 change：`us-040-split-grouping`（后端 assignment + 初始分组 + 两处门禁；前端 Screen 13/15 + 契约层）。
+- 不建议再拆「只读分组/写入分组」：两者共用同一份 `groups` 契约与版本语义，拆开会造成两次 delta 触碰同一 requirement。
+- P4 实施顺序建议（供 P3 tasks）：夹具与初始分组 → assignment 端点 → 生成/确认门禁 → Screen 13 分组卡 → Screen 15 成员名 → 回归。
 
 ---
 

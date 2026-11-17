@@ -6,8 +6,9 @@ import { cn } from "@/lib/utils"
 /**
  * One generated group route (ui-design-reference Screen 13 `.route`): a dual-color header with the
  * group code, activity name and departure->reunion stops, a compact duration breakdown (activity /
- * each travel leg / buffer) and a green reunion footer. Pure display of backend-returned values;
- * tone A=blue, B=orange. No group-movement controls (out of scope this slice, spec Screen 13).
+ * each travel leg / buffer) and a green reunion footer. Pure display of backend-returned values; tone A=blue,
+ * B=orange. {@code stale} marks a route whose group is now empty (the pair needs regenerating) with a soft
+ * translucent pill in the header, matching the Screen 13 visual language.
  */
 export function RouteCard({
   route,
@@ -15,12 +16,14 @@ export function RouteCard({
   departureName,
   reunionName,
   reunionClock,
+  stale = false,
 }: {
   route: GroupRoute
   tone: "a" | "b"
   departureName: string
   reunionName: string
   reunionClock: string
+  stale?: boolean
 }) {
   const head = tone === "a" ? "from-a to-[#1e40af]" : "from-b to-[#9a3412]"
   const legsTotal = route.travelLegsMinutes.reduce((sum, minutes) => sum + minutes, 0)
@@ -37,6 +40,11 @@ export function RouteCard({
             <IconNav className="size-3" /> {departureName} → {reunionName}
           </div>
         </div>
+        {stale ? (
+          <span className="shrink-0 rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white/90">
+            待重新生成
+          </span>
+        ) : null}
       </div>
 
       <div className="flex flex-col gap-1.5 px-4 py-3 text-[12px]">

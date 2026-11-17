@@ -14,6 +14,7 @@ import MainPlan from './pages/MainPlan'
 import MainPlanInputs from './pages/MainPlanInputs'
 import Scanner from './pages/Scanner'
 import PreferencesPage from './pages/PreferencesPage'
+import InvitationPage from './pages/InvitationPage'
 import UserPreferencesPage from './pages/UserPreferencesPage'
 import Members from './pages/Members'
 import LoginPage from './features/auth/LoginPage'
@@ -37,7 +38,9 @@ function parseRoute(hash: string): Route {
   const dashboardInviteMatch = path.match(/^\/dashboard\/trips\/(\d+)\/invite$/)
   if (dashboardInviteMatch) {
     const tripId = Number(dashboardInviteMatch[1])
-    if (Number.isSafeInteger(tripId) && tripId > 0) return { page: 'invitation', tripId }
+    if (Number.isSafeInteger(tripId) && tripId > 0) {
+      return { page: 'invitation', tripId, dashboardOrigin: true }
+    }
     return { page: 'dashboard-trip', tripId: null }
   }
   const dashboardInputsMatch = path.match(/^\/dashboard\/trips\/(\d+)\/main-plan\/inputs(\?from=dashboard)?$/)
@@ -75,6 +78,9 @@ function parseRoute(hash: string): Route {
   if (mainPlanMatch) return { page: 'main-plan', tripId: Number(mainPlanMatch[1]) }
   const preferencesMatch = path.match(/^\/trips\/(\d+)\/preferences$/)
   if (preferencesMatch) return { page: 'preferences', tripId: Number(preferencesMatch[1]) }
+  // US-083 R4: the invitation page is trip-scoped; match before the generic `/trips/<id>`.
+  const invitationMatch = path.match(/^\/trips\/(\d+)\/invitation$/)
+  if (invitationMatch) return { page: 'invitation', tripId: Number(invitationMatch[1]) }
   const tripMatch = path.match(/^\/trips\/(\d+)$/)
   if (tripMatch) return { page: 'details', tripId: Number(tripMatch[1]) }
   if (path === '/my-trips') return { page: 'my-trips' }
@@ -301,7 +307,10 @@ export default function App() {
   if (route.page === 'invitation') {
     return (
       <div className="app">
-        <TripDetails tripId={route.tripId} invitationOnly />
+        <InvitationPage
+          tripId={route.tripId}
+          backHref={route.dashboardOrigin ? `#/dashboard/trips/${route.tripId}` : undefined}
+        />
       </div>
     )
   }

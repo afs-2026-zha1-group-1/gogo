@@ -564,6 +564,68 @@ Alice 的预期顺序（以 2026-11-16 为“今天”，2026-11-17 修订：**�
 | 分页/搜索参数 | 本变更明确不做；传 `?page=1` 不得产生分页元信息 |
 | 错误 message 文本 | 只有 `code` 是契约 |
 
+## US-040 — 成员分组（2026-11-17）
+
+复用 §Users（Alice=1 组织者、Ben=2、Chloe=3、Daniel=4、Eve=5 非成员）与 V2 种子行程
+`Singapore Friends Day`（id=1，四名成员，`main_plan_confirmed=1`）。不用新建行程，
+除「单成员行程」用例需 **test-only** 新建一个。
+
+### 初始与分组序列
+
+| Item | Value | Why |
+|---|---|---|
+| 发起后的初始分组 | `groups = {"A": [1,2,3,4], "B": []}`（按 `display_name` 升序） | BQ-7；取代旧的 2/2 均分 |
+| 改组序列（主用例） | Ben 发起 → v1；保存边界 → v2；Chloe 切 B → v3；生成路线 → v4 | 演示「先分组再生成」；A1/A2/A4 可裁剪此序列 |
+| 往返切换 | Chloe 再切回 A → v5 | A2 |
+| 同组幂等 | Chloe（已在 A）再提交 A | 200；`groups` 不变；`draftVersion` 不变（DD4/OQ-10） |
+| 空组（G6-N / CF8-N） | 文档 `groups = {"A": [1,2,3,4], "B": []}`（发起后不分组直接生成/确认） | 新规则下最常见的不完整态 |
+| 漏分组（构造） | 文档 `groups = {"A": [1,2,3], "B": [4]}` 后从 A 移除 Daniel → 只有 4 在 B，Daniel 无组 | 只有构造数据能产生 |
+| 重复分组（构造） | 文档 `groups = {"A": [1,2,3,4], "B": [4]}` | 同一成员出现在两组 |
+| 单成员行程（S10-N） | 测试新建 trip + 仅 organizer 一行 `trip_member`，`main_plan_confirmed=1` | IO-1 门禁；不得复用种子四成员行程 |
+| 边界与路线数值 | 窗口 09:30–11:30 = 120；A = 15+60+20+10 = 105；B = 20+60+20+10 = 110 | 与 US-049-050 相同算术 |
+
+### Requests
+
+| Case | Call | Expected |
+|---|---|---|
+| A1 切到另一组 | `PUT /api/trips/1/split-draft/assignment`（Chloe）`{"groupLabel":"B","draftVersion":2}` | `200`；`groups.A` 不含 Chloe、`groups.B` = [Chloe]；`draftVersion` = 3 |
+| A2 往返 | Chloe `{"groupLabel":"A","draftVersion":3}` | `200`；Chloe 只在 A；`draftVersion` = 4 |
+| A3 同组幂等 | 已在 A 的 Chloe 再传 `A` + 当前版本 | `200`；`groups` 不变；响应 `draftVersion` = 当前值（不递增） |
+| A4 保留路线与边界 | 已生成路线（v4）后 Ben 切 B，`draftVersion: 4` | `200`；`draftVersion` = 5；`routes`、`departureStopId`、`reunionStopId` 逐字不变；`plan_node` split 行数不变 |
+| A5-N confirmed 改组 | CF1 确认后任一成员调用 | `409 SPLIT_DRAFT_NOT_ACTIVE`；分组/路线/状态/版本不变 |
+| A5-N cancelled 改组 | CN1 取消后 | 同上 |
+| A6-N 过期版本 | 草稿 v4 时传 `draftVersion: 2` | `409 STALE_DRAFT_VERSION`；分组与版本不变 |
+| A7-N 守卫 | 无会话 / trip 999 / Eve | `401 MEMBER_REQUIRED` / `404 TRIP_NOT_FOUND` / `403 NOT_A_MEMBER`；`data = null` |
+| A8-N 非法组别 | `{"groupLabel":"C"}` | `400 INVALID_GROUP_LABEL`；无持久化 |
+| A9 移动他人 | Ben 调 `{"memberId": <Chloe>, "groupLabel":"B", "draftVersion":1}` | `200`；Chloe 移到 B；Ben 仍在 A；`draftVersion` = 2 |
+| A9b-N 目标非成员 | body `memberId` = Eve | `403 NOT_A_MEMBER`；分组与版本不变 |
+| S9 初始分组 | 任一成员 `POST split-draft` | `201`；`groups.A` = 4 人、`groups.B` = `[]`；两键均存在 |
+| S10-N 单成员发起 | 单成员行程成员 `POST split-draft` | `409 SPLIT_MEMBERS_INSUFFICIENT`；不建行；`cancelled` 行也不重建 |
+| G6-N 空组生成 | Ben 在 B 空的草稿上 `POST routes:generate` | `409 SPLIT_DRAFT_INCOMPLETE`；`details.missing` 含 `groups.B`；无 `split-a/b` 行；版本不变 |
+| G6-N 漏/重分组 | 构造漏组 / 重复组后生成 | `details.missing` 含 `groups.unassigned` / `groups.duplicate` |
+| CF8-N 空组确认 | 边界与路线齐备但 B 空（或构造漏/重） | `409 SPLIT_DRAFT_INCOMPLETE`；`details.missing` 含对应 `groups.*`；不进入时间复算 |
+| 反向：无分组路由 | 浏览器访问 `#/trips/1/split/groups` | 无分组屏（无该路由）；仍停留在既有页面 |
+| 反向：认证不变 | 无会话调用 assignment | `401 MEMBER_REQUIRED`；`SecurityConfig` 无 diff |
+
+### Wire projection
+
+`PUT /api/trips/{tripId}/split-draft/assignment` 返回与 `GET /split-draft` 相同的
+`SplitDraftDetailResponse`（`initiatorMemberId`、`mainPlanVersion`、`draftVersion`、`status`、
+`groups` {A,B}、`createdAt`、`updatedAt`、`mainPlanStops`、`departureStopId`、`reunionStopId`、
+`departureAt`、`reunionAt`、`windowMinutes`、`routes`）。请求体只接受
+`groupLabel`（`A`|`B`）与 `draftVersion`；**不接收 `memberId`**。
+
+`SPLIT_DRAFT_INCOMPLETE.details.missing` 的标准项：`boundaries`、`routes`、`routes.A`、
+`routes.B`、`groups.A`、`groups.B`、`groups.unassigned`、`groups.duplicate`（顺序固定，便于逐项断言）。
+
+### Values deliberately not fixed（US-040）
+
+| Item | Why no value is set |
+|---|---|
+| 分组卡列宽、徽标颜色、提示文案样式 | `ui-design-reference` + `@theme` token；契约是成员名可见、切组可操作、提示可见 |
+| 成员显示名拼接顺序以外的细节 | 断言集合而非字符串拼接 |
+| 错误 message 文本 | 只有 `code` 与 `details` 是契约 |
+| 改组后的 `updatedAt` | 由后端生成，测试只断言递增关系（如可比时） |
 
 ## US-086 队伍路线（Screen 11）
 
@@ -598,3 +660,69 @@ Alice 的预期顺序（以 2026-11-16 为“今天”，2026-11-17 修订：**�
 | 活动名/路线名 | 由路线生成结果返回；UI 只展示 |
 | 分支时长 | 由 GroupRoute 返回；空值显示「待补全」 |
 | 节点弹层内容 | 本故事明确不做 |
+
+## US-083-085 — 行程详情重构 + 个人路线 + 活动倒计时（2026-11-17）
+
+纯前端读组合变更：复用 §Users、V2 种子行程（id=1）与既有四读接口（trip / main-plan / split-draft / members / inputs），**不新增端点、不改迁移、不改种子行**。状态 setup 走既有写路径（生成/确认主线、发起/确认分队）或 test-only 注入。
+
+**R9（2026-11-17 用户裁决，修订 R6 第 3 条）**：无主线方案时详情页保留旧版（行程信息/旅行偏好/内嵌邀请/主线方案入口）；新版概览（紧凑摘要/倒计时/同行成员/我的方案）仅在主线方案存在时渲染。
+
+### State setup
+
+| 状态 | 构造方式 | 用途 |
+|---|---|---|
+| S0 无方案 | 种子行程未生成主线 | US-083 AC3：保留旧版详情页（R9） |
+| S1 主线草稿/已确认 | 既有生成 + 确认流程（US-031-037） | US-083 AC3 内嵌时间轴；US-085 pre-split 倒计时 |
+| S2 分队已确认 | 既有 startDraft → confirm（US-049-050），Alice/Ben 一组、Chloe/Daniel 另一组 | US-084 个人路线隔离；US-085 AC4 |
+| S3 分队草稿未确认 / cancelled | startDraft 不 confirm；或 confirm 后 cancel | US-084 AC5 反向 |
+| S4 成员未分配 | confirmed 快照中 groups 不含该成员 | US-084 AC4 反向 |
+| S5 时间三态 | 以设备本地当前时间相对活动区间构造（test-only 时间注入或调整行程日期） | US-085 AC1/2/3/6 |
+
+### 数据源优先级（R6 + R9，契约）
+
+1. split-draft `status=confirmed` 且当前成员在 `groups` 某组 → 我的方案 = 该组路线 + 共同活动（`mainPlanStops`）。
+2. 否则 main-plan 有 stops → 我的方案 = 主线 stops（HH:mm 拼 `trip.startDate` 本地日期）。
+3. 无主线方案 → 整页回退旧版详情页（R9）；不得显示其他行程/其他组的路线。
+
+### 倒计时口径（R7，契约）
+
+| 态 | 目标时刻 | 显示 |
+|---|---|---|
+| 未出发 | `startDate` 本地 00:00 | `N 天 HH:MM:SS`，每秒 tick |
+| 活动中 | 当前活动 endAt | 剩余时间 + 下一站 |
+| 活动间 | 下一活动 startAt | 距开始倒计时 + 下一站 |
+| split confirmed | 我组 ISO 时间戳 + 共同活动 | 同上三态，不用他组 |
+| 边界 | 到达 endAt/startAt | 按当前时间切换下一态；任何时刻不显负数（clamp ≥ 0） |
+| 无安排/无下一站 | — | 无安排态 / 「没有更多活动」；不显其他日期或行程活动 |
+
+时区 = 设备本地（MVP 假设 D-2，G1 确认）。下一站详情（R8）：名称/时间/地址/小组 + 建议出发时间 = 下一活动 startAt − travelMinutes；地址或交通时间缺失 → 「待确认」，不伪造；无后续 → 「没有更多活动」。倒计时仅在新版概览态（有主线方案）出现；旧版无倒计时（R9）。
+
+### Requests（全部复用，无新增）
+
+| Case | Call | Expected |
+|---|---|---|
+| T1 详情读 | `GET /api/trips/1` as Alice | 既有 200 投影不变（回归） |
+| T2 主线读 | `GET /api/trips/1/main-plan` as Alice | 既有 confirmed/stale/stops 投影不变（回归） |
+| T3 分队读 | `GET /api/trips/1/split-draft` as Alice | confirmed 后仍返回快照（回归 US-049-050） |
+| T4 名册读 | `GET /api/trips/1/members` as Alice | 既有名册投影不变（回归 US-013） |
+| T5 非成员 | 以上各读 as Eve | 既有 403/404 分态不变（回归） |
+| T6 邀请权限 | 非组织者打开邀请页 | 不返回/不显示邀请链接；权限或不可用态（invitations 既有 403 契约） |
+
+### Wire projection（前端派生，非后端契约）
+
+| 派生 | 规则 |
+|---|---|
+| myGroup | `groups` 中含当前成员 userId 的组 label；无 → null |
+| personalRoute | `routes[myGroup]`（activityName/activityMinutes/travelLegsMinutes/bufferMinutes）+ `mainPlanStops` 共同段，按 `departureAt`/`reunionAt` 排时间轴 |
+| countdownTarget | 按 R7 三态从当前时间派生；split confirmed 用 ISO 时间戳，pre-split 用 HH:mm+startDate 拼接 |
+| 页面分流（R9） | main-plan 读成功且有方案 → 新版概览；404/无方案 → 旧版详情页 |
+
+### Values deliberately not fixed（US-083-085）
+
+| Item | Why no value is set |
+|---|---|
+| 区块文案/图标/间距/颜色 | 以看板 US-083 两张参考截图为版式权威（R1），token 来自 `@theme`；契约是区块顺序与可见性 |
+| 倒计时数字格式细节 | `N 天 HH:MM:SS` 为契约；补零/分隔符样式为展示层 |
+| 「待确认」「没有更多活动」具体措辞 | 语义为契约（缺失不伪造/无后续态），文案可微调 |
+| 邀请页有效期/撤销/微信 | 偏离 D-1：原型 extras，后端无能力，本批不实现 |
+| 测试注入的时间值 | 由用例按设备本地当前时间构造；不固定绝对时刻 |
