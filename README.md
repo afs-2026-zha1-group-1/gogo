@@ -77,9 +77,31 @@ clears it and keeps the row). One row per `(trip_id, user_id, kind)` stores
 answers `{"members":[{"userId":n,"interests":[...]}]}` for every member of the
 trip, ordered by `userId`, with `[]` for anyone who has not saved yet. The page
 lives at `#/trips/<id>/preferences`, is linked from `#/trips/<id>`, follows
-`ui-design-reference/screenshots/screen-08-preferences.png`, and is the
-first TypeScript/Ant Design page: Save is explicit, a failed save rolls back to
-the acknowledged set, and a failed load offers Retry instead of an empty state.
+`ui-design-reference/screenshots/screen-08-preferences.png`, and is written in
+TypeScript: the bottom bar is the page's only save, writing the interest set, the
+budget and the readiness row in one submit, the explicit "no preference" switch
+clears the interest selection and the budget before submitting, and a failed load
+offers Retry instead of an empty state.
+
+REQ-020 adds member must-do items (US-020): `GET` and `PUT
+/api/trips/{tripId}/preferences/must-dos`, sharing the session identity, trip and
+membership gate and the `member_preference` table through `kind = 'must_do'`. An
+item is `{"id":n,"activity":s,"location":s|null,"time":"HH:mm"|null}`; the `PUT`
+body `{"items":[...]}` replaces the whole list, so omitting an item deletes it and
+`[]` clears the list while keeping the row. New items take the owner's
+`max(id) + 1` (ids restart at 1 after a clear and are unique only within one
+member's list); `activity` must be non-blank and at least one of `location` or
+`time` is required, with `time` matching `^([01]\d|2[0-3]):[0-5]\d$`. Rejections
+answer `400` with `INVALID_REQUEST`, `MUST_DO_ACTIVITY_REQUIRED`,
+`MUST_DO_PLACE_OR_TIME_REQUIRED`, `MUST_DO_TIME_INVALID`,
+`MUST_DO_ITEM_DUPLICATE_ID` or `MUST_DO_ITEM_UNKNOWN`, and nothing is written when
+a request is rejected. The stored payload is
+`{"items":[{id,activity,name,location,time}]}`, where `name` mirrors `activity`
+for the main-plan reader and never appears on the wire. The `GET` answers
+`{"members":[{"userId":n,"mustDos":[...]}]}` for every member, ordered by
+`userId`. The same preferences page now carries a second section, `必做项（US-020 ·
+可增删改）`, which saves each add / edit / confirmed delete as its own whole-list
+`PUT` and keeps the interest selection independent.
 
 US-031-037 adds main itinerary planning. `GET /api/trips/{id}/main-plan/inputs`
 aggregates ready members, common interests, the deduplicated must-do union, hard

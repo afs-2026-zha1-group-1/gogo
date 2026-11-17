@@ -1,66 +1,13 @@
-# Spec Delta — `preferences` (REQ-024)
-
-- Change: `req-024-set-trip-budget`
-- Baseline: the `preferences` delta of `req-019-save-interests` plus the delta of
-  `req-020-manage-must-do`; neither is archived yet, and this delta stacks on both. The caller
-  identity, trip existence and membership precondition stays defined once in REQ-019's
-  `Preference caller identity and membership` and is not restated as a new ADDED requirement.
-- Storage: `member_preference` with `kind = 'budget'`, one row per member, payload either
-  `{"amount": <integer>, "currency": <code>, "limitType": "hard"|"soft"}` or `{}` for the cleared
-  state. No migration.
-- Amounts are integers in the currency's **minor unit**: `SGD`/`CNY`/`USD`/`EUR` have two decimal
-  places, `JPY` has none. 40 SGD is stored and transferred as `4000`; 1200 JPY as `1200`.
+# Spec Delta
 
 ## ADDED Requirements
 
 ### Requirement: Save member budget
 
 The system SHALL expose `PUT /api/trips/{tripId}/preferences/budget` accepting
-`{"amount": integer|null, "currency"?: string, "limitType"?: string}` and SHALL replace the
-caller's whole-trip per-person budget.
-
-The budget SHALL be all-or-nothing: either `amount` is an integer together with a non-null
-`currency` and a non-null `limitType`, or `amount` is `null` together with an absent or `null`
-`currency` and `limitType`, which means "no budget set".
-
-`amount` SHALL be a non-negative integer of at most 2147483647 in the currency's minor unit. Zero
-SHALL be a valid, storable value and SHALL be distinguishable from "not set" in every response and
-in the stored payload.
-
-`currency` SHALL be one of `SGD`, `CNY`, `USD`, `EUR`, `JPY`, matched exactly (no case folding, no
-aliases, no surrounding whitespace tolerance). `limitType` SHALL be exactly `hard` or `soft`.
-
-Validation SHALL complete before any write, in this order, and the first failing check SHALL
-decide the response:
-
-1. the body is a JSON object, otherwise status 400 with `code = INVALID_REQUEST`;
-2. the `amount` key is present, otherwise `INVALID_REQUEST`; a missing key SHALL NOT be treated as
-   `null`;
-3. `amount` is `null` or an integer in range, otherwise status 400 with
-   `code = BUDGET_AMOUNT_INVALID` (a non-integer, a value above 2147483647, or a negative value);
-4. when `amount` is `null`, `currency` and `limitType` are both absent or `null`, otherwise status
-   400 with `code = BUDGET_FIELDS_INCOMPLETE`;
-5. when `amount` is an integer, `currency` is present and non-null, otherwise `BUDGET_FIELDS_INCOMPLETE`;
-6. `currency` is in the allowed set, otherwise status 400 with `code = BUDGET_CURRENCY_NOT_ALLOWED`;
-7. `limitType` is present and non-null, otherwise `BUDGET_FIELDS_INCOMPLETE`;
-8. `limitType` is `hard` or `soft`, otherwise status 400 with `code = BUDGET_LIMIT_TYPE_INVALID`.
-
-A successful save SHALL return status 200 with
-`{"budget": {"amount": <integer>, "currency": <code>, "limitType": "hard"|"soft"}}`.
-
-A save with `amount: null` SHALL return status 200 with `{"budget": null}` and SHALL keep the
-member's row with the payload `{}`; the row SHALL NOT be deleted.
-
-A rejected request SHALL NOT write any row and SHALL NOT modify the `payload` or `updated_at` of
-an existing row, so a rejected save leaves the previous budget intact.
-
-A member SHALL have at most one `budget` record per trip, so changing the limit type or the value
-of an existing budget SHALL overwrite the same row and SHALL NOT create a second one. Repeating the
-same body SHALL be idempotent: the stored `payload` SHALL stay the same, while `updated_at` MAY be
-refreshed.
-
-The capability SHALL NOT apply currency conversion, SHALL NOT compare amounts across currencies and
-SHALL NOT impose a business upper bound beyond the representable range.
+`{"amount", "currency", "limitType"}` to replace the caller's per-person budget, all-or-nothing.
+Validation precedes writes; the first failing check decides the `code`, mapped in the scenarios
+below. A valid save returns 200; a rejected save writes nothing.
 
 #### Scenario: A budget is saved and read back
 
@@ -199,19 +146,40 @@ SHALL NOT impose a business upper bound beyond the representable range.
 - **AND** the response body carries `code` equal to `INVALID_REQUEST`
 - **AND** the caller's saved budget is unchanged
 
+#### Scenario: A defect maps to its own error code
+
+- **WHEN** a request's only defect is the one named below
+- **THEN** the response is 400 with the mapped `code`
+
+| Defect | `code` |
+|---|---|
+| body not a JSON object, or no `amount` key | `INVALID_REQUEST` |
+| `amount` negative, fractional, or above 2147483647 | `BUDGET_AMOUNT_INVALID` |
+| integer `amount` without `currency` or without `limitType` | `BUDGET_FIELDS_INCOMPLETE` |
+| `currency` outside `SGD`, `CNY`, `USD`, `EUR`, `JPY`, matched exactly | `BUDGET_CURRENCY_NOT_ALLOWED` |
+| `limitType` outside `hard`, `soft` | `BUDGET_LIMIT_TYPE_INVALID` |
+
+#### Scenario: An incomplete null budget is not a clear
+
+- **WHEN** `amount` is `null` while `currency` or `limitType` is present and non-null
+- **THEN** the response is 400 `BUDGET_FIELDS_INCOMPLETE`
+- **AND** the saved budget is unchanged
+
+#### Scenario: The representable maximum is accepted and the capability does no arithmetic
+
+- **WHEN** a member saves `amount` `2147483647` and later reads both their own and another member's
+  budget in a different currency
+- **THEN** the save returns 200 and the read returns `2147483647` unchanged
+- **AND** neither response converts, compares or caps the amounts, because the capability defines
+  no exchange rate and no business limit beyond the range above
+
 ### Requirement: Read member budgets
 
-The system SHALL expose `GET /api/trips/{tripId}/preferences/budget`, returning the budget of every
-member to a member of that trip, in the shape
-`{"members": [ {"userId": <integer>, "budget": {"amount": <integer>, "currency": <code>, "limitType": "hard"|"soft"} | null} ]}`.
-
-Each member object SHALL carry exactly `userId` and `budget`. `budget` SHALL be `null` when the
-member never saved a budget and also when the member's last save cleared it, so "not set" has one
-representation on the wire. `members` SHALL be ordered by ascending `userId` so assertions are
-repeatable. A member who never saved a budget SHALL still appear, so the endpoint SHALL NOT omit
-members.
-
-The endpoint SHALL be read-only: reading SHALL NOT create or modify any row.
+The system SHALL expose `GET /api/trips/{tripId}/preferences/budget` to any member of that trip,
+returning `{"members": [{"userId", "budget"}]}` for every member, `budget` being
+`{"amount", "currency", "limitType"}` or `null`. `null` means never saved and cleared alike, so
+"not set" has one wire representation. Elements are ordered by ascending `userId` and no member is
+omitted. Reading changes nothing.
 
 #### Scenario: A member reads back the saved budget
 
@@ -259,49 +227,11 @@ The endpoint SHALL be read-only: reading SHALL NOT create or modify any row.
 
 ### Requirement: Preferences page
 
-The frontend SHALL provide the page `#/trips/{tripId}/preferences` inside the existing application,
-and SHALL link to it from the trip details page. The page SHALL render three sections in this
-order: interests, must-do items, budget.
-
-The **interests section** SHALL render the selected state of the seven predefined interests, whose
-only source SHALL be the `GET /api/trips/{tripId}/preferences` response entry matching the current
-identity (the identity selector in the top bar). The user's selection SHALL be submitted as one
-request by an explicit "Save" action; the section SHALL NOT submit on every toggle.
-
-The **must-do items section** SHALL render the current member's items only, each showing its
-`activity` and, when present, its `location` and `time`. It SHALL offer an inline add form, an
-inline edit action and a delete action per item. Delete SHALL open a confirmation dialog
-identifying the item, with Confirm and Cancel actions. Opening, cancelling or dismissing it
-SHALL send no request and SHALL preserve the item. Only confirmation SHALL send the delete
-request. Every completed add/edit or confirmed delete SHALL be persisted
-by its own `PUT /api/trips/{tripId}/preferences/must-dos`; the section SHALL NOT wait
-for a page-level save and SHALL NOT offer a "save all" action.
-
-The **budget section** SHALL render the current member's budget with an amount input, a currency
-selector and a hard/soft selector. The currency selector SHALL include `SGD`, `CNY`, `USD`, `EUR`
-and `JPY` and SHALL NOT pre-select an amount. The section SHALL be saved by its own explicit
-"Save budget" action, which SHALL send `PUT /api/trips/{tripId}/preferences/budget` and SHALL NOT
-save the interests or the must-do items. The section SHALL offer a "Clear" action that opens
-a confirmation dialog identifying the budget with Confirm and Cancel actions. Opening,
-cancelling or dismissing SHALL send no request and preserve saved values and unsaved input.
-Only confirmation SHALL send `{"amount":null}`; the response SHALL determine the saved state.
-
-The budget section SHALL render the amount using the currency's decimal places (`SGD`, `CNY`,
-`USD`, `EUR` two; `JPY` none) and SHALL NOT hard-code a factor of 100. It SHALL render "not set"
-differently from an explicit `0`, so a zero budget is never shown as an empty budget.
-The amount input SHALL identify the selected currency and major-unit entry; conversion to
-minor units SHALL follow that currency's decimal places. Exact unset/zero copy belongs to UI
-implementation, but the states SHALL remain distinguishable.
-
-A successful action SHALL update its section from the response body. A failed action SHALL show the
-server `message` and return its section to the state the server acknowledges, so a rejected change
-is never shown as saved. A failed load of any `GET` SHALL show an error with a retry action, and
-SHALL NOT render unloaded or stale data as saved.
-
-The three sections SHALL be independent: each of the three save actions SHALL write only its own
-`kind`, and none of them SHALL save or alter another section's state.
-
-The page SHALL NOT use browser local storage as evidence of a saved state.
+The frontend SHALL provide `#/trips/{tripId}/preferences`, linked from the trip page, laid out per
+`screen-08-preferences.png` in three sections: interests, must-do items, then budget; blocks owned
+by other changes SHALL NOT render. Interests save as one explicit request whose response the page
+adopts; each must-do and budget action persists with its own `PUT` and writes only its own section.
+A failed `GET` offers retry, and nothing renders as saved unless the server returned it.
 
 #### Scenario: Loading
 
@@ -309,19 +239,19 @@ The page SHALL NOT use browser local storage as evidence of a saved state.
 - **THEN** the page shows a loading message
 - **AND** the interest controls, all controls of the other two sections, and the three save actions are disabled
 
-#### Scenario: Empty interests
+#### Scenario: Empty state
 
 - **GIVEN** the current identity has never saved interests for that trip
 - **WHEN** the page has finished loading
-- **THEN** none of the seven interests is selected
+- **THEN** none of the ten interests is selected
 - **AND** the user can select interests and save right away
 
 #### Scenario: Saved interests are shown again after a reload
 
-- **GIVEN** Ben has saved `Art` and `Nature`
+- **GIVEN** Ben has saved `摄影` and `自然风景`
 - **WHEN** Ben opens the preferences page
-- **THEN** `Art` and `Nature` are selected
-- **AND** the other five interests are not selected
+- **THEN** `摄影` and `自然风景` are selected
+- **AND** the other eight interests are not selected
 
 #### Scenario: Empty must-do list
 
@@ -439,30 +369,30 @@ The page SHALL NOT use browser local storage as evidence of a saved state.
 - **AND** the saved value stays the server's value, so the rejected input is not shown as saved
 - **AND** the controls keep the user's typed input so it can be corrected
 
-#### Scenario: Switching identity reloads all three sections
+#### Scenario: Switching identity reloads for the new identity
 
 - **GIVEN** Ben sees his own interests, items and budget on the preferences page
 - **WHEN** the identity selector in the top bar switches to Chloe
 - **THEN** the page fetches all three sections again
 - **AND** the page shows Chloe's state, with none of Ben's state retained
 
-#### Scenario: Saving interests disables duplicate submissions
+#### Scenario: Saving disables duplicate submissions
 
 - **WHEN** the user activates the interest "Save" action and the request is still in flight
 - **THEN** the interest controls and that action are disabled
 
-#### Scenario: A successful interest save follows the response
+#### Scenario: A successful save follows the response
 
 - **WHEN** the interest save request returns 200
 - **THEN** the selected state equals the `interests` in the response
 - **AND** no error message remains on the page
 
-#### Scenario: A rejected interest save shows an inline error and rolls back
+#### Scenario: A rejected save shows an inline error and rolls back
 
-- **GIVEN** the server holds `Art` and `Nature` for the current member
+- **GIVEN** the server holds `摄影` and `自然风景` for the current member
 - **WHEN** the interest save returns 400 with `code` equal to `INTEREST_NOT_ALLOWED`
 - **THEN** the page shows the response `message`
-- **AND** the selected state returns to `Art` and `Nature`
+- **AND** the selected state returns to `摄影` and `自然风景`
 
 #### Scenario: A rejected must-do action shows an inline error and rolls back
 
@@ -477,12 +407,12 @@ The page SHALL NOT use browser local storage as evidence of a saved state.
 - **WHEN** a must-do action is in flight
 - **THEN** the action controls of that section are disabled until it completes
 
-#### Scenario: A must-do action does not touch the other sections
+#### Scenario: A must-do action does not touch the interest selection
 
-- **GIVEN** the interest section shows `Art` selected but not yet saved, and a budget is saved
+- **GIVEN** the interest section shows `摄影` selected but not yet saved, and a budget is saved
 - **WHEN** the user adds a must-do item
 - **THEN** no interest or budget `PUT` is sent
-- **AND** the interest selection is still `Art` and the budget section is unchanged
+- **AND** the interest selection is still `摄影` and the budget section is unchanged
 
 #### Scenario: Identity, membership or trip is rejected
 
@@ -501,16 +431,3 @@ The page SHALL NOT use browser local storage as evidence of a saved state.
 - **WHEN** the page is reloaded after a successful save
 - **THEN** all three sections are rendered from the `GET` responses only
 - **AND** no browser local storage value is read as a saved state
-
-## Clarifications
-
-| id | Decision | Rationale |
-|---|---|---|
-| C1 | Validation order is fixed and the first failing check decides the response | A request can violate several rules at once; without a fixed order the error `code` would not be assertable |
-| C2 | A missing `amount` key is `INVALID_REQUEST`, while `"amount": null` clears the budget | Keeps "malformed request" and "clear" apart, so a truncated body can never silently erase a saved budget |
-| C3 | A cleared budget keeps the row with `payload = {}` | Matches REQ-019's rule that clearing never deletes the record; "not set" still has a single wire representation (`null`) |
-| C4 | No business upper bound beyond the representable range | The ACs define none; a fabricated limit would become a product rule that later stories must honour |
-| C5 | The wire format stays in the currency's minor unit, and the page converts using a per-currency decimal table | Keeps storage integral (plan §5) while the screen shows `40.00`; a hard-coded factor of 100 would break `JPY` |
-| C6 | The budget section saves on its own action, never through a page-level submit | Interests save explicitly, must-do items save per action, budgets save per section; one shared submit would write several `kind`s at once |
-| C7 | MVP boundary: the closed loop is save, read back, change the limit type, clear | Currency conversion, exchange rates, budget history and any business amount ceiling are intentionally absent (REQ-024 OQ-10/OQ-13), and no other member's budget is rendered by this change; their absence is a scope decision, not an omission |
-| C8 | Must-do deletion and budget clearing require confirmation; cancel/dismiss sends no request | User ruling 2026-11-15 supersedes immediate destructive actions; API clear payload and storage semantics are unchanged |

@@ -12,6 +12,7 @@ import MainPlan from './pages/MainPlan'
 import MainPlanInputs from './pages/MainPlanInputs'
 import Scanner from './pages/Scanner'
 import PreferencesPage from './pages/PreferencesPage'
+import UserPreferencesPage from './pages/UserPreferencesPage'
 import Members from './pages/Members'
 import LoginPage from './features/auth/LoginPage'
 import RegisterPage from './features/auth/RegisterPage'
@@ -29,6 +30,7 @@ function parseRoute(hash: string): Route {
   if (path === '/login') return { page: 'login' }
   if (path === '/register') return { page: 'register' }
   if (path === '/account') return { page: 'account' }
+  if (path === '/my-preferences') return { page: 'my-preferences' }
   const mainPlanInputsMatch = path.match(/^\/trips\/(\d+)\/main-plan\/inputs$/)
   if (mainPlanInputsMatch) return { page: 'main-plan-inputs', tripId: Number(mainPlanInputsMatch[1]) }
   const mainPlanMatch = path.match(/^\/trips\/(\d+)\/main-plan$/)
@@ -149,6 +151,14 @@ export default function App() {
     return (
       <div className="app">
         <PreferencesPage tripId={route.tripId} />
+      </div>
+    )
+  }
+
+  if (route.page === 'my-preferences') {
+    return (
+      <div className="app">
+        <UserPreferencesPage />
       </div>
     )
   }
