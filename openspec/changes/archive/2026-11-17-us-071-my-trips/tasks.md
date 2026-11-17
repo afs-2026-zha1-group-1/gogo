@@ -40,7 +40,7 @@
 
 - [x] 6.1 `openspec validate us-071-my-trips --strict` = valid（如 delta 需改，先回 `/sdd:delta-craft`）
 - [x] 6.2 更新 `requirement-workspace/registry.md`（US-071 行）与 `handoff.md`（P3/P4 进度）
-- [ ] 6.3 归档前对账：`docs/knowledge/architecture/tech-stack-plan.md` 增补 `GET /api/trips`（API 清单）+ `docs/knowledge/_LOG.md` 追加一行；无数据模型变更
+- [x] 6.3 归档前对账：`docs/knowledge/architecture/tech-stack-plan.md` 增补 `GET /api/trips`（API 清单）+ `docs/knowledge/_LOG.md` 追加一行；无数据模型变更
 
 ## 7. 验证与门禁
 
@@ -75,7 +75,7 @@
 - [x] 9.1 E2E Revision 段：account 入口、my-trips 点卡片打 tag 不跳转、tag 回显、切「行程」tab 看详情、reload/重登保留、换账号隔离、无 current 空态、原型视觉比对（`e2e-us-071.md`）
 - [x] 9.2 `openspec validate us-071-my-trips --strict` = valid
 - [x] 9.3 local-verify 报告补 Revision 段；提交推送分支
-- [ ] 9.4 G1 Revision 复审（IO/SA 补签，C4）→ G2 → 合并 PR → living-merge + G3
+- [x] 9.4 G1 Revision 复审（IO/SA 补签，C4）→ G2 → 合并 PR → living-merge + G3
 
 ## Revision 对齐自检（2026-11-17）
 
