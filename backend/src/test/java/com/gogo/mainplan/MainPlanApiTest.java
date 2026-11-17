@@ -53,6 +53,8 @@ class MainPlanApiTest {
         jdbcTemplate.update("DELETE FROM main_plan_stop WHERE draft_id IN "
                 + "(SELECT id FROM main_plan_draft WHERE trip_id = ?)", tripId);
         jdbcTemplate.update("DELETE FROM main_plan_draft WHERE trip_id = ?", tripId);
+        // The confirmation projection writes main-line plan_node rows; keep tests isolated from each other.
+        jdbcTemplate.update("DELETE FROM plan_node WHERE trip_id = ? AND branch_id = 'main'", tripId);
         jdbcTemplate.update("UPDATE trip_member SET ready = 1, preference_revision = 1 "
                 + "WHERE trip_id = ? AND user_id IN (1, 2, 3, 4)", tripId);
         jdbcTemplate.update("DELETE FROM member_preference WHERE trip_id = ? AND kind = 'budget'", tripId);
@@ -120,6 +122,19 @@ class MainPlanApiTest {
         Integer flag = jdbcTemplate.queryForObject(
                 "SELECT main_plan_confirmed FROM trip WHERE id = ?", Integer.class, tripId);
         return flag != null && flag == 1;
+    }
+
+    /** Projected main-line nodes (written by MainPlanProjection at confirmation), ordered by sort_order. */
+    private List<Map<String, Object>> mainNodes(int version) {
+        return jdbcTemplate.queryForList(
+                "SELECT branch_id, node_type, title, start_at, end_at, sort_order, plan_version FROM plan_node "
+                        + "WHERE trip_id = ? AND branch_id = 'main' AND plan_version = ? ORDER BY sort_order",
+                tripId, version);
+    }
+
+    private long mainNodeCount() {
+        return jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM plan_node WHERE trip_id = ? AND branch_id = 'main'", Long.class, tripId);
     }
 
     private List<Map<String, Object>> preferenceSnapshot() {
@@ -388,6 +403,57 @@ class MainPlanApiTest {
                 .andExpect(jsonPath("$.stale").value(false));
         org.junit.jupiter.api.Assertions.assertEquals(1, draftCount());
         org.junit.jupiter.api.Assertions.assertEquals("confirmed", draftStatus(1));
+    }
+
+    // Projection: confirmation materializes the confirmed stops as main-line plan_node rows of that version,
+    // with local HH:MM resolved on the trip start date in the trip timezone (Asia/Singapore, UTC+8).
+    @Test
+    void confirmationProjectsConfirmedStopsIntoMainPlanNodes() throws Exception {
+        generateOk();
+        confirmOk();
+        List<Map<String, Object>> nodes = mainNodes(1);
+        org.junit.jupiter.api.Assertions.assertEquals(4, nodes.size());
+        org.junit.jupiter.api.Assertions.assertEquals(List.of(
+                "City Hall MRT", "National Gallery Singapore", "Gardens by the Bay", "Merlion Park"),
+                nodes.stream().map(row -> row.get("title")).toList());
+        org.junit.jupiter.api.Assertions.assertEquals(
+                List.of("2026-12-05T01:00:00Z", "2026-12-05T02:00:00Z", "2026-12-05T03:00:00Z", "2026-12-05T03:30:00Z"),
+                nodes.stream().map(row -> row.get("start_at")).toList());
+        org.junit.jupiter.api.Assertions.assertEquals(
+                List.of("2026-12-05T01:30:00Z", "2026-12-05T02:30:00Z", "2026-12-05T03:15:00Z", "2026-12-05T04:00:00Z"),
+                nodes.stream().map(row -> row.get("end_at")).toList());
+        for (Map<String, Object> node : nodes) {
+            org.junit.jupiter.api.Assertions.assertEquals("main", node.get("branch_id"));
+            org.junit.jupiter.api.Assertions.assertEquals("stop", node.get("node_type"));
+            org.junit.jupiter.api.Assertions.assertEquals(1, ((Number) node.get("plan_version")).intValue());
+        }
+        org.junit.jupiter.api.Assertions.assertEquals(
+                List.of(1, 2, 3, 4),
+                nodes.stream().map(row -> ((Number) row.get("sort_order")).intValue()).toList());
+    }
+
+    // A blocked confirmation must not project anything: the split flow would otherwise read stops nobody approved.
+    @Test
+    void blockedConfirmationWritesNoMainPlanNodes() throws Exception {
+        generateOk();
+        insertBudget(1, 40, "hard");
+        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan/confirm").with(TestAuth.asUser("1")))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+        org.junit.jupiter.api.Assertions.assertEquals(0, mainNodeCount());
+        org.junit.jupiter.api.Assertions.assertFalse(tripConfirmed());
+    }
+
+    // Re-confirming is rejected and leaves the projected rows untouched (no duplicate projection).
+    @Test
+    void reconfirmationKeepsProjectedMainPlanNodesStable() throws Exception {
+        generateOk();
+        confirmOk();
+        List<Map<String, Object>> projected = mainNodes(1);
+        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan/confirm").with(TestAuth.asUser("1")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("ALREADY_CONFIRMED"));
+        org.junit.jupiter.api.Assertions.assertEquals(projected, mainNodes(1));
     }
 
     // M13: the confirmed version stays frozen after a later revision bump.
