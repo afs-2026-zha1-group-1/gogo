@@ -7,6 +7,23 @@ trips and available destinations without changing trip state.
 
 ## ADDED Requirements
 
+### Requirement: Prototype-inspired mobile overview
+
+The selected-trip dashboard SHALL follow the supplied screenshot and release-2
+HTML prototype for its mobile hero, seven milestone slots and two-column grid
+of four status cards. Values SHALL come from authorized reads or be explicitly
+unknown or unavailable, not prototype demo data. The next-step card SHALL
+follow the source-backed next-step requirement.
+
+#### Scenario: Selected overview at a mobile viewport
+
+- **GIVEN** an authorized member opens a selected-trip dashboard
+- **WHEN** the required reads succeed
+- **THEN** the trip hero, seven milestone slots and four status cards follow
+  the reference's mobile layout and display the actual authorized values
+- **AND** unavailable reunion and completion state is identified as unknown
+- **AND** the five-tab dock preserves access to My Account
+
 ### Requirement: Member-trip listing
 
 The dashboard SHALL show all and only trips in which the authenticated

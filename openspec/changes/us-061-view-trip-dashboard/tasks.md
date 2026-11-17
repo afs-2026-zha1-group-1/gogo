@@ -86,11 +86,11 @@ remain unknown.
 ## 4. Navigation and integration
 
 - [ ] 4.1 **Owner: implementer.** Write failing browser checks covering both
-  dashboard views, four ordered tabs, active highlight, hash/history, account,
-  unique headings and create/back. Include trip tab with a remembered id and
-  open-by-id; verify they cannot reach unsafe details. Implement safe
-  navigation and coming-soon states; run checks and preserve existing
-  non-dashboard details behavior.
+  dashboard views, five ordered tabs including 我的, active highlight,
+  hash/history, account actions, unique headings and create/back. Include trip
+  tab with a remembered id and open-by-id; verify they cannot reach unsafe
+  details. Implement safe navigation and coming-soon states; run checks and
+  preserve existing non-dashboard details behavior.
 - [ ] 4.2 **Owner: implementer.** Capture persisted trip, membership,
   invitation, preference, plan and split state before and after
   loading and following every available dashboard entry/tab as organizer and

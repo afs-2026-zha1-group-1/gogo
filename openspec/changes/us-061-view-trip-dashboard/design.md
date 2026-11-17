@@ -14,9 +14,11 @@ the revised milestone and recommendation scope requires renewed alignment.
 
 **Goals:** combine authorized owning reads into a defensively validated,
 read-only view of all member trips; match the supplied prototype's trip hero,
-seven-stage strip, four status cards, next-step card and mobile dock; provide
-observable failure and access states. Completed trips may appear until US-058
-is integrated.
+seven-stage strip, four status cards, an eligible next-step card and mobile
+dock; provide observable failure and access states. Keep the existing five-tab
+dock and My Account access, as in the release-2 HTML prototype, rather than
+removing account access to match the four-tab screenshot. Completed trips may
+appear until US-058 is integrated.
 
 **Non-Goals:** no completion or archive implementation, no dashboard-owned
 progress persistence, no new destination permissions or destination actions.
@@ -59,6 +61,11 @@ permission checks; use composition. Revisit the boundary when the separately
 planned completion integration establishes its actual contract.
 
 ### D3 — Progress and route safety
+
+Use the screenshot and release-2 prototype for the selected overview's
+mobile visual hierarchy, not as sources of trip facts or destination actions.
+The hero, milestone strip and status cards display authorized source values;
+unknown and failed data remain visibly distinct from real states.
 
 Display seven independent milestones in the prototype's order, not a single
 overall current journey stage: setup is created; invitations are open or

@@ -17,7 +17,9 @@ member-trip aggregation.
   counts, and main-plan and split statuses. Present a seven-stage progress
   strip based on verified planning data, with reunion and completion marked
   unknown until their authoritative state is available.
-  Reuse owning capabilities' data and authorization; do not persist progress.
+  Follow the supplied screenshot and release-2 prototype for the mobile hero,
+  milestones and four status cards. Reuse owning capabilities' data and
+  authorization; do not persist progress or show prototype demo values.
 - Show navigation to available pages without changing saved state. Pages not
   yet developed say they are coming soon. The existing trip-details
   destination also says coming soon until its organizer page-load invitation
@@ -52,12 +54,14 @@ member-trip aggregation.
 
 - `app-shell`: dashboard tab placement and navigation now accommodate the
   member-trip list and selected-trip dashboard rather than home-only content;
-  preserve the existing shell and authenticated access boundary.
+  preserve the existing five-tab shell, account access and authenticated
+  access boundary.
 
 ## Impact
 
-- **Self:** this change delivers the interim member-trip list, overview and
-  safe dashboard navigation described above; progress remains unavailable.
+- **Self:** this change proposes the interim member-trip list, overview,
+  source-backed planning milestones, safe recommendations and navigation
+  described above. Reunion and completion remain unknown.
 - **Upstream:** authentication, membership, readiness, main-plan and split
   reads, plus the separately delivered trip-details fix, supply or constrain
   dashboard behavior. Reuse the session authentication already present in the
@@ -90,6 +94,8 @@ member-trip aggregation.
   Completion filtering and completion-aware progress require a separately
   planned US-058 follow-up. The archive and trip-details fix remain separate
   deliverables; applicable prerequisites must be met before acceptance.
+  The revised scope remains subject to a new human G1 decision; the current
+  Conditional decision does not authorize implementation.
 
 Source: `requirement-workspace/requirements/US-061.md`,
 `requirement-workspace/analysis/us-061-deep-dive.md`, and the US-061 section of
