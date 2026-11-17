@@ -7,6 +7,10 @@ context: |
   deviate from its stack, data model, or API list, record the conflict in the
   proposal or design instead of deviating silently.
 
+  Repo guard: run `bash scripts/setup-dev.sh` once per clone (skill
+  `pr-only-main-guard`). Direct pushes to main are blocked, so land every change
+  through a pull request.
+
 # Per-artifact rules.
 rules:
   tasks:
