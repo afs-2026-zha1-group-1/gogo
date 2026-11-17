@@ -10,6 +10,7 @@ import com.gogo.auth.TestAuth;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -115,12 +116,40 @@ abstract class AbstractSplitApiTest {
                 .andExpect(status().isOk());
     }
 
-    /** start (v1) -> boundaries (v2) -> routes (v3); returns the resulting draftVersion (3). */
+    /** start (v1) -> boundaries (v2) -> Chloe to B (v3) -> routes (v4); returns the resulting draftVersion (4). */
     protected int prepareConfirmableDraftAs(String displayName) throws Exception {
         int version = startDraftAs(displayName);
         saveBoundariesAs(displayName, version);
-        generateRoutesAs(displayName, version + 1);
-        return version + 2;
+        int grouped = assignAs("Chloe", "B", version + 1);
+        generateRoutesAs(displayName, grouped);
+        return grouped + 1;
+    }
+
+    /** Moves the named member into group A or B (US-040 A1) and returns the resulting draftVersion. */
+    protected int assignAs(String displayName, String groupLabel, int draftVersion) throws Exception {
+        String body = objectMapper.writeValueAsString(Map.of(
+                "groupLabel", groupLabel,
+                "draftVersion", draftVersion));
+        MvcResult result = mockMvc.perform(put("/api/trips/{tripId}/split-draft/assignment", sgfTripId())
+                        .with(TestAuth.asUser(memberId(displayName)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString())
+                .path("data").path("draftVersion").asInt();
+    }
+
+    /** Test-only document mutation replacing the saved groups (漏组/重复组 construction, US-040 G6-N/CF8-N). */
+    protected void updateGroups(Map<String, List<String>> groups) throws Exception {
+        ObjectNode node = (ObjectNode) draftNode();
+        ObjectNode groupsNode = objectMapper.createObjectNode();
+        groups.forEach((label, members) -> {
+            ArrayNode array = groupsNode.putArray(label);
+            members.forEach(array::add);
+        });
+        node.set("groups", groupsNode);
+        updateDraftDocument(node);
     }
 
     protected int splitRouteCount() {

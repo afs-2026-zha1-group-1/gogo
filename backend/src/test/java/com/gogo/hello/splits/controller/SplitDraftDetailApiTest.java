@@ -34,7 +34,8 @@ class SplitDraftDetailApiTest extends AbstractSplitApiTest {
     void getDetail_memberChloeAfterBoundariesAndRoutes_returns200ConsistentSnapshotWithoutVersionBump() throws Exception {
         startDraft();
         saveBoundaries(1);
-        postGenerate(memberId("Ben"), 2).andExpect(status().isOk());
+        assignAs("Chloe", "B", 2);
+        postGenerate(memberId("Ben"), 3).andExpect(status().isOk());
         String ben = memberId("Ben");
         String cityHall = stopId("City Hall MRT");
         String merlion = stopId("Merlion Park");
@@ -43,10 +44,10 @@ class SplitDraftDetailApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.error").doesNotExist())
                 .andExpect(jsonPath("$.data.initiatorMemberId").value(ben))
                 .andExpect(jsonPath("$.data.mainPlanVersion").value(1))
-                .andExpect(jsonPath("$.data.draftVersion").value(3))
+                .andExpect(jsonPath("$.data.draftVersion").value(4))
                 .andExpect(jsonPath("$.data.status").value("active"))
-                .andExpect(jsonPath("$.data.groups.A.length()").value(2))
-                .andExpect(jsonPath("$.data.groups.B.length()").value(2))
+                .andExpect(jsonPath("$.data.groups.A.length()").value(3))
+                .andExpect(jsonPath("$.data.groups.B.length()").value(1))
                 .andExpect(jsonPath("$.data.createdAt").isNotEmpty())
                 .andExpect(jsonPath("$.data.updatedAt").isNotEmpty())
                 .andExpect(jsonPath("$.data.mainPlanStops.length()").value(2))
@@ -74,7 +75,7 @@ class SplitDraftDetailApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.data.routes[1].travelLegsMinutes[0]").value(20))
                 .andExpect(jsonPath("$.data.routes[1].travelLegsMinutes[1]").value(20));
         JsonNode draft = objectMapper.readTree(draftJson());
-        assertThat(draft.get("draftVersion").asInt()).isEqualTo(3);
+        assertThat(draft.get("draftVersion").asInt()).isEqualTo(4);
         assertThat(activeDraftCount()).isEqualTo(1);
     }
 
