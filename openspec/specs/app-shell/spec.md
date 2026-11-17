@@ -9,7 +9,9 @@ shown on My Account and in the dashboard greeting. Existing home, create,
 details and invitation behavior stays under the shell unchanged, future areas
 stay honest text placeholders, and login, registration and invited guests
 joining by link render full-screen without in-app navigation.
+
 ## Requirements
+
 ### Requirement: Mobile shell frame
 
 The frontend SHALL render every signed-in in-app route inside a centered column
@@ -142,52 +144,6 @@ login page before this route renders.
 - **WHEN** the 仪表盘 page renders
 - **THEN** it shows only the existing home content
 - **AND** no trip-status aggregation or list-all-trips data is displayed
-
-### Requirement: Trips tab placement and no-trip empty state
-
-The 行程 tab SHALL place the existing trip details screen (hero, information
-rows, organizer invitation panel) under the shell at `#/trips/<id>`, with its
-loading, denied and missing states unchanged. When no trip is selected, the
-行程 tab SHALL show a text empty state offering exactly two actions — 创建行程
-and 按编号打开行程 — and SHALL NOT invent trip data. 按编号打开行程 SHALL
-navigate to the existing `#/trips/<id>` details route; an unknown id SHALL
-surface the existing missing state. `#/create` SHALL be reachable from the
-shell, its back action SHALL return to 行程, and a successful create SHALL
-still navigate to `#/trips/<id>`. This change SHALL NOT add a list-all-trips
-endpoint or call.
-
-#### Scenario: Details render under the shell with 行程 active
-
-- **WHEN** a member opens `#/trips/<id>` for the fixture trip
-  `Singapore Friends Day`
-- **THEN** the existing details screen (hero, information rows, organizer
-  invitation panel) renders inside the shell
-- **AND** the 行程 tab is active
-- **AND** the loading, denied and missing states behave exactly as before
-
-#### Scenario: No trip selected shows the honest empty state
-
-- **WHEN** the 行程 tab is activated and the route carries no trip id
-- **THEN** a text empty state renders with a unique visible heading
-- **AND** it offers 创建行程 and 按编号打开行程
-- **AND** no trip name, member, route or status value is invented
-
-#### Scenario: Open-by-id reuses the details route
-
-- **WHEN** the traveler opens a trip by id from the empty state
-- **THEN** the app navigates to `#/trips/<id>` and the existing details flow runs
-- **AND** an id that does not exist surfaces the existing missing state
-
-#### Scenario: Create is reachable and returns to 行程
-
-- **WHEN** the traveler opens `#/create` from the shell and uses the back action
-- **THEN** the app returns to the 行程 tab
-- **AND** a successful create still navigates to `#/trips/<id>`
-
-#### Scenario: No trip listing is introduced
-
-- **WHEN** the 行程 tab and its empty state are exercised
-- **THEN** no list-all-trips endpoint is called or added
 
 ### Requirement: Guest join exclusion
 
@@ -350,3 +306,76 @@ route. The login and register pages SHALL link to each other through the
   去登录 actions on the register page
 - **THEN** the app opens `/register` or `/login` respectively
 
+### Requirement: Current trip tab and my-trips list
+
+The 我的 page SHALL expose an entry titled 我的行程 opening `#/my-trips`, listing the caller's trips as cards without a trailing arrow. Activating a card SHALL set it as the current trip, highlight that card and show an 已选择 tag at the card's right edge without navigating. The 行程 tab SHALL target `#/trips`, rendering the current trip's details or an empty state linking to `#/my-trips`. `#/trips/<id>` SHALL keep opening details directly.
+
+#### Scenario: The account page exposes the my-trips entry
+
+- **WHEN** a signed-in traveler opens `#/account`
+- **THEN** an entry titled 我的行程 is visible
+- **AND** activating it opens `#/my-trips` inside the shell
+
+#### Scenario: The my-trips page lists the caller's trips
+
+- **WHEN** the traveler opens `#/my-trips`
+- **THEN** every row shows the trip name, destination and start–end dates with the created and ended markers
+- **AND** only trips the caller belongs to are listed
+- **AND** the page carries a unique visible heading
+- **AND** cards and empty states follow the `ui-design-reference` prototype visuals (`.qcard` / `.empty`)
+
+#### Scenario: Selecting a card tags it without navigating
+
+- **WHEN** the traveler activates a card in `#/my-trips`
+- **THEN** the selected trip becomes the caller's current trip on the server
+- **AND** that card is highlighted and shows an 已选择 tag at its right edge (no trailing arrow), staying on `#/my-trips`
+- **AND** any previously selected card loses its tag and highlight
+
+#### Scenario: The selected tag reflects the stored current trip
+
+- **WHEN** the traveler opens `#/my-trips` with a current trip already stored
+- **THEN** the matching card shows the 已选择 tag on first render
+- **AND** no other card shows it
+
+#### Scenario: The trips tab shows the current trip's details
+
+- **WHEN** the traveler activates the 行程 tab with a current trip set
+- **THEN** `#/trips` renders that trip's details screen under the shell with the 行程 tab active
+- **AND** the details' loading, denied and missing states behave as before
+
+#### Scenario: Without a current trip the trips tab guides to my-trips
+
+- **WHEN** the traveler opens `#/trips` and has no current trip
+- **THEN** an empty state renders with a unique visible heading
+- **AND** it offers a link to `#/my-trips`
+- **AND** no trip name, member, route or status value is invented
+
+#### Scenario: The current trip survives reload and re-login
+
+- **WHEN** the traveler reloads the app or signs in again on another device
+- **THEN** `#/trips` still shows the same current trip's details
+- **AND** switching to another account shows that account's own current trip, or its empty state
+
+#### Scenario: Details deep link still works
+
+- **WHEN** the traveler opens `#/trips/<id>` directly by URL
+- **THEN** the existing details flow runs for that id
+- **AND** an id that does not exist surfaces the existing missing state
+
+#### Scenario: Trip-scoped return links keep the trip context
+
+- **WHEN** a member activates the back link on the 成员 roster of a trip
+- **THEN** the app returns to that trip's details at `#/trips/<id>`
+- **AND** guidance shown when no trip is resolved targets `#/trips`
+
+#### Scenario: Create is reachable and returns to the trips tab
+
+- **WHEN** the traveler opens `#/create` from the shell and uses the back action
+- **THEN** the app returns to `#/trips`
+- **AND** a successful create still navigates to `#/trips/<id>`
+
+#### Scenario: No second list source is introduced
+
+- **WHEN** `#/my-trips` and `#/trips` are exercised
+- **THEN** the list comes only from the `trips` list read and the details only from the current-trip read plus the existing details read
+- **AND** no alternate list-all-trips endpoint or client-side cache is introduced
