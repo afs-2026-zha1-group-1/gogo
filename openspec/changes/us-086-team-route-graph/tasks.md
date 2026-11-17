@@ -29,6 +29,8 @@
 - [x] 4.3 状态优先级 DD3：loading / 403 / 404 / 失败可重试 / 主线未确认 / 无边界 / 路线待生成 / 完整图 / confirmed 只读
 - [x] 4.4 右上动作 DD7：发起后进边界、active 进边界、confirmed 进复核；无主线时禁用；错误内联展示
 - [x] 4.5 返回仍指向当前行程详情（US-082）
+- [x] 4.6 底部「分队」tab 直接指向 `/trips/{currentTripId}/split`（无当前行程回退 `#/trips`）
+- [x] 4.7 删除 `App.tsx` 的 `#/split`「分队规划」占位页与 `TripDetails.tsx` 的「分队规划」section
 
 ## 5. E2E 与回归
 

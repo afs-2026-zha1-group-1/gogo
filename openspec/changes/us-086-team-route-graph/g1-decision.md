@@ -55,6 +55,10 @@ Rationale：delta 与 proposal/requirement 一致；节点只读、无弹层；�
 - 分支/PR 尚未创建：本记录不授权直推 main，P4 按 PR-only 流程执行。
 - 本记录不声称实现或测试已完成。
 
+## P4 amendment（2026-11-17）
+
+P4 中用户澄清入口：底部「分队」tab 必须直达「队伍路线」；删除 `App.tsx` 的 `#/split`「分队规划」中间页与 `TripDetails.tsx` 的「分队规划」区块；并移除 confirmed 状态底部重复的「分队已确认」提示卡。该变更落在既有 AC1（打开分队 tab）范围内，不改变 API/状态机/数据契约；delta 的 Screen 11 场景已补「tab 直达、无中间页」一句并重新 `validate --strict` valid。G1 Decision 仍为 **Pass**，不重新签署，此段仅作追溯。
+
 ## Closure path
 
 G1 **Pass** → `/sdd:p3`：ATDD 设计、`design.md`、`tasks.md` 与对齐自检；随后 P4 实现与本地验证。

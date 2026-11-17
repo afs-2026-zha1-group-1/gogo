@@ -19,6 +19,8 @@
 - `action`：无；移除底部主按钮。
 - `children`：状态区 + 只读路线图 + 图例/摘要。
 
+入口收敛（2026-11-17 P4 修订）：底部「分队」tab 直接指向 `/trips/{currentTripId}/split`（无当前行程时回退 `#/trips`）；删除 `App.tsx` 的 `#/split`「分队规划」占位页与 `TripDetails.tsx` 的「分队规划」section，不再有中间跳转页。
+
 ### DD2 数据装配与查询
 
 - 始终 `useSplitDraft(tripId)`（`fetchDraftDetail` 在无草稿时返回 `null`，2xx）。

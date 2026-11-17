@@ -178,9 +178,6 @@ export function ScreenStart() {
                   }
                 />
               ) : null}
-              {status === "confirmed" ? (
-                <HintCard title="分队已确认" hint="本页为只读路线；确认结果不可在本页编辑。" />
-              ) : null}
             </>
           )}
 
