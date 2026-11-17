@@ -112,8 +112,20 @@ export function ScreenConfirm() {
             <EmptyState
               icon={<IconRoute />}
               title="尚无路线对"
-              hint="确认前需先保存边界并生成两条路线。"
-              action={<Button size="sm" onClick={() => navigate(`/trips/${tripId}/split/routes`)}>去生成路线</Button>}
+              hint={
+                status === "active"
+                  ? "确认前需先保存边界并生成两条路线。"
+                  : "草稿已结束，无法再生成路线；请发起替换草稿后重新规划。"
+              }
+              action={
+                status === "active" ? (
+                  <Button size="sm" onClick={() => navigate(`/trips/${tripId}/split/routes`)}>去生成路线</Button>
+                ) : (
+                  <Button size="sm" variant="outline" onClick={() => navigate(`/trips/${tripId}/split`)}>
+                    返回分队首页
+                  </Button>
+                )
+              }
             />
           ) : (
             <div className="flex flex-col gap-2.5">

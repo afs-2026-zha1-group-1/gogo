@@ -31,6 +31,7 @@ const ERROR_TEXT: Record<string, string> = {
   INVALID_GROUP_LABEL: "目标组别无效，只能是 A 或 B。",
   SPLIT_MEMBERS_INSUFFICIENT: "行程至少需要两名成员才能发起与确认分队。",
   ROUTE_GENERATION_FAILED: "路线生成失败，整对已回滚（无半成品路线）。",
+  ENDPOINT_NOT_FOUND: "接口不可用（404）：请确认后端已更新并重启到最新版本。",
 }
 
 const PERMISSION_CODES = new Set(["MEMBER_REQUIRED", "NOT_A_MEMBER", "NOT_SPLIT_INITIATOR", "NOT_SPLIT_ORGANIZER"])

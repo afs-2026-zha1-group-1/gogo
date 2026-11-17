@@ -72,8 +72,13 @@
 - [ ] 10.2 PR CI 双 job 绿（backend `mvn -B test` + frontend typecheck/build）
 - [ ] 10.3 `/sdd:g2-decision-record` 后合并；P5 归档时把 delta 合入 Living Spec
 
-## 对齐自检（Spec ↔ Design ↔ Tasks ↔ ATDD）
+## 11. P4 打磨（2026-11-17，用户反馈）
 
+- [x] 11.1 Screen 15：终态（confirmed/cancelled）不再提供「去生成路线」，改为说明 + 「返回分队首页」；仅 active 且无路线时保留跳转
+- [x] 11.2 Screen 14：底部主按钮改为「前往复核并确认」；正文的「校验时间窗」降为 outline 次按钮（仅 active 显示）
+- [x] 11.3 404 诊断：无 envelope 的 404 映射为 `ENDPOINT_NOT_FOUND`，错误卡提示「后端需更新并重启」
+
+## 对齐自检（Spec ↔ Design ↔ Tasks ↔ ATDD）
 | 检查项 | 结果 | 证据 |
 |---|---|---|
 | 38 场景全部有层归属 | Pass | `atdd-design.md` §1（API 28 / E2E 3 / 既有回归 7 行合并项） |

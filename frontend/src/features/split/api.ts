@@ -51,7 +51,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     if (response.status === 401) {
       window.dispatchEvent(new Event("gogo:unauthorized"))
     }
-    const code = envelope?.error?.code ?? "UNKNOWN"
+    const code = envelope?.error?.code ?? (response.status === 404 ? "ENDPOINT_NOT_FOUND" : "UNKNOWN")
     const message = envelope?.error?.message ?? `HTTP ${response.status}`
     throw new SplitApiError(code, message, response.status, envelope?.error?.details ?? null)
   }
