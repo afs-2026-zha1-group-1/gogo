@@ -58,13 +58,27 @@ trip readable by users 1–4); US-066 replaces it with verified login (see below
 Trip creation requires a name, destination and an end date not before the start
 date; both locations are optional.
 
-US-061 reuses US-071's `GET /api/trips` response, `{trips:[...]}`, for the
-signed-in member's dashboard cards. An empty `trips` array means the member
-has no trips; a signed-out request returns 401 `USER_REQUIRED`. The dashboard
-does not filter or infer completion. Dashboard selections are read-only and
-do not change the stored current trip; the separate `#/my-trips` picker
-persists an explicit selection. Dashboard-origin trip navigation is guarded
-until the details page's automatic invitation write is fixed.
+The dashboard reads the signed-in member's current trip from
+`GET /api/trips/current` and shows its overview directly. The `#/my-trips`
+picker uses `GET /api/trips` to list member trips and persists the current
+selection. If no trip is selected, the dashboard links to the picker and trip
+creation. The dashboard's trip tab also accepts a trip number and opens the
+existing member-protected `#/trips/<id>` details page; opening an organizer's
+details page generates an invitation as described below. Dashboard quick
+entries link to existing invitation, preference and main-plan pages; reunion
+navigation and trip completion do not have dashboard entries.
+The invitation entry opens `#/dashboard/trips/<id>/invite`, which reuses the
+trip invitation panel and returns to that trip's dashboard. Only the organizer
+can generate an invitation; other members see the existing access notice.
+The preference milestone reflects the viewer's readiness and also shows the
+group's ready count. Main-plan guidance distinguishes preparing while members
+are pending from generating once everyone is ready, and only the organizer can
+generate. Milestone colors reflect saved readiness, plan confirmation and split status;
+reunion and completion stay unknown until their data is available. The next
+step links to personal preferences, member preference inputs, the main plan or
+split planning according to those saved states. An organizer who has completed
+their preferences and has no other members is prompted to invite friends;
+invited members start at preferences rather than creation or invitation.
 
 REQ-004 adds the invitation flow. On `#/trips/<id>` the organizer sees a panel
 with the invitation link, a copy action and a QR encoding the same absolute URL

@@ -104,8 +104,8 @@ export default function PreferencesPage({ tripId, backHref = `#/trips/${tripId}`
   const userId = account?.id ?? null
   const queryClient = useQueryClient()
   // MD11: two independent caches, so a must-do action never rewrites the interest section.
-  const interestsKey = ['preferences', tripId]
-  const mustDosKey = ['must-dos', tripId]
+  const interestsKey = ['preferences', tripId, userId]
+  const mustDosKey = ['must-dos', tripId, userId]
   const [selected, setSelected] = useState<string[]>([])
   const [acknowledged, setAcknowledged] = useState<string[]>([])
 
@@ -153,12 +153,12 @@ export default function PreferencesPage({ tripId, backHref = `#/trips/${tripId}`
     queryFn: () => fetchMustDos(tripId),
   })
 
-  const budgetsKey = ['budgets', tripId]
-  const readinessKey = ['readiness', tripId]
+  const budgetsKey = ['budgets', tripId, userId]
+  const readinessKey = ['readiness', tripId, userId]
   const budgetsQuery = useQuery({ queryKey: budgetsKey, queryFn: () => fetchBudgets(tripId) })
   const readinessQuery = useQuery({ queryKey: readinessKey, queryFn: () => fetchReadiness(tripId) })
   // US-019: personal defaults, used only to pre-select when this member has no saved interests.
-  const userDefaultsQuery = useQuery({ queryKey: ['user-interests'], queryFn: fetchUserInterests })
+  const userDefaultsQuery = useQuery({ queryKey: ['user-interests', userId], queryFn: fetchUserInterests })
   const defaultsApplied = useRef(false)
 
   // Switching identity starts from an empty, clearly unloaded state; the fetches below seed it.

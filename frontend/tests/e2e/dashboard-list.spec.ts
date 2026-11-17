@@ -4,7 +4,9 @@ import { DatabaseSync } from 'node:sqlite'
 function isolatedDatabase() {
   const path = process.env.GOGO_E2E_DB_PATH
   if (!path) throw new Error('Missing isolated browser database')
-  return new DatabaseSync(path)
+  const database = new DatabaseSync(path)
+  database.exec('PRAGMA busy_timeout = 5000')
+  return database
 }
 
 async function login(page: Page, email: string) {
@@ -35,7 +37,7 @@ async function createTrip(page: Page, name: string, destination: string) {
   }, { name, destination })
 }
 
-test('lists member trips, hides other trips and opens the selected dashboard', async ({ browser, page }) => {
+test('picker lists member trips and hides other trips', async ({ browser, page }) => {
   const aliceContext = await browser.newContext()
   const alicePage = await aliceContext.newPage()
   try {
@@ -46,22 +48,18 @@ test('lists member trips, hides other trips and opens the selected dashboard', a
   }
 
   await login(page, 'ben@example.com')
-  const tripB = await createTrip(page, 'Trip B', 'Penang')
+  await createTrip(page, 'Trip B', 'Penang')
   await createTrip(page, 'Trip C', 'Malacca')
-  await page.reload()
+  await page.goto('/#/my-trips')
   await expect(page.getByText('Singapore Friends Day')).toBeVisible()
-  const cardB = page.getByRole('link', { name: /Trip B/ })
+  const cardB = page.getByRole('button', { name: /Trip B/ })
   await expect(cardB).toContainText('Penang')
   await expect(cardB).toContainText('2026-12-10')
   await expect(cardB).toContainText('2026-12-12')
-  await expect(page.getByRole('link', { name: /Trip C/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /Trip C/ })).toBeVisible()
   await expect(page.getByText('Private D')).toHaveCount(0)
   await expect(page.getByText('Private destination')).toHaveCount(0)
   await expect(page.getByText('进行中', { exact: true })).toHaveCount(0)
-  await cardB.click()
-  await expect(page).toHaveURL(new RegExp(`#/dashboard/trips/${tripB.id}$`))
-  await expect(page.getByRole('link', { name: '仪表盘' })).toHaveAttribute('aria-current', 'page')
-  await expect(page.getByText('你好，Ben')).toBeVisible()
 })
 
 test('signed-out visitors cannot see member trip cards', async ({ page }) => {
@@ -72,76 +70,61 @@ test('signed-out visitors cannot see member trip cards', async ({ page }) => {
 
 test('shows an honest empty state for a member with no trips', async ({ page }) => {
   await login(page, 'eve@example.com')
-  await expect(page.getByText('暂无行程')).toBeVisible()
+  await expect(page.getByText('尚未选择行程')).toBeVisible()
   await expect(page.getByText('Singapore Friends Day')).toHaveCount(0)
 })
 
-test('shows loading and errors rather than an empty list when the list read fails', async ({ page }) => {
+test('shows loading and errors rather than an empty dashboard when the current trip read fails', async ({ page }) => {
   await login(page, 'eve@example.com')
   let release: (() => void) | undefined
   const paused = new Promise<void>((resolve) => { release = resolve })
-  await page.route('**/api/trips', async (route) => {
+  await page.route('**/api/trips/current', async (route) => {
     await paused
     await route.fulfill({ status: 503, contentType: 'application/json', body: '{"code":"UNAVAILABLE"}' })
   })
   await page.reload({ waitUntil: 'domcontentloaded' })
-  await expect(page.getByText('正在加载行程…')).toBeVisible()
+  await expect(page.getByText('正在加载当前行程…')).toBeVisible()
   release?.()
   await expect(page.getByRole('alert')).toBeVisible()
-  await expect(page.getByText('暂无行程')).toHaveCount(0)
+  await expect(page.getByText('尚未选择行程')).toHaveCount(0)
 })
 
-for (const [startDate, endDate] of [
-  ['2026-02-30', '2026-03-01'],
-  ['2026-12-12', '2026-12-10'],
-]) {
-  test(`rejects invalid trip card dates ${startDate} to ${endDate}`, async ({ page }) => {
-    await login(page, 'eve@example.com')
-    await page.route('**/api/trips', (route) => route.fulfill({
-      json: { trips: [{ id: 1, name: 'Invalid trip', destination: 'Somewhere', startDate, endDate }] },
-    }))
-    await page.reload()
-    await expect(page.getByRole('alert')).toContainText('行程列表数据无效')
-    await expect(page.getByText('Invalid trip')).toHaveCount(0)
-  })
-}
-
-test('rejects a malformed trip-list envelope', async ({ page }) => {
+test('rejects a malformed current-trip response on the dashboard', async ({ page }) => {
   await login(page, 'eve@example.com')
-  await page.route('**/api/trips', (route) => route.fulfill({ json: [] }))
+  await page.route('**/api/trips/current', (route) => route.fulfill({ json: [] }))
   await page.reload()
-  await expect(page.getByRole('alert')).toContainText('行程列表数据无效')
-  await expect(page.getByText('暂无行程')).toHaveCount(0)
+  await expect(page.getByRole('alert')).toContainText('当前行程数据无效')
+  await expect(page.getByText('尚未选择行程')).toHaveCount(0)
 })
 
-test('opening a trip by id from the dock is unavailable while details are unsafe', async ({ page }) => {
+test('opening a trip by id is available from the dashboard dock', async ({ page }) => {
   await login(page, 'ben@example.com')
   await page.getByRole('link', { name: '行程', exact: true }).click()
-  await expect(page.getByLabel('按编号打开行程')).toBeDisabled()
-  await expect(page.getByRole('button', { name: '即将推出' })).toBeDisabled()
+  await expect(page.getByLabel('按编号打开行程')).toBeEnabled()
+  await expect(page.getByRole('button', { name: '打开行程' })).toBeEnabled()
   await expect(page).toHaveURL(/#\/dashboard\/trip-entry$/)
 })
 
-test('trip tab from dashboard shows the coming-soon details state even with a remembered trip', async ({ page }) => {
+test('trip tab from dashboard provides the trip-number entry', async ({ page }) => {
   await login(page, 'ben@example.com')
   await page.evaluate(() => { window.location.hash = '#/trips/9001/main-plan' })
   await expect(page.getByText('草稿', { exact: false }).first()).toBeVisible()
   await page.getByRole('link', { name: '仪表盘', exact: true }).click()
-  await page.getByRole('link', { name: /Stale draft trip/ }).click()
+  await page.goto('/#/dashboard/trips/9001')
   await page.getByRole('link', { name: '行程', exact: true }).click()
   await expect(page).toHaveURL(/#\/dashboard\/trip-entry$/)
-  await expect(page.getByText('行程详情即将推出', { exact: false })).toBeVisible()
+  await expect(page.getByLabel('按编号打开行程')).toBeEnabled()
 })
 
 test('refreshing a dashboard-origin dock page does not expose current-trip details', async ({ page }) => {
   await login(page, 'alice@example.com')
-  await page.getByRole('link', { name: /Stale draft trip/ }).click()
+  await page.goto('/#/dashboard/trips/9001')
   await expect(page.getByRole('region', { name: '旅程进度' })).toBeVisible()
   await page.getByRole('link', { name: '成员', exact: true }).click()
   await expect(page.getByRole('region', { name: '成员列表' })).toBeVisible()
   await page.reload()
   await page.getByRole('link', { name: '行程', exact: true }).click()
-  await expect(page.getByText('行程详情即将推出', { exact: false })).toBeVisible()
+  await expect(page.getByLabel('按编号打开行程')).toBeEnabled()
 })
 
 test('the existing direct trip-details route remains available to a member', async ({ page }) => {
@@ -153,12 +136,12 @@ test('the existing direct trip-details route remains available to a member', asy
 
 test('a dashboard selection becomes the trip used by members and split tabs', async ({ page }) => {
   await login(page, 'ben@example.com')
-  await page.getByRole('link', { name: /Stale draft trip/ }).click()
+  await page.goto('/#/dashboard/trips/9001')
   await expect(page.getByRole('region', { name: '旅程进度' })).toBeVisible()
   await page.getByRole('link', { name: '成员', exact: true }).click()
   await expect(page.getByRole('region', { name: '成员列表' })).toBeVisible()
   await page.getByRole('link', { name: '分队', exact: true }).click()
-  await expect(page.getByText('当前行程（#9001）', { exact: false })).toBeVisible()
+  await expect(page).toHaveURL(/\/trips\/9001\/split\?from=dashboard$/)
 })
 
 test('dashboard selection does not overwrite the account current trip', async ({ page }) => {
@@ -167,10 +150,10 @@ test('dashboard selection does not overwrite the account current trip', async ({
   try {
     db.prepare('UPDATE app_user SET current_trip_id = ? WHERE id = 2').run(9002)
     await login(page, 'ben@example.com')
-    await page.getByRole('link', { name: /Stale draft trip/ }).click()
+    await page.goto('/#/dashboard/trips/9001')
     await expect(page.getByRole('region', { name: '旅程进度' })).toBeVisible()
     await page.getByRole('link', { name: '分队', exact: true }).click()
-    await expect(page.getByText('当前行程（#9001）', { exact: false })).toBeVisible()
+    await expect(page).toHaveURL(/\/trips\/9001\/split\?from=dashboard$/)
     expect(db.prepare('SELECT current_trip_id FROM app_user WHERE id = 2').get()?.current_trip_id).toBe(9002)
   } finally {
     db.prepare('UPDATE app_user SET current_trip_id = ? WHERE id = 2').run(previous?.current_trip_id ?? null)
@@ -192,13 +175,13 @@ test('a late current-trip response cannot replace a dashboard selection', async 
   try {
     await page.reload()
     await requested
-    await page.getByRole('link', { name: /Stale draft trip/ }).click()
+    await page.evaluate(() => { window.location.hash = '#/dashboard/trips/9001' })
     await expect(page.getByRole('region', { name: '旅程进度' })).toBeVisible()
     const response = page.waitForResponse('**/api/trips/current')
     release?.()
     await response
     await page.getByRole('link', { name: '分队', exact: true }).click()
-    await expect(page.getByText('当前行程（#9001）', { exact: false })).toBeVisible()
+    await expect(page).toHaveURL(/\/trips\/9001\/split\?from=dashboard$/)
   } finally {
     release?.()
   }
@@ -211,10 +194,10 @@ test('dashboard trip tab does not open the saved current trip or issue an invita
     db.prepare('UPDATE app_user SET current_trip_id = ? WHERE id = 1').run(9002)
     await login(page, 'alice@example.com')
     const before = db.prepare('SELECT COUNT(*) AS count FROM trip_invitation').get()?.count
-    await page.getByRole('link', { name: /Stale draft trip/ }).click()
+    await page.goto('/#/dashboard/trips/9001')
     await expect(page.getByRole('region', { name: '旅程进度' })).toBeVisible()
     await page.getByRole('link', { name: '行程', exact: true }).click()
-    await expect(page.getByText('行程详情即将推出', { exact: false })).toBeVisible()
+    await expect(page.getByLabel('按编号打开行程')).toBeEnabled()
     expect(db.prepare('SELECT COUNT(*) AS count FROM trip_invitation').get()?.count).toBe(before)
     expect(db.prepare('SELECT current_trip_id FROM app_user WHERE id = 1').get()?.current_trip_id).toBe(9002)
   } finally {
@@ -271,10 +254,9 @@ test('picker changes cannot leave the previous trip active while current-trip re
       await paused
       await route.fulfill({ status: 503, json: { code: 'UNAVAILABLE' } })
     })
-    await page.getByRole('link', { name: '分队', exact: true }).click()
-    await expect(page.getByText('请先在「行程」页打开一个行程', { exact: false })).toBeVisible()
+    await expect(page.getByRole('link', { name: '分队', exact: true })).toHaveAttribute('href', '#/trips')
     release?.()
-    await expect(page.getByText('当前行程（#9001）', { exact: false })).toHaveCount(0)
+    await expect(page.getByRole('link', { name: '分队', exact: true })).toHaveAttribute('href', '#/trips')
   } finally {
     release?.()
     db.prepare('UPDATE app_user SET current_trip_id = ? WHERE id = 2').run(previous?.current_trip_id ?? null)
@@ -302,10 +284,13 @@ test('a pending picker write cannot expose the previous trip in split', async ({
     })
     await page.getByRole('button', { name: /Active split trip/ }).click()
     await requested
-    await page.getByRole('link', { name: '分队', exact: true }).click()
-    await expect(page.getByText('请先在「行程」页打开一个行程', { exact: false })).toBeVisible()
+    await expect(page.getByRole('link', { name: '分队', exact: true })).toHaveAttribute('href', '#/trips')
+    await page.getByRole('link', { name: '行程', exact: true }).click()
+    const response = page.waitForResponse((response) =>
+      response.url().endsWith('/api/trips/current') && response.request().method() === 'PUT')
     release?.()
-    await expect(page.getByText('当前行程（#9002）', { exact: false })).toBeVisible()
+    await (await response).finished()
+    await expect(page.getByRole('link', { name: '分队', exact: true })).toHaveAttribute('href', '/trips/9002/split')
   } finally {
     release?.()
     db.prepare('UPDATE app_user SET current_trip_id = ? WHERE id = 2').run(previous?.current_trip_id ?? null)
@@ -318,9 +303,7 @@ test('an invalid current-trip response does not become an active trip', async ({
   await page.route('**/api/trips/current', (route) => route.fulfill({ json: { tripId: '9002' } }))
   await page.evaluate(() => { window.location.hash = '#/my-trips' })
   await expect(page.getByRole('button', { name: /Stale draft trip/ })).toBeVisible()
-  await page.getByRole('link', { name: '分队', exact: true }).click()
-  await expect(page.getByText('请先在「行程」页打开一个行程', { exact: false })).toBeVisible()
-  await expect(page.getByText('当前行程（#9002）', { exact: false })).toHaveCount(0)
+  await expect(page.getByRole('link', { name: '分队', exact: true })).toHaveAttribute('href', '#/trips')
 })
 
 test('direct current-trip navigation reports a malformed response', async ({ page }) => {
@@ -348,8 +331,8 @@ test('a pending picker write prevents another selection after returning to the p
     })
     await page.getByRole('button', { name: /Active split trip/ }).click()
     await expect.poll(() => requests).toBe(1)
-    await page.evaluate(() => { window.location.hash = '#/split' })
-    await expect(page.getByText('分队规划', { exact: true })).toBeVisible()
+    await page.getByRole('link', { name: '行程', exact: true }).click()
+    await expect(page).toHaveURL(/#\/trips$/)
     await page.evaluate(() => { window.location.hash = '#/my-trips' })
     await expect(page.getByRole('button', { name: /Stale draft trip/ })).toBeDisabled()
     expect(requests).toBe(1)
@@ -381,14 +364,13 @@ test('a new or failed dashboard selection cannot retain an older trip', async ({
   await page.evaluate(() => { window.location.hash = '#/trips/9002/main-plan' })
   await expect(page.getByText('已确认', { exact: false }).first()).toBeVisible()
   await page.getByRole('link', { name: '仪表盘', exact: true }).click()
-  await page.getByRole('link', { name: /Stale draft trip/ }).click()
+  await page.goto('/#/dashboard/trips/9001')
   await expect(page.getByRole('region', { name: '旅程进度' })).toBeVisible()
   await page.getByRole('link', { name: '分队', exact: true }).click()
-  await expect(page.getByText('当前行程（#9001）', { exact: false })).toBeVisible()
-  await page.evaluate(() => { window.location.hash = '#/dashboard/trips/999999' })
+  await expect(page).toHaveURL(/\/trips\/9001\/split\?from=dashboard$/)
+  await page.goto('/#/dashboard/trips/999999')
   await expect(page.getByRole('alert')).toContainText('未找到行程')
-  await page.getByRole('link', { name: '分队', exact: true }).click()
-  await expect(page.getByText('请先在「行程」页打开一个行程', { exact: false })).toBeVisible()
+  await expect(page.getByRole('link', { name: '分队', exact: true })).toHaveAttribute('href', '#/dashboard/trip-entry')
 })
 
 test('refresh after a failed dashboard selection does not restore a saved current trip', async ({ page }) => {
@@ -401,8 +383,8 @@ test('refresh after a failed dashboard selection does not restore a saved curren
     await expect(page.getByRole('alert')).toContainText('未找到行程')
     await page.getByRole('link', { name: '分队', exact: true }).click()
     await page.reload()
-    await expect(page.getByText('请先在「行程」页打开一个行程', { exact: false })).toBeVisible()
-    await expect(page.getByText('当前行程（#9002）', { exact: false })).toHaveCount(0)
+    await expect(page).toHaveURL(/#\/dashboard\/trip-entry$/)
+    await expect(page.getByRole('link', { name: '分队', exact: true })).toHaveAttribute('href', '#/dashboard/trip-entry')
   } finally {
     db.prepare('UPDATE app_user SET current_trip_id = ? WHERE id = 2').run(previous?.current_trip_id ?? null)
     db.close()
@@ -422,8 +404,7 @@ test('a pending dashboard selection cannot use an older trip in the split tab', 
   try {
     await page.evaluate(() => { window.location.hash = '#/dashboard/trips/9001' })
     await expect(page.getByText('正在加载行程概览…')).toBeVisible()
-    await page.getByRole('link', { name: '分队', exact: true }).click()
-    await expect(page.getByText('请先在「行程」页打开一个行程', { exact: false })).toBeVisible()
+    await expect(page.getByRole('link', { name: '分队', exact: true })).toHaveAttribute('href', '#/dashboard/trip-entry')
   } finally {
     release?.()
   }

@@ -1,5 +1,11 @@
 # Local Verify Report: US-061 Main Integration
 
+> Historical evidence for the integration revision below. It does not cover
+> the later current-trip dashboard implementation or its invitation navigation
+> side effects. See the [current pipeline report](20261117-201615-pipeline-report.md)
+> and the [later local verification report](20261117-201615-local-verify-report.md)
+> for the current worktree.
+
 **Date:** 2026-11-17 (UTC+08:00)
 **Change:** `us-061-view-trip-dashboard`
 **Scope:** feature branch integrated with main commit

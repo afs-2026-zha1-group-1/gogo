@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
 import Icon from '../Icons'
+import type { IconName } from '../Icons'
 import { useAuth } from '../features/auth/AuthProvider'
 import { dashboardDateString } from './dashboardDate'
 import { dashboardMilestones, dashboardNextStep, type ProgressSources } from './dashboardProgress'
@@ -13,6 +14,7 @@ interface TripSummary {
   endDate: string
   startLocation: string | null
   endLocation: string | null
+  organizerId: number
   mainPlanConfirmed: boolean
 }
 
@@ -83,6 +85,7 @@ function parseTrip(value: unknown, tripId: number): TripSummary {
     endDate: value.endDate,
     startLocation: value.startLocation,
     endLocation: value.endLocation,
+    organizerId: value.organizerId,
     mainPlanConfirmed: value.mainPlanConfirmed,
   }
 }
@@ -218,12 +221,16 @@ export default function DashboardTrip({ tripId, onTripReady }: {
   const splitLabel = split === null ? '未发起' : split === 'active' ? '进行中' : split === 'confirmed' ? '已确认' : '已取消'
   const sources: ProgressSources = {
     mainPlanConfirmed: trip.mainPlanConfirmed,
+    isOrganizer: trip.organizerId === account?.id,
     ...readiness,
     plan: !plan ? 'absent' : plan.confirmed ? 'confirmed' : plan.stale ? 'stale' : 'draft',
     split: split ?? 'absent',
   }
   const nextStep = dashboardNextStep(sources)
-  const milestoneIcons = ['check', 'link', 'star', 'list', 'branch', 'users', 'flag'] as const
+  const milestoneIcons: Record<string, IconName> = {
+    建局: 'check', 偏好: 'star', 邀请: 'link', 主线: 'list',
+    分队: 'branch', 会合: 'users', 完成: 'flag',
+  }
 
   return (
     <>
@@ -237,13 +244,17 @@ export default function DashboardTrip({ tripId, onTripReady }: {
           <div>同行<b>{readiness.memberCount} 人</b></div>
         </div>
       </section>
-      <section className="dashboard-progress" aria-label="旅程进度">
+      <section className={`dashboard-progress${sources.isOrganizer ? '' : ' member'}`} aria-label="旅程进度">
         <h2><Icon name="nav" className="sm" /> 旅程进度</h2>
         <div className="card pad">
           <ol>
-            {dashboardMilestones(sources).map((milestone, index) => (
-              <li key={milestone.label}>
-                <span className="dashboard-progress-icon"><Icon name={milestoneIcons[index]} className="sm" /></span>
+            {dashboardMilestones(sources).map((milestone) => (
+              <li
+                key={milestone.label}
+                data-state={milestone.state}
+                aria-label={`${milestone.label}：${milestone.detail}${milestone.state === 'done' ? '，已完成' : milestone.state === 'active' ? '，进行中' : ''}`}
+              >
+                <span className="dashboard-progress-icon"><Icon name={milestone.state === 'done' ? 'check' : milestoneIcons[milestone.label]} className="sm" /></span>
                 <strong>{milestone.label}</strong>
                 <span>{milestone.detail}</span>
               </li>
@@ -272,12 +283,30 @@ export default function DashboardTrip({ tripId, onTripReady }: {
       </div>
       <section className="dashboard-next card pad" aria-label="下一步">
         <h2><Icon name="sparkle" className="sm" /> 下一步</h2>
-        <p>{nextStep === 'preferences' ? '先查看并完善你的兴趣偏好。' : '查看当前主线方案和规划情况。'}</p>
-        <a className="btn btn-primary" href={nextStep === 'preferences'
-          ? `#/dashboard/trips/${trip.id}/preferences`
-          : `#/dashboard/trips/${trip.id}/main-plan`}>
-          {nextStep === 'preferences' ? '查看我的偏好' : '查看主线方案'}
+        <p>{nextStep.hint}</p>
+        <a className="btn btn-primary" href={nextStep.destination === 'split'
+          ? `/trips/${trip.id}/split?from=dashboard`
+          : nextStep.destination === 'invite' ? `#/dashboard/trips/${trip.id}/invite`
+          : `#/dashboard/trips/${trip.id}/${nextStep.destination}${nextStep.destination === 'main-plan/inputs' ? '?from=dashboard' : ''}`}>
+          {nextStep.label}
         </a>
+      </section>
+      <section aria-label="快捷入口">
+        <div className="sec-title"><Icon name="list" className="sm" /> 快捷入口</div>
+        <div className="dashboard-quick">
+          <a className="qcard" href={`#/dashboard/trips/${trip.id}/invite`}>
+            <span className="qi"><Icon name="link" /></span>
+            <span><span className="qt">邀请朋友</span><span className="qd">分享邀请链接</span></span>
+          </a>
+          <a className="qcard" href={`#/dashboard/trips/${trip.id}/preferences`}>
+            <span className="qi"><Icon name="star" /></span>
+            <span><span className="qt">我的偏好</span><span className="qd">查看和编辑偏好</span></span>
+          </a>
+          <a className="qcard" href={`#/dashboard/trips/${trip.id}/main-plan`}>
+            <span className="qi"><Icon name="list" /></span>
+            <span><span className="qt">主线方案</span><span className="qd">查看共同路线</span></span>
+          </a>
+        </div>
       </section>
     </>
   )

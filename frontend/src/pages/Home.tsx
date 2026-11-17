@@ -1,62 +1,45 @@
 import { useEffect, useState } from 'react'
-import { api } from '../api'
+import { api, errorMessage } from '../api'
 import Icon from '../Icons'
 import { useAuth } from '../features/auth/AuthProvider'
-import { dashboardDateString } from './dashboardDate'
+import { isCurrentTripResponse } from '../lib/current-trip'
 import DashboardTrip from './DashboardTrip'
 
-interface TripCard {
-  id: number
-  name: string
-  destination: string
-  startDate: string
-  endDate: string
-}
-
-type ListState =
+type CurrentState =
   | { kind: 'loading' }
-  | { kind: 'ready'; trips: TripCard[] }
+  | { kind: 'ready'; tripId: number | null }
   | { kind: 'error'; message: string }
 
-function isTripCard(value: unknown): value is TripCard {
-  if (typeof value !== 'object' || value === null) return false
-  const card = value as Record<string, unknown>
-  return typeof card.id === 'number' && Number.isSafeInteger(card.id) && card.id > 0
-    && typeof card.name === 'string' && card.name.trim().length > 0
-    && typeof card.destination === 'string' && card.destination.trim().length > 0
-    && dashboardDateString(card.startDate) && dashboardDateString(card.endDate)
-    && card.startDate <= card.endDate
-}
-
-export default function Home({ tripId, onTripReady }: {
+export default function Home({ tripId, onTripReady, selectionInFlight = false }: {
   tripId?: number | null
   onTripReady?: (tripId: number) => void
+  selectionInFlight?: boolean
 }) {
   const { account } = useAuth()
-  const [state, setState] = useState<ListState>({ kind: 'loading' })
+  const [state, setState] = useState<CurrentState>({ kind: 'loading' })
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
-    if (tripId !== undefined) return
+    if (tripId !== undefined || selectionInFlight) return
     let active = true
     setState({ kind: 'loading' })
-    api<unknown>('/api/trips')
+    api<unknown>('/api/trips/current')
       .then((result) => {
-        if (!result.ok) throw new Error(`HTTP ${result.status}`)
-        const data = result.data
-        if (typeof data !== 'object' || data === null || !('trips' in data)
-          || !Array.isArray(data.trips) || !data.trips.every(isTripCard)) {
-          throw new Error('行程列表数据无效')
+        if (!active) return
+        if (result.ok && isCurrentTripResponse(result.data)) {
+          setState({ kind: 'ready', tripId: result.data.tripId })
+        } else {
+          setState({
+            kind: 'error',
+            message: result.ok ? '当前行程数据无效' : result.data?.message ?? `请求失败（HTTP ${result.status}）`,
+          })
         }
-        if (active) setState({ kind: 'ready', trips: data.trips })
       })
       .catch((cause: unknown) => {
-        if (active) setState({
-          kind: 'error',
-          message: cause instanceof Error ? cause.message : '未知错误',
-        })
+        if (active) setState({ kind: 'error', message: `无法连接服务器：${errorMessage(cause)}` })
       })
     return () => { active = false }
-  }, [tripId])
+  }, [tripId, account?.id, reloadKey, selectionInFlight])
 
   return (
     <div className="screen">
@@ -71,28 +54,22 @@ export default function Home({ tripId, onTripReady }: {
       <div className="body">
         {tripId !== undefined ? (
           <DashboardTrip tripId={tripId} onTripReady={onTripReady} />
+        ) : selectionInFlight || state.kind === 'loading' ? (
+          <p className="loading">正在加载当前行程…</p>
+        ) : state.kind === 'error' ? (
+          <section className="card pad">
+            <p role="alert" className="error">无法加载当前行程：{state.message}</p>
+            <button className="btn btn-ghost" type="button" onClick={() => setReloadKey((key) => key + 1)}>重试</button>
+          </section>
+        ) : state.tripId === null ? (
+          <section className="card pad empty-state">
+            <h2>尚未选择行程</h2>
+            <p className="hint">在「我的行程」里选择一个行程，或创建新行程。</p>
+            <a className="btn btn-primary" href="#/my-trips">去我的行程选择</a>
+            <a className="btn btn-ghost" href="#/create">创建行程</a>
+          </section>
         ) : (
-          <>
-            <div className="sec-title"><Icon name="list" className="sm" /> 我的行程</div>
-            {state.kind === 'loading' && <p className="loading">正在加载行程…</p>}
-            {state.kind === 'error' && <p role="alert" className="error">无法加载行程：{state.message}</p>}
-            {state.kind === 'ready' && state.trips.length === 0 && (
-              <section className="card pad empty-state">
-                <h2>暂无行程</h2>
-                <p className="hint">创建行程或通过邀请加入。</p>
-              </section>
-            )}
-            {state.kind === 'ready' && state.trips.map((trip) => (
-              <a className="card pad dashboard-trip-card" key={trip.id} href={`#/dashboard/trips/${trip.id}`}>
-                <h2>{trip.name}</h2>
-                <p>{trip.destination}</p>
-                <p>{trip.startDate} – {trip.endDate}</p>
-              </a>
-            ))}
-            <a className="btn btn-primary" href="#/create">
-              <Icon name="plus" className="sm" /> 创建行程
-            </a>
-          </>
+          <DashboardTrip tripId={state.tripId} onTripReady={onTripReady} />
         )}
       </div>
     </div>

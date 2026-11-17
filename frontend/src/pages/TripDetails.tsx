@@ -7,6 +7,7 @@ import { useAuth } from '../features/auth/AuthProvider'
 
 interface TripDetailsProps {
   tripId: number
+  invitationOnly?: boolean
 }
 
 type TripState =
@@ -16,7 +17,7 @@ type TripState =
   | { kind: 'missing'; message?: string }
   | { kind: 'failed'; message: string | undefined }
 
-export default function TripDetails({ tripId }: TripDetailsProps) {
+export default function TripDetails({ tripId, invitationOnly = false }: TripDetailsProps) {
   const { account } = useAuth()
   const organizerName = (organizerId: number) => organizerId === account?.id ? account.name : '组织者'
   const [state, setState] = useState<TripState>({ kind: 'loading' })
@@ -48,10 +49,10 @@ export default function TripDetails({ tripId }: TripDetailsProps) {
 
   const appbar = (
     <header className="appbar">
-      <a className="iconbtn" href="#/" aria-label="Back"><Icon name="left" /></a>
+      <a className="iconbtn" href={invitationOnly ? `#/dashboard/trips/${tripId}` : '#/'} aria-label="Back"><Icon name="left" /></a>
       <div className="grow">
-        <div className="title">行程详情</div>
-        <div className="sub">US-002 · 全员可见</div>
+        <div className="title">{invitationOnly ? '邀请朋友' : '行程详情'}</div>
+        <div className="sub">{invitationOnly ? 'US-008 · 分享邀请链接' : 'US-002 · 全员可见'}</div>
       </div>
     </header>
   )
@@ -84,7 +85,9 @@ export default function TripDetails({ tripId }: TripDetailsProps) {
               <h2>{heading}</h2>
               <p className="hint">{explanation}</p>
             </div>
-            <a className="btn btn-ghost" href="#/">返回首页</a>
+            <a className="btn btn-ghost" href={invitationOnly ? `#/dashboard/trips/${tripId}` : '#/'}>
+              {invitationOnly ? '返回仪表盘' : '返回首页'}
+            </a>
           </section>
         </div>
       </div>
@@ -93,6 +96,15 @@ export default function TripDetails({ tripId }: TripDetailsProps) {
 
   const trip = state.trip
   const isOrganizer = trip.organizerId === account?.id
+
+  if (invitationOnly) {
+    return (
+      <div className="screen">
+        {appbar}
+        <div className="body"><InvitationPanel tripId={trip.id} isOrganizer={isOrganizer} /></div>
+      </div>
+    )
+  }
 
   return (
     <div className="screen">

@@ -54,9 +54,10 @@ type InputsState =
 interface MainPlanInputsProps {
   tripId: number
   dashboardOrigin?: boolean
+  backToDashboard?: boolean
 }
 
-export default function MainPlanInputs({ tripId, dashboardOrigin = false }: MainPlanInputsProps) {
+export default function MainPlanInputs({ tripId, dashboardOrigin = false, backToDashboard = false }: MainPlanInputsProps) {
   const { account } = useAuth()
   const [state, setState] = useState<InputsState>({ kind: 'loading' })
   const [generating, setGenerating] = useState(false)
@@ -124,7 +125,9 @@ export default function MainPlanInputs({ tripId, dashboardOrigin = false }: Main
 
   const appbar = (
     <header className="appbar">
-      <a className="iconbtn" href={dashboardOrigin
+      <a className="iconbtn" href={backToDashboard
+        ? `#/dashboard/trips/${tripId}`
+        : dashboardOrigin
         ? `#/dashboard/trips/${tripId}/main-plan`
         : `#/trips/${tripId}/main-plan`} aria-label="Back"><Icon name="left" /></a>
       <div className="grow">

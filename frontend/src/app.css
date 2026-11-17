@@ -257,6 +257,10 @@ body {
   list-style: none;
 }
 
+.dashboard-progress.member ol {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
 .dashboard-progress li {
   display: flex;
   min-width: 0;
@@ -280,8 +284,43 @@ body {
   height: 32px;
   place-items: center;
   border-radius: 50%;
-  background: var(--brand-soft);
+  border: 2px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-3);
+}
+
+.dashboard-progress [data-state="done"] .dashboard-progress-icon {
+  border-color: var(--ok);
+  background: var(--ok);
+  color: #fff;
+}
+
+.dashboard-progress [data-state="active"] .dashboard-progress-icon {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: #fff;
+  box-shadow: 0 0 0 4px var(--brand-soft);
+}
+
+.dashboard-progress [data-state="active"] strong {
   color: var(--brand-ink);
+}
+
+.dashboard-quick {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.dashboard-quick .qcard,
+.dashboard-quick .qcard + .qcard {
+  min-width: 0;
+  margin: 0;
+}
+
+.dashboard-quick .qcard > span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .dashboard-next {
@@ -1978,6 +2017,18 @@ body {
   border-color: var(--ink-3);
 }
 
+.qcard:disabled {
+  cursor: not-allowed;
+  opacity: .6;
+  transform: none;
+  box-shadow: var(--sh-1);
+}
+
+.qcard .qt,
+.qcard .qd {
+  display: block;
+}
+
 .qcard + .qcard {
   margin-top: 10px;
 }
@@ -2042,4 +2093,3 @@ body {
   font-weight: 400;
   color: var(--ink-3);
 }
-

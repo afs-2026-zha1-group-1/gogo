@@ -34,11 +34,17 @@ function parseRoute(hash: string): Route {
   if (path === '/account') return { page: 'account' }
   if (path === '/my-preferences') return { page: 'my-preferences' }
   if (path === '/dashboard/trip-entry') return { page: 'dashboard-trip-guard' }
-  const dashboardInputsMatch = path.match(/^\/dashboard\/trips\/(\d+)\/main-plan\/inputs$/)
+  const dashboardInviteMatch = path.match(/^\/dashboard\/trips\/(\d+)\/invite$/)
+  if (dashboardInviteMatch) {
+    const tripId = Number(dashboardInviteMatch[1])
+    if (Number.isSafeInteger(tripId) && tripId > 0) return { page: 'invitation', tripId }
+    return { page: 'dashboard-trip', tripId: null }
+  }
+  const dashboardInputsMatch = path.match(/^\/dashboard\/trips\/(\d+)\/main-plan\/inputs(\?from=dashboard)?$/)
   if (dashboardInputsMatch) {
     const tripId = Number(dashboardInputsMatch[1])
     if (Number.isSafeInteger(tripId) && tripId > 0) {
-      return { page: 'main-plan-inputs', tripId, dashboardOrigin: true }
+      return { page: 'main-plan-inputs', tripId, dashboardOrigin: true, backToDashboard: Boolean(dashboardInputsMatch[2]) }
     }
     return { page: 'dashboard-trip', tripId: null }
   }
@@ -81,6 +87,7 @@ function parseRoute(hash: string): Route {
 function isDashboardRoute(route: Route): boolean {
   return route.page === 'home' || route.page === 'dashboard-trip'
     || route.page === 'dashboard-trip-guard'
+    || route.page === 'invitation'
     || ((route.page === 'main-plan' || route.page === 'main-plan-inputs' || route.page === 'preferences')
       && route.dashboardOrigin === true)
 }
@@ -107,7 +114,7 @@ export default function App() {
     || (['split', 'members', 'account', 'create', 'scan'].includes(route.page)
       && sessionStorage.getItem('gogo:dashboard-context') === 'true'))
   const [dashboardSelectionAttempted, setDashboardSelectionAttempted] = useState(
-    () => route.page === 'dashboard-trip'
+    () => route.page === 'dashboard-trip' || route.page === 'invitation'
       || ((route.page === 'main-plan' || route.page === 'main-plan-inputs') && route.dashboardOrigin === true)
       || (dashboardContext
       && sessionStorage.getItem('gogo:dashboard-selection-attempted') === 'true'),
@@ -138,7 +145,7 @@ export default function App() {
       const parsed = parseRoute(next)
       if (isDashboardRoute(parsed)) {
         setDashboardContext(true)
-        if (parsed.page === 'dashboard-trip'
+        if (parsed.page === 'dashboard-trip' || parsed.page === 'invitation'
           || ((parsed.page === 'main-plan' || parsed.page === 'main-plan-inputs') && parsed.dashboardOrigin)) {
           setDashboardSelectionAttempted(true)
         }
@@ -181,7 +188,7 @@ export default function App() {
 
   const dashboardTripId = route.page === 'dashboard-trip' ? route.tripId : null
   useEffect(() => {
-    if (route.page === 'dashboard-trip') {
+    if (route.page === 'dashboard-trip' || route.page === 'home') {
       dashboardSelection.current = null
       explicitTripContext.current = false
       setLastTripId(null)
@@ -209,7 +216,7 @@ export default function App() {
   useEffect(() => {
     if (status !== 'signedIn' || !account || dashboardSelectionAttempted || pickerReadBlocked
       || explicitTripContext.current
-      || route.page === 'dashboard-trip' || route.page === 'details'
+      || route.page === 'home' || route.page === 'dashboard-trip' || route.page === 'details'
       || route.page === 'main-plan' || route.page === 'main-plan-inputs' || route.page === 'my-trips') return
     let active = true
     api<unknown>('/api/trips/current')
@@ -291,6 +298,14 @@ export default function App() {
     )
   }
 
+  if (route.page === 'invitation') {
+    return (
+      <div className="app">
+        <TripDetails tripId={route.tripId} invitationOnly />
+      </div>
+    )
+  }
+
   if (route.page === 'my-preferences') {
     return (
       <div className="app">
@@ -302,7 +317,9 @@ export default function App() {
   return (
     <div className="app">
       <div className="shell-content">
-        {route.page === 'home' && <Home key={`${account.id}-list`} />}
+        {route.page === 'home' && (
+          <Home key={`${account.id}-current`} onTripReady={handleDashboardReady} selectionInFlight={pickerWritePending} />
+        )}
         {route.page === 'dashboard-trip' && (
           <Home key={`${account.id}-${route.tripId}`} tripId={route.tripId} onTripReady={handleDashboardReady} />
         )}
@@ -311,7 +328,9 @@ export default function App() {
         {/* US-031/037: the main plan lives inside the shell so the bottom
             navigation stays visible when users arrive from the "行程" tab. */}
         {route.page === 'main-plan' && <MainPlan tripId={route.tripId} dashboardOrigin={route.dashboardOrigin} />}
-        {route.page === 'main-plan-inputs' && <MainPlanInputs tripId={route.tripId} dashboardOrigin={route.dashboardOrigin} />}
+        {route.page === 'main-plan-inputs' && (
+          <MainPlanInputs tripId={route.tripId} dashboardOrigin={route.dashboardOrigin} backToDashboard={route.backToDashboard} />
+        )}
         {route.page === 'my-trips' && (
           <TripsList
             selectable
