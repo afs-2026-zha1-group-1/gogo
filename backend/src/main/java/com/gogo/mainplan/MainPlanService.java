@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gogo.preference.InterestCatalogue;
 import com.gogo.trip.TripRepository;
 import com.gogo.trip.TripResponse;
 
@@ -75,7 +76,9 @@ public class MainPlanService {
                     Map.of("pendingMembers", pending));
         }
 
-        Set<Long> readyIds = members.stream().map(MainPlanRepository.MemberRow::userId)
+        Set<Long> readyIds = members.stream()
+                .filter(member -> !noPreferenceOf(member.submissionPayload()))
+                .map(MainPlanRepository.MemberRow::userId)
                 .collect(Collectors.toSet());
         List<MustDoItem> mustDo = mustDoItems(tripId);
         List<String> preferenceLocations = mustDo.stream()
@@ -89,13 +92,17 @@ public class MainPlanService {
         Map<Long, List<String>> interests = interestCodes(tripId);
         Map<Long, Integer> hardBudgets = hardBudgets(tripId);
         List<MemberInput> inputs = members.stream()
-                .map(member -> new MemberInput(member.userId(), member.displayName(),
-                        member.preferenceRevision(),
-                        interests.getOrDefault(member.userId(), List.of()),
-                        mustDo.stream()
-                                .filter(item -> item.userId() == member.userId())
-                                .map(MustDoItem::name).toList(),
-                        hardBudgets.get(member.userId())))
+                .map(member -> {
+                    boolean noPref = noPreferenceOf(member.submissionPayload());
+                    return new MemberInput(member.userId(), member.displayName(),
+                            member.preferenceRevision(),
+                            noPref ? List.<String>of() : interests.getOrDefault(member.userId(), List.of()),
+                            noPref ? List.<String>of()
+                                    : mustDo.stream()
+                                            .filter(item -> item.userId() == member.userId())
+                                            .map(MustDoItem::name).toList(),
+                            noPref ? null : hardBudgets.get(member.userId()));
+                })
                 .toList();
         TripContext context = new TripContext(tripId, trip.destination(), trip.startDate(),
                 trip.endDate(), completed.startLocation(), completed.endLocation());
@@ -182,19 +189,27 @@ public class MainPlanService {
                 draft.costPerPersonCents(), revisions, stops);
     }
 
-    // D7: member-readable before any draft; display-only aggregations.
+    // D7: member-readable before any draft; display-only aggregations. A member who chose "no
+    // preference" stays ready but contributes no personal values, so the summary never repeats
+    // stale interests, must-dos or budgets for them.
     public InputsResponse readInputs(long tripId, long caller) {
         requireTrip(tripId);
         requireMember(tripId, caller);
         List<MainPlanRepository.MemberRow> members = plans.members(tripId);
         List<InputsResponse.Member> memberLines = members.stream()
                 .map(member -> new InputsResponse.Member(member.userId(), member.displayName(),
-                        member.ready(), member.preferenceRevision()))
+                        member.ready(), member.preferenceRevision(),
+                        noPreferenceOf(member.submissionPayload())))
                 .toList();
         int readyCount = (int) members.stream().filter(MainPlanRepository.MemberRow::ready).count();
         Set<Long> readyIds = members.stream().filter(MainPlanRepository.MemberRow::ready)
+                .filter(member -> !noPreferenceOf(member.submissionPayload()))
                 .map(MainPlanRepository.MemberRow::userId)
                 .collect(Collectors.toSet());
+        Map<Long, String> names = new LinkedHashMap<>();
+        for (MainPlanRepository.MemberRow member : members) {
+            names.put(member.userId(), member.displayName());
+        }
 
         Map<Long, List<String>> interests = interestCodes(tripId);
         List<String> common = null;
@@ -206,19 +221,45 @@ public class MainPlanService {
                 common.retainAll(codes);
             }
         }
-        LinkedHashSet<String> mustDo = new LinkedHashSet<>();
-        for (MustDoItem item : mustDoItems(tripId)) {
-            if (readyIds.contains(item.userId())) {
-                mustDo.add(item.name());
-            }
+        List<String> commonCodes = common == null ? List.of() : common;
+        List<String> commonLabels = new ArrayList<>();
+        for (String code : commonCodes) {
+            commonLabels.add(InterestCatalogue.labelOf(code).orElse(code));
         }
+
+        LinkedHashSet<String> mustDo = new LinkedHashSet<>();
+        Map<String, InputsResponse.MustDo> groupedMustDo = new LinkedHashMap<>();
+        for (MustDoItem item : mustDoItems(tripId)) {
+            if (!readyIds.contains(item.userId())) {
+                continue;
+            }
+            mustDo.add(item.name());
+            String key = item.name() + "\u0000" + (item.location() == null ? "" : item.location());
+            InputsResponse.MustDo existing = groupedMustDo.get(key);
+            List<String> owners = new ArrayList<>(existing == null ? List.of() : existing.memberNames());
+            String owner = names.get(item.userId());
+            if (owner != null && !owners.contains(owner)) {
+                owners.add(owner);
+            }
+            groupedMustDo.put(key, new InputsResponse.MustDo(item.name(), item.location(), owners));
+        }
+
         Map<Long, Integer> hardBudgets = hardBudgets(tripId);
+        Map<Long, MemberBudget> storedBudgets = budgets(tripId);
         List<InputsResponse.Budget> budgets = members.stream()
-                .map(member -> new InputsResponse.Budget(member.userId(), member.displayName(),
-                        hardBudgets.get(member.userId())))
+                .map(member -> {
+                    boolean noPref = noPreferenceOf(member.submissionPayload());
+                    MemberBudget stored = noPref ? null : storedBudgets.get(member.userId());
+                    return new InputsResponse.Budget(member.userId(), member.displayName(),
+                            noPref ? null : hardBudgets.get(member.userId()),
+                            stored == null ? null : stored.amount(),
+                            stored == null ? null : stored.currency(),
+                            stored == null ? null : stored.limitType());
+                })
                 .toList();
         return new InputsResponse(tripId, readyCount, members.size(), memberLines,
-                common == null ? List.of() : common, List.copyOf(mustDo), budgets, RULES);
+                commonCodes, List.copyOf(mustDo), budgets, RULES, commonLabels,
+                List.copyOf(groupedMustDo.values()));
     }
 
     // ---- gates ----
@@ -261,6 +302,32 @@ public class MainPlanService {
     record MustDoItem(long userId, String name, String location) {
     }
 
+    record MemberBudget(Integer amount, String currency, String limitType) {
+    }
+
+    // A cleared budget keeps an empty object, so only an amount makes a member's budget real.
+    private Map<Long, MemberBudget> budgets(long tripId) {
+        Map<Long, MemberBudget> stored = new LinkedHashMap<>();
+        for (MainPlanRepository.PreferenceRow row : plans.preferenceRows(tripId, "budget")) {
+            JsonNode payload = parse(row.payload());
+            if (!payload.path("amount").isNumber()) {
+                continue;
+            }
+            stored.put(row.userId(), new MemberBudget(payload.path("amount").asInt(),
+                    payload.path("currency").asText(null), payload.path("limitType").asText(null)));
+        }
+        return stored;
+    }
+
+    // US-026: "no preference" is an explicit choice stored on the submission row; the member is
+    // ready but contributes no personal values to generation.
+    private boolean noPreferenceOf(String submissionPayload) {
+        if (submissionPayload == null || submissionPayload.isBlank()) {
+            return false;
+        }
+        return parse(submissionPayload).path("noPreference").asBoolean(false);
+    }
+
     private Map<Long, List<String>> interestCodes(long tripId) {
         Map<Long, List<String>> codes = new LinkedHashMap<>();
         for (MainPlanRepository.PreferenceRow row : plans.preferenceRows(tripId, "interest")) {
@@ -284,12 +351,14 @@ public class MainPlanService {
         return items;
     }
 
+    // A member's budget is stored in major units (元); the plan cost and every budget comparison
+    // work in cents, so the conversion happens here and nowhere else.
     Map<Long, Integer> hardBudgets(long tripId) {
         Map<Long, Integer> budgets = new LinkedHashMap<>();
         for (MainPlanRepository.PreferenceRow row : plans.preferenceRows(tripId, "budget")) {
             JsonNode payload = parse(row.payload());
             if ("hard".equals(payload.path("limitType").asText())) {
-                budgets.put(row.userId(), payload.path("amount").asInt());
+                budgets.put(row.userId(), payload.path("amount").asInt() * 100);
             }
         }
         return budgets;

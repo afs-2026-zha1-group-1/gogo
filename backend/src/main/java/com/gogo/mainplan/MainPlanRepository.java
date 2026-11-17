@@ -23,7 +23,8 @@ public class MainPlanRepository {
             Integer travelMinutesToNext, String interestsJson) {
     }
 
-    public record MemberRow(long userId, String displayName, boolean ready, int preferenceRevision) {
+    public record MemberRow(long userId, String displayName, boolean ready, int preferenceRevision,
+            String submissionPayload) {
     }
 
     public record PreferenceRow(long userId, String payload) {
@@ -103,13 +104,21 @@ public class MainPlanRepository {
                 startLocation, endLocation, tripId);
     }
 
+    // Readiness and the explicit "no preference" flag come from the US-026 submission row; the
+    // payload is left unparsed so the service owns the JSON contract. The scaffold column stays a
+    // fallback, so a submission saved before this projection existed still counts as ready.
     public List<MemberRow> members(long tripId) {
         return jdbc.query(
-                "SELECT m.user_id, u.display_name, m.ready, m.preference_revision "
+                "SELECT m.user_id, u.display_name, "
+                        + "CASE WHEN s.payload IS NOT NULL AND TRIM(s.payload) <> '' THEN 1 ELSE m.ready END AS ready, "
+                        + "m.preference_revision, s.payload AS submission_payload "
                         + "FROM trip_member m JOIN app_user u ON u.id = m.user_id "
+                        + "LEFT JOIN member_preference s ON s.trip_id = m.trip_id AND s.user_id = m.user_id "
+                        + "AND s.kind = 'submission' "
                         + "WHERE m.trip_id = ? ORDER BY m.user_id",
                 (rs, rowNum) -> new MemberRow(rs.getLong("user_id"), rs.getString("display_name"),
-                        rs.getInt("ready") == 1, rs.getInt("preference_revision")),
+                        rs.getInt("ready") == 1, rs.getInt("preference_revision"),
+                        rs.getString("submission_payload")),
                 tripId);
     }
 

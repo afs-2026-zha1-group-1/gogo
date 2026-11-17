@@ -1774,3 +1774,86 @@ No critical blocker invalidates US-040; split may proceed.
 - 单 change：`us-040-split-grouping`（后端 assignment + 初始分组 + 两处门禁；前端 Screen 13/15 + 契约层）。
 - 不建议再拆「只读分组/写入分组」：两者共用同一份 `groups` 契约与版本语义，拆开会造成两次 delta 触碰同一 requirement。
 - P4 实施顺序建议（供 P3 tasks）：夹具与初始分组 → assignment 端点 → 生成/确认门禁 → Screen 13 分组卡 → Screen 15 成员名 → 回归。
+
+---
+
+# Impact brief — US-086
+
+- Date: 2026-11-17
+- Workdir: `requirement-workspace/`
+- Mode: embedded at the end of `/sdd:pre-spec-req`（blocking OQ = 0，DoR BLOCKER = 0）
+- Change id: `us-086-team-route-graph`
+
+## 1. Requirement set
+
+| id | Path |
+|---|---|
+| US-086 | `requirement-workspace/requirements/US-086.md` |
+
+支撑：`intents/2026-11-17-us-086.md`、`analysis/us-086-dor.md`、GitHub issue #113。
+
+## 2. As-is asset inventory（证据路径）
+
+| 资产 | 证据 | 现状 |
+|---|---|---|
+| Living Spec — splits | `openspec/specs/splits/spec.md` §`Split draft start` / `发起屏幕展示契约（Screen 11）` | 规定发起屏展示 initiator/mainPlanVersion/draftVersion/status；动作按状态分支为「发起（替换）分队草稿 / 下一步：选择边界 / 查看已确认分队」；**未规定路线图与右上动作** |
+| Living Spec — app-shell | `openspec/specs/app-shell/spec.md` | 分队 tab 与 `/trips/:tripId/split` 路由已存在；无展示契约改动需求 |
+| 现有分队入口页 | `frontend/src/features/split/screen-start.tsx` | 标题「智能分队」、右侧 Fork 徽章、底部「发起分队草稿」；含 fork-join 示意图与规则卡；旧设计 |
+| 分队布局壳 | `frontend/src/features/split/split-layout.tsx` | appbar 左侧返回、标题/副标题、右侧 `ReactNode` 插槽、底部 `action` 插槽 |
+| 分队读契约 | `frontend/src/features/split/types.ts`、`hooks.ts`、`api.ts` | `SplitDraftDetail` 含 `mainPlanStops`/`departureStopId`/`reunionStopId`/`departureAt`/`reunionAt`/`windowMinutes`/`routes`；`GroupRoute` 含 `activityName`/`activityMinutes`/`travelLegsMinutes[]`/`bufferMinutes`；5s 轮询 |
+| 后端读接口 | `backend/.../splits/SplitDraftController.java`、`SplitDraftRepository.java` | `GET /split-draft` 成员可读；无逐节点时刻/地点/费用/任务字段 |
+| 主线读接口 | `backend/.../mainplan/MainPlanController.java`、`PlanResponse.java`；`frontend/src/pages/MainPlan.tsx` | `GET /main-plan` 返回 `confirmed`、`costPerPersonCents`、`stops[{name,startTime,endTime,...}]`；无草稿时可用 |
+| 数据库 | `backend/src/main/resources/db/migration/V4__splits.sql`、`V5__create_main_plan.sql` | `split_draft`、`plan_node`（含 split-a/split-b 单活动节点）、`main_plan_stop`；本变更只读 |
+| 路由 | `frontend/src/router.tsx` | `/trips/:tripId/split` 已指向 `ScreenStart`；后续步骤路由已存在 |
+| UI 参考 | `ui-design-reference/gogo-mvp-prototype.html`（screen 11）、`screenshots/screen-11-split-start.png` | 新设计已合入 main（`3790a22`）；节点详情弹层存在但**不在本故事范围** |
+| 视觉资产 | `frontend/src/app.css`、`frontend/src/components/icons.tsx`、`frontend/src/components/ui/*` | 现成 token、图标与卡片/按钮组件；无图表库依赖 |
+| 测试基线 | `backend` splits/mainplan 测试；前端 build/typecheck；浏览器 E2E 记录 | 现有分队 12–15 屏流程需回归；本变更只改 Screen 11 |
+
+## 3. As-is → proposed delta
+
+| Touched asset | As-is | Proposed delta |
+|---|---|---|
+| `frontend/src/features/split/screen-start.tsx` | 智能分队说明页 + 底部主按钮 | 改为「队伍路线」总览页：右上状态动作、只读路线图、无旧示意图/规则卡；状态与数据装配按 Requirement |
+| `frontend/src/features/split/team-route-graph.tsx`（新增） | 不存在 | 纯展示 SVG/CSS 路线图：主线、分头/会合、A/B 分支、暂停段、图例、空时长占位 |
+| `frontend/src/features/split/hooks.ts` / `api.ts` | 只有 split-draft 查询与变更 | 增加无草稿时读取主线（`GET /main-plan`）的查询；既有轮询与 mutation 不变 |
+| `frontend/src/features/split/split-layout.tsx` | 右侧 `ReactNode` 插槽 | 复用插槽放状态动作按钮；如插槽样式不足，仅做展示层扩展 |
+| `frontend/src/features/split/types.ts` | 已覆盖 split 与 `PlanStop`/`GroupRoute` | 复用；如需要，补 `PlanResponse` 的只读类型（前端本地类型，不改后端） |
+| Living Spec `splits` | Screen 11 规定旧展示字段与底部动作 | P2 MODIFIED 展示契约：标题、右上动作、路线图、只读节点、状态分支 |
+| Backend / Database | — | **无变更**（零端点、零迁移、零依赖） |
+| 原型 | 新设计已合并；含节点弹层 | 原型弹层仅作视觉历史，不进入本故事 AC；P2/P3 不实现 |
+
+## 4. Blast radius
+
+- 前端：仅分队入口页与其数据装配；`/split` 后续四步页面（边界/路线/时间窗/确认）不改。
+- 运行时：多一次成员范围的主线读取（仅在无草稿/已取消时）；既有 5s 草稿轮询与 mutation 失效策略不变。
+- 导航：返回仍指向当前行程详情；分队 tab、`#/split` 占位与 `lastTripId` 逻辑不改。
+- 数据：只读；无写入路径变化，`confirmed` 仍为只读终态。
+
+## 5. Cross-REQ consistency
+
+| Related REQ/US | Relationship | Risk |
+|---|---|---|
+| US-038 / US-049 / US-050（splits） | 消费唯一草稿、状态机、确认/取消；本变更只改 Screen 11 展示 | Living Spec 旧展示契约需在 P2 MODIFIED；状态分支不得放宽 confirmed 只读 |
+| US-039 / US-042 / US-043 | 右上动作导航到既有步骤；路线图消费其生成结果 | 不改这些页面与端点 |
+| US-052 / US-063 | 个人路线与倒计时由它们负责 | 本页不提供个人视角或倒计时 |
+| US-037（main-itinerary） | 无草稿时读取已确认主线 | 只读；不改主线生成/确认 |
+| US-082（返回上下文） | 返回目标显式带 trip 上下文 | 沿用其约定 |
+| US-013（成员） | 本故事不展示成员名单 | 无 |
+
+## 6. Risk register
+
+| id | Risk | Severity | Mitigation |
+|---|---|---|---|
+| R1 | Living Spec Screen 11 仍描述旧展示与底部动作 | spec 冲突 | P2 单条 MODIFIED；G1 前复审 |
+| R2 | 有/无草稿的主线数据源不同（`plan_node` ISO vs `main_plan_stop` 本地 `HH:MM`） | 展示一致 | 分别格式化，不互相换算；P3 明确格式规则 |
+| R3 | `GroupRoute` 无逐节点时刻/地点/费用/任务 | 需求落差 | 用户裁决不做弹层；节点只显示时长分解，空值显示「待补全」 |
+| R4 | `confirmed` 若误显示发起入口会违反 US-049 | 业务规则 | 状态分支动作；P4 E2E 覆盖 confirmed 只读 |
+| R5 | 多日行程只有单一时间线 | 可用性 | 本故事按后端返回展示；OQ-2 deferred |
+| R6 | 路线尚未生成时误渲染空 A/B | 数据虚构 | 显示「路线待生成」占位，不编造活动 |
+| R7 | 删改 `screen-start.tsx` 影响分队 12–15 屏回归 | 回归面 | 只改入口页；E2E 回归边界/路线/确认路径 |
+
+无 critical blocker 使需求失效，可进入 `/sdd:proposal-split`。
+
+## 7. Suggested split boundaries
+
+单 change（建议 `us-086-team-route-graph`）：只读路线图组件 + Screen 11 页面改造 + 状态动作分支 + 数据装配；零后端、零迁移。P3 可拆三组顺序实现：① 图组件与数据映射；② 页面状态与右上动作；③ 回归（分队 12–15 屏 + 入口页 E2E）。Effort：M（前端为主）。

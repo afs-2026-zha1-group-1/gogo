@@ -22,9 +22,10 @@ set). The shell SHALL NOT render a shell-wide identity bar, an identity switcher
 a seeded-user list or a top-right profile shortcut. The authenticated account's
 display name SHALL be shown on My Account and in the dashboard greeting, and
 account actions SHALL exist only on My Account. The login page, the registration
-page and guest join surfaces SHALL render outside the shell without the dock.
-The shell itself SHALL NOT change create validation, trip-details permission,
-invitation panel or join behavior, or main-plan behavior; authentication and
+page, guest join surfaces and the trip invitation page at
+`#/trips/<id>/invitation` SHALL render outside the shell without the dock. The
+shell itself SHALL NOT change create validation, trip-details permission,
+invitation issuance or join behavior, or main-plan behavior; authentication and
 session ownership belong to the `auth` capability.
 
 #### Scenario: An in-app route renders inside the frame
@@ -52,9 +53,16 @@ session ownership belong to the `auth` capability.
 - **THEN** My Account renders inside the shell with the 我的 tab active
 - **AND** the dock and safe-area padding remain available
 
+#### Scenario: The invitation page renders full-screen without the dock
+
+- **WHEN** an authenticated member opens `#/trips/<id>/invitation`
+- **THEN** the invitation page renders outside the shell without the bottom
+  dock
+- **AND** a back control returns to the same trip's detail page inside the shell
+
 #### Scenario: Existing contracts are unchanged
 
-- **WHEN** create validation, trip-details permission, the invitation panel, the
+- **WHEN** create validation, trip-details permission, invitation issuance, the
   join flow and main-plan outcomes are exercised under the shell
 - **THEN** they behave exactly as before this change
 - **AND** the shell itself adds no trip, invitation or main-plan state

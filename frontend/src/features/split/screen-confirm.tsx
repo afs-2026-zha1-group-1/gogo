@@ -1,3 +1,4 @@
+import { useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { useCancelDraft, useConfirmDraft, useSplitDraft, useTripMembers } from "./hooks"
 import { useAuth } from "../auth/AuthProvider"
@@ -36,6 +37,13 @@ export function ScreenConfirm() {
   const isInitiator = detail != null && accountId != null && detail.initiatorMemberId === accountId
   const busy = confirm.isPending || cancel.isPending
 
+  // US-084 AC1: a successful confirmation returns to the same trip's detail page,
+  // where the confirmed personal route is derived. Cross-router-space navigation
+  // uses a full page load (precedent: router.tsx /account → /#/account).
+  useEffect(() => {
+    if (confirm.isSuccess) window.location.href = `/#/trips/${tripId}`
+  }, [confirm.isSuccess, tripId])
+
   const onCancel = () => {
     if (!detail) return
     if (!window.confirm("确认取消该拆分草稿？主线方案不会改变，取消后可重新发起。")) return
@@ -69,7 +77,7 @@ export function ScreenConfirm() {
       title="复核并确认分队"
       subtitle="服务端重校验通过后成对生效"
       step={4}
-      backTo={`/trips/${tripId}/split/timing`}
+      backTo={status === "confirmed" ? undefined : `/trips/${tripId}/split/timing`}
       right={
         <Badge variant={status === "confirmed" ? "ok" : status === "cancelled" ? "warn" : "brand"}>
           {status === "confirmed" ? "已确认" : status === "cancelled" ? "已取消" : "待确认"}

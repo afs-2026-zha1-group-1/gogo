@@ -1,5 +1,17 @@
 import { api } from '../api'
-import type { PreferencesResponse, SavePreferencesResponse } from '../types/preferences'
+import type {
+  BudgetLimitType,
+  BudgetsResponse,
+  MustDoItem,
+  MustDosResponse,
+  PreferencesResponse,
+  ReadinessResponse,
+  SaveBudgetResponse,
+  SaveMustDosResponse,
+  SavePreferencesResponse,
+  SubmissionResponse,
+  UserInterestsResponse,
+} from '../types/preferences'
 
 /** Thrown by this client so the page can branch on the HTTP status (PAGE-8 copy). */
 export class ApiError extends Error {
@@ -42,6 +54,64 @@ export function savePreferences(
   interests: string[],
 ): Promise<SavePreferencesResponse> {
   return request<SavePreferencesResponse>(`/api/trips/${tripId}/preferences`, {
+    method: 'PUT',
+    body: { interests },
+  })
+}
+
+// US-020: the must-do section's own two calls. A save always replaces the whole list, so the
+// page sends the acknowledged items plus the one pending change and adopts the response (MD11).
+export function fetchMustDos(tripId: number): Promise<MustDosResponse> {
+  return request<MustDosResponse>(`/api/trips/${tripId}/preferences/must-dos`)
+}
+
+export function saveMustDos(
+  tripId: number,
+  items: MustDoItem[],
+): Promise<SaveMustDosResponse> {
+  return request<SaveMustDosResponse>(`/api/trips/${tripId}/preferences/must-dos`, {
+    method: 'PUT',
+    body: { items },
+  })
+}
+
+// US-024: budget lives in its own sub-resource. A null amount clears the budget.
+export function fetchBudgets(tripId: number): Promise<BudgetsResponse> {
+  return request<BudgetsResponse>(`/api/trips/${tripId}/preferences/budget`)
+}
+
+export function saveBudget(
+  tripId: number,
+  amount: number | null,
+  currency?: string,
+  limitType?: BudgetLimitType,
+): Promise<SaveBudgetResponse> {
+  const body = amount === null ? { amount: null } : { amount, currency, limitType }
+  return request<SaveBudgetResponse>(`/api/trips/${tripId}/preferences/budget`, {
+    method: 'PUT',
+    body,
+  })
+}
+
+// US-026: submit readiness and read readiness for the roster.
+export function submitPreferences(tripId: number, noPreference: boolean): Promise<SubmissionResponse> {
+  return request<SubmissionResponse>(`/api/trips/${tripId}/preferences/submission`, {
+    method: 'PUT',
+    body: { noPreference },
+  })
+}
+
+export function fetchReadiness(tripId: number): Promise<ReadinessResponse> {
+  return request<ReadinessResponse>(`/api/trips/${tripId}/preferences/readiness`)
+}
+
+// US-019: personal default interests (not trip-scoped).
+export function fetchUserInterests(): Promise<UserInterestsResponse> {
+  return request<UserInterestsResponse>(`/api/me/preferences`)
+}
+
+export function saveUserInterests(interests: string[]): Promise<UserInterestsResponse> {
+  return request<UserInterestsResponse>(`/api/me/preferences`, {
     method: 'PUT',
     body: { interests },
   })

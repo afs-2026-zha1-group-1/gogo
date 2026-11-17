@@ -46,3 +46,6 @@ test-results/
 /.agents/ai4se-plugins-VERSION
 /.agents/skills/ai4se-sdd/
 /.agents/skills/ai4se-sdd-meta/
+
+# Browser acceptance screenshots (local evidence only, not committed)
+ui-design-reference/screenshots/us-083-085-acceptance/

@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class PreferenceService {
 
+    private static final String INTEREST = "interest";
+
     private final PreferenceRepository repository;
 
     public PreferenceService(PreferenceRepository repository) {
@@ -22,7 +24,7 @@ public class PreferenceService {
 
     public List<PreferenceMember> members(long tripId) {
         List<PreferenceMember> members = new ArrayList<>();
-        for (PreferenceRepository.StoredPreference stored : repository.membersOf(tripId)) {
+        for (PreferenceRepository.StoredPreference stored : repository.membersOf(tripId, INTEREST)) {
             members.add(new PreferenceMember(stored.userId(),
                     InterestCatalogue.labelsOf(repository.codesOf(stored))));
         }
@@ -36,7 +38,7 @@ public class PreferenceService {
                     .orElseThrow(() -> new PreferenceApiException(400, "INTEREST_NOT_ALLOWED",
                             "Unsupported interest: " + label)));
         }
-        repository.save(tripId, userId, codes);
+        repository.save(tripId, userId, INTEREST, codes);
         return InterestCatalogue.labelsOf(codes);
     }
 }

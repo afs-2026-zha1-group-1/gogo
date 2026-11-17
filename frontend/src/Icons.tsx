@@ -29,6 +29,13 @@ const PATHS = {
       <path d="M5.5 5h11l-2 3.2 2 3.2h-11" />
     </>
   ),
+  target: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <circle cx="12" cy="12" r="4.6" />
+      <circle cx="12" cy="12" r="1" />
+    </>
+  ),
   user: (
     <>
       <circle cx="12" cy="8" r="3.6" />
@@ -74,6 +81,13 @@ const PATHS = {
     <path d="M12 3.6l2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 9.9l6.1-.7L12 3.6z" />
   ),
   plus: <path d="M12 5.5v13M5.5 12h13" />,
+  wallet: (
+    <>
+      <rect x="3.5" y="6" width="17" height="13" rx="2.5" />
+      <path d="M3.5 10.5h17" />
+      <path d="M16.5 14.5h.01" />
+    </>
+  ),
   arrow: (
     <>
       <path d="M4 12h15" />
@@ -84,6 +98,15 @@ const PATHS = {
     <>
       <path d="M4 20h4l10-10a2.8 2.8 0 0 0-4-4L4 16v4z" />
       <path d="M13.5 6.5l4 4" />
+    </>
+  ),
+  trash: (
+    <>
+      <path d="M3 6h18" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
     </>
   ),
   info: (

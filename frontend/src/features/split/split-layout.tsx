@@ -1,8 +1,8 @@
 import type { ReactNode } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
+import TabBar from "@/TabBar"
 import { StepBar } from "@/components/ui/step-bar"
 import { IconArrowLeft } from "@/components/icons"
-import { useAuth } from "@/features/auth/AuthProvider"
 
 /**
  * Split-flow app shell (ui-design-reference three-part skeleton: appbar -> body -> actionbar).
@@ -17,6 +17,7 @@ export function SplitLayout({
   backTo,
   right,
   action,
+  showTabBar = false,
   children,
 }: {
   title: string
@@ -25,10 +26,11 @@ export function SplitLayout({
   backTo?: string
   right?: ReactNode
   action?: ReactNode
+  showTabBar?: boolean
   children: ReactNode
 }) {
   const navigate = useNavigate()
-  const { account } = useAuth()
+  const { tripId } = useParams()
   return (
     <div className="flex min-h-screen justify-center bg-bg">
       <div className="flex h-screen w-full max-w-[440px] flex-col overflow-hidden bg-surface-2 shadow-[0_0_40px_rgba(28,25,23,0.06)]">
@@ -55,16 +57,21 @@ export function SplitLayout({
           {step != null ? <StepBar step={step} className="mt-3" /> : null}
         </header>
 
-        <div className="flex-none border-b border-line-2 bg-surface/70 px-4 py-2.5 text-[11px] font-semibold text-ink-2">
-          已登录 · {account?.name ?? "账号"}
-        </div>
-
         <main className="flex-1 overflow-y-auto px-4 pt-4 pb-6">{children}</main>
 
         {action ? (
           <footer className="flex flex-none gap-2.5 border-t border-line-2 bg-surface/95 px-4 py-3 backdrop-blur-md">
             {action}
           </footer>
+        ) : null}
+
+        {showTabBar ? (
+          <TabBar
+            fullPage
+            active="split"
+            tripsHref="#/trips"
+            splitHref={tripId ? `/trips/${tripId}/split` : "#/trips"}
+          />
         ) : null}
       </div>
     </div>
