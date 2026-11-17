@@ -113,7 +113,7 @@ remain unknown.
   Earlier reports cover the pre-merge branch only. Include the explicit picker,
   dashboard-origin safety and delayed current-trip response. Do not claim
   US-058 integration.
-- [ ] 4.3b **Owner: implementer; post-PR.** Run the required CI jobs,
+- [x] 4.3b **Owner: implementer; post-PR.** Run the required CI jobs,
   including the recorded browser suite, and record actual results. Do not mark
   acceptance passed if required prerequisites are missing.
 

@@ -4,9 +4,8 @@
 **Change:** `us-061-view-trip-dashboard`
 **Scope:** feature branch integrated with main commit
 `42a9239e718db33ce0113cf20ad840c1ea71e259`
-**Overall:** Fail — required post-PR CI and pre-archive reconciliation are
-still outstanding. Local checks below include the review fixes but do not
-constitute a G2 decision.
+**Overall:** Fail — pre-archive reconciliation remains outstanding. Local
+checks below include the review fixes but do not constitute a G2 decision.
 
 ## Local results
 
@@ -28,12 +27,27 @@ account changes, guarded navigation after refresh, and safe split and
 main-plan returns. Persisted-state snapshots include account current-trip IDs
 and exclude account credentials.
 
+## Post-PR CI
+
+[GitHub Actions run 44033488988](https://github.com/afs-2026-zha1-group-1/gogo/actions/runs/44033488988)
+completed successfully on PR #118 for integration commit
+`09df7dd34cde5dd2e29ea16f861aadb688666810`:
+
+| Job | Result |
+|---|---|
+| Backend tests | Pass |
+| Frontend build, typecheck, contracts and unit tests | Pass |
+| Browser acceptance (Chromium) | Pass |
+
+This evidence applies to the integration commit; the subsequent change
+recording it modifies documentation and task status only. Check the PR's
+latest CI status before any later merge decision.
+
 ## Outstanding evidence and limitations
 
 - An independent integration review identified five navigation and selection
   risks. Focused red-green browser regressions and the full local browser suite
   were run after the fixes; the reviewer did not perform a second review.
-- Required GitHub CI has not run. Task 4.3b remains open.
 - Archive reconciliation remains task 5.1 and must occur only at archive.
 - Completion-aware filtering and the original outstanding criteria of issue
   #26 are not delivered; the issue remains open.
