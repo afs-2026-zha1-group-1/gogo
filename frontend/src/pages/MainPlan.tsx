@@ -44,9 +44,10 @@ interface BlockedConfirm {
 
 interface MainPlanProps {
   tripId: number
+  dashboardOrigin?: boolean
 }
 
-export default function MainPlan({ tripId }: MainPlanProps) {
+export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanProps) {
   const { account } = useAuth()
   const [state, setState] = useState<PlanState>({ kind: 'loading' })
   const [busy, setBusy] = useState<'regen' | 'confirm' | null>(null)
@@ -149,7 +150,7 @@ export default function MainPlan({ tripId }: MainPlanProps) {
   const inTrip = state.kind === 'ready' || state.kind === 'empty'
   const appbar = (
     <header className="appbar">
-      <a className="iconbtn" href="#/" aria-label="Back"><Icon name="left" /></a>
+      <a className="iconbtn" href={dashboardOrigin ? `#/dashboard/trips/${tripId}` : '#/'} aria-label="Back"><Icon name="left" /></a>
       <div className="grow">
         <div className="title">主线方案</div>
         <div className="sub">US-037 · 校验通过后方可确认</div>
@@ -159,9 +160,10 @@ export default function MainPlan({ tripId }: MainPlanProps) {
           {state.plan.confirmed ? '已确认' : '草稿'} v{state.plan.version}
         </span>
       )}
-      {inTrip && (
+      {inTrip && !dashboardOrigin && (
         <a className="iconbtn" href={`#/trips/${tripId}`} aria-label="行程详情"><Icon name="info" /></a>
       )}
+      {inTrip && dashboardOrigin && <span className="hint">行程详情即将推出</span>}
     </header>
   )
 

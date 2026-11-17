@@ -18,3 +18,11 @@ test('the lockfile includes the Windows x64 rolldown binding', () => {
   assert.ok(binding.os.includes('win32'));
   assert.ok(binding.cpu.includes('x64'));
 });
+
+test('the lockfile does not reference the internal registry', () => {
+  const internal = Object.entries(lockfile.packages)
+    .filter(([, pkg]) => pkg.resolved && new URL(pkg.resolved).hostname === 'artifact.oocl.com')
+    .map(([name]) => name);
+
+  assert.deepEqual(internal, []);
+});

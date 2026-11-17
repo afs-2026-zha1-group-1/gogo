@@ -3,8 +3,8 @@
 ## Revised-scope review — 2026-11-17
 
 Reviewer: AI. This review is planning evidence, not a gate decision or proof
-of implementation. The revised scope and five-tab decision require IO/SA
-reassessment; the current G1 decision remains Conditional.
+of implementation. The requester subsequently reported IO/SA Pass; see the
+[G1 decision](g1-decision.md).
 
 | Check | Result | Evidence and conclusion |
 |---|---|---|
@@ -12,7 +12,7 @@ reassessment; the current G1 decision remains Conditional.
 | AC: negative and edge cases | Pass | The deltas and ATDD cover failed and invalid reads, access boundaries, no completion inference, safe recommendations and blocked unsafe details navigation. |
 | DoV: scope and traceability | Pass | The proposal, deltas, design, local requirement, ATDD and tasks describe the revised all-member scope, source-backed milestones and five-tab navigation. |
 | DoV: structural validation | Pass | `openspec validate us-061-view-trip-dashboard --strict` passes after the shell delta reconciliation. This does not establish semantic approval or implementation. |
-| DoV: human alignment | Partial | The earlier G1 Pass covered different behavior. The revised scope and change from four to five tabs must return to the named IO and SA. |
+| DoV: human alignment | Pass | The requester reported that the named IO and SA decided Pass on the revised scope and five-tab dock on 2026-11-17; this is not a direct signature. |
 | DoV: implementation and acceptance | Not assessed | Actual authentication, owning reads, destination authorization, isolated browser checks and no-write evidence remain to be verified. |
 
 US-058 completion integration and archive remain deferred. The tracker and

@@ -1,6 +1,30 @@
 # G1 decision — us-061-view-trip-dashboard
 
-## Current decision — revised milestone scope
+## Current decision — revised milestone and five-tab scope
+
+- **Gate:** G1 (Align)
+- **Decision:** Pass
+- **Recorded:** 2026-11-17 11:38:34 +08:00
+- **Approvers:** IO Emily Li; SA Sammi Ng. The requester reported that both
+  decided Pass on 2026-11-17. This is reported approval, not direct signatures.
+- **Inputs:** [proposal](proposal.md), [trip-dashboard delta](specs/trip-dashboard/spec.md),
+  [app-shell delta](specs/app-shell/spec.md), [AC / DoV review](dov-ac-review.md),
+  [alignment self-check](alignment-self-check.md), [design](design.md), and
+  [ATDD design](atdd-design.md).
+- **Scope:** All member trips, source-backed planning milestones, unknown
+  reunion and completion, safe recommendations, the reference-inspired
+  overview and the existing five-tab dock including My Account. Completion
+  integration and archive remain deferred.
+- **Ambiguity and conflict:** Strict OpenSpec validation passes after shell
+  reconciliation. The user's five-tab choice supersedes the earlier
+  Conditional decision's four-tab wording. The external tracker and later
+  US-066 shell reconciliation remain separately owned follow-ups.
+- **Conditions:** None reported. Existing apply-time checks still require
+  real authentication and owning reads, safe destination authorization,
+  isolated browser verification and no-write evidence. This decision does not
+  claim implementation or acceptance.
+
+## Earlier decision — revised milestone scope (superseded)
 
 - **Gate:** G1 (Align)
 - **Decision:** Conditional

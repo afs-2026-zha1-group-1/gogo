@@ -27,6 +27,27 @@ function parseRoute(hash: string): Route {
   if (path === '/login') return { page: 'login' }
   if (path === '/register') return { page: 'register' }
   if (path === '/account') return { page: 'account' }
+  const dashboardPlanMatch = path.match(/^\/dashboard\/trips\/(\d+)\/main-plan$/)
+  if (dashboardPlanMatch) {
+    const tripId = Number(dashboardPlanMatch[1])
+    if (Number.isSafeInteger(tripId) && tripId > 0) {
+      return { page: 'main-plan', tripId, dashboardOrigin: true }
+    }
+    return { page: 'dashboard-trip', tripId: null }
+  }
+  const dashboardPreferencesMatch = path.match(/^\/dashboard\/trips\/(\d+)\/preferences$/)
+  if (dashboardPreferencesMatch) {
+    const tripId = Number(dashboardPreferencesMatch[1])
+    if (Number.isSafeInteger(tripId) && tripId > 0) {
+      return { page: 'preferences', tripId, dashboardOrigin: true }
+    }
+    return { page: 'dashboard-trip', tripId: null }
+  }
+  if (path.startsWith('/dashboard/trips/')) {
+    const value = path.slice('/dashboard/trips/'.length)
+    const tripId = /^\d+$/.test(value) ? Number(value) : NaN
+    return { page: 'dashboard-trip', tripId: Number.isSafeInteger(tripId) && tripId > 0 ? tripId : null }
+  }
   const mainPlanInputsMatch = path.match(/^\/trips\/(\d+)\/main-plan\/inputs$/)
   if (mainPlanInputsMatch) return { page: 'main-plan-inputs', tripId: Number(mainPlanInputsMatch[1]) }
   const mainPlanMatch = path.match(/^\/trips\/(\d+)\/main-plan$/)
@@ -44,6 +65,7 @@ function parseRoute(hash: string): Route {
 
 const TAB_FOR_PAGE: Record<InAppPage, TabId> = {
   home: 'dashboard',
+  'dashboard-trip': 'dashboard',
   'trips-empty': 'trips',
   details: 'trips',
   create: 'trips',
@@ -80,14 +102,25 @@ export default function App() {
   }, [lastNonScanHash])
 
   useEffect(() => {
+    setLastTripId(null)
+  }, [account?.id])
+
+  const dashboardTripId = route.page === 'dashboard-trip' ? route.tripId : null
+  useEffect(() => {
+    if (route.page === 'dashboard-trip') setLastTripId(null)
+  }, [route.page, dashboardTripId])
+
+  useEffect(() => {
     if (route.page === 'details' || route.page === 'main-plan' || route.page === 'main-plan-inputs') {
       setLastTripId(route.tripId)
     }
   }, [route])
 
-  // The bottom "行程" tab is the entry point to the main plan (design: tab ->
-  // US-037 review). Fall back to the empty list only when no trip is open.
-  const tripsHref = lastTripId != null ? `#/trips/${lastTripId}/main-plan` : '#/trips'
+  const tripsHref = route.page !== 'home' && route.page !== 'dashboard-trip'
+    && route.page !== 'trips-empty' && route.page !== 'create'
+    && !(route.page === 'main-plan' && route.dashboardOrigin) && lastTripId != null
+    ? `#/trips/${lastTripId}/main-plan`
+    : '#/trips'
 
   if (route.page === 'login') return <LoginPage />
   if (route.page === 'register') return <RegisterPage />
@@ -127,7 +160,10 @@ export default function App() {
   if (route.page === 'preferences') {
     return (
       <div className="app">
-        <PreferencesPage tripId={route.tripId} />
+        <PreferencesPage
+          tripId={route.tripId}
+          backHref={route.dashboardOrigin ? `#/dashboard/trips/${route.tripId}` : undefined}
+        />
       </div>
     )
   }
@@ -135,12 +171,15 @@ export default function App() {
   return (
     <div className="app">
       <div className="shell-content">
-        {route.page === 'home' && <Home />}
+        {route.page === 'home' && <Home key={`${account.id}-list`} />}
+        {route.page === 'dashboard-trip' && (
+          <Home key={`${account.id}-${route.tripId}`} tripId={route.tripId} onTripReady={setLastTripId} />
+        )}
         {route.page === 'create' && <CreateTrip backHref={tripsHref} />}
         {route.page === 'details' && <TripDetails tripId={route.tripId} />}
         {/* US-031/037: the main plan lives inside the shell so the bottom
             navigation stays visible when users arrive from the "行程" tab. */}
-        {route.page === 'main-plan' && <MainPlan tripId={route.tripId} />}
+        {route.page === 'main-plan' && <MainPlan tripId={route.tripId} dashboardOrigin={route.dashboardOrigin} />}
         {route.page === 'main-plan-inputs' && <MainPlanInputs tripId={route.tripId} />}
         {route.page === 'trips-empty' && <TripsEmpty />}
         {route.page === 'split' && (

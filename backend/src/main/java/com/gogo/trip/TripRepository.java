@@ -66,6 +66,16 @@ public class TripRepository {
         return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }
 
+    public List<TripCardResponse> findByMember(long userId) {
+        return jdbc.query(
+                "SELECT t.id, t.name, t.destination, t.start_date, t.end_date "
+                        + "FROM trip t JOIN trip_member tm ON tm.trip_id = t.id "
+                        + "WHERE tm.user_id = ? ORDER BY t.id",
+                (rs, rowNum) -> new TripCardResponse(rs.getLong("id"), rs.getString("name"),
+                        rs.getString("destination"), rs.getString("start_date"), rs.getString("end_date")),
+                userId);
+    }
+
     public boolean isMember(long tripId, long userId) {
         Long count = jdbc.queryForObject(
                 "SELECT COUNT(*) FROM trip_member WHERE trip_id = ? AND user_id = ?",

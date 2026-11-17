@@ -7,8 +7,8 @@ See [proposal](proposal.md) and [ATDD design](atdd-design.md). The current
 `App.tsx` routes the dashboard to Home and remembers a details trip for the
 trip tab. The organizer's details page issues an invitation on load. The
 current session principal and existing authenticated shell must be preserved.
-The [G1 decision](g1-decision.md) is Pass only for the earlier interim scope;
-the revised milestone and recommendation scope requires renewed alignment.
+The [G1 decision](g1-decision.md) records the requester's report that the IO
+and SA passed the revised milestone and recommendation scope.
 
 ## Goals / Non-Goals
 
@@ -82,6 +82,11 @@ ready or the main plan is confirmed, suggest viewing the main plan. Only show
 a suggestion after the required reads are validated and its destination is
 verified to load without writes and to enforce existing authorization. The
 dashboard never performs the destination's operations.
+Dashboard-origin preference and main-plan views use
+`#/dashboard/trips/<id>/preferences` and
+`#/dashboard/trips/<id>/main-plan`, respectively. Their return controls lead
+back to the selected dashboard; the main-plan view does not expose the unsafe
+details link. Existing non-dashboard routes retain their owning behavior.
 
 Use `#/` for the list and `#/dashboard/trips/<id>` for the selected view.
 Parse malformed selected identifiers explicitly instead of falling back to
@@ -98,11 +103,11 @@ create/back behavior, browser history and account identity.
 Follow the [ATDD design](atdd-design.md) for red-first API and E2E slices:
 include all member trips and distinguish verified planning milestones from
 unknown reunion and completion.
-The
-existing Maven and frontend build CI jobs are real gates; browser acceptance
-has no existing configured runner and needs explicit setup during apply.
-Test against real applicable separately owned dependencies before end-to-end
-acceptance of the interim scope. Real completion-provider integration is
+The existing Maven and frontend build CI jobs are real gates. A reproducible
+browser acceptance runner and CI job were added during implementation. Run
+local verification before the PR, then require actual CI results before
+end-to-end acceptance of the interim scope. Test against real applicable
+separately owned dependencies; completion-provider integration remains
 deferred and must not be claimed.
 
 ## Risks / Trade-offs
@@ -110,15 +115,13 @@ deferred and must not be claimed.
 - **Undelivered US-058 read** → all member trips, including potentially
   completed trips, appear and completion is unknown. A later change must
   establish the real read contract before restoring active-only behavior.
-- **Revised G1 scope** → the existing Pass covers unavailable progress and no
-  recommendation, not this revision. Obtain renewed human alignment and
-  update ATDD evidence before implementation; do not imply the old Pass covers
-  this design.
-- **Auth and US-066 shell overlap** → Reuse the session authentication already
-  present in the codebase without waiting for US-066 archive. US-061 proceeds
-  first; Sammi Ng coordinates the later reconciliation of overlapping complete
-  shell requirement blocks so US-066 preserves dashboard behavior. Verify
-  authentication and authorization against the actual code for acceptance.
+- **Revised G1 scope** → the earlier Pass did not cover this revision.
+  Renewed IO/SA alignment is recorded as reported, not as direct signatures;
+  the remaining acceptance and coordination checks still apply.
+- **Auth and shell compatibility** → US-066 coordination is outside this
+  change. Reuse the session authentication already present in the codebase
+  and verify authentication and authorization against the actual code for
+  acceptance. Future shell changes still need their own compatibility review.
 - **Separate archive and unsafe details page** → Archive is outside the interim
   scope. Keep details blocked until its separately owned no-write fix is
   verified; acceptance of the interim dashboard must verify that the block
@@ -128,8 +131,8 @@ deferred and must not be claimed.
   completion/list consistency when the deferred integration is undertaken.
 - **Original tracker drift** → owner Sammi Ng reconciles it separately; this
   design does not silently change the original issue.
-- **No existing browser E2E CI** → establish a reproducible acceptance runner
-  and record actual evidence; existing CI alone is insufficient.
+- **Browser acceptance CI** → the reproducible runner and CI job have been
+  added, but actual remote CI results remain required for acceptance.
 
 ## Deployment and rollback
 

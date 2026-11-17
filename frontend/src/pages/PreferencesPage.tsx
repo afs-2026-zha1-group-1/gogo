@@ -9,6 +9,7 @@ import type { PreferencesResponse } from '../types/preferences'
 
 interface PreferencesPageProps {
   tripId: number
+  backHref?: string
 }
 
 interface Rejection {
@@ -35,12 +36,12 @@ function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : '请求失败，请重试'
 }
 
-export default function PreferencesPage({ tripId }: PreferencesPageProps) {
+export default function PreferencesPage({ tripId, backHref = `#/trips/${tripId}` }: PreferencesPageProps) {
   // US-066: the session supplies identity, so the page no longer takes a userId prop.
   const { account } = useAuth()
   const userId = account?.id ?? null
   const queryClient = useQueryClient()
-  const queryKey = ['preferences', tripId]
+  const queryKey = ['preferences', tripId, userId]
   const [selected, setSelected] = useState<string[]>([])
   const [acknowledged, setAcknowledged] = useState<string[]>([])
   const [failure, setFailure] = useState<string | null>(null)
@@ -105,7 +106,7 @@ export default function PreferencesPage({ tripId }: PreferencesPageProps) {
 
   const appbar = (
     <div className="appbar">
-      <a className="iconbtn" href={`#/trips/${tripId}`} aria-label="返回行程">
+      <a className="iconbtn" href={backHref} aria-label="返回行程">
         <Icon name="left" />
       </a>
       <div className="grow">
@@ -136,7 +137,7 @@ export default function PreferencesPage({ tripId }: PreferencesPageProps) {
                   重试
                 </button>
               )}
-              <a className="btn btn-ghost sm" href={`#/trips/${tripId}`}>
+              <a className="btn btn-ghost sm" href={backHref}>
                 返回行程
               </a>
             </div>

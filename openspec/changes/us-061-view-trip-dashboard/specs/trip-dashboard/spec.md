@@ -63,14 +63,29 @@ ready count, main-plan status and split status using the owning capabilities'
 authorized reads and readiness rules. It SHALL show a reported stale main plan
 as stale and SHALL NOT create separate persisted dashboard progress state.
 
-#### Scenario: Overview reflects saved data
+#### Scenario: Overview reflects a stale draft
 
 - **GIVEN** Ben belongs to a trip with four members, three ready members, a
-  stale main-plan draft and an active split draft
+  stale main-plan draft and no split draft
 - **WHEN** Ben opens its dashboard and all required reads succeed
 - **THEN** the saved name, destination, dates and available start/end locations
   are shown with member count 4 and ready count 3
-- **AND** the main-plan draft is identified as stale and the split as active
+- **AND** the main-plan draft is identified as stale and the split as absent
+
+#### Scenario: Overview reflects an active split
+
+- **GIVEN** Ben belongs to a trip with a confirmed main plan and an active
+  split draft
+- **WHEN** Ben opens its dashboard and all required reads succeed
+- **THEN** the main plan is identified as confirmed and the split as active
+
+#### Scenario: Inconsistent main plan and split
+
+- **GIVEN** the owning reads report an active split with an unconfirmed main
+  plan
+- **WHEN** Ben opens its dashboard
+- **THEN** the inconsistent status information is shown as unavailable
+- **AND** no recommendation is inferred from it
 
 #### Scenario: Successful absent drafts
 

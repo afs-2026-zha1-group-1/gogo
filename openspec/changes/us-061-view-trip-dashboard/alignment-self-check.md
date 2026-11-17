@@ -3,9 +3,9 @@
 ## Revised-scope update — 2026-11-17
 
 This is a planning check, not a gate decision or proof of implementation.
-Result: **Partial** pending renewed IO/SA G1 assessment. The current
-[G1 decision](g1-decision.md) remains Conditional, and its prior four-tab
-condition predates the user's choice to retain five tabs.
+The requester reported that IO and SA decided Pass for the revised scope;
+see the [G1 decision](g1-decision.md). Its prior four-tab condition predates
+the user's choice to retain five tabs.
 
 | Delta area | Design | ATDD | Tasks |
 |---|---|---|---|
@@ -19,8 +19,8 @@ condition predates the user's choice to retain five tabs.
 | Binding API-plan deviation | D1, deployment | no dashboard-owned state | 5.1 |
 
 Strict OpenSpec validation passes. The local requirement, AC/DoV review and
-ATDD describe the revised scope; ATDD remains provisional until the applicable
-human gate decision. Real source and destination behavior, browser E2E,
+ATDD describe the revised scope; the requester accepted the ATDD baseline.
+Real source and destination behavior, browser E2E,
 no-write evidence and CI execution are implementation/acceptance work, not
 proof provided by this planning check. US-058 integration remains deferred;
 US-066 shell and external tracker reconciliation remain separately owned.

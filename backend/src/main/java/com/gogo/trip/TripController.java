@@ -3,6 +3,7 @@ package com.gogo.trip;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,6 +26,11 @@ public class TripController {
 
     public TripController(TripRepository repository) {
         this.repository = repository;
+    }
+
+    @GetMapping
+    public List<TripCardResponse> list(@AuthenticationPrincipal AccountPrincipal principal) {
+        return repository.findByMember(principal.id());
     }
 
     @PostMapping

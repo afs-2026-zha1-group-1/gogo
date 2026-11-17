@@ -213,14 +213,12 @@ class TripApiTest {
     }
 
     @Test
-    void noEditDeleteOrListRoutesExist() throws Exception {
+    void noEditOrDeleteRoutesExist() throws Exception {
         long id = seededTripId();
         mockMvc.perform(put("/api/trips/" + id).with(TestAuth.asUser("1"))
                         .contentType(MediaType.APPLICATION_JSON).content(FULL_BODY))
                 .andExpect(status().isMethodNotAllowed());
         mockMvc.perform(delete("/api/trips/" + id).with(TestAuth.asUser("1")))
-                .andExpect(status().isMethodNotAllowed());
-        mockMvc.perform(get("/api/trips").with(TestAuth.asUser("1")))
                 .andExpect(status().isMethodNotAllowed());
     }
 

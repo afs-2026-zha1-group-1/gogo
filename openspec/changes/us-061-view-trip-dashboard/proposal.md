@@ -79,9 +79,9 @@ member-trip aggregation.
   automatic invitation issuance must be fixed separately before that
   destination is linked. US-058 and active-only filtering are deferred, not
   required to implement or accept the interim member-trip scope. Applicable
-  authentication and navigation behavior still require verification. US-061
-  proceeds before the later US-066 shell reconciliation; Sammi Ng coordinates
-  the ordering and preservation of dashboard behavior.
+  authentication and navigation behavior still require verification. US-066
+  coordination is outside this change; the existing authenticated shell and
+  dashboard behavior remain in scope.
 - **Existing contracts:** `openspec/specs/app-shell/spec.md` says there is no
   dashboard aggregation and contains historical identity-scaffold language.
   Update the applicable shell requirements without restoring that scaffold.
@@ -94,8 +94,9 @@ member-trip aggregation.
   Completion filtering and completion-aware progress require a separately
   planned US-058 follow-up. The archive and trip-details fix remain separate
   deliverables; applicable prerequisites must be met before acceptance.
-  The revised scope remains subject to a new human G1 decision; the current
-  Conditional decision does not authorize implementation.
+  The revised scope's reported G1 Pass is recorded in
+  [g1-decision.md](g1-decision.md); the remaining acceptance and coordination
+  checks still apply.
 
 Source: `requirement-workspace/requirements/US-061.md`,
 `requirement-workspace/analysis/us-061-deep-dive.md`, and the US-061 section of

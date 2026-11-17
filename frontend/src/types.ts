@@ -77,6 +77,7 @@ export type TabId = 'dashboard' | 'trips' | 'split' | 'members' | 'account'
 
 export type Route =
   | { page: 'home' }
+  | { page: 'dashboard-trip'; tripId: number | null }
   | { page: 'login' }
   | { page: 'register' }
   | { page: 'account' }
@@ -86,10 +87,10 @@ export type Route =
   | { page: 'members' }
   | { page: 'details'; tripId: number }
   | { page: 'join'; token: string }
-  | { page: 'main-plan'; tripId: number }
+  | { page: 'main-plan'; tripId: number; dashboardOrigin?: boolean }
   | { page: 'main-plan-inputs'; tripId: number }
   | { page: 'scan'; from: string | null }
-  | { page: 'preferences'; tripId: number }
+  | { page: 'preferences'; tripId: number; dashboardOrigin?: boolean }
 
 // login, registration, join, main-plan, preference and scan screens are
 // full-page flows without the bottom TabBar. 'scan' additionally owns its own

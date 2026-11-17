@@ -4,11 +4,10 @@ Inputs: [proposal](proposal.md), [dashboard delta](specs/trip-dashboard/spec.md)
 [shell delta](specs/app-shell/spec.md), and [G1 decision](g1-decision.md).
 This is a test design, not implementation or a gate decision.
 
-**Status:** Provisional for the revised milestone and recommendation scope.
-The [G1 decision](g1-decision.md) is Conditional. The revised shell delta
-passes strict structural validation, but the revised scope and five-tab
-decision still require IO/SA reassessment. This draft is not an accepted ATDD
-baseline and does not authorize implementation.
+**Status:** Accepted as the implementation baseline by the requester on
+2026-11-17. The requester reported that the named IO and SA decided Pass for
+the revised scope; see the [G1 decision](g1-decision.md). Acceptance of this
+test design does not claim that its checks have been implemented or passed.
 
 ## Layers and red-first examples
 
@@ -22,7 +21,7 @@ establishes or simulates that integration.
 |---|---|---|---|
 | Member list and isolation | API + E2E | Ben belongs to A/B/C and not D: exactly A/B/C and saved card fields; select B. Signed-out, empty and other-member cases disclose nothing. No card claims active or completed status. | Security review recommended |
 | Deferred completion boundary | E2E | List and overview remain available without a completion source. Do not filter member trips or infer active or completion status from dates, split state or missing values. | Integration recommended for the later US-058 change |
-| Overview sources | E2E | Four members, three ready, stale main draft and active split display real values; successful no-draft outcomes show absent; source changes appear on refresh. | Integration recommended |
+| Overview sources | E2E | A trip with four members, three ready, a stale main draft and no split displays real values; a separate trip with a confirmed plan and active split displays those statuses. Reject an injected active split with an unconfirmed plan. Successful no-draft outcomes show absent; source changes appear on refresh. | Integration recommended |
 | Planning milestones | E2E | In prototype order, setup is created; invitations reflect the trip's main-plan-confirmed flag; preferences show the verified ready/member count; main plan distinguishes absent, draft, stale and confirmed; split distinguishes absent, active, confirmed and cancelled. Reunion and completion are unknown, not completed/current/upcoming. | Defer pure logic checks to apply-time TDD |
 | Next step | E2E | An unready signed-in member with an unconfirmed main plan is offered a safe preferences destination; a ready member or a confirmed main plan is offered a safe main-plan view. No suggestion appears when its required source is invalid, pending, failed or inconsistent, or its destination is not verified safe. | Integration recommended |
 | Prototype layout | E2E | At a mobile viewport, the selected overview has the prototype-inspired trip hero, seven-stage strip, four status cards, eligible next-step card and five-tab dock; actual trip data and truthful unknown states replace demo values. Compare against the screenshot and release-2 HTML while preserving the fifth account tab. | Visual comparison recommended |
@@ -50,16 +49,13 @@ organizer and member, not merely HTTP method counts, for no-write acceptance.
 
 ## Local and CI gates
 
-Current CI runs `mvn -B test` in `backend`, the lockfile portability check and
-`npm run build` in `frontend` after `npm ci`; it does not run browser E2E.
-Run focused API checks and the applicable browser acceptance checks locally,
-then those existing full commands. The project testing rule recommends
-Playwright for critical flows, but this repository has no configured E2E
-runner. Establish and document a reproducible browser acceptance command and
-its CI integration during apply; do not call it an existing gate or claim
-end-to-end acceptance without real authentication and other applicable
-dependencies. US-058 is not a prerequisite for the revised planning milestones, and its
-integration must not be claimed.
+At design time, CI did not have a browser E2E runner. During implementation,
+a reproducible browser acceptance command and a CI job were added alongside
+the backend tests and frontend checks and build. Run applicable checks locally
+before the PR and require actual CI results before end-to-end acceptance.
+Do not claim acceptance without real authentication and other applicable
+dependencies. US-058 is not a prerequisite for the revised planning
+milestones, and its integration must not be claimed.
 
 ## Non-goals and NFR
 

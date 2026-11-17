@@ -206,6 +206,139 @@ body {
   padding: 16px;
 }
 
+.dashboard-trip-card {
+  display: block;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.dashboard-trip-card h2 {
+  font-size: 16px;
+  margin: 0 0 6px;
+}
+
+.dashboard-trip-card p {
+  color: var(--ink-2);
+  font-size: 12px;
+  margin: 4px 0 0;
+}
+
+.dashboard-progress {
+  margin-top: 18px;
+}
+
+.dashboard-progress h2,
+.dashboard-next h2 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+
+.dashboard-progress h2 {
+  color: var(--ink-3);
+}
+
+.dashboard-next h2 {
+  color: var(--brand-ink);
+}
+
+.dashboard-progress ol {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dashboard-progress li {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--ink-3);
+  font-size: 10px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-progress li strong {
+  color: var(--ink-2);
+  font-size: 11px;
+}
+
+.dashboard-progress-icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+}
+
+.dashboard-next {
+  margin-top: 14px;
+  border-color: #99f6e4;
+  background: linear-gradient(135deg, #f0fdfa, #fff);
+}
+
+.dashboard-next p {
+  margin: 0 0 12px;
+  color: var(--ink-2);
+  font-size: 12px;
+}
+
+.dashboard-next .btn {
+  width: 100%;
+}
+
+.dashboard-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px;
+  margin-top: 14px;
+}
+
+.dashboard-stat {
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+}
+
+.dashboard-stat-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.dashboard-stat-value {
+  margin-top: 6px;
+  font-size: 22px;
+  font-weight: 780;
+  line-height: 1;
+}
+
+.dashboard-stat-value small {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.dashboard-stat-status {
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
 .card + .card,
 .card + .sec-title,
 .sec-title + .card,
