@@ -326,3 +326,150 @@ US-066 按 IO/SA 决策把 `X-User-Id` scaffold 替换为已验证登录；这�
 - **测试**：`AuthApiTest`、`SessionExpiryApiTest` 及全部既有 trip/invitation/
   main-plan/splits API 测试改为 session/principal；C5 覆盖 CSRF、短超时（以失效
   session 等价验证，Tomcat 超时粒度为分钟）与 greeting/preview 公开 matcher。
+
+## 15. US-013 成员列表（2026-11-16，归档对齐）
+
+US-013 在 US-066 会话认证基线上新增成员名册读取；不新增迁移。
+
+- **API 新增**：`GET /api/trips/{id}/members`，仅行程成员可读，身份取 session
+  principal（不使用已退役的 `X-User-Id`）。成功 200 返回
+  `{tripId, members:[{userId, displayName, organizer}]}`，按 `userId` 升序；
+  未登录 401 `USER_REQUIRED`、非成员 403 `NOT_A_MEMBER`、未知行程 404
+  `TRIP_NOT_FOUND`；拒绝响应不含成员身份。只读，无写路径。
+- **数据**：复用 `V2` 的 `trip_member` / `app_user` / `trip.organizer_id`；无新表、
+  无新列、无种子变更。
+- **前端**：成员 Tab（`#/members`）渲染真实名册（头像首字母、姓名、组织者徽章、
+  成员数）及 loading/empty/error/permission/no-trip 状态；不展示就绪、偏好、预算
+  或生成主线操作。
+- **App shell**：Living Spec 的 `Placeholder tabs` 被移除，新增 `Tab content`：
+  分队渲染已上线的 split entry，成员渲染本名册；shell frame/dock/active-tab/
+  登录账号栏不变。
+- **身份口径**：trips/members 使用 session principal + `USER_REQUIRED`；split
+  端点使用 session 但匿名时返回 `MEMBER_REQUIRED`。该差异已接受为后续项 F2，
+  本 change 不改 split 代码。
+
+本 change 未修改技术栈、其他数据模型或其他 API。
+## 16. Landed reconciliation — US-067 QR scanner (P4 apply, not yet archived)
+
+> Scope discipline: this addendum records what the `us-067-qr-scanner` change
+> actually shipped on the frontend. It is a **pre-archive** note; living-merge
+> at G3 will fold it into §7 (关键实现约定) and the §3 stack table once the
+> change lands on `main`.
+
+**Scanner capability (US-067), as shipped:**
+
+- **Frontend stack alignment with the shell's shipped conventions.** US-067
+  keeps the existing shell conventions rather than the aspirational plan:
+  - The scanner routes on the **hash** `#/scan` (no router). `App.tsx
+    parseRoute` matches `/scan` BEFORE the generic `/trips/<id>` regex so
+    the scanner top-level hash cannot be swallowed by the details route
+    (design D1, G1 C2). `react-router-dom` in the merged tree belongs to
+    US-065/US-066 (splits + login), not to US-067.
+  - The three scan entry points (camera rAF loop, image picker, manual link)
+    call **no** `/api/*` endpoint; they hand off to the existing Join page,
+    which reuses REQ-004 `GET /api/invitations/{token}` / `POST …/accept`.
+    The added **demo-only** “模拟扫描” mode (for camera-less desktops) is the
+    one exception: it issues a single `POST /api/trips/1/invitation` as the
+    signed-in organizer to obtain a real token, then pipes the resulting link
+    through the same matcher — a UI aid, not part of the AC scan paths.
+  - **Dashboard scan entry (AC S1–S2, landed).** A `.iconbtn` button (`scan`
+    icon, `aria-label` "扫码加入行程") sits to the right of the `我的行程`
+    title in the Home appbar and links to `#/scan`. It is a plain hash link:
+    no new backend call, permission gate, or router (design D1).
+  - Styling stays CSS tokens in `frontend/src/app.css` (`.screen`, `.appbar`,
+    `.card`, `.btn`, `.field`, `--brand / --warn-soft / --err-soft`). No
+    `antd` import; Ant Design is a **semantic** reference (primary + secondary
+    action row, error panel with retry) per G1 C5.
+- **QR decode library.** `jsqr ^1.4.0` is a production `dependency` in
+  `frontend/package.json`. Decoding uses two paths behind a single matcher:
+  - Camera: `navigator.mediaDevices.getUserMedia({video:{facingMode:
+    'environment'}})` → `requestAnimationFrame` loop drawing video into a
+    480×360 canvas → `jsQR(...)`.
+  - Image file: hidden `<input type="file" accept="image/*">` →
+    `createImageBitmap(file)` → offscreen canvas → `jsQR(..., {
+    inversionAttempts: 'attemptBoth'})`. `bitmap.close?.()` releases the decoder.
+- **Invitation-link matcher (single source of truth, G1 C3).** New
+  `frontend/src/scan.ts` exports `parseJoinHash(text, appOrigin)`. Contract
+  locked at the module header: token form is exactly `#/join/<32-char
+  lowercase-hex>` (backend `InvitationTokens.next()` = `HexFormat.of().
+  formatHex(new byte[16])`), absolute URLs are same-origin only, and
+  cross-origin inputs are rejected before the token regex is even reached.
+  All Scanner entry points (camera, image, manual link, demo mode) call this
+  one function so behavior cannot drift.
+- **Route / type surface.** `frontend/src/types.ts` extends `Route` with
+  `{ page: 'scan'; from: string | null }`; `InAppPage` is
+  `Exclude<Route['page'], 'join' | 'login' | 'main-plan' | 'main-plan-inputs' |
+  'scan'>`, so `TAB_FOR_PAGE: Record<InAppPage, TabId>` stays total and
+  the scanner is guaranteed not to receive a dock tab. Closing the scanner
+  restores the last non-scanner hash tracked by `App.tsx`, or falls back
+  to `#/` (spec S-5).
+- **Backend impact.** None from US-067. The scanner adds no `backend/**`
+  change and no `V*.sql` migration; its demo mode rides on the US-066 session
+  model for the organizer-scoped `POST /api/trips/1/invitation`.
+
+No other section of this plan is modified by US-067. Sections §5 (data
+model) and §6 (API) remain accurate because the scanner introduces
+neither tables nor endpoints.
+
+## 17. REQ-019 成员兴趣（2026-11-16，归档对齐）
+
+REQ-019 在 US-066 会话认证基线上落地 `preferences` 能力的兴趣段：一张新表、两个端点。
+
+- **API 新增**：`GET` / `PUT /api/trips/{tripId}/preferences`。身份取 session principal
+  （`AccountPrincipal`；US-066 已退役 `X-User-Id`，匿名 401 `USER_REQUIRED`），仅本行程
+  成员可读写（非成员 403 `NOT_A_MEMBER`，未知行程 404 `TRIP_NOT_FOUND`）。
+  - `PUT` 接受 `{"interests": string[]}`，整集替换并按首次出现顺序去重；写入前完成
+    校验：清单外元素 400 `INTEREST_NOT_ALLOWED`，畸形 body 400 `INVALID_REQUEST`
+    （`StrictStringListDeserializer` 拦数字/`null` 元素）；成功 200 返回去重后的集合，
+    `[]` 清空兴趣但保留记录。
+  - `GET` 返回 `{members:[{userId, interests:[label…]}]}`，按 `userId` 升序，每个对象
+    只有这两个字段；从未保存过的成员为 `interests: []`；只读。
+- **兴趣清单**：`InterestCatalogue` 十个中文标签（`水上运动`/`潜水`/`摄影`/`美食`/
+  `咖啡`/`历史人文`/`手作`/`自然风景`/`冒险`/`慢游`）↔ 十个 code（`water`/`diving`/
+  `photo`/`food`/`coffee`/`heritage`/`craft`/`nature`/`adventure`/`slow`）；线上传标签、
+  库里存 code，字面匹配（不做大小写折叠、去空白、别名或子串）。清单是代码常量，
+  不依赖 `tag` 表或 `/api/tags`。
+- **数据**：`V7__create_member_preference.sql`（两次改号：`main` 先取 `V4` 给 splits、
+  再取 `V6` 给账号凭证）建 `member_preference(id, trip_id→trip, user_id→app_user,
+  kind, payload TEXT JSON, updated_at TEXT)` + `UNIQUE(trip_id, user_id, kind)`；
+  `V5__create_main_plan.sql` 已以 `IF NOT EXISTS` 预先声明该表，故本迁移在原基线上是 no-op。
+  与 §5 的差异：列名是 `user_id` 而非 `member_id`，去重键是唯一约束
+  `UNIQUE(trip_id,user_id,kind)` 而非普通索引。
+- **前端**：`frontend/src/pages/PreferencesPage.tsx`（`#/trips/{tripId}/preferences`，行程
+  详情页的「旅行偏好」卡片给入口），只实现 `screen-08-preferences.png` 的兴趣段；选中态
+  来自 `GET` 中与当前身份匹配的条目，保存是单次 `PUT` 并采用响应，失败回滚并显示服务端
+  `message`。沿用 main 的 `api()` + `useAuth()` + `lib/csrf`，无新依赖。
+- **CI**：前端 job 在 `npm ci` 与 `npm run build` 之间增加 `npm run typecheck`。
+- **已登记偏差**：该 change 的 delta spec 文本沿用 G1 原文的 `X-User-Id` 口径，实现在合并后
+  改取会话（两条反向用例钉住匿名 401 与头/会话不一致）；`flyway-database-nc-sqlite` 在受管
+  Flyway 版本下无发布物，维持 `flyway-core` 单模块（TS-2 / TS-11）。
+
+§3 技术栈表与 §7 关键实现约定无需改动；§5/§6 中计划期的 `member_id`、普通索引与
+`X-Member-Id` 口径以本节为准。本 change 未修改其他数据模型或其他 API。
+
+## 18. Landed reconciliation - US-049-050 split confirm/cancel (archived 2026-11-17)
+
+US-049（确认拆分，issue #21）+ US-050（取消未确认草稿，issue #22）已实现并归档，补齐 B 拆分链收口；单 change / 2 ADDED + 5 MODIFIED requirement，`main` 直开发（无 PR）。
+
+- **API 增量**：`POST /api/trips/{tripId}/split-draft:confirm` 与 `POST /api/trips/{tripId}/split-draft:cancel`，body 均为 `{draftVersion}`，成功 `200` 返回既有草稿详情投影（`status` 分别为 `confirmed` / `cancelled`，取消时 `routes=[]`）。身份取自认证会话（US-066），与既有 splits 端点一致；`SecurityConfig` 的 split-draft `permitAll` 匹配器同步补入 `:confirm` / `:cancel`，匿名请求仍由控制器守卫返回 `401 MEMBER_REQUIRED`。
+- **错误契约 +3**（累计 16 码）：`NOT_SPLIT_ORGANIZER 403`（非组织者确认）、`SPLIT_TIMING_INFEASIBLE 409`（服务端复算超窗或输入缺失）、`SPLIT_DRAFT_INCOMPLETE 409`（边界/路线不齐）。包封套扩展可选 `error.details`：`SPLIT_TIMING_INFEASIBLE` → `details.routes[]`（定长 2，`{groupLabel,totalMinutes,overrunMinutes,missingInputs}`）；`SPLIT_DRAFT_INCOMPLETE` → `details.missing[]`。`code` 仍是唯一契约字段。
+- **数据模型**：无新表、无新迁移（沿用 V4 `split_draft` / `plan_node`）。`split_draft.document.status` 为单一行真源，状态机 `active → confirmed / cancelled`、`cancelled → active`（同行重建，列 `draft_version` 重置 1）；确认/取消不改列版本，写操作走 `json_extract(document,'$.status')` + 版本 CAS。取消在单事务内清空 `document.routes` 并删除 `split-a/b` 节点，`main` 行逐行不变。
+- **可空时长模型**：`SplitDraftDocument.RouteDurations` 与 `GroupRoute` 的时长改为可空 `Integer`，使「缺输入」可表达并复用 `ReunionTimingCalculator` 的 `missingInputs`。
+- **前端**：新增 Screen 15 `#/trips/:tripId/split/confirm`（复核/确认/取消 + error/empty/loading/permission 四态 + `error.details` 逐路线渲染）；Screen 11 按 `status` 分支（无草稿/cancelled → 发起替换、active → 下一步、confirmed → 查看已确认分队）；Screen 14 终态只读并提供同一入口。
+- **已登记偏差**：本节同时覆盖归档时对 Living `splits` Purpose 的纠正（身份改为会话、草稿载体为 `split_draft` 表、迁移编号 V4、状态机与 `error.details`）——`openspec archive` 不替换既有 Purpose，已手工同步；场景中的 `X-User-Id: N` 仅作夹具简写。
+- **验证**：后端 `mvn -B test` **214/214**；前端 build 绿；E2E 10 Pass / 1 N/A（logout 属 US-069）；CI `43839036207` / `43833884672` 双 job 绿；local-verify Pass。
+
+§5/§6 之外无其他数据模型或 API 变化；确认后不可再拆/不可编辑属产品契约（版本化重拆需新需求）。
+
+## 19. US-068/069/070 账号生命周期（2026-11-17，归档对齐）
+
+US-068（我的）、US-069（退出登录）、US-070（注册）已实现并合并（PR #101，merge `3334e7d`）；单 change、需求 REQ-009。本节覆盖 §14 “不做注册”的历史口径。
+
+- **API 增量**：`POST /api/auth/register`（公开 + CSRF；新邮箱 `200 {"next":"login"}`，重复邮箱 `409 EMAIL_TAKEN`）、`PATCH /api/auth/me`（会话主体，body `{name}`，返回 `{id,name,email}`）、`POST /api/auth/logout`（CSRF，`204`，失效服务端 session）。`GET /api/auth/me` 改为按 principal.id 读库，改名对其他会话在下一次读取时可见。
+- **数据模型**：无新表、无新迁移；复用 V6 `account_credential`（唯一邮箱、BCrypt）与 `app_user.display_name`。注册在同一事务插入 `app_user` + `account_credential`，`app_user.id` 由 SQLite rowid 生成；重复邮箱由唯一索引兜底并回滚半条账号。BCrypt 密码字节数 6–72（前端注册页要求 ≥8 字符 + 确认一致）。
+- **错误契约 +1**：`EMAIL_TAKEN 409`；注册/改名校验码 `INVALID_EMAIL` / `INVALID_NAME` / `INVALID_PASSWORD` / `INVALID_REQUEST`（400）。错误体仍为扁平 `{code,message}`。
+- **已登记偏差**：用户 2026-11-17 明确要求重复邮箱在注册时直接弹窗披露“该邮箱已注册”，覆盖 US-070 原“不披露邮箱是否已注册”的 AC；接受邮箱枚举风险，记录于 G1 addendum，IO 复核待补。
+- **前端**：底部 dock 五 tab（仪表盘/行程/分队/成员/我的）；移除右上角 `AccountBar`；`AccountPage` 按参考稿（头像首字母、名字/邮箱、保存名字、红色描边退出）；`RegisterPage` 按参考稿（确认密码、≥8 字符提示、成功/重复弹窗）；仪表盘问候使用账号名且不追加“组织者”；登录页保留创建账号入口。
+- **验证**：合并 `origin/main` 后后端 `mvn -B test` **279/279**；前端 clean install/build 绿；浏览器 E2E 18 Pass / 1 Skipped；PR #101 CI 双 job 绿（runs 43999674160 / 43999680155）；G1 Pass（IO Emily + SA Elian Jiang）、G2 Pass（VL lumi）。
+
+§3/§4/§7 无需改动；§14 的“不做注册”由本节取代；其余数据模型/API 未变。

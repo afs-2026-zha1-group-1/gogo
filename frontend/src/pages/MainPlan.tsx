@@ -146,9 +146,10 @@ export default function MainPlan({ tripId }: MainPlanProps) {
     }
   }
 
+  const inTrip = state.kind === 'ready' || state.kind === 'empty'
   const appbar = (
     <header className="appbar">
-      <a className="iconbtn" href={`#/trips/${tripId}`} aria-label="Back"><Icon name="left" /></a>
+      <a className="iconbtn" href="#/" aria-label="Back"><Icon name="left" /></a>
       <div className="grow">
         <div className="title">主线方案</div>
         <div className="sub">US-037 · 校验通过后方可确认</div>
@@ -157,6 +158,9 @@ export default function MainPlan({ tripId }: MainPlanProps) {
         <span className={state.plan.confirmed ? 'pill ok' : 'pill warn'}>
           {state.plan.confirmed ? '已确认' : '草稿'} v{state.plan.version}
         </span>
+      )}
+      {inTrip && (
+        <a className="iconbtn" href={`#/trips/${tripId}`} aria-label="行程详情"><Icon name="info" /></a>
       )}
     </header>
   )
@@ -188,7 +192,7 @@ export default function MainPlan({ tripId }: MainPlanProps) {
             </div>
             {isOrganizer && (
               <a className="btn btn-primary" href={`#/trips/${tripId}/main-plan/inputs`}>
-                <Icon name="nav" className="sm" /> 去生成主线方案
+                <Icon name="sparkle" className="sm" /> 去生成主线方案
               </a>
             )}
           </section>
@@ -236,10 +240,10 @@ export default function MainPlan({ tripId }: MainPlanProps) {
         {plan.confirmed ? (
           <section className="card pad" style={{ background: 'var(--ok-soft)', borderColor: '#a7f3d0' }}>
             <div className="valid-item" style={{ borderBottom: 0 }}>
-              <span className="valid-ic brand"><Icon name="check" className="sm" /></span>
+              <span className="valid-ic brand"><Icon name="lock" className="sm" /></span>
               <div>
-                <div className="vt">主线方案已确认 · 加入已关闭</div>
-                <div className="vd">这是全员共享的冻结版本，新成员不能再通过邀请链接加入。</div>
+                <div className="vt">主线方案已确认 · 不能再重新生成</div>
+                <div className="vd">这是全员共享的冻结版本，加入已关闭。下一步只能进入智能分队。</div>
               </div>
             </div>
           </section>
@@ -262,7 +266,7 @@ export default function MainPlan({ tripId }: MainPlanProps) {
           </section>
         )}
 
-        <div className="sec-title"><Icon name="cal" className="sm" /> Day 1 · {trip.startDate}</div>
+        <div className="sec-title"><Icon name="clock" className="sm" /> Day 1 · {trip.startDate}</div>
         <div className="timeline">
           {plan.stops.map((stop, index) => (
             <div className="tl-item" key={stop.seq}>
@@ -345,7 +349,23 @@ export default function MainPlan({ tripId }: MainPlanProps) {
         )}
       </div>
 
-      {isOrganizer && !plan.confirmed && (
+      {plan.confirmed ? (
+        <div className="actionbar">
+          {isOrganizer ? (
+            <button
+              className="btn btn-primary"
+              type="button"
+              onClick={() => { window.location.href = `/trips/${tripId}/split` }}
+            >
+              <Icon name="fork" className="sm" /> 进入智能分队
+            </button>
+          ) : (
+            <p className="hint" style={{ textAlign: 'center' }}>
+              主线方案已确认，等待组织者发起智能分队。
+            </p>
+          )}
+        </div>
+      ) : isOrganizer ? (
         <div className="actionbar" style={{ display: 'flex', gap: 10 }}>
           <button
             className="btn btn-ghost"
@@ -354,7 +374,7 @@ export default function MainPlan({ tripId }: MainPlanProps) {
             disabled={busy !== null}
             onClick={regenerate}
           >
-            <Icon name="nav" className="sm" /> {busy === 'regen' ? '正在生成…' : '重新生成'}
+            <Icon name="sparkle" className="sm" /> {busy === 'regen' ? '正在生成…' : '重新生成'}
           </button>
           <button
             className="btn btn-primary"
@@ -363,10 +383,10 @@ export default function MainPlan({ tripId }: MainPlanProps) {
             disabled={busy !== null}
             onClick={confirm}
           >
-            <Icon name="check" className="sm" /> {busy === 'confirm' ? '正在校验…' : '确认主线方案'}
+            <Icon name="lock" className="sm" /> {busy === 'confirm' ? '正在校验…' : '确认主线方案'}
           </button>
         </div>
-      )}
+      ) : null}
     </div>
   )
 }

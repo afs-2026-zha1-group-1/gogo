@@ -45,6 +45,17 @@ export interface InvitationIssue {
   tripName: string
 }
 
+export interface TripMember {
+  userId: number
+  displayName: string
+  organizer: boolean
+}
+
+export interface TripMemberList {
+  tripId: number
+  members: TripMember[]
+}
+
 export interface ApiError {
   code?: string
   message?: string
@@ -62,11 +73,13 @@ export type ApiResult<T> =
       data: (ApiError & Partial<T>) | null
     }
 
-export type TabId = 'dashboard' | 'trips' | 'split' | 'members'
+export type TabId = 'dashboard' | 'trips' | 'split' | 'members' | 'account'
 
 export type Route =
   | { page: 'home' }
   | { page: 'login' }
+  | { page: 'register' }
+  | { page: 'account' }
   | { page: 'trips-empty' }
   | { page: 'create' }
   | { page: 'split' }
@@ -75,6 +88,14 @@ export type Route =
   | { page: 'join'; token: string }
   | { page: 'main-plan'; tripId: number }
   | { page: 'main-plan-inputs'; tripId: number }
+  | { page: 'scan'; from: string | null }
+  | { page: 'preferences'; tripId: number }
 
-// main-plan/login screens are full-page flows (like join) without the bottom TabBar.
-export type InAppPage = Exclude<Route['page'], 'join' | 'login' | 'main-plan' | 'main-plan-inputs'>
+// login, registration, join, main-plan, preference and scan screens are
+// full-page flows without the bottom TabBar. 'scan' additionally owns its own
+// app-bar close control, so it must not appear in TAB_FOR_PAGE
+// (Record<InAppPage, TabId>).
+export type InAppPage = Exclude<
+  Route['page'],
+  'join' | 'login' | 'register' | 'main-plan' | 'main-plan-inputs' | 'scan' | 'preferences'
+>

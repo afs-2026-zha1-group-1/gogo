@@ -171,6 +171,20 @@ export function ScreenTiming() {
               <div className="min-w-0">
                 <div className="text-[12.5px] font-bold text-ink">当前草稿已{detail.status === "confirmed" ? "确认" : "取消"}</div>
                 <p className="mt-0.5 text-[11px] leading-relaxed text-ink-2">终态草稿只读，不可再编辑或重新校验确认。</p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-2"
+                  onClick={() =>
+                    navigate(
+                      detail.status === "confirmed"
+                        ? `/trips/${tripId}/split/confirm`
+                        : `/trips/${tripId}/split`,
+                    )
+                  }
+                >
+                  {detail.status === "confirmed" ? "查看已确认分队" : "发起替换草稿"} <IconArrowRight />
+                </Button>
               </div>
             </Card>
           ) : (
