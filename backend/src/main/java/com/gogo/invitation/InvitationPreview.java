@@ -5,5 +5,6 @@ public record InvitationPreview(
         String destination,
         String startDate,
         String endDate,
-        boolean mainPlanConfirmed) {
+        boolean mainPlanConfirmed,
+        boolean joiningClosed) {
 }

@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { cancelSplitDraft, checkTiming, confirmSplitDraft, fetchDraftDetail, generateRoutes, saveBoundaries, startDraft } from "./api"
+import { cancelConfirmedSplit, cancelSplitDraft, checkTiming, confirmSplitDraft, fetchDraftDetail, generateRoutes, saveBoundaries, startDraft } from "./api"
+import { api } from "../../api"
+import type { Trip } from "../../types"
 import type { CheckTimingRequest, GenerateRoutesRequest, SaveBoundariesRequest } from "./types"
 
 /**
@@ -64,5 +66,23 @@ export function useCancelDraft(tripId: string) {
   return useMutation({
     mutationFn: (draftVersion: number) => cancelSplitDraft(tripId, draftVersion),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [DETAIL_KEY, tripId] }),
+  })
+}
+
+/** Cancel a confirmed split before departure (US-051); organizer-only write. */
+export function useCancelConfirmedSplit(tripId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (draftVersion: number) => cancelConfirmedSplit(tripId, draftVersion),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [DETAIL_KEY, tripId] }),
+  })
+}
+
+/** Trip projection for the organizer check used by the confirmed-cancel action. */
+export function useTripOrganizer(tripId: string) {
+  return useQuery({
+    queryKey: ["trip-organizer", tripId],
+    queryFn: async () => (await api<Trip>(`/api/trips/${tripId}`)).data,
+    enabled: tripId.length > 0,
   })
 }

@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom"
-import { useCancelDraft, useConfirmDraft, useSplitDraft } from "./hooks"
+import { useCancelConfirmedSplit, useCancelDraft, useConfirmDraft, useSplitDraft, useTripOrganizer } from "./hooks"
 import { useAuth } from "../auth/AuthProvider"
 import { SplitLayout } from "./split-layout"
 import { EmptyState, ErrorState, LoadingState } from "./states"
@@ -25,16 +25,27 @@ export function ScreenConfirm() {
   const draft = useSplitDraft(tripId)
   const confirm = useConfirmDraft(tripId)
   const cancel = useCancelDraft(tripId)
+  const cancelConfirmed = useCancelConfirmedSplit(tripId)
+  const trip = useTripOrganizer(tripId)
   const { accountId } = useAuth()
   const detail = draft.data
   const status: SplitDraftStatus | undefined = detail?.status
   const isInitiator = detail != null && accountId != null && detail.initiatorMemberId === accountId
-  const busy = confirm.isPending || cancel.isPending
+  const isOrganizer = trip.data?.organizerId != null && String(trip.data.organizerId) === accountId
+  const busy = confirm.isPending || cancel.isPending || cancelConfirmed.isPending
 
   const onCancel = () => {
     if (!detail) return
     if (!window.confirm("确认取消该拆分草稿？主线方案不会改变，取消后可重新发起。")) return
     cancel.mutate(detail.draftVersion)
+  }
+
+  // US-051: organizer may cancel a confirmed split before departure; the server
+  // enforces the departure instant and restores the main plan on success.
+  const onCancelConfirmed = () => {
+    if (!detail) return
+    if (!window.confirm("确认取消已确认的分队？取消后恢复主线方案；出发后不能取消，取消后可重新发起。")) return
+    cancelConfirmed.mutate(detail.draftVersion)
   }
 
   const action =
@@ -51,6 +62,17 @@ export function ScreenConfirm() {
           onClick={() => detail && confirm.mutate(detail.draftVersion)}
         >
           {confirm.isPending ? "确认中…" : "确认分队"} <IconCheck />
+        </Button>
+      </>
+    ) : status === "confirmed" ? (
+      <>
+        {isOrganizer ? (
+          <Button variant="outline" className="flex-1" disabled={busy} onClick={onCancelConfirmed}>
+            {cancelConfirmed.isPending ? "取消中…" : "取消已确认分队"}
+          </Button>
+        ) : null}
+        <Button className="flex-1" onClick={() => navigate(`/trips/${tripId}/split`)}>
+          返回分队首页
         </Button>
       </>
     ) : (
@@ -126,7 +148,7 @@ export function ScreenConfirm() {
               <div className="min-w-0">
                 <div className="text-[13px] font-bold text-[#047857]">拆分已确认</div>
                 <p className="mt-0.5 text-[11.5px] leading-relaxed text-ink-2">
-                  两条路线、分组与边界已作为唯一方案成对生效，草稿不可再编辑或取消。
+                  两条路线、分组与边界已作为唯一方案成对生效，草稿不可再编辑；组织者可在出发前取消。
                 </p>
               </div>
             </Card>
@@ -148,6 +170,7 @@ export function ScreenConfirm() {
 
           {confirm.error ? <ErrorState error={confirm.error} /> : null}
           {cancel.error ? <ErrorState error={cancel.error} /> : null}
+          {cancelConfirmed.error ? <ErrorState error={cancelConfirmed.error} /> : null}
 
           <p className="text-[10.5px] leading-relaxed text-ink-3">
             确认由服务端从草稿复算时间窗，客户端声明不参与判定；失败时下方明细来自 error.details。

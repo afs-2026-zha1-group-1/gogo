@@ -563,3 +563,32 @@ Alice 的预期顺序（以 2026-11-16 为“今天”，2026-11-17 修订：**�
 | 测试创建的 id | 由数据库分配；断言从创建响应或 fixture 读取 |
 | 分页/搜索参数 | 本变更明确不做；传 `?page=1` 不得产生分页元信息 |
 | 错误 message 文本 | 只有 `code` 是契约 |
+
+## US-003 — 行程基本信息编辑（issue #60，2026-11-17 扩写）
+
+### Identities and trips
+
+| Fixture | Value |
+|---|---|
+| trip 1 | `Singapore Friends Day`，organizer Alice(1)，成员 Alice/Ben/Chloe/Daniel；种子目的地 `Singapore`、日期 `2026-12-05`、起点 `City Hall MRT`、终点 `Merlion Park` |
+| Eve(5) | 非成员，用于 403 断言 |
+| 初始状态 | `main_plan_confirmed=0`、`joining_closed=0`；测试类 `@BeforeEach` 复位六字段与两个 flag |
+
+### State setup
+
+| State | Setup |
+|---|---|
+| 已确认主计划 | ready(1–4) → `POST /main-plan` → `POST /main-plan/confirm`（同时置 `main_plan_confirmed=1`、`joining_closed=1`） |
+| 未确认草稿（含快照） | ready(1–4) → `POST /main-plan`；V9 后自动写 `trip_basics_json` |
+| 无快照旧草稿 | 生成后 `UPDATE main_plan_draft SET trip_basics_json = NULL` |
+| 规划编辑后加入仍关闭 | 确认 → PUT 改目的地 → `main_plan_confirmed=0`、`joining_closed=1` |
+| active/confirmed 分队 | 直插 `split_draft` 行，`document` 内 `status` 取对应值 |
+| 已确认分队出发时刻 | 插入 `plan_node`（branch_id=main）：未来 `2030-01-01T01:00:00Z`、过去 `2020-01-01T01:00:00Z`、`start_at=NULL` 三态 |
+
+### Values deliberately not fixed
+
+| Item | Why |
+|---|---|
+| 编辑页/弹窗文案 | 只有 `code` 与可见性/状态是契约 |
+| 手动编辑目标值 | 任意合法 `HH:MM` 与名称；断言用提交值 |
+| stop 的 seq / 交通时长 / 兴趣标签 | 契约规定不可经编辑改变 |

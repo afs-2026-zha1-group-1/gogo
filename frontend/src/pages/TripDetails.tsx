@@ -47,12 +47,24 @@ export default function TripDetails({ tripId }: TripDetailsProps) {
   }, [tripId])
 
   const [confirming, setConfirming] = useState(false)
+  const [confirmError, setConfirmError] = useState('')
+  const [confirmStale, setConfirmStale] = useState(false)
 
   async function confirmMain() {
     setConfirming(true)
+    setConfirmError('')
+    setConfirmStale(false)
     try {
-      const { ok, data } = await api<Trip>(`/api/trips/${tripId}/main-plan:confirm`, { method: 'POST' })
-      if (ok && data) setState({ kind: 'ready', trip: data })
+      const result = await api<Trip>(`/api/trips/${tripId}/main-plan:confirm`, { method: 'POST' })
+      if (result.ok && result.data) {
+        setState({ kind: 'ready', trip: result.data })
+      } else if (!result.ok && result.data?.code === 'STALE_DRAFT') {
+        setConfirmStale(true)
+      } else if (!result.ok) {
+        setConfirmError(result.data?.message ? `${result.data.code}: ${result.data.message}` : `确认失败（HTTP ${result.status}）`)
+      }
+    } catch (cause: unknown) {
+      setConfirmError(`无法连接服务器：${errorMessage(cause)}`)
     } finally {
       setConfirming(false)
     }
@@ -131,7 +143,12 @@ export default function TripDetails({ tripId }: TripDetailsProps) {
           </div>
         </section>
 
-        <div className="sec-title"><Icon name="info" className="sm" /> 行程信息</div>
+        <div className="sec-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Icon name="info" className="sm" /> 行程信息
+          <a className="iconbtn" href={`#/trips/${trip.id}/edit`} aria-label="编辑行程信息" style={{ marginLeft: 'auto' }}>
+            <Icon name="edit" className="sm" />
+          </a>
+        </div>
         <section className="card pad">
           <div className="valid">
             <div className="valid-item">
@@ -178,6 +195,7 @@ export default function TripDetails({ tripId }: TripDetailsProps) {
         <InvitationPanel
           tripId={trip.id}
           isOrganizer={isOrganizer}
+          joiningClosed={trip.joiningClosed === true}
         />
 
         <div className="sec-title" style={{ marginTop: 18 }}><Icon name="sparkle" className="sm" /> 主线方案</div>
@@ -196,12 +214,30 @@ export default function TripDetails({ tripId }: TripDetailsProps) {
             主线方案确认后，可发起分队：A/B 两组分头游玩、到点会合。
           </p>
           {!trip.mainPlanConfirmed ? (
-            <button className="btn btn-ghost" type="button" onClick={confirmMain} disabled={confirming}>
-              {confirming ? '确认中…' : '确认主线方案'}
-            </button>
+            isOrganizer ? (
+              <button className="btn btn-ghost" type="button" onClick={confirmMain} disabled={confirming}>
+                {confirming ? '确认中…' : '确认主线方案'}
+              </button>
+            ) : (
+              <p className="hint">主线方案确认由组织者操作。</p>
+            )
           ) : (
             <div className="pill ok"><span className="dot" /> 主线已确认</div>
           )}
+          {confirmStale && (
+            <div role="alert" className="banner-warn" style={{ marginTop: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--warn)' }}>
+                <Icon name="alert" className="sm" /> 方案已过期，不能确认
+              </div>
+              <p className="tiny" style={{ color: 'var(--warn)', marginTop: 4 }}>
+                行程信息或成员偏好已变化。请先到主线方案页重新生成，再确认。
+              </p>
+              <a className="btn btn-ghost" href={`#/trips/${trip.id}/main-plan`} style={{ marginTop: 8 }}>
+                去主线方案页
+              </a>
+            </div>
+          )}
+          {confirmError && <p role="alert" className="error" style={{ marginTop: 8 }}>{confirmError}</p>}
           <button className="btn btn-primary" type="button" style={{ marginTop: 10 }} onClick={enterSplit}>
             进入分队规划
           </button>

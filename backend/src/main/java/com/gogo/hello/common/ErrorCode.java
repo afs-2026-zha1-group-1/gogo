@@ -27,6 +27,7 @@ public enum ErrorCode {
     SPLIT_BOUNDARIES_REQUIRED(HttpStatus.CONFLICT),
     SPLIT_DRAFT_INCOMPLETE(HttpStatus.CONFLICT),
     SPLIT_TIMING_INFEASIBLE(HttpStatus.CONFLICT),
+    SPLIT_ALREADY_DEPARTED(HttpStatus.CONFLICT),
     ROUTE_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR);
 
     private final HttpStatus httpStatus;

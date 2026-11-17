@@ -21,6 +21,7 @@ export interface Trip {
   endLocation: string | null
   organizerId: number
   mainPlanConfirmed?: boolean
+  joiningClosed?: boolean
 }
 
 export interface TripListItem {
@@ -47,6 +48,7 @@ export interface InvitationPreview {
   startDate: string
   endDate: string
   mainPlanConfirmed: boolean
+  joiningClosed?: boolean
 }
 
 export interface AcceptResult {
@@ -103,6 +105,7 @@ export type Route =
   | { page: 'split' }
   | { page: 'members' }
   | { page: 'details'; tripId: number }
+  | { page: 'trip-edit'; tripId: number }
   | { page: 'join'; token: string }
   | { page: 'main-plan'; tripId: number }
   | { page: 'main-plan-inputs'; tripId: number }

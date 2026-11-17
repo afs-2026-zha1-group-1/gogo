@@ -88,7 +88,7 @@ ALTER TABLE main_plan_draft ADD COLUMN trip_basics_json TEXT;
 
 - `TripController.confirmMainPlan`（`POST /{id}/main-plan:confirm`）改为：校验行程/成员后委托 `MainPlanService.confirm(id, caller)`；成功后 `findById` 返回 `TripResponse`；失败由 `MainPlanErrorAdvice` 返回扁平错误（403 `NOT_ORGANIZER`、404 `NO_DRAFT`、409 `STALE_DRAFT`/`ALREADY_CONFIRMED`、422 `VALIDATION_FAILED`）。
 - 删除 `TripRepository.confirmMainPlan` 这条无守卫写路径；确认态只由 `MainPlanService.confirm` 在单事务内设置。
-- `MainPlanService.confirm` 成功时同时置 `main_plan_confirmed = 1` 与 `joining_closed = 1`（`MainPlanRepository` 新方法）。
+- `MainPlanService.confirm` 成功时同时置 `main_plan_confirmed = 1` 与 `joining_closed = 1`（`MainPlanRepository` 新方法）。实现偏差：快捷端点声明在 `MainPlanController`（路径契约不变），避免 `com.gogo.trip ↔ com.gogo.mainplan` 包循环依赖（@rule:no-circular-dependency）。
 - `TripDetails.tsx` 的“确认主线方案”按钮只在 `isOrganizer` 时渲染；非组织者不显示；409 `STALE_DRAFT` 时展示 stale 引导。
 
 ### D8 joiningClosed 解耦
