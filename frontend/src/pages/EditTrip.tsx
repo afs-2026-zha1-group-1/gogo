@@ -1,6 +1,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { api, errorMessage } from '../api'
 import Icon from '../Icons'
+import ConfirmDialog from '../components/ui/confirm-dialog'
 import type { Trip, TripCreatePayload } from '../types'
 import { useAuth } from '../features/auth/AuthProvider'
 
@@ -46,6 +47,7 @@ export default function EditTrip({ tripId, backHref }: EditTripProps) {
   const [error, setError] = useState('')
   const [dateError, setDateError] = useState(false)
   const [splitGate, setSplitGate] = useState(false)
+  const [savePrompt, setSavePrompt] = useState<{ lines: string[]; form: TripCreatePayload } | null>(null)
 
   useEffect(() => {
     let active = true
@@ -112,8 +114,13 @@ export default function EditTrip({ tripId, backHref }: EditTripProps) {
       if (hasSplit) {
         lines.push('当前有进行中的分队，需要先在分队页取消后才能保存规划修改。')
       }
-      if (!window.confirm(`${lines.join('\n\n')}\n\n确定继续保存吗？`)) return
+      setSavePrompt({ lines, form })
+      return
     }
+    await persist(form)
+  }
+
+  async function persist(form: TripCreatePayload) {
     setBusy(true)
     setError('')
     setSplitGate(false)
@@ -310,6 +317,20 @@ export default function EditTrip({ tripId, backHref }: EditTripProps) {
           </button>
         </div>
       </form>
+      <ConfirmDialog
+        open={savePrompt != null}
+        title="保存规划修改？"
+        lines={savePrompt?.lines ?? []}
+        confirmLabel="继续保存"
+        cancelLabel="取消"
+        tone="warn"
+        onConfirm={() => {
+          const pending = savePrompt
+          setSavePrompt(null)
+          if (pending) void persist(pending.form)
+        }}
+        onCancel={() => setSavePrompt(null)}
+      />
     </div>
   )
 }

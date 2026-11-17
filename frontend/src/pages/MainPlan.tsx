@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api'
 import { useAuth } from '../features/auth/AuthProvider'
 import Icon from '../Icons'
+import ConfirmDialog from '../components/ui/confirm-dialog'
 import type {
   BudgetOverrun,
   MainPlan,
@@ -57,6 +58,7 @@ export default function MainPlan({ tripId }: MainPlanProps) {
   const [stopForm, setStopForm] = useState({ name: '', startTime: '', endTime: '' })
   const [stopBusy, setStopBusy] = useState(false)
   const [stopError, setStopError] = useState<string | null>(null)
+  const [stalePrompt, setStalePrompt] = useState(false)
 
   const load = useCallback(() => {
     let active = true
@@ -126,12 +128,7 @@ export default function MainPlan({ tripId }: MainPlanProps) {
   async function confirm() {
     // US-003 D15: a stale draft gets a blocking prompt; cancelling sends no confirm.
     if (state.kind === 'ready' && state.plan.stale) {
-      const regenerateNow = window.confirm(
-        '行程信息或成员偏好已变化，方案已过期，请重新生成后再确认。\n\n'
-        + '点击“确定”立即重新生成；点击“取消”关闭对话框，不会发送确认请求。',
-      )
-      if (!regenerateNow) return
-      await regenerate()
+      setStalePrompt(true)
       return
     }
     setBusy('confirm')
@@ -485,6 +482,23 @@ export default function MainPlan({ tripId }: MainPlanProps) {
           </button>
         </div>
       ) : null}
+
+      <ConfirmDialog
+        open={stalePrompt}
+        title="方案已过期"
+        lines={[
+          '行程信息或成员偏好已变化，当前草稿不能直接确认。',
+          '请重新生成后再确认；重新生成会整份替换草稿，并丢弃手动修改的活动地点与时间。',
+        ]}
+        confirmLabel="立即重新生成"
+        cancelLabel="取消"
+        tone="warn"
+        onConfirm={() => {
+          setStalePrompt(false)
+          void regenerate()
+        }}
+        onCancel={() => setStalePrompt(false)}
+      />
     </div>
   )
 }

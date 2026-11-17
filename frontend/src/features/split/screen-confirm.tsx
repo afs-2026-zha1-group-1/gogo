@@ -1,5 +1,7 @@
+import { useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { useCancelConfirmedSplit, useCancelDraft, useConfirmDraft, useSplitDraft, useTripOrganizer } from "./hooks"
+import ConfirmDialog from "@/components/ui/confirm-dialog"
 import { useAuth } from "../auth/AuthProvider"
 import { SplitLayout } from "./split-layout"
 import { EmptyState, ErrorState, LoadingState } from "./states"
@@ -33,19 +35,18 @@ export function ScreenConfirm() {
   const isInitiator = detail != null && accountId != null && detail.initiatorMemberId === accountId
   const isOrganizer = trip.data?.organizerId != null && String(trip.data.organizerId) === accountId
   const busy = confirm.isPending || cancel.isPending || cancelConfirmed.isPending
+  const [cancelPrompt, setCancelPrompt] = useState<"active" | "confirmed" | null>(null)
 
   const onCancel = () => {
     if (!detail) return
-    if (!window.confirm("确认取消该拆分草稿？主线方案不会改变，取消后可重新发起。")) return
-    cancel.mutate(detail.draftVersion)
+    setCancelPrompt("active")
   }
 
   // US-051: organizer may cancel a confirmed split before departure; the server
   // enforces the departure instant and restores the main plan on success.
   const onCancelConfirmed = () => {
     if (!detail) return
-    if (!window.confirm("确认取消已确认的分队？取消后恢复主线方案；出发后不能取消，取消后可重新发起。")) return
-    cancelConfirmed.mutate(detail.draftVersion)
+    setCancelPrompt("confirmed")
   }
 
   const action =
@@ -82,7 +83,8 @@ export function ScreenConfirm() {
     )
 
   return (
-    <SplitLayout
+    <>
+      <SplitLayout
       title="复核并确认分队"
       subtitle="服务端重校验通过后成对生效"
       step={4}
@@ -177,7 +179,31 @@ export function ScreenConfirm() {
           </p>
         </div>
       )}
-    </SplitLayout>
+      </SplitLayout>
+      <ConfirmDialog
+        open={cancelPrompt != null}
+        title={cancelPrompt === "confirmed" ? "取消已确认分队？" : "取消拆分草稿？"}
+        lines={cancelPrompt === "confirmed"
+          ? ["取消后恢复主线方案，分队路线不再生效；", "出发后不能取消，取消后可重新发起。"]
+          : ["主线方案不会改变，取消后可重新发起。"]}
+        confirmLabel={cancelPrompt === "confirmed" ? "取消已确认分队" : "取消草稿"}
+        cancelLabel="返回"
+        tone="warn"
+        onConfirm={() => {
+          if (!detail) {
+            setCancelPrompt(null)
+            return
+          }
+          if (cancelPrompt === "confirmed") {
+            cancelConfirmed.mutate(detail.draftVersion)
+          } else {
+            cancel.mutate(detail.draftVersion)
+          }
+          setCancelPrompt(null)
+        }}
+        onCancel={() => setCancelPrompt(null)}
+      />
+    </>
   )
 }
 
