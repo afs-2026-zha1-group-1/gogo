@@ -1,9 +1,10 @@
 import { truncateLabel, type GraphModel, type GraphRow } from "./graph-model"
 
 /**
- * Read-only team-route graph (US-086, ui-design-reference Screen 11). Three lanes: Route B on the
- * left, the shared main line in the middle and Route A on the right. Main labels alternate sides;
- * branch labels stay outside their lane. Nodes are display-only: no click target, no sheet.
+ * Team-route graph (US-086, ui-design-reference Screen 11). Three lanes: Route B on the left, the
+ * shared main line in the middle and Route A on the right. Main labels alternate sides; branch
+ * labels stay outside their lane. Rows are clickable when an `onNodeClick` handler is supplied;
+ * the sheet content itself lives in the screen (currently mock data).
  */
 
 const WIDTH = 320
@@ -34,7 +35,13 @@ function nodeFill(row: GraphRow): string {
   return "#0d9488"
 }
 
-export function TeamRouteGraph({ model }: { model: GraphModel }) {
+export function TeamRouteGraph({
+  model,
+  onNodeClick,
+}: {
+  model: GraphModel
+  onNodeClick?: (row: GraphRow) => void
+}) {
   const { rows, forkRow, joinRow, routeLabels } = model
   const showRoutes = rows.some((row) => row.kind === "branch")
   const height = PAD * 2 + ROW * rows.length
@@ -133,8 +140,36 @@ export function TeamRouteGraph({ model }: { model: GraphModel }) {
           const titleWeight = isJunction ? 750 : isBranch ? 620 : 650
           const title = truncateLabel(row.title, isBranch ? 9 : isJunction ? 10 : 11)
           return (
-            <g key={`${row.kind}-${index}`}>
+            <g
+              key={row.id}
+              onClick={onNodeClick ? () => onNodeClick(row) : undefined}
+              onKeyDown={
+                onNodeClick
+                  ? (event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault()
+                        onNodeClick(row)
+                      }
+                    }
+                  : undefined
+              }
+              role={onNodeClick ? "button" : undefined}
+              tabIndex={onNodeClick ? 0 : undefined}
+              aria-label={`${row.meta} ${row.title}`}
+              className={onNodeClick ? "cursor-pointer outline-none" : undefined}
+            >
               <title>{row.title}</title>
+              {onNodeClick ? (
+                <rect
+                  x={2}
+                  y={cy - 26}
+                  width={316}
+                  height={52}
+                  rx={10}
+                  fill="transparent"
+                  className="hover:fill-black/5"
+                />
+              ) : null}
               {isJunction ? <circle cx={cx} cy={cy} r={13} fill={row.kind === "fork" ? "#ccfbf1" : "#d7f5e6"} /> : null}
               <circle
                 cx={cx}
