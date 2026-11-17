@@ -1647,6 +1647,13 @@ No critical blocker. 可进入 P2 proposal-split。
 
 # US-061 - Dashboard impact brief (2026-11-16)
 
+> Current reconciliation, 2026-11-17: the assessment below is historical.
+> The current dashboard uses the persisted current trip and role-specific
+> milestones. Organizer invitation and details destinations invoke the
+> existing invitation POST on load. The changed boundary requires renewed
+> IO/SA alignment; see [US-061](requirements/US-061.md) and its
+> [proposal](../openspec/changes/us-061-view-trip-dashboard/proposal.md).
+
 > Historical impact analysis for the earlier active-only scope. The current
 > interim scope is recorded in [US-061](requirements/US-061.md) and the
 > [proposal](../openspec/changes/us-061-view-trip-dashboard/proposal.md).

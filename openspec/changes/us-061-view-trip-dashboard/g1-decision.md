@@ -1,6 +1,11 @@
 # G1 decision — us-061-view-trip-dashboard
 
-## Current decision — revised milestone and five-tab scope
+> Reconciliation notice, 2026-11-17: the recorded Pass below is preserved as
+> historical evidence. It does not cover the current-trip dashboard,
+> role-specific milestones or organizer invitation POST on destination load.
+> A new decision by the named human approvers is outstanding.
+
+## Earlier decision — revised milestone and five-tab scope
 
 - **Gate:** G1 (Align)
 - **Decision:** Pass

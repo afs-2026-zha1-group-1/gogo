@@ -1,5 +1,11 @@
 # US-061 - Dashboard deep-dive
 
+> Current reconciliation, 2026-11-17: the data and display tables below are
+> historical. The implementation uses a persisted current-trip dashboard,
+> role-specific milestones and existing invitation destinations that can POST
+> on organizer page load. See [US-061](../requirements/US-061.md) and the
+> [design](../../openspec/changes/us-061-view-trip-dashboard/design.md).
+
 Date: 2026-11-16. Inputs: `requirements/US-061.md`,
 `impact-brief.md` section US-061, current code and US-058 issue #24.
 This is a requirement-level contract, not an implementation design.

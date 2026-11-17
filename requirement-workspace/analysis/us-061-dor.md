@@ -1,5 +1,11 @@
 # US-061 - Definition of Ready self-check
 
+> Current reconciliation, 2026-11-17: this self-check is historical and does
+> not approve the current-trip dashboard, role-specific progress or
+> invitation POST on destination load. Reassess readiness and obtain a new
+> human alignment decision for the scope in
+> [US-061](../requirements/US-061.md).
+
 Date: 2026-11-16. This is an entry self-check, not a gate decision.
 
 > Historical self-check for the earlier active-only scope. The 2026-11-17

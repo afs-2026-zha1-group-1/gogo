@@ -1,5 +1,12 @@
 # US-061 - P1 handoff
 
+> Current reconciliation, 2026-11-17: the dashboard displays the persisted
+> current trip, with the separate My Trips picker, role-specific milestones
+> and expanded destinations. Organizer invitation and details page loads can
+> POST an invitation. The earlier handoff below is historical; renewed IO/SA
+> alignment and verification are required for these changes. See
+> [US-061](../requirements/US-061.md).
+
 - Requirement: `requirement-workspace/requirements/US-061.md`.
 - Readiness and deep-dive: `requirement-workspace/analysis/us-061-dor.md` and
   `requirement-workspace/analysis/us-061-deep-dive.md`.
