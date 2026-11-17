@@ -1,0 +1,38 @@
+===== CMD: ! grep -rn "Hello World" frontend/src =====
+cwd: /c/Users/JIANGEL5/code/bootcamp/GoGo
+started: 2026-11-17T09:01:00+0800
+exit: 0
+ended: 2026-11-17T09:01:04+0800
+
+===== CMD: ! grep -inE "jpa|hibernate" backend/pom.xml =====
+cwd: /c/Users/JIANGEL5/code/bootcamp/GoGo
+started: 2026-11-17T09:01:06+0800
+exit: 0
+ended: 2026-11-17T09:01:11+0800
+
+===== CMD: ! grep -rinE "h2database|org\.h2|jdbc:h2" backend/pom.xml backend/src =====
+cwd: /c/Users/JIANGEL5/code/bootcamp/GoGo
+started: 2026-11-17T09:01:12+0800
+exit: 0
+ended: 2026-11-17T09:01:17+0800
+
+===== CMD: ! grep -q "artifact.oocl.com" frontend/package-lock.json =====
+cwd: /c/Users/JIANGEL5/code/bootcamp/GoGo
+started: 2026-11-17T09:01:18+0800
+exit: 0
+ended: 2026-11-17T09:01:23+0800
+
+===== CMD: python -c "import yaml; d=yaml.safe_load(open('.github/workflows/ci.yml')); j=sorted(d['jobs']); assert j==['backend','frontend'], j; print('ci jobs:', j)" =====
+cwd: /c/Users/JIANGEL5/code/bootcamp/GoGo
+started: 2026-11-17T09:01:24+0800
+ci jobs: ['backend', 'frontend']
+exit: 0
+ended: 2026-11-17T09:01:29+0800
+
+===== CMD: python -c "import yaml; d=yaml.load(open('.github/workflows/ci.yml'), Loader=yaml.BaseLoader); assert 'main' in d['on']['push']['branches']; assert 'main' in d['on']['pull_request']['branches']; print('ci triggers: main push and pull request')" =====
+cwd: /c/Users/JIANGEL5/code/bootcamp/GoGo
+started: 2026-11-17T09:01:30+0800
+ci triggers: main push and pull request
+exit: 0
+ended: 2026-11-17T09:01:35+0800
+

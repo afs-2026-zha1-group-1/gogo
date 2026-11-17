@@ -3,6 +3,7 @@ import Icon from '../../Icons'
 import { useAuth } from './AuthProvider'
 
 const DEMO_PASSWORD = 'gogo-demo-2026'
+const LOGIN_EMAIL_KEY = 'gogo.login.email'
 const DEMO_ACCOUNTS = [
   { name: 'Alice', email: 'alice@example.com' },
   { name: 'Ben', email: 'ben@example.com' },
@@ -13,7 +14,18 @@ const DEMO_ACCOUNTS = [
 
 export default function LoginPage() {
   const { status, pendingInvite, login } = useAuth()
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(LOGIN_EMAIL_KEY)
+      if (saved) {
+        sessionStorage.removeItem(LOGIN_EMAIL_KEY)
+        return saved
+      }
+    } catch {
+      /* storage unavailable */
+    }
+    return ''
+  })
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -116,6 +128,9 @@ export default function LoginPage() {
                 {busy ? '正在登录…' : '登录'}
               </button>
             </form>
+            <p className="hint" style={{ marginTop: 12 }}>
+              还没有账号？<a href="/#/register">创建账号</a>
+            </p>
           </section>
           <p className="hint" style={{ marginTop: 14 }}>
             登录后会回到你的仪表盘；如果正在打开邀请，会先回到邀请预览，再由你确认加入。

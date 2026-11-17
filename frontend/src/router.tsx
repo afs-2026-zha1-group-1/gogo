@@ -2,6 +2,7 @@ import type { ComponentType } from "react"
 import { createBrowserRouter, Navigate, useParams } from "react-router-dom"
 import App from "./App.tsx"
 import LoginPage from "./features/auth/LoginPage"
+import RegisterPage from "./features/auth/RegisterPage"
 import RequireAuth from "./features/auth/RequireAuth"
 import { ScreenStart } from "./features/split/screen-start"
 import { ScreenBoundary } from "./features/split/screen-boundary"
@@ -26,6 +27,8 @@ function SplitKeyed({ Screen }: { Screen: ComponentType }) {
 export const router = createBrowserRouter([
   { path: "/", element: <App /> },
   { path: "/login", element: <LoginPage /> },
+  { path: "/register", element: <RegisterPage /> },
+  { path: "/account", element: <Navigate to="/#/account" replace /> },
   {
     path: "/trips/:tripId/split",
     element: <RequireAuth><SplitKeyed Screen={ScreenStart} /></RequireAuth>,
