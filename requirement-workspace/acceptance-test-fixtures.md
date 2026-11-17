@@ -387,6 +387,72 @@ hashes.
 | Login error message wording | Only `code = INVALID_CREDENTIALS` is contractual |
 | Exact idle timeout beyond the default | 30 minutes default; tests use a short configured timeout |
 | Demo password in UI | Never displayed; it is a fixture value documented here only |
+## REQ-009 — My Account, logout and registration (US-068 / US-069 / US-070)
+
+Reuses the five seeded accounts and the sample trip above. Registration fixtures
+below are **new test accounts only**; they are not seeded and must be created by
+the test run. All writes use one in-memory/isolated SQLite database per run.
+
+### Registration fixtures
+
+| field | valid value | boundary / invalid values |
+|---|---|---|
+| email | `nina@example.com` | `nina.example.com`（无 @）、``（空）、`  Nina@Example.COM  `（应归一化为成功） |
+| display name | `Nina` | `A`（1 字符，合法）、`123456789012345678901234567890`（30 字符，合法）、``（空）、`   `（纯空白）、`1234567890123456789012345678901`（31 字符） |
+| password | `nina2026`（8 字符） | `abcde`（5 字符）、6 字符（合法）、72 字节（合法）、73 字节（拒绝） |
+
+Duplicate-email sibling account: `alice@example.com` already exists (id 1).
+Concurrent case uses the same `nina@example.com` payload submitted twice in
+parallel.
+
+UI note (2026-11-17 reference): the registration page shows the name, email,
+password and confirmation password fields, a "至少 8 个字符" helper, a primary
+"创建账号" button and a secondary "已有账号？去登录" button. The UI requires at
+least 8 characters and a matching confirmation; the API keeps the 6–72 byte
+contract, so API fixtures may still use 6–7 byte passwords.
+
+### Requests
+
+| Case | Call | Expected |
+|---|---|---|
+| R1 register valid | `POST /api/auth/register` `{"email":"nina@example.com","name":"  Nina  ","password":"nina2026"}` + CSRF | 200, body exactly `{"next":"login"}`; exactly one new `app_user` with name `Nina` and one `account_credential`; hash is BCrypt (`$2`); no session cookie |
+| R2 duplicate email | R1 again, then with `"  NINA@Example.COM  "` | 409 with `code = EMAIL_TAKEN`; no second account row; registration page shows the duplicate dialog |
+| R3 concurrent duplicate | two parallel R1 submissions | one 200 `{"next":"login"}` and one 409 `EMAIL_TAKEN`; exactly one account row |
+| R4 invalid email | R1 with `nina.example.com` or missing email | 400 flat `{code,message}` (email-code); no row; no session |
+| R5 invalid name | R1 with `""`, `"   "`, or 31 chars | 400 flat `{code,message}` (name-code); no row |
+| R6 invalid password | R1 with 5 chars, then 73 bytes | 400 flat `{code,message}` (password-code); no row |
+| R7 service failure | force a persistence failure during registration | 5xx flat error; no partial `app_user`; retry creates exactly one account |
+| R8 register then login | R1, then `POST /api/auth/login` with the same email/password | 200 account projection; session established; dashboard opens; no verification step |
+| R9 new account profile | R1 + R8, then `GET /api/auth/me` and My Account | name `Nina`, email `nina@example.com`, zero trip memberships |
+| R10 invite resume | signed-out browser opens `#/join/<token>`, registers, then logs in | registration creates no session; after login the same preview resumes; no membership until explicit accept |
+| M1 profile read | signed-in `GET /api/auth/me` | 200 `{id,name,email}`; no password/hash |
+| M2 name update valid | `PATCH /api/auth/me` `{"name":"  Nina Chen  "}` + CSRF | 200 with name `Nina Chen`; `app_user.display_name` = `Nina Chen`; dashboard greeting/member/invitation/route labels show it; avatar initial (where rendered) is `N` |
+| M3 name boundary | 1-char name, then 30-char name | both 200 and persisted trimmed |
+| M4 name invalid | `""`, `"   "`, 31 chars | 400 flat error; stored name and all displays unchanged |
+| M5 other account | `PATCH /api/auth/me` with a body/path naming account 1 while signed in as Nina | no way to target account 1; Nina's own name is the only affected value; Alice unchanged |
+| M6 name update signed-out | `PATCH /api/auth/me` without a session | 401 `USER_REQUIRED`; no change |
+| M7 name update CSRF | M2 without `X-XSRF-TOKEN` | 403 `CSRF_INVALID`; name unchanged |
+| M8 name persistence | M2, then fresh `me` and a fresh login | latest name returned both times |
+| L1 logout | signed-in `POST /api/auth/logout` + CSRF | 204; no body; session cookie no longer authenticates; `GET /api/auth/me` → 401 `USER_REQUIRED`; protected page opens login |
+| L2 logout repeat/no session | repeat L1, and call logout without a session | 401 `USER_REQUIRED`; UI shows signed-out state without claiming a new success |
+| L3 logout CSRF | L1 without `X-XSRF-TOKEN` | 403 `CSRF_INVALID`; session still valid |
+| L4 logout failure | force a server failure during L1 | recoverable error shown; local auth state not falsely cleared |
+| L5 logout data intact | L1, then log in again | account, display name, memberships, organizer role, groups and trip data unchanged |
+| C1 navigation | signed-in shell | bottom nav has 我的; no top-right profile shortcut; existing info (i) control remains; no scan control added by this change |
+| C2 greeting | signed-in dashboard | greeting uses account name; no `组织者` suffix |
+| C3 account route guard | signed-out `#/account` and `/account` | login page; no profile data |
+| C4 already signed-in auth pages | signed-in `#/login`, `#/register`, `/login`, `/register` | dashboard `#/` opens |
+
+### Values deliberately not fixed (REQ-009)
+
+| Item | Why no value is set |
+|---|---|
+| Generated `app_user.id` for new accounts | Depends on prior rows in the isolated test DB; assert uniqueness/one-row, not a literal id |
+| BCrypt hash string | Salted per write; only the BCrypt format is contractual |
+| Session cookie value | Generated per session; tests capture it from the response |
+| Registered account's avatar color/style | No avatar upload; only the derived initial is contractual where an avatar exists |
+| Generic success message wording | Wire contract is `{"next":"login"}` at P1; exact UI copy is P3 |
+
 ## US-013 — members (US-013)
 
 Scope: the roster read for an existing trip. Reuses §Users and §Sample trip
