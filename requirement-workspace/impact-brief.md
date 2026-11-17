@@ -1732,7 +1732,7 @@ No critical blocker. 可进入 P2 proposal-split。
 ## 4. Blast radius
 
 - 后端：`splits` 包 1 个新端点 + 域方法 + 两处门禁 + 成员集合查询复用；无新包、无迁移、无新依赖。
-- 后端测试：`AbstractSplitApiTest`（新增 assignment helper、`prepareConfirmableDraftAs` 需先分组）、`SplitDraftStartApiTest`/`SplitDraftDetailApiTest`（初始分组断言由 2/2 改为 4/0）、`SplitDraftDocumentTest`（`partitionGroups` 单测重写）、`SplitRouteGenerationApiTest` + `SplitConfirmApiTest`（新增分组前置用例，原通过用例需先分到 B 组）、新增 `SplitAssignmentApiTest`。
+- 后端测试：`AbstractSplitApiTest`（新增 assignment helper、`prepareConfirmableDraftAs` 需先分组）、`SplitDraftDetailApiTest`（初始分组断言由 2/2 改为 4/0）、`SplitDraftDocumentTest`（`partitionGroups` 单测重写）、`SplitRouteGenerationApiTest` + `SplitConfirmApiTest`（新增分组前置用例，原通过用例需先分到 B 组）、**`SplitRouteGenerationApiTest.generateRoutes_groupMoveEndpoint_notImplemented`（断言 `groups:move` 不存在）必须删除或改写为 `assignment` 已实现**、新增 `SplitAssignmentApiTest`。
 - 前端：`screen-routes.tsx`（分组卡改造，最大改动）、`screen-confirm.tsx`（成员名）、`api.ts`/`hooks.ts`/`types.ts`/`states.tsx`；无新路由、无 stepbar 变更。
 - 用户可见面：初始草稿「B 组为空」是行为变化，成员必须先分到两组才能生成与确认；Screen 13 的分组从只读变为可操作。
 
@@ -1760,6 +1760,7 @@ No critical blocker. 可进入 P2 proposal-split。
 | R3 | 生成前置新增 `SPLIT_DRAFT_INCOMPLETE`，Screen 13 的错误文案当前只提「保存边界并生成路线」 | 中 | 已列入 3.4/3.6：文案与 `details.missing` 中文化一并改 |
 | R4 | 成员改组与发起人同时生成/确认的并发 | 中 | `draftVersion` 乐观锁已覆盖（后到者 `STALE_DRAFT_VERSION`）；轮询 5s + mutation invalidate 足够，无需新机制 |
 | R5 | `groups` 存 `app_user.id` 而非成员行 id，容易在实现时误映射 | 低 | 已在条目 Constraints 与 3.1 显式写明；`findMemberIdsOrdered` 即取 `trip_member.user_id` |
+| R6 | 既有 `groups:move` 负向测试（断言端点不存在）与本变更的 `assignment` 端点命名冲突 | 中（会直接失败） | BQ-1 已定 `PUT .../assignment`，不采用 `groups:move`；P4 删除或改写该负向用例（已写入条目 Context 与本节 §4） |
 
 No critical blocker invalidates US-040; split may proceed.
 

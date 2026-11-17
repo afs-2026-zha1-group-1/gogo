@@ -32,11 +32,12 @@
 | SUGGESTION | **resolved** | Screen 13 文案 | 现有卡片写「分组由夹具按偏好齐全分区；本期不开放成员移动控件」，副标题「分组移动本期不开放」 | In scope 已明示移除该文案并改为分组卡；「自动分组」标题亦需改（OQ-11 视觉细节 deferred） |
 | SUGGESTION | **resolved** | Screen 15 | 复核屏以 `memberId` 原串展示 A/B 组 | In scope 已改为成员名展示（复用名册），纳入 S17 |
 | SUGGESTION | deferred | OQ-9…OQ-12 | 非法组别错误码、重复提交幂等、头像首字母、空 B 组引导文案 | 均为实现/文案细节，留 P3 定；风险已记录，不阻塞 impact 与 split |
+| WARNING | **resolved** | `SplitRouteGenerationApiTest` | 既有负向用例断言 `POST .../split-draft/groups:move` 不存在（404/405），与本变更新增的分组端点直接冲突 | BQ-1 定为 `PUT .../assignment`（不采用 `groups:move`）；已写入条目 §Context 与 impact §4 / R6：P4 必须删除或改写该负向断言 |
 
 ## 退出判定（完整：①–⑫）
 
 - BLOCKER 数量：**0**
 - blocking 开放问题未 resolved：**0**
-- WARNING 2 条均 resolved；SUGGESTION 3 条（2 resolved / 1 deferred 不阻塞）
+- WARNING 3 条均 resolved；SUGGESTION 3 条（2 resolved / 1 deferred 不阻塞）
 - ⑨–⑫：deep-dive §US-040 已完成，四项均 Pass（数据契约/边界 18 行/跨 REQ 12 行/显示 9 面）
 - 结论：可进入 `/sdd:proposal-split`（单 change：`splits` 1 ADDED + 3 MODIFIED）
