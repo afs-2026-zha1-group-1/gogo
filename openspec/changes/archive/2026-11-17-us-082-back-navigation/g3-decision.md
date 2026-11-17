@@ -64,3 +64,10 @@ No blocking conditions. Non-blocking follow-ups:
 
 - Commit the P5 archive branch, open its PR, wait for CI, merge (merge commit);
   then close issue #105 and set the Project #2 item to Done.
+
+## Post-merge addendum (2026-11-17)
+
+- P5 archive PR #108 merged to `main` as `f7fe16d`.
+- Issue #105 closed as completed; Project #2 item moved to Done by explicit user
+  direction.
+- No code or spec change in this finalize step.
