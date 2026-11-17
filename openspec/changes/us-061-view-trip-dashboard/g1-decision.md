@@ -54,5 +54,5 @@ that either approver has signed this record.
 
 | Role | Name | Signature | Date |
 |---|---|---|---|
-| IO | Emily Li |  |  |
+| IO | Emily Li | Emily |2026-11-17 |
 | SA | Sammi Ng | Sammi | 2026-11-17 |
