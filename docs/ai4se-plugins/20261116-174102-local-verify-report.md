@@ -41,7 +41,7 @@
 |----|-------|--------|------|-------|
 | V1 | Task completion | Pass | [fact] | 32/36 已完成；开项仅 8.1–8.4（P5 归档范围，按阶段设计保留） |
 | V2 | Requirement coverage | Pass | [fact] | 7 requirement（confirm/cancel/start/boundary/routes/timing/detail）均有实现证据：`SplitDraftController` + `SplitDraftService` + `SplitDraftRepository` + `SplitDraftDocument` + `screen-confirm.tsx` |
-| V3 | Scenario coverage | Pass | [fact] | 51 场景：API 测试覆盖 CF1–CF7-N、CN1–CN6-N、S7′/S8/S9-N、D1b、R-N；E2E 覆盖 E1–E11（10 Pass / 1 N/A） |
+| V3 | Scenario coverage | Pass | [fact] | 51 场景：API 测试覆盖 CF1–CF7-N、CN1–CN6-N、S7′/S8/S9-N、D1b、R-N；E2E 覆盖 E1–E11（10 Pass / 1 Partial，未登录跳转子项 N/A） |
 | V4 | Requirement↔impl mapping | Pass | [fact] | 端点/错误码/状态迁移/投影逐项对齐 delta（见上表 V2；错误码 16 个全集） |
 | V5 | Spec drift | Pass | [fact] | 无未记录漂移；两处 P4 内澄清已回写 delta：Screen 11 confirmed 提供查看入口（a11y 修正）、`SecurityConfig` split-draft 匹配器补 `:confirm/:cancel`（US-066 会话认证整合） |
 | V6 | Design follow-through | Pass | [fact] | D1–D16：D1–D12/D14/D15 已实现；D13（下游只读 `status`）为文档约束按设计不改下游代码；D16 反向由测试负向用例覆盖 |
@@ -53,7 +53,7 @@
 | Slot | Status | Source |
 |------|--------|--------|
 | E1 Machine | Pass | main CI `43833884672`（64060f5，实现）与 `43839036207`（60f44d1，查看入口修复），backend+frontend 双 job success |
-| E2 AI | Pass | 本报告 + `docs/feedback/e2e-us-049-050.md`（E1–E11 实测：10 Pass / 1 N/A） |
+| E2 AI | Pass | 本报告 + `docs/feedback/e2e-us-049-050.md`（E1–E11 实测：10 Pass / 1 Partial，未登录跳转子项 N/A） |
 | E3 Human | Pending | G2 由 VL 签核（本报告不代签） |
 
 ## Five-question map

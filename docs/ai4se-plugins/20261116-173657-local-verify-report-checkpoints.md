@@ -35,5 +35,5 @@
 
 ## Next
 
-- suggested: G2 decision（`g2-decision.md` 已记录 Pass，VL=Elian Jiang）→ P5 `living-merge` / `change-summary` / G3
+- suggested: G2 decision（`g2-decision.md` 已记录 Pass，VL=Johnson Sun）→ P5 `living-merge` / `change-summary` / G3
 - on Fail without Waiver: hard-stop — do not call `/sdd:pr-submit`
