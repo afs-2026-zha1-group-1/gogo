@@ -1,5 +1,15 @@
 # US-061 P3 alignment self-check
 
+## Current implementation reconciliation — 2026-11-17
+
+The mappings below describe earlier scope and are historical. The current
+[design](design.md), [ATDD](atdd-design.md), [tasks](tasks.md) and deltas
+describe persisted current-trip selection, role-specific milestones and
+destination side effects. An organizer opening invitations or details invokes
+the existing invitation POST. A new IO/SA alignment decision, revised
+acceptance checks and CI for the final implementation revision remain open.
+This self-check is not a gate decision.
+
 ## Revised-scope update — 2026-11-17
 
 This is a planning check, not a gate decision or proof of implementation.
