@@ -157,6 +157,15 @@ public class SplitDraftRepository {
                 draftJson, now, tripId, expectedVersion);
     }
 
+    /** US-051: conditional cancellation of a confirmed split at the expected version. */
+    public int cancelConfirmedIfConfirmed(String tripId, int expectedVersion, String draftJson, String now) {
+        return jdbcTemplate.update(
+                "UPDATE split_draft SET document = ?, updated_at = ? "
+                        + "WHERE trip_id = ? AND draft_version = ? "
+                        + "AND json_extract(document, '$.status') = 'confirmed'",
+                draftJson, now, tripId, expectedVersion);
+    }
+
     /**
      * Rebuilds a cancelled draft in place (design D7/D11): the replacement document and the reset column version both
      * land only while the stored status is still cancelled, so concurrent rebuilds collapse to a single winner.

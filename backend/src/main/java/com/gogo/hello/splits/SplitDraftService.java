@@ -402,7 +402,9 @@ public class SplitDraftService {
             if (departure != null && reunion != null) {
                 departureAt = departure.startAt();
                 reunionAt = reunion.startAt();
-                windowMinutes = SplitWindow.between(departureAt, reunionAt).minutes();
+                if (departureAt != null && reunionAt != null) {
+                    windowMinutes = SplitWindow.between(departureAt, reunionAt).minutes();
+                }
             }
         }
         List<GroupRoute> routes = new ArrayList<>();
@@ -478,6 +480,40 @@ public class SplitDraftService {
         SplitDraftDocument cancelled = draft.cancelled(now);
         transactionTemplate.executeWithoutResult(status -> {
             if (repository.cancelDraftIfActive(tripId, draftVersion, toJson(cancelled), now) == 0) {
+                throw new ApiException(ErrorCode.STALE_DRAFT_VERSION, "draft version is stale");
+            }
+            repository.deleteSplitRoutes(tripId);
+        });
+        return getDraftDetail(tripId, memberId);
+    }
+
+    /**
+     * US-051: cancels a confirmed split before departure (design D9). Only the trip organizer may cancel; the
+     * departure instant is the confirmed draft's departure stop {@code start_at}, and a missing value counts as
+     * not departed in this MVP. The status write and the split route node deletion share one transaction.
+     */
+    public SplitDraftDetailResponse cancelConfirmedSplit(String tripId, String memberId, int draftVersion) {
+        guard.requireMember(memberId, tripId);
+        requireOrganizer(tripId, memberId);
+        SplitDraftDocument draft = currentDraft(tripId);
+        if (draft == null || !"confirmed".equals(draft.status())) {
+            throw new ApiException(ErrorCode.SPLIT_DRAFT_NOT_ACTIVE, "no confirmed split to cancel");
+        }
+        if (draft.draftVersion() != draftVersion) {
+            throw new ApiException(ErrorCode.STALE_DRAFT_VERSION, "draft version is stale");
+        }
+        Instant departureAt = null;
+        if (draft.departureStopId() != null) {
+            departureAt = repository.findMainPlanStop(tripId, draft.departureStopId(), draft.mainPlanVersion())
+                    .map(PlanStop::startAt).orElse(null);
+        }
+        if (departureAt != null && !departureAt.isAfter(Instant.now())) {
+            throw new ApiException(ErrorCode.SPLIT_ALREADY_DEPARTED, "the split has already departed");
+        }
+        String now = Instant.now().toString();
+        SplitDraftDocument cancelled = draft.cancelled(now);
+        transactionTemplate.executeWithoutResult(status -> {
+            if (repository.cancelConfirmedIfConfirmed(tripId, draftVersion, toJson(cancelled), now) == 0) {
                 throw new ApiException(ErrorCode.STALE_DRAFT_VERSION, "draft version is stale");
             }
             repository.deleteSplitRoutes(tripId);

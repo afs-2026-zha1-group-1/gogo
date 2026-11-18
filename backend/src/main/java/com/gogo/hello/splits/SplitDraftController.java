@@ -122,6 +122,17 @@ public class SplitDraftController {
         return ResponseEntity.ok(ApiResponse.ok(detail));
     }
 
+    /** US-051: the organizer cancels a confirmed split before departure (design D9). */
+    @PostMapping("/split:cancel")
+    public ResponseEntity<ApiResponse<SplitDraftDetailResponse>> cancelConfirmedSplit(
+            @PathVariable String tripId,
+            Authentication authentication,
+            @RequestBody DraftVersionRequest request) {
+        SplitDraftDetailResponse detail =
+                service.cancelConfirmedSplit(tripId, caller(authentication), request.draftVersion());
+        return ResponseEntity.ok(ApiResponse.ok(detail));
+    }
+
     private String caller(Authentication authentication) {
         if (authentication != null && authentication.getPrincipal() instanceof AccountPrincipal principal) {
             return String.valueOf(principal.id());

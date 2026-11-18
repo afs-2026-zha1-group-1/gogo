@@ -659,6 +659,26 @@ Alice 的预期顺序（以 2026-11-16 为“今天”，2026-11-17 修订：**�
 | 主线边界（V4 plan_node） | City Hall MRT（01:00–01:30Z）/ Merlion Park（03:30–04:00Z） |
 | 演示账号 | alice@example.com / ben / chloe / daniel / eve，密码 gogo-demo-2026 |
 | 窗口（选两 stop） | 120 分钟 |
+## US-003 — 行程基本信息编辑（issue #60，2026-11-17 扩写）
+
+### Identities and trips
+
+| Fixture | Value |
+|---|---|
+| trip 1 | `Singapore Friends Day`，organizer Alice(1)，成员 Alice/Ben/Chloe/Daniel；种子目的地 `Singapore`、日期 `2026-12-05`、起点 `City Hall MRT`、终点 `Merlion Park` |
+| Eve(5) | 非成员，用于 403 断言 |
+| 初始状态 | `main_plan_confirmed=0`、`joining_closed=0`；测试类 `@BeforeEach` 复位六字段与两个 flag |
+
+### State setup
+
+| State | Setup |
+|---|---|
+| 已确认主计划 | ready(1–4) → `POST /main-plan` → `POST /main-plan/confirm`（同时置 `main_plan_confirmed=1`、`joining_closed=1`） |
+| 未确认草稿（含快照） | ready(1–4) → `POST /main-plan`；V10 后自动写 `trip_basics_json` |
+| 无快照旧草稿 | 生成后 `UPDATE main_plan_draft SET trip_basics_json = NULL` |
+| 规划编辑后加入仍关闭 | 确认 → PUT 改目的地 → `main_plan_confirmed=0`、`joining_closed=1` |
+| active/confirmed 分队 | 直插 `split_draft` 行，`document` 内 `status` 取对应值 |
+| 已确认分队出发时刻 | 插入 `plan_node`（branch_id=main）：未来 `2030-01-01T01:00:00Z`、过去 `2020-01-01T01:00:00Z`、`start_at=NULL` 三态 |
 
 ### Values deliberately not fixed
 
@@ -733,6 +753,9 @@ Alice 的预期顺序（以 2026-11-16 为“今天”，2026-11-17 修订：**�
 | 「待确认」「没有更多活动」具体措辞 | 语义为契约（缺失不伪造/无后续态），文案可微调 |
 | 邀请页有效期/撤销/微信 | 偏离 D-1：原型 extras，后端无能力，本批不实现 |
 | 测试注入的时间值 | 由用例按设备本地当前时间构造；不固定绝对时刻 |
+| 编辑页/弹窗文案 | 只有 `code` 与可见性/状态是契约 |
+| 手动编辑目标值 | 任意合法 `HH:MM` 与名称；断言用提交值 |
+| stop 的 seq / 交通时长 / 兴趣标签 | 契约规定不可经编辑改变 |
 
 ## US-089 — 分队开始时间窗口 + A 组沿主线（2026-11-17）
 
@@ -796,4 +819,3 @@ Alice 的预期顺序（以 2026-11-16 为“今天”，2026-11-17 修订：**�
 | `GroupRoute` JSON 无 fee 字段 | API |
 | 无新增 `V*.sql`、无新依赖、`ci.yml` 不改 | 静态（git diff） |
 | 非发起人 `routes:generate` 仍 403；保存仍 200（BQ-6） | API |
-
