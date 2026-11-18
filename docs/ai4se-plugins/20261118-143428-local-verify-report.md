@@ -19,7 +19,7 @@
 
 ## Basis
 
-- 分支 `US-003-edit-trip-basics` 先快进到本地对账提交 `2a344f3`（相对旧 head `f6cfd1b` 为 fast-forward），再合入 `group1/main` `519b76a`，解决 9 处冲突后形成 `8e78238`。
+- 分支 `US-003-edit-trip-basics` 先快进到本地对账提交 `2a344f3`（相对旧 head `f6cfd1b` 为 fast-forward），再合入 `group1/main` `519b76a`，解决 9 处冲突后形成 `8e78238`；main 随后前进到 `b173c6a`（US-031 AI 归档），再次合入并保留 `AiGeneratingNotice`，后端随基线上涨到 471 例。
 - 冲突口径：邀请预览同时保留 `joiningClosed` 与 `organizerId/tripId/viewerMember`；主线确认同时执行 `setTripConfirmedAndJoiningClosed` 与 `projection.projectConfirmed`；split hooks/imports 取并集；分队确认保留 US-051 取消弹窗并采用 main 的 `dashboardOrigin` 导航；types/fixtures/registry 取并集。
 - 验证库：`backend/data/g2check.db`（全新 Flyway 1–10），服务端口 8082 / 5199，未触碰 8080/5173 上的既有实例。
 
@@ -28,7 +28,7 @@
 | Command | Source | Exit | Summary |
 |---------|--------|------|---------|
 | `mvn -B -DskipTests compile`（backend） | 构建前置 | 0 | 编译通过 |
-| `mvn -B test`（backend） | docs/feedback/verification-commands.md Runtime | 0 | **444/444** tests，0 failures / 0 errors |
+| `mvn -B test`（backend） | docs/feedback/verification-commands.md Runtime | 0 | **471/471** tests，0 failures / 0 errors |
 | `npm ci`（frontend） | docs/feedback/verification-commands.md Runtime（前置） | 0 | 84 packages |
 | `npm run typecheck` | docs/feedback/verification-commands.md Runtime | 0 | TypeScript 无错误 |
 | `npm run test:unit` | docs/feedback/verification-commands.md Runtime | 0 | **47/47** tests pass |

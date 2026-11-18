@@ -91,13 +91,13 @@
 
 - [x] 9. `openspec validate us-003-edit-trip-basics` = valid（deltaCount = 11 / capabilities = 5）；`--strict` 预期仅 5 条 >500 字符 WARNING，无结构错误
 - [x] 9. 更新 `requirement-workspace/registry.md`：US-003 行注明合并 #61–#64、本 change 取代确认后锁定/组织者独占规划字段、新增 US-051
-- [x] 9.3 归档前对账：`docs/knowledge/architecture/tech-stack-plan.md` §28 增补 `PUT /api/trips/{id}`、`POST /split:cancel`、V10 列、`SPLIT_DRAFT_ACTIVE`/`SPLIT_CONFIRMED`/`SPLIT_ALREADY_DEPARTED`/`joiningClosed`；`docs/knowledge/_LOG.md` 追加一行
-- [x] 9.4 记录既有漂移：Living trips「不暴露确认操作」与列表 read-only 措辞（不在本 change 修；见 §28）
-- [x] 9.5 归档前补 `PUT /main-plan/stops/{seq}`、`STOP_NOT_FOUND`/`INVALID_TIME`/`INVALID_TIME_RANGE`、stop 编辑与重生成提示的 API/交互记录（§28）
+- [x] 9.3 归档前对账：`docs/knowledge/architecture/tech-stack-plan.md` §29 增补 `PUT /api/trips/{id}`、`POST /split:cancel`、V10 列、`SPLIT_DRAFT_ACTIVE`/`SPLIT_CONFIRMED`/`SPLIT_ALREADY_DEPARTED`/`joiningClosed`；`docs/knowledge/_LOG.md` 追加一行
+- [x] 9.4 记录既有漂移：Living trips「不暴露确认操作」与列表 read-only 措辞（不在本 change 修；见 §29）
+- [x] 9.5 归档前补 `PUT /main-plan/stops/{seq}`、`STOP_NOT_FOUND`/`INVALID_TIME`/`INVALID_TIME_RANGE`、stop 编辑与重生成提示的 API/交互记录（§29）
 
 ## 10. 验证与门禁
 
 - [x] 10.1 G1 输入齐备：cross-change-scan.md（SA 具名）+ IO/SA 签署；新错误码 IO 批准（G1 已记 Pass）
-- [x] 10.2 local-verify 报告（后端 444/444、前端 47/47 + typecheck/build、浏览器 E8–E10；`docs/ai4se-plugins/20261118-143428-local-verify-report.md`）
+- [x] 10.2 local-verify 报告（后端 471/471、前端 47/47 + typecheck/build、浏览器 E8–E10；`docs/ai4se-plugins/20261118-143428-local-verify-report.md`）
 - [ ] 10.3 PR CI 双 job 绿（backend `mvn -B test` + frontend typecheck/build）
 - [ ] 10.4 G2（具名 VL）逐条审 → 合并 PR → living-merge（trips +2、main-itinerary 3 MODIFIED + 2 ADDED、invitations 2 MODIFIED、splits +1、auth MODIFIED 全文替换）+ G3（具名 SA）→ 归档
