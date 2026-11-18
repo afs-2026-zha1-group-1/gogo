@@ -83,7 +83,7 @@
 - [x] 10.2 前端 `npm run typecheck`、`npm run test:unit`、`npm run build` 全绿
 - [x] 10.3 本地 E2E：`npm run test:e2e -- tests/e2e/split-route-edit.spec.ts` 全 Pass
 - [x] 10.4 `openspec validate us-087-088-split-route-edit-preview --strict` = valid（deltaCount = 5）
-- [ ] 10.5 `/sdd:local-verify-report`（含 CI E1 slot）→ G2 输入
+- [x] 10.5 `/sdd:local-verify-report`（含 CI E1 slot）→ G2 输入
 - [x] 10.6 `/sdd:quality-checklist stage=p3`（本计划完成后）
 
 ## 11. 归档前（P5 前置）
