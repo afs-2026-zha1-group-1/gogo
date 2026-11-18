@@ -22,8 +22,11 @@ a shell-wide identity bar, identity switcher, seeded-user list or top-right
 profile shortcut. The authenticated account's display name SHALL be shown on
 My Account and in the dashboard greeting; account actions SHALL remain on My
 Account. Login, registration, guest join, scanner, preferences and
-invitation-only surfaces SHALL render outside the shell without the dock.
-The shell itself
+invitation-only surfaces SHALL render outside the shell without the dock. The
+scanner surface `#/scan` SHALL be a full-screen flow: it SHALL render outside
+the shell column without the bottom dock and SHALL NOT be associated with any
+bottom-dock tab. Closing the scanner SHALL return to `#/` with the 仪表盘 tab
+active regardless of the originating route. The shell itself
 SHALL NOT change create validation, trip-details permission, invitation or join
 behavior, or main-plan behavior; authentication and session ownership belong
 to the `auth` capability.
@@ -64,6 +67,28 @@ to the `auth` capability.
   the join flow and main-plan outcomes are exercised under the shell
 - **THEN** their owning behavior is unchanged by the dashboard
 - **AND** the shell itself adds no trip, invitation or main-plan state
+
+#### Scenario: The scanner renders full-screen without the dock
+
+- **WHEN** the traveler opens `#/scan`
+- **THEN** the scanner fills the viewport without the shell column constraint
+  or the bottom dock
+- **AND** no bottom-dock tab is highlighted while the scanner is open
+
+#### Scenario: Closing the scanner returns to the home page
+
+- **WHEN** the traveler closes the scanner from any originating route
+  (including `#/trips/<id>` or a direct `#/scan` visit)
+- **THEN** the app lands on `#/` with the 仪表盘 tab active
+- **AND** no originating-route restore state is kept (2026-11-17 user ruling
+  supersedes the restore-origin design D2 / S-5)
+
+#### Scenario: The dashboard exposes the scanner entry
+
+- **WHEN** the traveler is on the Home `我的行程` dashboard
+- **THEN** the app bar shows a scan entry button to the right of the title
+- **AND** activating it opens the full-screen `#/scan` flow without adding any
+  backend call or permission gate of its own
 
 ### Requirement: Bottom dock navigation
 

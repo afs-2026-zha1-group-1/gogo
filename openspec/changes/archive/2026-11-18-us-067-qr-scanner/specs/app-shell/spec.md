@@ -4,42 +4,39 @@
 
 ### Requirement: Mobile shell frame
 
-The frontend SHALL render every signed-in in-app route inside a centered column
+The frontend SHALL render shell-hosted signed-in routes inside a centered column
 at most 430 px wide and 100 dvh tall, with the page content scrolling above a
-fixed bottom dock and safe-area padding applied. The shell SHALL use the tokens
-and component language of `ui-design-reference` (the existing `app.css` token
-set). The shell SHALL NOT render a shell-wide identity bar, an identity switcher,
-a seeded-user list or a top-right profile shortcut. The authenticated account's
-display name SHALL be shown on My Account and in the dashboard greeting, and
-account actions SHALL exist only on My Account. The login page, the registration
-page, guest join surfaces and the trip invitation page at
-`#/trips/<id>/invitation` SHALL render outside the shell without the dock. The
-shell itself SHALL NOT change create validation, trip-details permission,
-invitation issuance or join behavior, or main-plan behavior; authentication and
-session ownership belong to the `auth` capability. The scanner surface `#/scan`
-SHALL be a full-screen flow: it SHALL render outside the shell column without
-the bottom dock and SHALL NOT be associated with any bottom-dock tab. Closing
-the scanner SHALL return to `#/` with the 仪表盘 tab active regardless of the
-originating route (2026-11-17 revision supersedes restore-origin).
+fixed bottom dock and safe-area padding applied. The shell SHALL use the
+project's existing UI component language and tokens. The shell SHALL NOT expose
+a shell-wide identity bar, identity switcher, seeded-user list or top-right
+profile shortcut. The authenticated account's display name SHALL be shown on
+My Account and in the dashboard greeting; account actions SHALL remain on My
+Account. Login, registration, guest join, scanner, preferences and
+invitation-only surfaces SHALL render outside the shell without the dock. The
+scanner surface `#/scan` SHALL be a full-screen flow: it SHALL render outside
+the shell column without the bottom dock and SHALL NOT be associated with any
+bottom-dock tab. Closing the scanner SHALL return to `#/` with the 仪表盘 tab
+active regardless of the originating route. The shell itself
+SHALL NOT change create validation, trip-details permission, invitation or join
+behavior, or main-plan behavior; authentication and session ownership belong
+to the `auth` capability.
 
 #### Scenario: An in-app route renders inside the frame
 
-- **WHEN** any of `#/`, the no-trip 行程 route, `#/trips/<id>`, `#/create`,
-  `#/split`, `#/members` or `#/account` renders for an authenticated traveler
+- **WHEN** an authenticated traveler opens the current-trip dashboard, a selected
+  trip dashboard, the no-trip 行程 route, `#/trips/<id>`, `#/create`, `#/split`
+  `#/members` or `#/account`
 - **THEN** the content is inside a centered column at most 430 px wide and
   100 dvh tall
 - **AND** the bottom dock is fixed below the scrolling content with safe-area
-  padding
-- **AND** the dock does not obscure the page content or the home create entry
+  padding and does not obscure the page content
 
 #### Scenario: No shell-wide identity bar or profile shortcut
 
-- **WHEN** an authenticated traveler views any shell page
-- **THEN** no identity switcher, scaffold bar or top-right profile shortcut is
-  present
-- **AND** the account display name is shown on My Account and in the dashboard
-  greeting
-- **AND** account actions (edit name, logout) exist only on My Account
+- **WHEN** an authenticated traveler views a shell page
+- **THEN** no identity switcher, scaffold bar or top-right profile shortcut is present
+- **AND** the account's display name is shown on My Account and in the dashboard greeting
+- **AND** account actions remain on My Account
 
 #### Scenario: My Account renders inside the shell
 
@@ -56,9 +53,9 @@ originating route (2026-11-17 revision supersedes restore-origin).
 
 #### Scenario: Existing contracts are unchanged
 
-- **WHEN** create validation, trip-details permission, invitation issuance, the
-  join flow and main-plan outcomes are exercised under the shell
-- **THEN** they behave exactly as before this change
+- **WHEN** create validation, trip-details permission, the invitation panel,
+  the join flow and main-plan outcomes are exercised under the shell
+- **THEN** their owning behavior is unchanged by the dashboard
 - **AND** the shell itself adds no trip, invitation or main-plan state
 
 #### Scenario: The scanner renders full-screen without the dock
