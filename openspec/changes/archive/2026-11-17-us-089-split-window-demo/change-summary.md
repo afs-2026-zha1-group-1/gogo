@@ -1,6 +1,6 @@
 # Change summary — us-089-split-window-demo
 
-- Story: `requirement-workspace/requirements/US-089.md`
+- Story: GitHub issue #144；`requirement-workspace/requirements/US-089.md`
 - PR: [#138](https://github.com/afs-2026-zha1-group-1/gogo/pull/138) → merge `3fcfbfc`（2026-11-17）
 - 分支：`US-089-split-window-demo`（基线 `group1/main` `0bf699c`），提交 `41e2dba` / `05d8e09` / `d9aa8b1` / `0554d09`
 
