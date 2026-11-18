@@ -29,7 +29,14 @@ US-020/024/026 的功能已在本分支实现（后端 `mvn -B test` **336/336**
 - **REQ-024**：`specs/preferences/spec.md` 顶部增「修订说明」（预算改为主单位整数 + `hard/soft`，`soft≈±20%`，推翻旧“最小单位/不做算术”并列为 P5 跟进）；新增 `design.md`/`atdd-design.md`/`tasks.md`/`change-summary.md` 与 `docs/feedback/verification-req-024.md`。US-019 个人默认偏好（`GET/PUT /api/me/preferences` + `V9 user_default_interest`，预勾选不落库）并入本变更页面。
 - **REQ-026**：新增 `.openspec.yaml`、`specs/preferences/spec.md`（submission/readiness/effective + 页面四分区修订）、`dov-ac-review.md`、`design.md`/`atdd-design.md`/`tasks.md`/`change-summary.md` 与 `docs/feedback/verification-req-026.md`。
 
-状态：三者 **P4 已实现**；**G1/G2/G3 未签**、`openspec validate --strict` 待人工运行；本段取代第 18 行“REQ-026 stays at P1”的表述。已知跟进：`soft` ±20% 接入主计划成本校验、REQ-024 delta 修订需 IO/SA 复核、`effective.defaults` 与逐项禁用控件。
+状态：三者 **P4 已实现**；**G1/G2/G3 未签**、`openspec validate --strict` 待人工运行；本段取代第 18 行“REQ-026 stays at P1”的表述。已知跟进：`soft` ±20% 接入主计划成本校验、REQ-024 delta 修订需 IO/SA 复核、`effective.defaults`（逐项禁用已在页面实现）。
+
+### 门禁草稿与 PR 前置（2026-11-18）
+
+- REQ-020：G1 **Pass**；G2 为草稿（`g2-decision.md`，待具名 VL）。
+- REQ-024：G1 追加「Budget contract revision re-review（2026-11-18）」段（待 IO/SA 复审修订后的预算口径）；G2 草稿（待具名 VL）。
+- REQ-026：G1 草稿（待 IO+SA）、G2 草稿（待具名 VL）。
+- PR：按负责人决定，**待门禁签署后**由代理跑 local-verify + L3 扫描、推送并开 PR；当前分支落后 `origin/main`、无 024/026 的 CI。以上门禁均为草稿，代理未自签。
 
 ## 推送与 G1 状态更新（2026-11-16）
 

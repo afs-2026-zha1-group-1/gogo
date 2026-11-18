@@ -218,7 +218,26 @@ yet" sentence in *G1 closure*:
    outstanding for review.
 3. Implement revision 3 once REQ-020's revision 2 page exists; until then the page
    requirement has no baseline to extend.
-4. Merge order to `main` is 019 → 020 → 024; REQ-019's G2 is the first link.
+- 4. Merge order to `main` is 019 → 020 → 024; REQ-019's G2 is the first link.
+
+## Budget contract revision re-review (2026-11-18) — **SA Pass; IO pending (sign-off slot reserved)**
+
+After G1 closed, the P4 implementation changed the budget contract at the product owner's
+2026-11-18 instruction: the amount is now a **major-unit integer** (1000 = 1000) and `limitType`
+carries real `hard`/`soft` semantics (soft ≈ ±20% overshoot), replacing the earlier
+"minor-unit / no-arithmetic" wording. Because this **alters signed text**, G1 must be re-confirmed
+by both roles before G2/PR. The prior signed conditions below are unchanged and remain closed; only
+the budget wording above is reopened for re-review.
+
+- Status: **RECORDED — SA Pass (relayed); IO sign-off reserved/pending; G2/PR blocked until IO signs this section.**
+- Reopened item: revised budget contract (major units + hard/soft ±20%) in
+  `specs/preferences/spec.md` (top "修订说明") and `design.md` §4.
+- SA sign-off (revised budget): **evelyn.huang — Pass (2026-11-18, relayed by the change author; no findings relayed).**
+- IO sign-off (revised budget): **not recorded — sign-off slot reserved by the change author;** owner Emily.
+- Timestamp: 2026-11-18 (SA, relayed); IO pending.
+- Provenance: the SA Pass is **relayed**, not documented; no SA-authored review text is on file.
+  The commit must not alter the signed budget wording; if it differs, reopen this section.
+- Next: IO re-reviews and signs → G2 (named VL) → PR.
 5. Strict validation is settled: `openspec validate req-024-set-trip-budget --strict` exits 0 as of
    2026-11-17, so condition 7 is closed on CLI evidence, and **condition 9 is signed Pass by IO Emily
    and SA evelyn.huang (2026-11-17, relayed)**. No G1 condition stays open; what remains is this
