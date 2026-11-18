@@ -1,7 +1,7 @@
 # Quality Checklist Report: p3
 
 **Date:** 2026-11-17 (timezone: Asia/Shanghai, +08:00)
-**Root:** C:/Users/JIANGEL5/code/bootcamp/GoGo
+**Root:** [original checkout path redacted]
 **Stages:** p3
 **Focus:** full-stage
 

@@ -1,36 +1,36 @@
 ===== CMD: ! grep -rn "Hello World" frontend/src =====
-cwd: /c/Users/JIANGEL5/code/bootcamp/GoGo
+cwd: [original checkout path redacted]
 started: 2026-11-16T15:44:41+0800
 exit: 0
 ended: 2026-11-16T15:44:46+0800
 
 ===== CMD: ! grep -inE "jpa|hibernate" backend/pom.xml =====
-cwd: /c/Users/JIANGEL5/code/bootcamp/GoGo
+cwd: [original checkout path redacted]
 started: 2026-11-16T15:44:47+0800
 exit: 0
 ended: 2026-11-16T15:44:52+0800
 
 ===== CMD: ! grep -rinE "h2database|org\.h2|jdbc:h2" backend/pom.xml backend/src =====
-cwd: /c/Users/JIANGEL5/code/bootcamp/GoGo
+cwd: [original checkout path redacted]
 started: 2026-11-16T15:44:53+0800
 exit: 0
 ended: 2026-11-16T15:44:58+0800
 
 ===== CMD: ! grep -q "artifact.oocl.com" frontend/package-lock.json =====
-cwd: /c/Users/JIANGEL5/code/bootcamp/GoGo
+cwd: [original checkout path redacted]
 started: 2026-11-16T15:44:59+0800
 exit: 0
 ended: 2026-11-16T15:45:04+0800
 
 ===== CMD: python -c "import yaml; d=yaml.safe_load(open('.github/workflows/ci.yml')); j=sorted(d['jobs']); assert j==['backend','frontend'], j; print('ci jobs:', j)" =====
-cwd: /c/Users/JIANGEL5/code/bootcamp/GoGo
+cwd: [original checkout path redacted]
 started: 2026-11-16T15:45:05+0800
 ci jobs: ['backend', 'frontend']
 exit: 0
 ended: 2026-11-16T15:45:10+0800
 
 ===== CMD: (cd backend && mvn -B test) =====
-cwd: /c/Users/JIANGEL5/code/bootcamp/GoGo
+cwd: [original checkout path redacted]
 started: 2026-11-16T15:45:12+0800
 [INFO] Scanning for projects...
 [INFO] 
@@ -544,7 +544,7 @@ exit: 0
 ended: 2026-11-16T15:45:38+0800
 
 ===== CMD: (cd frontend && npm ci && npm run build) =====
-cwd: /c/Users/JIANGEL5/code/bootcamp/GoGo
+cwd: [original checkout path redacted]
 started: 2026-11-16T15:45:39+0800
 
 added 78 packages, and audited 85 packages in 7s

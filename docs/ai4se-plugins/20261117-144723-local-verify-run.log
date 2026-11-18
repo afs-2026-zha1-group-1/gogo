@@ -1,36 +1,36 @@
 ===== CMD: ! grep -rn "Hello World" frontend/src =====
-cwd: /c/Users/JIANGEL5/code/bootcamp/GoGo
+cwd: [original checkout path redacted]
 started: 2026-11-17T14:47:23+0800
 exit: 0
 ended: 2026-11-17T14:47:32+0800
 
 ===== CMD: ! grep -inE "jpa|hibernate" backend/pom.xml =====
-cwd: /c/Users/JIANGEL5/code/bootcamp/GoGo
+cwd: [original checkout path redacted]
 started: 2026-11-17T14:47:33+0800
 exit: 0
 ended: 2026-11-17T14:47:43+0800
 
 ===== CMD: ! grep -rinE "h2database|org\.h2|jdbc:h2" backend/pom.xml backend/src =====
-cwd: /c/Users/JIANGEL5/code/bootcamp/GoGo
+cwd: [original checkout path redacted]
 started: 2026-11-17T14:47:46+0800
 exit: 0
 ended: 2026-11-17T14:47:54+0800
 
 ===== CMD: ! grep -q "artifact.oocl.com" frontend/package-lock.json =====
-cwd: /c/Users/JIANGEL5/code/bootcamp/GoGo
+cwd: [original checkout path redacted]
 started: 2026-11-17T14:47:59+0800
 exit: 0
 ended: 2026-11-17T14:48:07+0800
 
 ===== CMD: python -c "import yaml; d=yaml.safe_load(open('.github/workflows/ci.yml')); j=sorted(d['jobs']); assert j==['backend','frontend'], j; print('ci jobs:', j)" =====
-cwd: /c/Users/JIANGEL5/code/bootcamp/GoGo
+cwd: [original checkout path redacted]
 started: 2026-11-17T14:48:10+0800
 ci jobs: ['backend', 'frontend']
 exit: 0
 ended: 2026-11-17T14:48:18+0800
 
 ===== CMD: python -c "import yaml; d=yaml.load(open('.github/workflows/ci.yml'), Loader=yaml.BaseLoader); p=d['on']['push']; assert p is None or 'branches' not in p, p; assert 'main' in d['on']['pull_request']['branches']; print('ci triggers: any-branch push + pull request to main')" =====
-cwd: /c/Users/JIANGEL5/code/bootcamp/GoGo
+cwd: [original checkout path redacted]
 started: 2026-11-17T14:48:20+0800
 ci triggers: any-branch push + pull request to main
 exit: 0
