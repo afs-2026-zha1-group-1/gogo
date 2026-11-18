@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { Fragment, useEffect, useMemo, useRef, useState } from "react"
 import { useLocation, useParams } from "react-router-dom"
 import { useSplitNavigate } from "./split-navigation"
 import { SplitApiError } from "./api"
@@ -416,6 +416,24 @@ function EditableRouteCard({
     "w-full rounded-control border border-line bg-surface px-2 py-1.5 text-[12px] text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft disabled:bg-surface-3 disabled:text-ink-3"
   const numberClass =
     "w-14 shrink-0 rounded-control border border-line bg-surface px-2 py-1 text-[12px] text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft disabled:bg-surface-3 disabled:text-ink-3"
+  const renderLeg = (legIndex: number) => {
+    const minutes = form.travelLegsMinutes[legIndex]
+    if (minutes === undefined) return null
+    return (
+      <div key={`${form.groupLabel}-leg-${legIndex}`} className="flex items-center justify-between gap-2">
+        <span className="text-[12px] text-ink-2">路程</span>
+        <input
+          aria-label={`${form.groupLabel} 组 路程 ${legIndex + 1}`}
+          type="number"
+          min={0}
+          className={numberClass}
+          value={minutes}
+          disabled={!editable}
+          onChange={(event) => onLegChange(legIndex, event.target.value)}
+        />
+      </div>
+    )
+  }
 
   return (
     <Card className="overflow-hidden">
@@ -450,53 +468,43 @@ function EditableRouteCard({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          {form.steps.map((step, index) => (
-            <div key={`${form.groupLabel}-step-${index}`} className="flex items-center gap-2">
-              <input
-                aria-label={`${form.groupLabel} 组 第 ${index + 1} 站名称`}
-                className={inputClass}
-                value={step.name}
-                disabled={!editable}
-                onChange={(event) => onStepNameChange(index, event.target.value)}
-              />
-              <input
-                aria-label={`${form.groupLabel} 组 第 ${index + 1} 站停留分钟`}
-                type="number"
-                min={0}
-                className={numberClass}
-                value={step.minutes}
-                disabled={!editable}
-                onChange={(event) => onStepMinutesChange(index, event.target.value)}
-              />
-              {editable && form.steps.length > 1 ? (
-                <button
-                  type="button"
-                  aria-label={`${form.groupLabel} 组 删除第 ${index + 1} 站`}
-                  onClick={() => onRemoveStep(index)}
-                  className="grid size-7 shrink-0 place-items-center rounded-[8px] border border-line text-ink-3 transition-colors hover:bg-surface-3 hover:text-ink [&_svg]:size-3.5"
-                >
-                  <IconX />
-                </button>
-              ) : null}
-            </div>
-          ))}
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          {form.travelLegsMinutes.map((minutes, index) => (
-            <div key={`${form.groupLabel}-leg-${index}`} className="flex items-center justify-between gap-2">
-              <span className="text-[12px] text-ink-2">路程</span>
-              <input
-                aria-label={`${form.groupLabel} 组 路程 ${index + 1}`}
-                type="number"
-                min={0}
-                className={numberClass}
-                value={minutes}
-                disabled={!editable}
-                onChange={(event) => onLegChange(index, event.target.value)}
-              />
-            </div>
-          ))}
+          {form.steps.map((step, index) => {
+            const legAfter = form.groupLabel === "B" ? index + 1 : index
+            return (
+              <Fragment key={`${form.groupLabel}-step-${index}`}>
+                {form.groupLabel === "B" && index === 0 ? renderLeg(0) : null}
+                <div className="flex items-center gap-2">
+                  <input
+                    aria-label={`${form.groupLabel} 组 第 ${index + 1} 站名称`}
+                    className={inputClass}
+                    value={step.name}
+                    disabled={!editable}
+                    onChange={(event) => onStepNameChange(index, event.target.value)}
+                  />
+                  <input
+                    aria-label={`${form.groupLabel} 组 第 ${index + 1} 站停留分钟`}
+                    type="number"
+                    min={0}
+                    className={numberClass}
+                    value={step.minutes}
+                    disabled={!editable}
+                    onChange={(event) => onStepMinutesChange(index, event.target.value)}
+                  />
+                  {editable && form.steps.length > 1 ? (
+                    <button
+                      type="button"
+                      aria-label={`${form.groupLabel} 组 删除第 ${index + 1} 站`}
+                      onClick={() => onRemoveStep(index)}
+                      className="grid size-7 shrink-0 place-items-center rounded-[8px] border border-line text-ink-3 transition-colors hover:bg-surface-3 hover:text-ink [&_svg]:size-3.5"
+                    >
+                      <IconX />
+                    </button>
+                  ) : null}
+                </div>
+                {renderLeg(legAfter)}
+              </Fragment>
+            )
+          })}
         </div>
 
         <div className="flex items-center justify-between gap-2 border-t border-line-2 pt-2 text-[12px]">
