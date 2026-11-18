@@ -150,8 +150,8 @@ for (const email of ['alice@example.com', 'ben@example.com']) {
 
 test('rejects inconsistent active split and unconfirmed main plan', async ({ page }) => {
   await login(page, 'ben@example.com')
-  await page.route('**/api/trips/9001/split-draft', async (route) => {
-    const active = await page.request.get('/api/trips/9002/split-draft')
+  await page.route('**/api/trips/9001/split-draft/rounds', async (route) => {
+    const active = await page.request.get('/api/trips/9002/split-draft/rounds')
     await route.fulfill({ response: active })
   })
   await page.goto('/#/dashboard/trips/9001')
@@ -474,8 +474,8 @@ test('dashboard-origin split flow keeps its safe return through nested screens',
   await page.goto('/#/dashboard/trips/9002')
   await expect(page.getByRole('region', { name: '旅程进度' })).toBeVisible()
   await page.getByRole('link', { name: '分队', exact: true }).click()
-  await page.getByRole('button', { name: /继续分队/ }).click()
-  await expect(page).toHaveURL(/\/split\/boundaries\?from=dashboard$/)
+  await page.getByRole('button', { name: /继续第 1 轮/ }).click()
+  await expect(page).toHaveURL(/\/split\/rounds\/1\/boundaries\?from=dashboard$/)
   await page.getByRole('button', { name: '返回' }).click()
   await expect(page).toHaveURL(/\/split\?from=dashboard$/)
   await page.getByRole('button', { name: '返回' }).click()
@@ -494,7 +494,7 @@ test('account logout remains available from the dashboard dock', async ({ page }
   expect(persistedState()).toBe(before)
 })
 
-for (const suffix of ['', '/main-plan/inputs', '/main-plan', '/split-draft']) {
+for (const suffix of ['', '/main-plan/inputs', '/main-plan', '/split-draft/rounds']) {
   test(`fails closed when the ${suffix || 'trip'} read fails`, async ({ page }) => {
     await login(page, 'ben@example.com')
     await page.route(new RegExp(`/api/trips/9001${suffix}$`), (route) =>
@@ -630,10 +630,10 @@ test('rejects malformed, missing and non-member trip identifiers', async ({ page
 
 test('rejects malformed split success data instead of suggesting a next step', async ({ page }) => {
   await login(page, 'ben@example.com')
-  await page.route('**/api/trips/9002/split-draft', async (route) => {
+  await page.route('**/api/trips/9002/split-draft/rounds', async (route) => {
     const response = await route.fetch()
     const body = await response.json()
-    body.data.windowMinutes = 'not a duration'
+    body.data.aggregateStatus = 'not a status'
     await route.fulfill({ response, json: body })
   })
   await page.goto('/#/dashboard/trips/9002')

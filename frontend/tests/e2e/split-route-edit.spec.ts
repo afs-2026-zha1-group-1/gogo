@@ -61,7 +61,7 @@ test('step-2 editing validates the window and hands off to the preview', async (
   const dialog = page.getByRole('dialog', { name: '时间窗校验未通过' })
   await expect(dialog).toBeVisible()
   await expect(dialog.getByText('超窗 15 分')).toBeVisible()
-  await expect(page).toHaveURL(/\/split\/routes$/)
+  await expect(page).toHaveURL(/\/split\/rounds\/1\/routes$/)
   await dialog.getByRole('button', { name: '关闭' }).last().click()
   await expect(dialog).toBeHidden()
 
@@ -69,13 +69,13 @@ test('step-2 editing validates the window and hands off to the preview', async (
   await page.getByLabel('A 组 第 3 站停留分钟').fill('15')
   await page.getByRole('button', { name: 'A 组 完成编辑第 3 站' }).click()
   await page.getByRole('button', { name: /下一步/ }).click()
-  await expect(page).toHaveURL(/\/split\/preview$/)
+  await expect(page).toHaveURL(/\/split\/rounds\/1\/preview$/)
   await expect(page.getByText('队伍路线预览')).toBeVisible()
   await expect(page.getByText('只读预览 · 不能在此编辑路线')).toBeVisible()
   await expect(page.getByText('A 组 2 人')).toBeVisible()
 
   await page.getByRole('button', { name: /下一步/ }).click()
-  await expect(page).toHaveURL(/\/split\/confirm$/)
+  await expect(page).toHaveURL(/\/split\/rounds\/1\/confirm$/)
   await expect(page.getByText('复核并确认分队')).toBeVisible()
 
   // N2: with no local changes the Next action skips the save request entirely.
@@ -85,10 +85,10 @@ test('step-2 editing validates the window and hands off to the preview', async (
   await page.getByRole('button', { name: 'A 组 完成编辑第 2 站' }).click()
   let saves = 0
   page.on('request', (request) => {
-    if (request.method() === 'PUT' && request.url().endsWith('/split-draft/routes')) saves += 1
+    if (request.method() === 'PUT' && request.url().endsWith('/split-draft/rounds/1/routes')) saves += 1
   })
   await page.getByRole('button', { name: /下一步/ }).click()
-  await expect(page).toHaveURL(/\/split\/preview$/)
+  await expect(page).toHaveURL(/\/split\/rounds\/1\/preview$/)
   expect(saves).toBe(0)
 
   // N10: a cleared minute is rejected by the save endpoint and keeps the user on step 2.
@@ -98,11 +98,11 @@ test('step-2 editing validates the window and hands off to the preview', async (
   await page.getByRole('button', { name: 'A 组 完成编辑第 2 站' }).click()
   await page.getByRole('button', { name: /下一步/ }).click()
   await expect(page.getByText(/路线输入非法/)).toBeVisible()
-  await expect(page).toHaveURL(/\/split\/routes$/)
+  await expect(page).toHaveURL(/\/split\/rounds\/1\/routes$/)
 
   // N8: the retired Screen 14 URL lands on the preview instead of a timing form.
   await page.goto('/trips/9101/split/timing')
-  await expect(page).toHaveURL(/\/split\/preview$/)
+  await expect(page).toHaveURL(/\/split\/rounds\/1\/preview$/)
   await expect(page.getByText('队伍路线预览')).toBeVisible()
 })
 
@@ -114,7 +114,7 @@ test('the per-stop cost is edited on the same card and persisted through the act
 
   const activityWrites: string[] = []
   page.on('request', (request) => {
-    if (request.method() === 'PUT' && request.url().endsWith('/split-draft/activities')) activityWrites.push(request.url())
+    if (request.method() === 'PUT' && request.url().endsWith('/split-draft/rounds/1/activities')) activityWrites.push(request.url())
   })
 
   await page.getByRole('button', { name: 'A 组 编辑第 1 站' }).click()
@@ -123,7 +123,7 @@ test('the per-stop cost is edited on the same card and persisted through the act
   await expect(page.getByText('S$8').first()).toBeVisible()
 
   await page.getByRole('button', { name: /下一步/ }).click()
-  await expect(page).toHaveURL(/\/split\/preview$/)
+  await expect(page).toHaveURL(/\/split\/rounds\/1\/preview$/)
   expect(activityWrites).toHaveLength(1)
 
   // Reloading shows the saved cost in the same row, matched to the stop by name.
