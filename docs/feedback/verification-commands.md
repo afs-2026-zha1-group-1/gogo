@@ -9,7 +9,8 @@ are preserved in that change's archive and in
 
 Run them from the repository root. Backend commands need Java 21 and Maven;
 frontend commands need Node 24 and npm; the database inspection step needs Python
-3 with the standard-library `sqlite3` module (no `sqlite3` CLI is required).
+3 with PyYAML for the workflow checks and the standard-library `sqlite3`
+module for the database inspection (no `sqlite3` CLI is required).
 
 Maven must be able to resolve `org.xerial:sqlite-jdbc`. On this machine that goes
 through the corporate mirror configured in `~/.m2/settings.xml`; on a CI runner it
@@ -36,11 +37,11 @@ is the success case. A match, or a non-zero exit, is a failure.
 ! grep -q "artifact.oocl.com" frontend/package-lock.json
 
 # CI workflow parses and declares the backend, frontend and browser acceptance jobs
-python -c "import yaml; d=yaml.safe_load(open('.github/workflows/ci.yml')); j=sorted(d['jobs']); assert j==['backend','browser-acceptance','frontend'], j; print('ci jobs:', j)"
+python3 -c "import yaml; d=yaml.safe_load(open('.github/workflows/ci.yml')); j=sorted(d['jobs']); assert j==['backend','browser-acceptance','frontend'], j; print('ci jobs:', j)"
 
 # CI runs on every branch push (main itself is PR-only per `.githooks/pre-push`)
 # and on pull requests targeting main
-python -c "import yaml; d=yaml.load(open('.github/workflows/ci.yml'), Loader=yaml.BaseLoader); p=d['on']['push']; assert p is None or 'branches' not in p, p; assert 'main' in d['on']['pull_request']['branches']; print('ci triggers: any-branch push + pull request to main')"
+python3 -c "import yaml; d=yaml.load(open('.github/workflows/ci.yml'), Loader=yaml.BaseLoader); p=d['on']['push']; assert p is None or 'branches' not in p, p; assert 'main' in d['on']['pull_request']['branches']; print('ci triggers: any-branch push + pull request to main')"
 ```
 
 ## Runtime

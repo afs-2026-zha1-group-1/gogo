@@ -65,7 +65,7 @@ while IFS= read -r cmd || [[ -n "$cmd" ]]; do
 
   set +e
   # Run via bash -lc so simple pipelines in whitelist work; still only declared cmds.
-  (cd "$ROOT_ABS" && bash -lc "$cmd") >>"$RUN_LOG" 2>&1
+  (cd "$ROOT_ABS" && bash -lc "$cmd") </dev/null >>"$RUN_LOG" 2>&1
   rc=$?
   set -e
 

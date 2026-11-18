@@ -93,6 +93,14 @@ echo "$run_out" | rg -q '^NOTE commands_attempted:3$' || { echo "FAIL run-attemp
 echo "$run_out" | rg -q '^NOTE commands_failed:1$' || { echo "FAIL run-failed-count"; fail=1; }
 echo "$run_out" | rg -q '^RUN_LOG ' || { echo "FAIL run-log-stdout"; fail=1; }
 
+# A command reading stdin must not consume later whitelist entries.
+printf '%s\n' 'cat >/dev/null' 'false' 'echo after-stdin' >"$cf"
+run_out="$("$SCRIPTS/run-verify.sh" --root "$tmp_r" --commands-file "$cf")"
+echo "$run_out" | rg -q '^FAIL_CMD false$' || { echo "FAIL run-stdin-preserves-failure"; fail=1; }
+echo "$run_out" | rg -q '^PASS_CMD echo after-stdin$' || { echo "FAIL run-stdin-preserves-next"; fail=1; }
+echo "$run_out" | rg -q '^NOTE commands_attempted:3$' || { echo "FAIL run-stdin-attempted"; fail=1; }
+echo "$run_out" | rg -q '^NOTE commands_failed:1$' || { echo "FAIL run-stdin-failed-count"; fail=1; }
+
 # --- write-report without --apply → rc 2 ---
 set +e
 "$SCRIPTS/write-report.sh" --root "$tmp_b" --body-file /dev/null >/dev/null 2>&1

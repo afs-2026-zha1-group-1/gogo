@@ -98,8 +98,9 @@ test('shared agent assets retain working helpers and project skills after reloca
       fs.chmodSync(target, fs.statSync(source).mode);
     }
     const project = fs.mkdtempSync(path.join(temporary, 'project-'));
-    const bootstrap = path.join(clone, '.agents/skills/sdd-bootstrap/scripts/init-checkpoint-log.sh');
-    execFileSync('bash', [bootstrap, '--root', project], { encoding: 'utf8' });
+    const bootstrap = '.agents/skills/sdd-bootstrap/scripts/init-checkpoint-log.sh';
+    const projectFromClone = path.relative(clone, project).split(path.sep).join('/');
+    execFileSync('bash', [bootstrap, '--root', projectFromClone], { cwd: clone, encoding: 'utf8' });
     const logs = fs.readdirSync(path.join(project, 'docs/ai4se-plugins'));
     assert.equal(logs.length, 1);
     assert.match(fs.readFileSync(path.join(project, 'docs/ai4se-plugins', logs[0]), 'utf8'), /skill\.harness\.bootstrap/);
@@ -160,7 +161,52 @@ test('KB lint runs after checkout with Windows automatic line endings', () => {
       cwd: path.join(checkout, 'scripts'),
       encoding: 'utf8',
     });
+
     assert.equal(output, 'SKIP: KB lint is not configured for this project.\n');
+  } finally {
+    fs.rmSync(temporary, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  }
+});
+
+test('verification workflow shell helpers retain LF on Windows checkouts', () => {
+  const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'gogo-checklist-checkout-'));
+  const helpers = [
+    '.agents/skills/sdd-bootstrap/scripts/init-checkpoint-log.sh',
+    '.agents/skills/sdd-quality-checklist/scripts/init-checkpoint-log.sh',
+    '.agents/skills/sdd-quality-checklist/scripts/probe-stage.sh',
+    '.agents/skills/sdd-quality-checklist/scripts/write-report.sh',
+    '.agents/skills/sdd-local-verify-report/scripts/init-checkpoint-log.sh',
+    '.agents/skills/sdd-local-verify-report/scripts/probe-verify.sh',
+    '.agents/skills/sdd-local-verify-report/scripts/run-verify.sh',
+    '.agents/skills/sdd-local-verify-report/scripts/write-report.sh',
+    '.agents/skills/sdd-local-verify-report/scripts/tests/test-local-verify-report-scripts.sh',
+    'vendor/ai4se-plugins/skills/verify/local-verify-report/scripts/run-verify.sh',
+    'vendor/ai4se-plugins/skills/verify/local-verify-report/scripts/init-checkpoint-log.sh',
+    'vendor/ai4se-plugins/skills/verify/local-verify-report/scripts/probe-verify.sh',
+    'vendor/ai4se-plugins/skills/verify/local-verify-report/scripts/write-report.sh',
+    'vendor/ai4se-plugins/skills/verify/local-verify-report/scripts/tests/test-local-verify-report-scripts.sh',
+    'vendor/ai4se-plugins/skills/harness/bootstrap/scripts/init-checkpoint-log.sh',
+    'vendor/ai4se-plugins/skills/common/quality-checklist/scripts/init-checkpoint-log.sh',
+    'vendor/ai4se-plugins/skills/common/quality-checklist/scripts/probe-stage.sh',
+    'vendor/ai4se-plugins/skills/common/quality-checklist/scripts/write-report.sh',
+    'vendor/ai4se-plugins/scripts/common/init-checkpoint-log.sh',
+    'vendor/ai4se-plugins/scripts/common/write-artifact.sh',
+  ];
+  try {
+    execFileSync('git', ['init', '--quiet', '--template='], { cwd: temporary });
+    execFileSync('git', ['config', 'core.autocrlf', 'true'], { cwd: temporary });
+    for (const name of ['.gitattributes', ...helpers]) {
+      const target = path.join(temporary, name);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.copyFileSync(path.join(root, name), target);
+    }
+    execFileSync('git', ['add', '.'], { cwd: temporary });
+    const checkout = path.join(temporary, 'checkout');
+    fs.mkdirSync(checkout);
+    execFileSync('git', ['checkout-index', '--all', `--prefix=${checkout}${path.sep}`], { cwd: temporary });
+    for (const name of helpers) {
+      assert.doesNotMatch(fs.readFileSync(path.join(checkout, name), 'utf8'), /\r\n/, name);
+    }
   } finally {
     fs.rmSync(temporary, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   }

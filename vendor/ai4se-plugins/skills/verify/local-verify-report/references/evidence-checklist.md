@@ -23,9 +23,26 @@ configured OpenSpec change directory (commonly `openspec/changes/<change-id>/`).
 
 | ID | Check | Method |
 |----|-------|--------|
-| V1 | Task completion | Count `- [ ]` vs `- [x]` in tasks.md (or equivalent) |
+| V1 | Task completion | Count all `- [ ]` vs `- [x]` in tasks.md (or equivalent); assess unfinished tasks against the current verification stage as specified below |
 | V2 | Requirement coverage | Extract requirements from delta specs; confirm impl evidence exists |
 | V3 | Scenario coverage | Extract scenarios; confirm corresponding handling/tests exist |
+
+### V1: stage-aware task assessment
+
+Report the total and the complete and incomplete counts without changing any
+checkboxes. List every incomplete task, its applicable stage, and the evidence
+for that stage. An incomplete required task due at or before this verification
+is a CRITICAL gap. Treat an ambiguous stage as due now; do not infer a future
+stage merely from a task's location or title.
+
+An incomplete lifecycle task may remain pending without blocking this
+pre-PR local verification only when the task or the governing workflow
+explicitly places it after this verification, such as PR submission after the
+local verification gate or reconciliation immediately before archive. Report
+it as pending and identify when it becomes due; never call it completed,
+waived, or evidence that the whole change is complete. At its own stage it is
+due and the normal blocking rule applies. This classification does not waive
+any other missing evidence, failures, approvals, or gate requirements.
 
 ### Correctness
 
@@ -74,7 +91,7 @@ Include the Q1–Q5 table in the report when evidence is in scope (see
 
 | Grade | Meaning |
 |-------|---------|
-| CRITICAL | Must fix before claiming Overall Pass (e.g. incomplete required tasks, missing required impl) |
+| CRITICAL | Must fix before claiming Overall Pass (e.g. required tasks due at or before this verification, missing required impl) |
 | WARNING | Should fix or waive explicitly |
 | SUGGESTION | Optional improvement |
 

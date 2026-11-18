@@ -1,1 +1,10 @@
 scripts/kb-lint.sh text eol=lf
+.agents/skills/sdd-bootstrap/scripts/init-checkpoint-log.sh text eol=lf
+.agents/skills/sdd-quality-checklist/scripts/*.sh text eol=lf
+.agents/skills/sdd-local-verify-report/scripts/*.sh text eol=lf
+.agents/skills/sdd-local-verify-report/scripts/tests/*.sh text eol=lf
+vendor/ai4se-plugins/skills/verify/local-verify-report/scripts/*.sh text eol=lf
+vendor/ai4se-plugins/skills/verify/local-verify-report/scripts/tests/*.sh text eol=lf
+vendor/ai4se-plugins/skills/harness/bootstrap/scripts/init-checkpoint-log.sh text eol=lf
+vendor/ai4se-plugins/skills/common/quality-checklist/scripts/*.sh text eol=lf
+vendor/ai4se-plugins/scripts/common/*.sh text eol=lf
