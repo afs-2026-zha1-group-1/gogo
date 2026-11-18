@@ -682,7 +682,8 @@ requirements (`trips` +2, `main-itinerary` 3 MODIFIED + 2 ADDED,
   not add those operations to the list response and leaves the wording for the
   owning change.
 - **Verification:** backend 471/471, frontend typecheck + build + 47/47,
-  `openspec validate --strict` valid; Playwright E6R/E8–E10 Pass on a fresh
-  V1–V10 database; report `docs/ai4se-plugins/20261118-143428-local-verify-report.md`.
+  Playwright 85/85, `openspec validate --strict` valid; E6R/E8–E10 also
+  re-checked on a fresh V1–V10 database; report
+  `docs/ai4se-plugins/20261118-143428-local-verify-report.md`.
 - **Open:** CI for PR #120, merge, living-merge and G3. G2 VL is Leo.
 

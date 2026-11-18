@@ -140,7 +140,6 @@ export default function AccountPage() {
               }}
             />
             {saveError && <p role="alert" className="error">{saveError}</p>}
-            {saved && <p role="status" className="hint">已保存。</p>}
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               <button className="btn btn-primary" type="submit" disabled={saving}>
                 <Icon name="check" className="sm" />
@@ -162,6 +161,8 @@ export default function AccountPage() {
             </div>
           </form>
         )}
+
+        {saved && !editing && <p role="status" className="hint">已保存。</p>}
 
         {logoutError && <p role="alert" className="error">{logoutError}</p>}
         <button className="btn account-logout" type="button" onClick={signOut} disabled={loggingOut}>

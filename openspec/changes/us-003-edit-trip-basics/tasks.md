@@ -98,6 +98,6 @@
 ## 10. 验证与门禁
 
 - [x] 10.1 G1 输入齐备：cross-change-scan.md（SA 具名）+ IO/SA 签署；新错误码 IO 批准（G1 已记 Pass）
-- [x] 10.2 local-verify 报告（后端 471/471、前端 47/47 + typecheck/build、浏览器 E8–E10；`docs/ai4se-plugins/20261118-143428-local-verify-report.md`）
+- [x] 10.2 local-verify 报告（后端 471/471、前端 47/47 + typecheck/build、Playwright 85/85、浏览器 E8–E10；`docs/ai4se-plugins/20261118-143428-local-verify-report.md`）
 - [ ] 10.3 PR CI 双 job 绿（backend `mvn -B test` + frontend typecheck/build）
 - [ ] 10.4 G2（具名 VL）逐条审 → 合并 PR → living-merge（trips +2、main-itinerary 3 MODIFIED + 2 ADDED、invitations 2 MODIFIED、splits +1、auth MODIFIED 全文替换）+ G3（具名 SA）→ 归档

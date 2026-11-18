@@ -33,7 +33,10 @@
 | `npm run typecheck` | docs/feedback/verification-commands.md Runtime | 0 | TypeScript 无错误 |
 | `npm run test:unit` | docs/feedback/verification-commands.md Runtime | 0 | **47/47** tests pass |
 | `npm run build` | docs/feedback/verification-commands.md Runtime | 0 | Vite production build 成功 |
+| `npm run test:e2e` | docs/feedback/verification-commands.md System | 0 | **85/85** browser tests pass（本机 Edge channel） |
 | `openspec validate us-003-edit-trip-basics --strict` | 变更包约定 | 0 | valid |
+
+说明：main 新增的 `dashboard-overview` 用例仍按“名字输入常驻”编写，已改为先点「编辑名字」再保存；同时把「已保存」状态移到折叠后的页面层，避免保存成功却无反馈。全套浏览器验收 85/85。
 
 ## Browser checks
 
