@@ -29,7 +29,7 @@ class FixtureBranchCandidateProviderTest {
     private final PlanStop reunion = mainPlanStops.get(3);
 
     private static PlanStop stop(String id, String title, String start, String end, int costCents) {
-        return new PlanStop(id, title, Instant.parse(start), Instant.parse(end), costCents);
+        return new PlanStop(id, title, Instant.parse(start), Instant.parse(end), costCents, title);
     }
 
     @Test
@@ -37,7 +37,8 @@ class FixtureBranchCandidateProviderTest {
     void candidateFor_groupA_followsMainPlanInsideBoundaries() {
         RouteCandidate candidate = provider.candidateFor("A", departure, reunion, "Singapore", mainPlanStops);
         assertThat(candidate.groupLabel()).isEqualTo("A");
-        assertThat(candidate.activityName()).isEqualTo("沿主线方案");
+        assertThat(candidate.activityName()).isEqualTo("City Hall MRT → Gardens by the Bay");
+        assertThat(candidate.locationName()).isEqualTo("City Hall MRT");
         assertThat(candidate.activityMinutes()).isEqualTo(75);
         assertThat(candidate.travelLegsMinutes()).containsExactly(30, 30, 15);
         assertThat(candidate.bufferMinutes()).isZero();
@@ -56,10 +57,12 @@ class FixtureBranchCandidateProviderTest {
         RouteCandidate candidate = provider.candidateFor("B", departure, reunion, "Singapore", mainPlanStops);
         assertThat(candidate.groupLabel()).isEqualTo("B");
         assertThat(candidate.activityName()).isEqualTo("Gardens by the Bay");
+        assertThat(candidate.locationName()).isEqualTo("Singapore");
         assertThat(candidate.activityMinutes()).isEqualTo(60);
         assertThat(candidate.travelLegsMinutes()).containsExactly(20, 20);
-        assertThat(candidate.bufferMinutes()).isEqualTo(10);
-        assertThat(candidate.steps()).isEmpty();
+        assertThat(candidate.bufferMinutes()).isZero();
+        assertThat(candidate.steps()).extracting("name").containsExactly("Gardens by the Bay");
+        assertThat(candidate.steps()).extracting("minutes").containsExactly(60);
         assertThat(candidate.activities()).hasSize(1);
         assertThat(candidate.activities().get(0).costCents()).isEqualTo(2500);
         assertThat(candidate.activities().get(0).source()).isEqualTo("ai");

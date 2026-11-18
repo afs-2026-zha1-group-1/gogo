@@ -1343,3 +1343,162 @@ AC 未声明保留期、SLA 或容量指标。列表是既有行的只读投影�
 
 分组规模 = 行程成员数（MVP 为个位数），单次改组为一次 JSON 文档 CAS 写入；无批量、无分页、
 无 SLA/保留期声明。并发由 `draftVersion` 乐观锁 + 既有 5s 轮询覆盖（后到者 `STALE_DRAFT_VERSION`）。
+
+## US-087-088
+
+触发：impact 方向为 **extend + modify**（`splits` 新增整对路线编辑写入，并修改 Screen 13/14/15 的
+编辑、校验与返回入口）。单 change 覆盖两条 story，零迁移、零新依赖、无新表。
+
+### ⑨ Data contract
+
+| 概念 | 粒度 | 字段 | 状态迁移 | 来源 |
+|---|---|---|---|---|
+| 草稿路线时长 | 每草稿每组成员（`split_draft.document.routes`） | `RouteDurations{activityMinutes:int, travelLegsMinutes:int[], bufferMinutes:int, steps?:RouteStep[]}`；A/B 合计均由站点+路段派生，buffer=0 | generate 成对替换并 `draftVersion + 1`；**routes 保存整对覆盖并 `+1`**（两组 steps/派生值一并写入）；分组变更保留；确认冻结；取消清空 | `SplitDraftDocument.routes`（US-089 已含 steps，无迁移） |
+| 路线节点（活动名/地点） | 每草稿每组一行（`plan_node`，`branch_id = split-a/split-b`） | `title`（活动名，必填非空）、`location_name`（地点，可空）、`start_at`/`end_at`（沿用草图边界）、`sort_order` | generate 成对删除+插入（A 活动名 = 首末站拼接、地点 = 首站真实地点；B 地点 = 目的地）；**routes 保存更新 `title`/`location_name`**；取消删除 split 行；主线行不动 | `plan_node`（V4/V5 既有列，无迁移） |
+| 路线编辑请求 | 每次调用一份（整对） | `draftVersion:int`；`routes[2]{groupLabel, steps[{name,minutes}], travelLegsMinutes[]}`；A 组 legs=站点数，B 组 legs=站点数+1 | 仅 `active` 草稿可写；成功后 `draftVersion + 1`；两组均由服务端派生 | 新 `SaveRoutesRequest` / `RouteEditInput` / `RouteStepInput` |
+| 路线视图 | 每次读取一份 | `GroupRoute{groupLabel, activityName, locationName?, departureStopId, reunionStopId, activityMinutes, travelLegsMinutes[], bufferMinutes, steps?}` | 读取不写；`locationName` 为 additive；A 组返回编辑后的 steps | `GET split-draft`（`SplitDraftDetailResponse.routes`） |
+| 草稿版本 | 每草稿一个整数 | 文档 `draftVersion` + `split_draft.draft_version`（CAS 列） | 保存 `+1`；boundaries/generate/assignment 既有语义不变；confirm/cancel 不变 | `V4__splits.sql` + 文档字段 |
+| 时间窗校验快照 | 每次校验一份 | `windowMinutes:int`；`routes[2]{groupLabel, activityMinutes, travelLegsMinutes[], bufferMinutes}`；结果 `TimingResult{feasible, routes[{totalMinutes, overrunMinutes, missingInputs}]}` | 只读、零写库；不落库 | 既有 `CheckTimingRequest` / `ReunionTimingCalculator` |
+| 编辑权限主体 | 每次调用一个身份 | 会话 `AccountPrincipal.id`（= `trip_member.user_id`） | 任意行程成员可写；不接收 `memberId` | `MemberGuard` / `SecurityConfig` |
+| 完整性明细 | 每次拒绝一份 | `error.details.missing: string[]`（`routes.A` / `routes.B`） | 无路线时保存拒绝 | 复用 `SPLIT_DRAFT_INCOMPLETE` |
+
+无 `{TBD}` 字段。不变式：`routes` 的键集合恒为草稿 `groups` 键集合（`{A, B}`）；`plan_node` 的
+split 行每草稿每组恰好一行；`draftVersion` 是唯一并发令牌；活动名/地点与时长必须同事务生效；
+A 组 `activityMinutes`/`travelLegsMinutes` 由 `steps` 派生，客户端提交的合计被忽略；生成时 A 合计 = 时间窗（US-089 G7），
+手工编辑后以下一步校验的「A 合计 ≤ 时间窗」为准。
+
+### ⑩ Boundary enumeration
+
+| 规则 | 分支 | In / Out | 依据 |
+|---|---|---|---|
+| 身份 | 无认证会话 | Out — `401 MEMBER_REQUIRED` | 链级约定 |
+| 行程归属 | 未知 tripId | Out — `404 TRIP_NOT_FOUND` | 既有守卫 |
+| 成员资格 | 已知账号但非该行程成员 | Out — `403 NOT_A_MEMBER` | 既有守卫 |
+| 草稿存在 | 无草稿行 | Out — `409 SPLIT_DRAFT_NOT_ACTIVE` | 既有语义 |
+| 草稿状态 | `confirmed` / `cancelled` | Out — `409 SPLIT_DRAFT_NOT_ACTIVE`；页面只读 | S6 / N9 |
+| 版本 | `draftVersion` 不等于当前 | Out — `409 STALE_DRAFT_VERSION`；无部分写入 | S3 |
+| 路线存在 | 草稿 `routes` 为空 | Out — `409 SPLIT_DRAFT_INCOMPLETE`（`routes.A`/`routes.B`） | S4 |
+| 路线数量 | 请求不是恰好两条 | Out — `400 INVALID_ROUTE_PAIR` | S5 |
+| 组别集合 | 组别重复或非 A/B 或与 `groups` 键不一致 | Out — `400 INVALID_GROUP_LABEL` | S5 |
+| 字段值 | 活动名或站名为空；分钟为负或非整数；A 组路段数与站点数不一致；B 组路程段数变化 | Out — `400 INVALID_ROUTE_INPUT`（新码） | S5 / N10 |
+| A 组编辑超窗 | 保存后 A 合计 > `windowMinutes` | 保存 In（200）；下一步校验 Out（`feasible=false` + 弹窗），不进入预览 | N3a |
+| 正常保存 | 任意成员、`active`、版本匹配、输入合法 | In — `200`，双写 `plan_node` + 文档 `routes`，`draftVersion + 1` | S2 |
+| 无改动继续 | 本地值等于草稿快照 | In — 跳过保存，`draftVersion` 不变，直接校验 | N2 |
+| 校验可行 | `feasible = true` | In — 200；前端进入 `/split/preview` | N1 |
+| 校验不可行 | 超窗或缺输入 | In（200 + `feasible=false`）；前端弹窗阻断，不跳转 | N3 |
+| 校验请求失败 | 4xx/5xx/网络 | Out — 页内错误，不跳转 | N5 |
+| 保存请求失败 | 409/5xx/网络 | Out — 页内错误，不发起校验、不跳转 | N4 |
+| 预览只读 | 预览页任何状态 | In — 只显示图；无编辑控件；终态无提交动作 | N6 / N9 |
+| 复核入口 | 预览「前往复核并确认」 | In — 进入 `/split/confirm`；服务端复算 | N7 |
+| 旧地址 | 访问 `/split/timing` | In — 重定向 `/split/preview` | N8 / D-1 |
+| 生成权限 | 非发起人调 `routes:generate` | Out — `403 NOT_SPLIT_INITIATOR`（不变） | US-042 |
+| 编辑权限 | 非发起人但为成员调 `PUT routes` | In — 允许（BQ-6） | S1 / BQ-6 |
+| 主线/分组 | 保存对 `groups`、`boundaries`、main 节点 | 不变 — 不移动成员、不改边界与主线 | 约束 |
+| 确认规则 | 保存后 `:confirm` | 不变 — 服务端从草稿复算（`SPLIT_TIMING_INFEASIBLE`） | N7 |
+
+### ⑪ Cross-REQ consistency
+
+| 能力 | 其他 REQ / 界面 | 本变更行为 | 收敛 |
+|---|---|---|---|
+| `splits` Split draft start | US-038 | 发起仍按成员顺序初始分组、`draftVersion = 1`；不变 | ✓ 不改 |
+| `splits` Split boundary selection | US-039 | 边界保存保留 `groups`/`routes`；保存成功后版本语义不变 | ✓ 不改 |
+| `splits` Group route generation | US-042 / Screen 13 | 生成仍成对原子、仅发起人；Screen 13 从只读展示改为可编辑，并承接「下一步」 | ✓ MODIFIED（P2） |
+| `splits` Reunion timing check | US-043 / Screen 14 | `check-timing` 端点契约不变；校验入口从 Screen 14 迁移到第 2 步「下一步」，Screen 14 由只读预览取代 | ✓ MODIFIED（P2） |
+| `splits` Split draft detail read | US-049/050 / Screen 11 | `GroupRoute` 增 `locationName`（additive）；读取仍只读、member-only | ✓ MODIFIED（P2，additive） |
+| `splits` Split confirmation | US-049 / Screen 15 | 判定文本与错误码不变；复核屏 返回目标改为 `/split/preview` | ✓ MODIFIED（P2，导航） |
+| `splits` Split draft cancellation | US-050 | 取消仍清空 split `plan_node` 与 routes；不变 | ✓ 不改 |
+| `splits` Member group assignment | US-040 / Screen 13 | 任意成员可编辑路线，与「任意成员可移动成员」一致；生成仍仅发起人 | ✓ 组合，不改 |
+| Screen 11 队伍路线（US-086） | `team-route-graph.tsx` / `graph-model.ts` | 复用图组件作为第 3 步预览；标题/动作不同，不改图组件契约 | ✓ 组合，不改 |
+| `app-shell` | US-064 / US-082 | 新增 `/split/preview` 属流程内部路由；shell 契约不枚举该层 | ✓ 不改 |
+| `trips` 成员名册 | US-013 | 编辑卡不新增成员数据依赖；分组仍用既有名册 | ✓ 不改 |
+| `auth` 会话 | US-066 / REQ-008 | 沿用会话主体；`/api/trips/*/split-draft/**` 已在 `SecurityConfig` 匹配，PUT 自动受保护，401 由 `MemberGuard` 产出 | ✓ 不改配置 |
+| `main-itinerary` / `invitations` / `preferences` | — | 无交叉写入 | ✓ 无影响 |
+
+### ⑫ Notification / display contract
+
+| 界面 | 触发 | 受众 | 内容 + 显示字段 | 通道 | 数量 |
+|---|---|---|---|---|---|
+| Screen 13 路线卡（编辑态） | 打开分组与路线屏，草稿 `active` 且有路线对 | 全部行程成员 | A/B 均为站点列表（站名+停留分钟可改，可添加/删除站点）；A 每站后一段路程、B 首站前后各一段，统一标注「路程」；不再提供活动名/地点/缓冲输入；卡片显示「合计 X 分 / 窗口 Y 分」 | `GET split-draft`（含 `locationName`/`steps`） | 每次渲染 A/B 两张 |
+| Screen 13 路线卡（只读） | 草稿 `confirmed` / `cancelled` | 查看者 | 同上字段但不可编辑；无「下一步」动作 | 客户端状态渲染 | 每次渲染 A/B 两张 |
+| 「下一步」按钮 | 草稿 `active` 且有路线对、分组完整 | 操作者 | 文案「下一步」；保存/校验中显示进行态并禁用重复点击 | 保存 + 校验写入链 | 一 |
+| 保存/校验成功 | `PUT routes` 200 且 `check-timing` `feasible=true` | 操作者 | 导航到 `/split/preview`；无额外成功提示（进入预览即反馈） | 路由跳转 | 一 |
+| 时间窗失败弹窗 | `check-timing` 200 且 `feasible=false` | 操作者 | 新增 shadcn 风格 `components/ui/dialog.tsx`（受控 open、遮罩不可点外关闭）；标题「时间窗校验未通过」；结论；A/B 组各自「合计 X 分 / 时间窗 Y 分 / 超窗 Z 分」；缺失输入项列表；底部仅「关闭」；不自动跳转，关闭后焦点回列表 | 前端弹窗 | 一 |
+| 保存/校验请求错误 | `PUT routes` 或 `check-timing` 非 2xx / 网络失败 | 操作者 | 既有 `ErrorState` / 页内错误提示，带 `error.code` 中文映射；保留输入；不跳转 | 页内错误 | 一 |
+| Screen 预览（新第 3 步） | 校验通过后进入 | 全部行程成员 | 标题「队伍路线预览」；副标题「校验通过 · 只读预览」；顶部 A 组 / B 组人数徽标；`TeamRouteGraph` 图：A/B 地点与路程交替成节点（A 首站无前置路程、B 首站前为去程），每段标注「路程」；底部「前往复核并确认」；返回第 2 步 | `GET split-draft` | 一 |
+| 预览空/错误态 | 无草稿、无路线对、读取失败 | 查看者 | 沿用 `states.tsx` 的 loading / empty / error；无路线对时提示返回第 2 步生成 | 客户端渲染 | 一 |
+| 旧 Screen 14 地址 | 直接访问 `/split/timing` | 任意 | 重定向到 `/split/preview`，不渲染可编辑校验表单 | 路由重定向 | 一 |
+| 终态复核（Screen 15） | `confirmed` / `cancelled` | 查看者 | 既有只读展示；返回指向预览页；无确认/取消可用动作 | 客户端渲染 | 一 |
+
+无通知（邮件/推送/队列）在范围内；弹窗不展示他人偏好、预算等私密字段。
+
+### NFR business-policy layer
+
+单次保存 = 一次 JSON 文档 CAS + 两行 `plan_node` 更新，属 O(1) 写；路线规模固定为 A/B 两条，
+无批量/分页。并发由 `draftVersion` 乐观锁 + 既有 5s 轮询覆盖，后到者获 `STALE_DRAFT_VERSION` 并需
+重新拉取。无保留期/SLA 声明；校验为纯计算、零写库。
+
+## US-031-AI
+
+方向：add/extend（新增 AI provider 与降级纯函数，扩展既有生成路径）。数据契约、边界、
+跨 REQ 与提示契约如下。
+
+### ⑨ Data contract
+
+| 概念 | 粒度 | 字段 | 状态迁移 | 来源 |
+|---|---|---|---|---|
+| 主线草稿（既有） | 每次生成一个版本（`trip_id` + `version`） | 既有 `main_plan_draft`（status、cost_per_person_cents、input_revisions）与 `main_plan_stop`（seq/name/start_local/end_local/travel_minutes_to_next/interests_json） | 不新增：`current` → 被新版本取代；`current` → `confirmed`（US-037） | 本变更不迁移、不改列 |
+| Provider 输出（内部 DTO） | 一次生成一份 | `MainPlanResult{stops[], costPerPersonCents}`；`PlannedStop{seq,name,startTime,endTime,travelMinutesToNext,interests[]}` | 无持久化生命周期；校验通过即映射到草稿/站点行，校验失败即丢弃 | AI 响应 / 最小降级构造 |
+| AI 请求上下文（内部 DTO） | 一次生成一份 | `TripContext{tripId,destination,startDate,endDate,startLocation,endLocation}` + `MemberInput{userId,displayName,preferenceRevision,interests[],mustDo[],hardBudgetCents}` | 无持久化；只读快照 | 既有 `MainPlanService` 读取与地点补全 |
+| 降级行程 | 一次失败生成一份 | 两站：出发地 09:00–09:30（leg 30）、返程地 17:00–17:30（leg null）；费用 0 | 与 AI 成功同形，直接走既有草稿落库 | `MinimalFallbackPlan.build(TripContext)` |
+
+不新增业务实体、字段或生命周期；AI 的原始请求/响应不落库、不写审计表。
+
+### ⑩ Boundary enumeration
+
+| 规则 | 分支 | 归属 | 理由 |
+|---|---|---|---|
+| Provider 选择 | 未配置 `gogo.plan.ai.api-key` | Out（走 `FakeMainPlanProvider`） | 测试/CI/离线演示保持不变 |
+| Provider 选择 | key 非空 | In（走 `AiMainPlanProvider`） | 启用 AI 生成 |
+| 生成门禁 | 有成员未就绪 / 已确认 / 非组织者 / 非成员 | Out（AI 调用前返回既有 409/403） | 不改权限与门禁 |
+| AI 调用 | 超时、连接失败、非 2xx | In → 最小行程降级 | 保证有草稿；不新增错误码 |
+| AI 响应 | 空 content / 非 JSON / JSON 缺字段 | In → 最小行程降级 | 输出不可信，不落半成品 |
+| AI 响应 | JSON 合法但校验失败（seq 断号、坏 HH:mm、end ≤ start、leg 非法、费用负） | In → 最小行程降级 | 规格固定的校验集 |
+| AI 响应 | 合法且通过校验 | In → 持久化 AI 草稿 | 正常路径 |
+| 地点 | 出发地/返程地已填写 | 保留原值进入 `TripContext` | 用户输入优先 |
+| 地点 | 出发地/返程地为空 | 生成前由 `LocationCompletion` 补全，再进入降级/提示词 | 既有生成期补全规则 |
+| 输入完整性 | `destination` 为空、成员无偏好（noPreference） | In（提示词仍生成；无偏好成员贡献空列表、预算 null） | 既有 `MemberInput` 语义 |
+| 输入完整性 | 偏好 JSON 损坏 | Out（既有 `IllegalStateException`，非本变更引入） | 存储层错误不属于 AI 降级范围 |
+| 提示展示 | 输入页生成 / 方案页重新生成 | In（请求期间显示） | 两个生成入口 |
+| 提示展示 | 确认主线方案、读取页面 | Out（不显示） | 非生成请求 |
+
+### ⑪ Cross-REQ consistency
+
+| 能力 / 界面 | 其他 REQ | US-031-AI 行为 | 收敛 |
+|---|---|---|---|
+| `main-itinerary` G1/G2/G5/G6 | US-031/US-037 | G2/G5/G6 不变；G1 在“无 key”前提下仍为四夹具站点 | ✓ 仅补 provider 前提 |
+| `main-itinerary` 确认校验 | US-037 | 排期/硬预算/过期校验与错误码不变 | ✓ 不改 |
+| 地点补全 | 既有 `LocationCompletion` | 补全时机、候选来源、调用次数不变 | ✓ 不改 |
+| 草稿读取与过期 | US-031 | `stale`、`inputRevisions`、confirmed 冻结规则不变 | ✓ 不改 |
+| 确认后投影 | US-040/US-089 | `MainPlanProjection` 仍把确认草稿投影为 `plan_node`；AI 站点数可变（≥2） | ✓ 兼容；splits 按站点派生 |
+| splits 路线与演示 | US-089 | 无 key 时城市夹具不变，演示 A 组仍按 6/7 站派生 | ✓ 无回归 |
+| 身份/权限 | US-066 | 全部沿用会话主体与既有错误码 | ✓ 不改 |
+| 前端壳与路由 | `app-shell` | 仅在既有两页加提示条，无新路由 | ✓ 不改 |
+| 技术栈 | §7/§13 | 落实 `RestClient` 单 provider + 降级；不引 Spring AI | ✓ 归档时对账 |
+
+### ⑫ Notification / display contract
+
+| 界面 / 触发 | 受众 | 内容 + 显示字段 | 通道 | 数量 |
+|---|---|---|---|---|
+| 输入页「一键生成主线方案」点击后、请求未结束 | 组织者 | 页面内提示“AI 正在生成中…”，副文案“通常需要 10–20 秒”；触发按钮禁用 | 客户端渲染（`role="status"`） | 一 |
+| 方案页「重新生成」点击后、请求未结束 | 组织者 | 同上；页面其余内容仍可滚动/返回 | 客户端渲染 | 一 |
+| 请求成功 | 组织者 | 提示关闭；跳转/刷新沿用既有逻辑 | 客户端 | — |
+| 请求失败 | 组织者 | 提示关闭；沿用既有行内 `actionError`（`MEMBERS_NOT_READY`、`ALREADY_CONFIRMED`、HTTP 文案） | 客户端 | 一 |
+| 确认主线方案 | 组织者 | 不显示“AI 正在生成中…”；沿用“正在校验…” | 客户端 | — |
+
+无邮件、推送或站内消息；提示条不新增响应字段，成员在他人生成期间无额外可见状态。
+
+### NFR business-policy layer
+
+单次同步调用，读取超时 20s（低于前端 30s 口径），不重试；生成期间 SQLite 事务保持既有
+单连接语义；并发重复提交由既有按钮禁用 + 后端版本化草稿兜底（后到者成为新版本）。
+密钥仅环境变量注入，日志只记录失败类别；提示词只包含当前行程成员可见的偏好快照。

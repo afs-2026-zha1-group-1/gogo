@@ -3,6 +3,7 @@ package com.gogo.hello.splits.provider;
 import com.gogo.hello.splits.domain.PlanStop;
 import com.gogo.hello.splits.domain.RouteActivity;
 import com.gogo.hello.splits.domain.RouteCandidate;
+import com.gogo.hello.splits.domain.RoutePairEdit;
 import com.gogo.hello.splits.domain.RouteStep;
 import java.time.Duration;
 import java.time.Instant;
@@ -12,12 +13,11 @@ import java.util.Locale;
 import org.springframework.stereotype.Component;
 
 /**
- * Fixed in-process fixture provider (design D12, US-089/US-045). Group A keeps following the confirmed main plan, so
- * its candidate is derived from the main-plan stops inside the boundary pair (names, scheduled durations, the gaps
- * between them and each stop's per-person cost); group B receives a destination-keyed synthetic activity with its own
- * mock cost so the two lanes differ. The costed activities tell the budget check exactly what each group pays inside
- * the window; the replaced shared stops are therefore never counted twice. No external network call; the
- * failing-provider double for G2-N replaces this bean in tests.
+ * Fixed in-process fixture provider (design D12, US-089). Group A keeps following the confirmed main plan, so its
+ * candidate is derived from the main-plan stops inside the boundary pair (names, scheduled durations and the gaps
+ * between them); group B receives a destination-keyed synthetic activity so the two lanes differ. No external
+ * network call; the failing-provider double for G2-N replaces this bean in tests. US-045 adds the costed
+ * activities of each lane so the budget check can price what the group pays inside the window.
  */
 @Component
 public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
@@ -38,15 +38,17 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
             return mainLineCandidate(groupLabel, departure, reunion, mainPlanStops);
         }
         Branch branch = branchFor(cityOf(destination), groupLabel);
-        return new RouteCandidate(groupLabel, branch.activityName(), branch.activityMinutes(),
-                branch.travelLegsMinutes(), branch.bufferMinutes(), List.of(),
-                List.of(new RouteActivity(branch.activityName(), branch.activityName(), branch.costCents(),
-                        RouteActivity.SOURCE_AI)));
+        String activityName = RoutePairEdit.cleanStationName(branch.activityName());
+        String location = destination == null || destination.isBlank() ? activityName : destination.trim();
+        List<RouteStep> steps = List.of(new RouteStep(activityName, branch.activityMinutes()));
+        List<RouteActivity> activities = List.of(new RouteActivity(activityName, location,
+                branch.costCents(), RouteActivity.SOURCE_AI));
+        return new RouteCandidate(groupLabel, activityName, location, branch.activityMinutes(),
+                branch.travelLegsMinutes(), 0, steps, activities);
     }
 
     // Group A follows the confirmed itinerary: every main-plan stop from the departure (inclusive) to the reunion
-    // (exclusive), with the scheduled gaps as legs. The totals therefore equal the window exactly, and the activity
-    // costs mirror the shared stops the group keeps, so its total stays the full main-plan cost.
+    // (exclusive), with the scheduled gaps as legs. The totals therefore equal the window exactly.
     private static RouteCandidate mainLineCandidate(String groupLabel, PlanStop departure, PlanStop reunion,
             List<PlanStop> mainPlanStops) {
         int from = indexOf(mainPlanStops, departure.id());
@@ -55,19 +57,33 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
             throw new IllegalArgumentException("boundaries are not an ordered main-plan pair");
         }
         List<RouteStep> steps = new ArrayList<>();
-        List<RouteActivity> activities = new ArrayList<>();
         List<Integer> legs = new ArrayList<>();
         int activityMinutes = 0;
         for (int index = from; index < to; index++) {
             PlanStop stop = mainPlanStops.get(index);
             int stayMinutes = minutes(stop.startAt(), stop.endAt());
-            steps.add(new RouteStep(stop.name(), stayMinutes));
-            activities.add(new RouteActivity(stop.name(), stop.name(), stop.costCents(), RouteActivity.SOURCE_MAIN));
+            steps.add(new RouteStep(RoutePairEdit.cleanStationName(stop.name()), stayMinutes));
             activityMinutes += stayMinutes;
             PlanStop next = index + 1 < to ? mainPlanStops.get(index + 1) : reunion;
             legs.add(Math.max(0, minutes(stop.endAt(), next.startAt())));
         }
-        return new RouteCandidate(groupLabel, "沿主线方案", activityMinutes, legs, 0, steps, activities);
+        String activityName = steps.get(0).name();
+        String lastStep = steps.get(steps.size() - 1).name();
+        if (!activityName.equals(lastStep)) {
+            activityName = activityName + " → " + lastStep;
+        }
+        String location = departure.locationName() == null || departure.locationName().isBlank()
+                ? departure.name()
+                : departure.locationName();
+        location = RoutePairEdit.cleanStationName(location);
+        List<RouteActivity> activities = new ArrayList<>();
+        for (int index = from; index < to; index++) {
+            PlanStop stop = mainPlanStops.get(index);
+            activities.add(new RouteActivity(stop.name(), stop.name(), stop.costCents(),
+                    RouteActivity.SOURCE_MAIN));
+        }
+        return new RouteCandidate(groupLabel, activityName, location, activityMinutes, legs, 0, steps,
+                activities);
     }
 
     private static int indexOf(List<PlanStop> stops, String id) {

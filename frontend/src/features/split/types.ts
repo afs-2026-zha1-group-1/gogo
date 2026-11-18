@@ -64,6 +64,8 @@ export interface RouteDurations {
   activityMinutes: number | null
   travelLegsMinutes: number[]
   bufferMinutes: number | null
+  /** Ordered stops for group A (US-089); nullable for legacy documents. */
+  steps?: RouteStep[] | null
 }
 
 /** One visible step of a branch route (backend RouteStep); group A follows the main-plan stops. */
@@ -87,6 +89,8 @@ export interface RouteActivity {
 export interface GroupRoute {
   groupLabel: string
   activityName: string | null
+  /** Editable display location (US-087 additive); legacy generated rows backfill the activity name. */
+  locationName?: string | null
   departureStopId: string | null
   reunionStopId: string | null
   activityMinutes: number | null
@@ -250,4 +254,24 @@ export interface SaveActivitiesRequest {
 export interface RecommendActivitiesRequest {
   groupLabel: "A" | "B"
   draftVersion: number
+}
+
+/** One editable station (US-087 Revision 3): both groups own their stop names and stay minutes. */
+export interface RouteStepInput {
+  name: string
+  minutes: number | null
+}
+
+/** One editable group route in a PUT .../split-draft/routes request (spec US-087 Revision 3). */
+export interface RouteEditInput {
+  groupLabel: "A" | "B"
+  steps: RouteStepInput[]
+  /** Group A: one leg after every stop; group B: outbound + return around the stops (stops + 1). */
+  travelLegsMinutes: (number | null)[]
+}
+
+/** PUT .../split-draft/routes body (backend SaveRoutesRequest). */
+export interface SaveRoutesRequest {
+  draftVersion: number
+  routes: RouteEditInput[]
 }

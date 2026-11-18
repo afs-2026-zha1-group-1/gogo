@@ -11,10 +11,13 @@ import java.util.List;
  * (spec D1). Duration components are nullable: a missing estimate is reported as null instead of zero so
  * confirmation can list it as a missing input. {@code steps} lists the main-plan stops for the group that keeps
  * following the confirmed plan (group A); empty for synthetic routes.
+ * {@code locationName} is the editable display location (additive, US-087): legacy generated rows carry the activity
+ * name backfill, so the client suppresses duplicates.
  */
 public record GroupRoute(
         String groupLabel,
         String activityName,
+        String locationName,
         String departureStopId,
         String reunionStopId,
         Integer activityMinutes,

@@ -3,16 +3,12 @@ package com.gogo.mainplan;
 import java.util.List;
 import java.util.Locale;
 
-import org.springframework.stereotype.Component;
-
-// The fake provider IS the MVP production implementation (design D3, OQ-2
-// ruling): deterministic stops with supplied times, legs and a per-stop
-// per-person cost. Fixtures are keyed by destination so a demo selecting 香港 or
-// 伦敦 gets a city-appropriate day; anything else keeps the original Singapore
-// fixture. The plan total is the sum of the stop costs (US-045), so the split
-// budget check can subtract a replaced activity exactly. No external HTTP client
-// anywhere.
-@Component
+// The no-key implementation (design D2): deterministic stops with supplied
+// times, legs and a per-person cost. Fixtures are keyed by destination so a
+// demo selecting 香港 or 伦敦 gets a city-appropriate day; anything else keeps
+// the original Singapore fixture. No external HTTP client anywhere.
+// US-045: the plan total is the sum of the stop costs, so the split budget check
+// can subtract a replaced activity exactly.
 public class FakeMainPlanProvider implements MainPlanProvider {
 
     private static final List<MainPlanResult.PlannedStop> SINGAPORE = List.of(

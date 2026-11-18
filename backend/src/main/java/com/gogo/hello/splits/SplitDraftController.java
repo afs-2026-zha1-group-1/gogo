@@ -15,6 +15,7 @@ import com.gogo.hello.splits.dto.RecommendActivitiesRequest;
 import com.gogo.hello.splits.dto.RouteGenerationResponse;
 import com.gogo.hello.splits.dto.SaveActivitiesRequest;
 import com.gogo.hello.splits.dto.SaveBoundariesRequest;
+import com.gogo.hello.splits.dto.SaveRoutesRequest;
 import com.gogo.hello.splits.dto.SplitDraftDetailResponse;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -74,6 +75,16 @@ public class SplitDraftController {
             Authentication authentication,
             @RequestBody GenerateRoutesRequest request) {
         RouteGenerationResponse response = service.generateRoutes(tripId, caller(authentication), request);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    /** Saves a manual A/B route edit for any trip member while the draft is active (US-087 S2/S2b). */
+    @PutMapping("/split-draft/routes")
+    public ResponseEntity<ApiResponse<RouteGenerationResponse>> saveRoutes(
+            @PathVariable String tripId,
+            Authentication authentication,
+            @RequestBody SaveRoutesRequest request) {
+        RouteGenerationResponse response = service.saveRoutes(tripId, caller(authentication), request);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
