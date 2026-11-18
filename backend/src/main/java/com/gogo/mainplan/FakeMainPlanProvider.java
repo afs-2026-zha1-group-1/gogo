@@ -15,43 +15,43 @@ public class FakeMainPlanProvider implements MainPlanProvider {
 
     private static final List<MainPlanResult.PlannedStop> SINGAPORE = List.of(
             new MainPlanResult.PlannedStop(1, "City Hall MRT", "09:00", "09:30", 30,
-                    List.of("culture")),
+                    List.of("culture"), "150 North Bridge Rd, Singapore 179100", "Singapore"),
             new MainPlanResult.PlannedStop(2, "National Gallery Singapore", "10:00", "10:30", 30,
-                    List.of("art", "culture")),
+                    List.of("art", "culture"), "1 St Andrew's Rd, Singapore 179097", "Singapore"),
             new MainPlanResult.PlannedStop(3, "Gardens by the Bay", "11:00", "11:15", 15,
-                    List.of("nature")),
+                    List.of("nature"), "18 Marina Gardens Dr, Singapore 018953", "Singapore"),
             new MainPlanResult.PlannedStop(4, "Merlion Park", "11:30", "12:00", null,
-                    List.of("culture")));
+                    List.of("culture"), "1 Fullerton Rd, Singapore 049213", "Singapore"));
 
     private static final List<MainPlanResult.PlannedStop> HONG_KONG = List.of(
             new MainPlanResult.PlannedStop(1, "西九文化区 M+ 博物馆", "09:00", "10:20", 20,
-                    List.of("heritage", "photo")),
+                    List.of("heritage", "photo"), "香港西九文化区博物馆道 38 号 M+ 博物馆", "香港"),
             new MainPlanResult.PlannedStop(2, "天星小轮（尖沙咀 → 中环）", "10:40", "11:10", 15,
-                    List.of("slow", "photo")),
+                    List.of("slow", "photo"), "香港尖沙咀天星码头（乘船往中环天星码头）", "香港"),
             new MainPlanResult.PlannedStop(3, "中环街市与半山扶梯", "11:25", "12:45", 20,
-                    List.of("food", "craft")),
+                    List.of("food", "craft"), "香港中环皇后大道中 93 号中环街市 / 中环半山扶梯", "香港"),
             new MainPlanResult.PlannedStop(4, "太平山顶与凌霄阁", "13:05", "14:35", 40,
-                    List.of("nature", "photo")),
+                    List.of("nature", "photo"), "香港山顶山顶道 128 号凌霄阁", "香港"),
             new MainPlanResult.PlannedStop(5, "铜锣湾时代广场", "15:15", "16:30", 25,
-                    List.of("food", "craft")),
+                    List.of("food", "craft"), "香港铜锣湾勿地臣街 1 号时代广场", "香港"),
             new MainPlanResult.PlannedStop(6, "尖沙咀海滨长廊与星光大道", "16:55", "18:10", null,
-                    List.of("photo", "slow")));
+                    List.of("photo", "slow"), "香港尖沙咀海滨长廊 / 星光大道", "香港"));
 
     private static final List<MainPlanResult.PlannedStop> LONDON = List.of(
             new MainPlanResult.PlannedStop(1, "大英博物馆", "09:00", "10:30", 20,
-                    List.of("heritage", "photo")),
+                    List.of("heritage", "photo"), "伦敦大罗素街大英博物馆（Great Russell St, WC1B 3DG）", "伦敦"),
             new MainPlanResult.PlannedStop(2, "考文特花园", "10:50", "11:50", 15,
-                    List.of("food", "craft")),
+                    List.of("food", "craft"), "伦敦考文特花园市集（Covent Garden, WC2E 8RF）", "伦敦"),
             new MainPlanResult.PlannedStop(3, "国家美术馆与特拉法加广场", "12:05", "13:05", 20,
-                    List.of("heritage", "photo")),
+                    List.of("heritage", "photo"), "伦敦特拉法加广场国家美术馆（WC2N 5DN）", "伦敦"),
             new MainPlanResult.PlannedStop(4, "博罗市场午餐", "13:25", "14:25", 20,
-                    List.of("food", "coffee")),
+                    List.of("food", "coffee"), "伦敦南华克街 8 号博罗市场（8 Southwark St, SE1 1TL）", "伦敦"),
             new MainPlanResult.PlannedStop(5, "伦敦塔与塔桥", "14:45", "16:15", 25,
-                    List.of("heritage", "photo")),
+                    List.of("heritage", "photo"), "伦敦塔桥路伦敦塔（Tower Bridge Rd, SE1 2UP）", "伦敦"),
             new MainPlanResult.PlannedStop(6, "泰晤士河游船（塔桥 → 威斯敏斯特）", "16:40", "17:40", 20,
-                    List.of("slow", "photo")),
+                    List.of("slow", "photo"), "伦敦塔桥千禧码头（Tower Millennium Pier, SE1 2UP）", "伦敦"),
             new MainPlanResult.PlannedStop(7, "伦敦眼与南岸夜景", "18:00", "19:15", null,
-                    List.of("photo", "slow")));
+                    List.of("photo", "slow"), "伦敦南岸郡政厅伦敦眼（County Hall, SE1 7PB）", "伦敦"));
 
     @Override
     public MainPlanResult plan(TripContext trip, List<MemberInput> inputs) {

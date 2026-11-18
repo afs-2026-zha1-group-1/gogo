@@ -15,6 +15,9 @@ export interface ScheduleItem {
   groupLabel: string | null
   interests: string[]
   address: string | null
+  /** US-079 路线1：落库坐标（WGS-84）；null = 未补全，导航退回地址簿/搜索页。 */
+  lat: number | null
+  lon: number | null
   travelMinutesToNext: number | null
 }
 

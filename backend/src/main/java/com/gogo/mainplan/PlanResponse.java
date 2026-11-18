@@ -22,6 +22,9 @@ public record PlanResponse(
             String startTime,
             String endTime,
             Integer travelMinutesToNext,
-            List<String> interests) {
+            List<String> interests,
+            String address,
+            Double lat,
+            Double lng) {
     }
 }

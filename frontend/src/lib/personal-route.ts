@@ -19,7 +19,9 @@ export function scheduleFromMainPlan(plan: MainPlan | null, startDate: string): 
     end: localClock(startDate, stop.endTime),
     groupLabel: null,
     interests: stop.interests,
-    address: null,
+    address: stop.address ?? null,
+    lat: stop.lat ?? null,
+    lon: stop.lng ?? null,
     travelMinutesToNext: stop.travelMinutesToNext,
   }))
 }
@@ -48,6 +50,8 @@ function sharedItem(stop: SplitPlanStop, plan: MainPlan | null): ScheduleItem {
     groupLabel: null,
     interests,
     address: null,
+    lat: null,
+    lon: null,
     travelMinutesToNext: null,
   }
 }
@@ -113,6 +117,8 @@ export function derivePersonalRoute(
     groupLabel: myGroupLabel,
     interests: groupInterests,
     address: null,
+    lat: null,
+    lon: null,
     travelMinutesToNext: legs.length > 0 ? legs[legs.length - 1] : null,
   }
 

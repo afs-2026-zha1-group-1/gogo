@@ -3,14 +3,20 @@
  * (main-plan stops or the member's confirmed personal route) with the MainPlan page's
  * tl-* markup pattern; an empty schedule shows the no-plan state, never another
  * trip's or another group's route.
+ * US-079: every stop card carries a mint Amap button on its right opening the
+ * embedded map modal; the address + navigation live on the countdown card's
+ * next-stop row, not on the timeline; map failures never blank the trip.
  */
 import Icon from '../Icons'
+import StopMapButton from './StopMapButton'
 import { formatClock, type ScheduleItem } from '../lib/countdown'
+import { stopIcon } from '../lib/stop-icon'
 
 interface MyPlanTimelineProps {
   schedule: ScheduleItem[]
   startDate: string
   isOrganizer: boolean
+  destination: string
 }
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
@@ -26,7 +32,7 @@ function timeLabel(item: ScheduleItem): string {
   return `${formatClock(item.start)} – ${formatClock(item.end)}`
 }
 
-export default function MyPlanTimeline({ schedule, startDate, isOrganizer }: MyPlanTimelineProps) {
+export default function MyPlanTimeline({ schedule, startDate, isOrganizer, destination }: MyPlanTimelineProps) {
   return (
     <>
       <div className="sec-title"><Icon name="list" className="sm" /> 我的方案</div>
@@ -53,7 +59,7 @@ export default function MyPlanTimeline({ schedule, startDate, isOrganizer }: MyP
                   <div className="tl-time">{timeLabel(item)}</div>
                   <div className="act-card">
                     <span className="act-ic">
-                      <Icon name={item.groupLabel ? 'route' : 'pin'} className="sm" />
+                      <Icon name={stopIcon(item)} className="sm" />
                     </span>
                     <div className="act-main">
                       <div className="act-name">{item.name}</div>
@@ -66,6 +72,7 @@ export default function MyPlanTimeline({ schedule, startDate, isOrganizer }: MyP
                         </div>
                       )}
                     </div>
+                    <StopMapButton item={item} destination={destination} from={index > 0 ? schedule[index - 1] : null} />
                   </div>
                   {item.travelMinutesToNext != null && (
                     <div className="tl-leg">

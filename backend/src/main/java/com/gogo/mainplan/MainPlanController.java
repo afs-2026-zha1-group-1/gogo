@@ -5,13 +5,19 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.gogo.auth.AccountPrincipal;
 
-// Four contractual routes (design D2); identity is the authenticated session principal.
+// Contractual routes (design D2); identity is the authenticated session principal.
+// US-079 adds stop-locations: programmatic geocode write-back at generation time.
 @RestController
 public class MainPlanController {
+
+    /** US-079 路线1：前端 JS API 查坐标后的回写请求体。 */
+    public record StopLocationsRequest(java.util.List<MainPlanService.StopLocation> stops) {
+    }
 
     private final MainPlanService service;
 
@@ -45,5 +51,13 @@ public class MainPlanController {
             @AuthenticationPrincipal AccountPrincipal principal,
             @PathVariable long id) {
         return service.readInputs(id, principal.id());
+    }
+
+    @PostMapping("/api/trips/{id}/main-plan/stop-locations")
+    public PlanResponse stopLocations(
+            @AuthenticationPrincipal AccountPrincipal principal,
+            @PathVariable long id,
+            @RequestBody StopLocationsRequest request) {
+        return service.completeStopLocations(id, principal.id(), request.stops());
     }
 }

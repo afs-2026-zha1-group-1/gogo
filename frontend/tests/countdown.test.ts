@@ -14,7 +14,7 @@ const tripEnd = localEndOfDay('2026-11-20')
 const at = (h: number, m: number) => new Date(2026, 10, 20, h, m, 0, 0).getTime()
 
 function item(key: string, start: number | null, end: number | null): ScheduleItem {
-  return { key, name: key, start, end, groupLabel: null, interests: [], address: null, travelMinutesToNext: null }
+  return { key, name: key, start, end, groupLabel: null, interests: [], address: null, lat: null, lon: null, travelMinutesToNext: null }
 }
 
 const schedule: ScheduleItem[] = [item('a', at(9, 30), at(10, 30)), item('b', at(11, 0), at(12, 0))]

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api'
 import { useAuth } from '../features/auth/AuthProvider'
 import Icon from '../Icons'
+import { geocodeAddress } from '../lib/amap-geocode'
 import { INTEREST_OPTIONS } from '../types/preferences'
 import type { MainPlan, MainPlanError, MainPlanInputs, TripSummary } from '../types/mainPlan'
 
@@ -97,12 +98,27 @@ export default function MainPlanInputs({ tripId, dashboardOrigin = false, backTo
 
   useEffect(() => load(), [load])
 
+  // US-079 路线1：生成后给无坐标且有地址的站查坐标（JS API），回写存库并沉淀地址簿。
+  async function completeStopLocations(stops: MainPlan['stops']) {
+    const pending = stops.filter((stop) => stop.lat == null && stop.address)
+    if (pending.length === 0) return
+    const located: Array<{ seq: number; lat: number; lng: number }> = []
+    for (const stop of pending) {
+      const point = await geocodeAddress(stop.address as string)
+      if (point) located.push({ seq: stop.seq, lat: point.lat, lng: point.lon })
+    }
+    if (located.length === 0) return
+    await api(`/api/trips/${tripId}/main-plan/stop-locations`, { method: 'POST', body: { stops: located } })
+  }
+
   async function generate() {
     setGenerating(true)
     setActionError(null)
     try {
       const { status, ok, data } = await api<MainPlan & MainPlanError>(`/api/trips/${tripId}/main-plan`, { method: 'POST' })
       if (ok) {
+        // US-079 路线1：缓存未命中的国内站查坐标回写；hash 跳转不卸载文档，后台可完成。
+        void completeStopLocations(data?.stops ?? []).catch(() => undefined)
         window.location.hash = dashboardOrigin
           ? `#/dashboard/trips/${tripId}/main-plan`
           : `#/trips/${tripId}/main-plan`
