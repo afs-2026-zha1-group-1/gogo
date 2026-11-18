@@ -1,7 +1,7 @@
 # 任务 — us-096-second-split
 
 - 依据：`proposal.md`、`design.md`（DD0–DD18）、`specs/splits/spec.md`（3 ADDED + 7 MODIFIED）
-- 分支：`US-096-ui-preview`（从 `group1/main` `bc13608` 切出；US-095 仍未合入 main）
+- 分支：`US-096-ui-preview`（从 `group1/main` `bc13608` 切出；US-095 已合入本分支，待随 PR 合并 main）
 - 执行规则：红先（先写失败测试再实现）；push/PR/合并需用户授权；不做 3 支队伍、超过 2 轮、某轮不参加、两轮重叠。
 - 旧测试说明：分支 id 改名后，`AbstractSplitApiTest` 与 3 个直接断言 `split-a/b` 的测试必须更新；不要承诺“旧测试零改动”。
 
@@ -15,27 +15,27 @@
   - 个人路线多轮拼接；仪表盘使用 `aggregateStatus`。
   - 预算按所有非取消轮次聚合：替换站点并集、共享费用、成员按各轮所在组累计；确认第 2 轮会拦截两轮合计硬超支，预算面板展示逐轮活动费用。
   - `BranchCandidateContext` 传入 `excludeActivityNames`；AI 提示词与夹具 B 都避免重复前轮活动。
-  - 验证：后端 549 测试全绿；前端 typecheck、80 单测、build 全绿；真实浏览器走通「第 1 轮已确认 → 再次分队 → 边界 → 生成 → 预览 → 确认 → 两轮总览/我的方案」。
+  - 验证：后端 555 测试全绿；前端 typecheck、88 单测、build 全绿；真实浏览器走通「第 1 轮已确认 → 再次分队 → 边界 → 生成 → 预览 → 确认 → 两轮总览/我的方案」。
 - 已知偏差（待补）：
-  - US-095 未合入 main，本轮未实现第 1 轮 `FROM_START`；当前只支持 `MIDDLE`（站→站）。
+  - US-095 已合并；第 1 轮支持 `FROM_START`，第 2 轮只允许 `MIDDLE`。
   - `scripts/demo-seed.py` 尚未增加两轮已确认夹具；浏览器验证使用复制库手工走通。
   - PR、G1/G2/G3、归档前置任务未做。
 
 ## P0 集成前置
 
-- [ ] 0.1 确认 US-095 已合入 `group1/main`（当前 US-095 无 PR；需先推分支并开 PR）
-- [ ] 0.2 从最新 `group1/main` 重新切 `US-096-second-split`，把本 change 文档带入
-- [ ] 0.3 确认 `group1/main` 全绿（含 US-095 `FROM_START`、AI 分队路线、US-045 预算/活动、V15–V17 迁移）
+- [x] 0.1 确认 US-095 已合入本集成分支（合并提交 `88bd400`）
+- [x] 0.2 当前分支基于最新 `group1/main`，并已并入 US-095
+- [x] 0.3 合并后 `mvn -B test` 555/555、前端 88 单测 + build 全绿
 - [ ] 0.4 记录基线提交与差异；本 change 不修改 `trip` / `main_plan_*` 归属
 
 ## P1 规格与门禁
 
 - [x] 1.1 本 change 目录与 `proposal.md` / `design.md` / `tasks.md` / `specs/splits/spec.md` 建立
 - [x] 1.2 `openspec validate us-096-second-split --strict` = valid
-- [ ] 1.3 创建 `requirement-workspace/requirements/US-096.md`（六字段、In/Out scope、AC、OQ）
-- [ ] 1.4 更新 `requirement-workspace/registry.md`（US-096 状态）
-- [ ] 1.5 G1 前跨 change 契约扫描：`scripts/cross-change-scan.sh` + `openspec/templates/cross-change-scan.md`；重点检查 US-095、US-045、US-090、US-049/050
-- [ ] 1.6 若存在跨 change 冲突，写 `cross-change-scan.md` 并由 SA/IO 具名签署或 waiver
+- [x] 1.3 创建 `requirement-workspace/requirements/US-096.md`（六字段、In/Out scope、AC、OQ）
+- [x] 1.4 更新 `requirement-workspace/registry.md`（US-095/US-096 状态与角色）
+- [x] 1.5 G1 前跨 change 契约扫描（`cross-change-scan.md`）
+- [x] 1.6 写 `cross-change-scan.md` 并由 SA/IO 具名处置（A1/A2 非本 change）
 - [x] 1.7 确认 `SPLIT_BOUNDARIES_REQUIRED` 仍为 409；新增错误码与 HTTP 状态和 delta spec 一致
 
 ## P2 存储重构（先保持旧测试绿）
