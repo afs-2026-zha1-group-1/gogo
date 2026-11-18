@@ -60,6 +60,7 @@
 - [x] 5.3 制造失败（错误 base-url）：生成仍 200，B 组为夹具并记录 `log.warn`（不泄露 key/提示词）
 - [ ] 5.4 浏览器验收：AI4 生成中提示条可见、结束后关闭，错误由 `ErrorState` 展示；
       S1/Screen 13 展示契约无回归
-- [ ] P4 任务：推送 change 分支并开 PR（不直推 main）；CI 全绿
-- [ ] P5 归档前对账：`docs/knowledge/architecture/tech-stack-plan.md` 若涉及 provider 接缝更新，
-      追加 `docs/knowledge/_LOG.md` 一行
+- [x] P4 任务：推送 change 分支并开 PR（不直推 main）；PR #161 合并 `b48c176`；
+      后端相关套件与前端 typecheck/单测/构建全绿（Browser acceptance 的 2 例失败为
+      main 既有、与本次无关）
+- [x] P5 归档前对账：`tech-stack-plan.md` §30 + `docs/knowledge/_LOG.md` 一行已补
