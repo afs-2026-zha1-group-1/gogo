@@ -1,6 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { api, errorMessage } from '../api'
 import Icon from '../Icons'
+import { persistCurrentTrip } from '../lib/current-trip'
+import { queueNotice } from '../lib/notice'
 import type { AcceptResult, InvitationPreview } from '../types'
 import { useAuth } from '../features/auth/AuthProvider'
 
@@ -100,6 +102,11 @@ export default function Join({ token }: JoinProps) {
         { method: 'POST' },
       )
       if (result.ok && result.data) {
+        // US-090: accepting an invitation switches the current trip; an already-member re-open never does.
+        if (!result.data.alreadyMember) {
+          const switched = await persistCurrentTrip(result.data.tripId)
+          if (!switched) queueNotice('当前行程未切换，可在「我的行程」中手动选择这个行程。')
+        }
         setState({
           kind: 'joined',
           preview,
@@ -210,7 +217,9 @@ export default function Join({ token }: JoinProps) {
       />
     )
   }
-  const closed = state.kind === 'closed' || preview.mainPlanConfirmed
+  // US-003 D8: joining closes on the first confirmation and stays closed even
+  // after a planning edit resets mainPlanConfirmed.
+  const closed = state.kind === 'closed' || preview.joiningClosed === true
   const isOrganizer = status === 'signedIn' && account?.id === preview.organizerId
 
   return (
@@ -251,7 +260,7 @@ export default function Join({ token }: JoinProps) {
         <p className="hint">
           <Icon name="shield" className="sm" />{' '}
           {closed
-            ? '主线方案已确认，新的成员不能再加入。'
+            ? '加入已关闭：主线方案曾经确认，新成员不能再加入。'
             : '接受邀请后才会看到完整行程与成员。当前主线尚未确认，你可以加入。'}
         </p>
       </section>

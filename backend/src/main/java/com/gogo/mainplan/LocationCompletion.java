@@ -24,6 +24,9 @@ public class LocationCompletion {
     public static final List<String> LONDON_CANDIDATES = List.of(
             "大英博物馆", "考文特花园", "博罗市场", "伦敦眼");
 
+    public static final List<String> HEFEI_CANDIDATES = List.of(
+            "大蜀山森林公园", "红星路步行街", "之心城购物中心", "官亭路步行街");
+
     private static final List<String> GENERIC_CANDIDATES = List.of(
             "City Center", "Old Town", "Central Park", "Main Station");
 
@@ -60,6 +63,9 @@ public class LocationCompletion {
         }
         if (value.contains("伦敦") || lower.contains("london")) {
             return LONDON_CANDIDATES;
+        }
+        if (value.contains("合肥") || lower.contains("hefei")) {
+            return HEFEI_CANDIDATES;
         }
         return "singapore".equals(lower) ? SINGAPORE_CANDIDATES : GENERIC_CANDIDATES;
     }

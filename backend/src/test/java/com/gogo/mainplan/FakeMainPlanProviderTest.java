@@ -2,6 +2,7 @@ package com.gogo.mainplan;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 
@@ -76,5 +77,40 @@ class FakeMainPlanProviderTest {
         assertEquals("大英博物馆", result.stops().get(0).name());
         assertEquals("伦敦眼与南岸夜景", result.stops().get(6).name());
         assertEquals(9500, result.costPerPersonCents());
+    }
+
+    @Test
+    void hefeiDestinationReturnsTheRequestedPlanAndCosts() {
+        MainPlanResult result = planFor("合肥", "2026-12-05", "2026-12-05");
+        assertEquals(4, result.stops().size());
+        assertEquals("大蜀山森林公园", result.stops().get(0).name());
+        assertEquals("09:00", result.stops().get(0).startTime());
+        assertEquals("11:00", result.stops().get(0).endTime());
+        assertEquals(0, result.stops().get(0).costCents());
+        assertEquals("红星路步行街披萨店", result.stops().get(1).name());
+        assertEquals("11:00", result.stops().get(1).startTime());
+        assertEquals("13:00", result.stops().get(1).endTime());
+        assertEquals(10000, result.stops().get(1).costCents());
+        assertEquals("之心城购物中心", result.stops().get(2).name());
+        assertEquals("14:00", result.stops().get(2).startTime());
+        assertEquals("17:00", result.stops().get(2).endTime());
+        assertEquals(100000, result.stops().get(2).costCents());
+        assertEquals("官亭路步行街小吃", result.stops().get(3).name());
+        assertEquals("18:00", result.stops().get(3).startTime());
+        assertEquals("20:00", result.stops().get(3).endTime());
+        assertEquals(10000, result.stops().get(3).costCents());
+        assertNull(result.stops().get(3).travelMinutesToNext());
+        // 0 + 100 + 1000 + 100 = 1200 元 = 120000 分
+        assertEquals(120000, result.costPerPersonCents());
+    }
+
+    @Test
+    void hefeiFixtureSatisfiesTheScheduleRules() {
+        List<MainPlanRepository.StopRow> rows = planFor("合肥", "2026-12-05", "2026-12-05")
+                .stops().stream()
+                .map(stop -> new MainPlanRepository.StopRow(stop.seq(), stop.name(), stop.startTime(),
+                        stop.endTime(), stop.travelMinutesToNext(), null, null, null, null, stop.costCents()))
+                .toList();
+        assertTrue(new ScheduleValidator().validate(rows).isEmpty());
     }
 }

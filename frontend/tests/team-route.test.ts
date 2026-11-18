@@ -106,6 +106,40 @@ test('branch nodes: A steps expand per stop while B keeps a single activity', ()
   assert.equal(rows.filter((row) => row.route === 'b' && row.title === '路程').length, 2)
 })
 
+test('buildGraphRows: the fork represents the matching first A stop without losing duration or travel', () => {
+  const model = buildGraphRows({
+    stops,
+    departureStopId: 's1',
+    reunionStopId: 's3',
+    routes: [
+      { groupLabel: 'A', activityName: 'City Hall MRT → Merlion Park', activityMinutes: 90,
+        travelLegsMinutes: [20, 15], bufferMinutes: 0,
+        steps: [{ name: '主线·City Hall MRT', minutes: 30 }, { name: 'Merlion Park', minutes: 60 }] },
+      { groupLabel: 'B', activityName: '咖啡', activityMinutes: 45,
+        travelLegsMinutes: [10, 20], bufferMinutes: 0, steps: [{ name: '咖啡', minutes: 45 }] },
+    ],
+  })
+  const fork = model.rows.find((row) => row.kind === 'fork')
+  assert.ok(fork)
+  assert.match(fork.meta, /A 组活动 · 30 分钟/)
+  assert.equal(model.rows.filter((row) => row.title === 'City Hall MRT').length, 1)
+  const a = model.rows.filter((row) => row.kind === 'branch' && row.route === 'a')
+  assert.deepEqual(a.map((row) => row.title), ['路程', 'Merlion Park', '路程'])
+  assert.deepEqual(a.map((row) => row.meta), ['路程 · 20 分钟', '活动 · 60 分钟', '路程 · 15 分钟'])
+  assert.ok(model.rows.some((row) => row.kind === 'branch' && row.route === 'b' && row.title === '咖啡'))
+})
+
+test('buildGraphRows: a different edited first A stop remains visible', () => {
+  const model = buildGraphRows({
+    stops,
+    departureStopId: 's1',
+    reunionStopId: 's3',
+    routes: [{ groupLabel: 'A', activityName: '新活动', activityMinutes: 30,
+      travelLegsMinutes: [20], bufferMinutes: 0, steps: [{ name: '新活动', minutes: 30 }] }],
+  })
+  assert.ok(model.rows.some((row) => row.kind === 'branch' && row.route === 'a' && row.title === '新活动'))
+})
+
 test('station names drop the generated 主线 marker for display and saving', () => {
   assert.equal(cleanStationName('主线·旧城早餐'), '旧城早餐')
   assert.equal(cleanStationName('主线：滨海美术馆'), '滨海美术馆')

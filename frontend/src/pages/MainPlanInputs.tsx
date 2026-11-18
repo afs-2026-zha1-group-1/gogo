@@ -104,6 +104,7 @@ export default function MainPlanInputs({ tripId, dashboardOrigin = false, backTo
     try {
       const { status, ok, data } = await api<MainPlan & MainPlanError>(`/api/trips/${tripId}/main-plan`, { method: 'POST' })
       if (ok) {
+        // US-079 路线1：坐标补全由方案页进页时统一触发（含重新生成与存量草稿）。
         window.location.hash = dashboardOrigin
           ? `#/dashboard/trips/${tripId}/main-plan`
           : `#/trips/${tripId}/main-plan`

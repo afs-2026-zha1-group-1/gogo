@@ -270,7 +270,7 @@ test('pending dashboard main-plan deep link does not select an unvalidated trip'
   try {
     await page.goto('/#/dashboard/trips/999999/main-plan')
     await expect(page.getByText('正在加载主线方案…')).toBeVisible()
-    await expect(page.getByRole('link', { name: '分队', exact: true })).toHaveAttribute('href', '#/dashboard/trip-entry')
+    await expect(page.getByRole('link', { name: '分队', exact: true })).toHaveAttribute('href', '#/my-trips')
   } finally {
     release?.()
   }
@@ -285,10 +285,11 @@ test('account change does not restore a saved trip in dashboard-origin context',
     ? route.fulfill({ json: { id: 2, name: 'Ben', email: 'ben@example.com' } })
     : route.continue())
   await page.route('**/api/trips/current', (route) => route.fulfill({ json: { tripId: 9002 } }))
+  await page.getByRole('button', { name: '编辑名字' }).click()
   await page.getByLabel('名字').fill('Ben')
-  await page.getByRole('button', { name: '保存名字' }).click()
+  await page.getByRole('button', { name: '保存', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('已保存')
-  await expect(page.getByRole('link', { name: '分队', exact: true })).toHaveAttribute('href', '#/dashboard/trip-entry')
+  await expect(page.getByRole('link', { name: '分队', exact: true })).toHaveAttribute('href', '#/my-trips')
 })
 
 test('does not reuse cached preferences when the authenticated account changes', async ({ page }) => {
@@ -314,8 +315,9 @@ test('does not reuse cached preferences when the authenticated account changes',
     }
     return route.continue()
   })
+  await page.getByRole('button', { name: '编辑名字' }).click()
   await page.getByLabel('名字').fill('Other')
-  await page.getByRole('button', { name: '保存名字' }).click()
+  await page.getByRole('button', { name: '保存', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('已保存')
   try {
     await page.evaluate(() => { window.location.hash = '#/dashboard/trips/9001/preferences' })
@@ -402,14 +404,16 @@ for (const email of ['alice@example.com', 'ben@example.com']) {
     expect(persistedState()).toBe(before)
 
     for (const [tab, visibleText] of [
-      ['行程', '按编号打开行程'],
+      ['行程', '我的行程'],
       ['成员', '成员列表'],
       ['我的', email],
     ]) {
       await navigation.getByRole('link', { name: tab, exact: true }).click()
       await expect(navigation.getByRole('link', { name: tab, exact: true })).toHaveAttribute('aria-current', 'page')
-      if (tab === '成员') await expect(page.getByRole('region', { name: visibleText })).toBeVisible()
-      else if (tab === '行程') await expect(page.getByLabel(visibleText)).toBeEnabled()
+      // The members page carries the 成员 app-bar title (same locator style as the preference-screen checks above).
+      // The subtitle copy changes with the member-profile work, so it is not a stable navigation marker.
+      if (tab === '成员') await expect(page.locator('.appbar .title').getByText('成员', { exact: true })).toBeVisible()
+      else if (tab === '行程') await expect(page.getByText(visibleText, { exact: true })).toBeVisible()
       else await expect(page.getByText(visibleText, { exact: false }).first()).toBeVisible()
       expect(await page.evaluate(() => (window as Window & { dashboardMarker?: string }).dashboardMarker)).toBe('retained')
       expect(persistedState()).toBe(before)
@@ -430,7 +434,7 @@ for (const email of ['alice@example.com', 'ben@example.com']) {
     await page.getByRole('link', { name: '创建行程' }).click()
     await expect(navigation.getByRole('link', { name: '行程', exact: true })).toHaveAttribute('aria-current', 'page')
     await page.getByRole('link', { name: 'Back' }).click()
-    await expect(page).toHaveURL(/#\/dashboard\/trip-entry$/)
+    await expect(page).toHaveURL(/#\/trips$/)
     expect(persistedState()).toBe(before)
   })
 
@@ -584,8 +588,9 @@ test('a late response cannot expose a previous account trip after an identity ch
     })
     if (!response.ok) throw new Error(`Account switch failed: HTTP ${response.status}`)
   })
+  await page.getByRole('button', { name: '编辑名字' }).click()
   await page.getByLabel('名字').fill('Eve')
-  await page.getByRole('button', { name: '保存名字' }).click()
+  await page.getByRole('button', { name: '保存', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('已保存')
   release?.()
   await delivered

@@ -61,8 +61,9 @@ abstract class AbstractSplitApiTest {
 
     /**
      * Replaces the trip's confirmed main plan with the fake provider's four stops (09:00/09:30, 10:00/10:30,
-     * 11:00/11:15, 11:30/12:00 trip-local) and projects it into the main-line plan_node rows, mirroring
-     * production confirmation (main_plan_stop -> plan_node branch_id='main', plan_version = draft version).
+     * 11:00/11:15, 11:30/12:00 trip-local) and their per-person costs (500/1500/2000/1000 cents, US-045), then
+     * projects it into the main-line plan_node rows, mirroring production confirmation (main_plan_stop -> plan_node
+     * branch_id='main', plan_version = draft version).
      */
     protected void seedConfirmedMainPlan(int version) {
         String tripId = sgfTripId();
@@ -75,17 +76,18 @@ abstract class AbstractSplitApiTest {
                 tripId, version);
         Number draftId = jdbc.queryForObject(
                 "SELECT id FROM main_plan_draft WHERE trip_id = ? AND version = ?", Number.class, tripId, version);
-        insertMainPlanStop(draftId, 1, "City Hall MRT", "09:00", "09:30", 30);
-        insertMainPlanStop(draftId, 2, "National Gallery Singapore", "10:00", "10:30", 30);
-        insertMainPlanStop(draftId, 3, "Gardens by the Bay", "11:00", "11:15", 15);
-        insertMainPlanStop(draftId, 4, "Merlion Park", "11:30", "12:00", null);
+        insertMainPlanStop(draftId, 1, "City Hall MRT", "09:00", "09:30", 30, 500);
+        insertMainPlanStop(draftId, 2, "National Gallery Singapore", "10:00", "10:30", 30, 1500);
+        insertMainPlanStop(draftId, 3, "Gardens by the Bay", "11:00", "11:15", 15, 2000);
+        insertMainPlanStop(draftId, 4, "Merlion Park", "11:30", "12:00", null, 1000);
         assertThat(mainPlanProjection.projectConfirmed(Long.parseLong(tripId))).contains(version);
     }
 
-    private void insertMainPlanStop(Number draftId, int seq, String name, String start, String end, Integer leg) {
+    private void insertMainPlanStop(Number draftId, int seq, String name, String start, String end, Integer leg,
+            int costCents) {
         jdbc.update("INSERT INTO main_plan_stop (draft_id, seq, name, start_local, end_local, "
-                        + "travel_minutes_to_next, interests_json) VALUES (?, ?, ?, ?, ?, ?, '[]')",
-                draftId, seq, name, start, end, leg);
+                        + "travel_minutes_to_next, interests_json, cost_cents) VALUES (?, ?, ?, ?, ?, ?, '[]', ?)",
+                draftId, seq, name, start, end, leg, costCents);
     }
 
     protected String sgfTripId() {
@@ -262,5 +264,21 @@ abstract class AbstractSplitApiTest {
         Integer version = jdbc.queryForObject(
                 "SELECT draft_version FROM split_draft WHERE trip_id = ?", Integer.class, sgfTripId());
         return version == null ? -1 : version;
+    }
+
+    /**
+     * Stores a US-024 budget row for the named member (major units + limit type, SGD). US-045 reads it through
+     * member_preference, so tests exercise the same storage the preference page writes.
+     */
+    protected void insertBudget(String displayName, int amount, String limitType) {
+        jdbc.update("INSERT OR REPLACE INTO member_preference (trip_id, user_id, kind, payload, updated_at) "
+                        + "VALUES (?, ?, 'budget', ?, datetime('now'))",
+                sgfTripId(), memberId(displayName),
+                "{\"amount\":" + amount + ",\"currency\":\"SGD\",\"limitType\":\"" + limitType + "\"}");
+    }
+
+    /** Removes every budget row so a test starts without member limits. */
+    protected void clearBudgets() {
+        jdbc.update("DELETE FROM member_preference WHERE trip_id = ? AND kind = 'budget'", sgfTripId());
     }
 }

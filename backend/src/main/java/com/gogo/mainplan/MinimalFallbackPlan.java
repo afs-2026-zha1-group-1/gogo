@@ -12,8 +12,8 @@ final class MinimalFallbackPlan {
 
     static MainPlanResult build(TripContext trip) {
         return new MainPlanResult(List.of(
-                new MainPlanResult.PlannedStop(1, trip.startLocation(), "09:00", "09:30", 30, List.of()),
-                new MainPlanResult.PlannedStop(2, trip.endLocation(), "17:00", "17:30", null, List.of())),
+                new MainPlanResult.PlannedStop(1, trip.startLocation(), "09:00", "09:30", 30, List.of(), null, null, 0),
+                new MainPlanResult.PlannedStop(2, trip.endLocation(), "17:00", "17:30", null, List.of(), null, null, 0)),
                 0);
     }
 }

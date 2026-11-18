@@ -16,6 +16,8 @@ Please refer to the [knowledge base](docs/knowledge/_INDEX.md) for additional in
 UI design please refer to [shadcn/ui](https://ui.shadcn.com/docs): components live in
 `frontend/src/components/ui/` and tokens in `frontend/src/index.css` (`@theme`). Do not add a
 second UI library.
+UI 设计参考（Release 2 原型）：`ui-design-reference/screenshots/`。对齐任何页面前先逐屏查看
+目标截图；原型中的演示数据、按钮和模拟结果不替代故事验收标准。
 
 ## Git workflow
 
@@ -28,4 +30,5 @@ second UI library.
 - Authority: `docs/knowledge/rules/` (MECE categories)
 - Prefer `@rule:<id>` references; do not paste rule bodies here.
 - Host projections are derived copies — authority wins on conflict.
+- G1 前跨 change 契约扫描：`@rule:g1-cross-change-scan`；模板 `openspec/templates/cross-change-scan.md`，脚本 `scripts/cross-change-scan.sh`。
 

@@ -7,8 +7,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +35,9 @@ public class MainPlanService {
             "STALE_DRAFT_BLOCKS_CONFIRM",
             "LOCATION_COMPLETION_AT_GENERATION");
 
+    /** Local HH:MM, the only clock shape the plan stores (trip-local wall time, no offset). */
+    private static final Pattern CLOCK = Pattern.compile("^([01]\\d|2[0-3]):[0-5]\\d$");
+
     private final TripRepository trips;
     private final MainPlanRepository plans;
     private final MainPlanProvider provider;
@@ -41,10 +46,12 @@ public class MainPlanService {
     private final BudgetOverruns budgetOverruns;
     private final ObjectMapper objectMapper;
     private final MainPlanProjection projection;
+    private final ApplicationEventPublisher events;
 
     public MainPlanService(TripRepository trips, MainPlanRepository plans, MainPlanProvider provider,
             LocationCompletion locationCompletion, ScheduleValidator scheduleValidator,
-            BudgetOverruns budgetOverruns, ObjectMapper objectMapper, MainPlanProjection projection) {
+            BudgetOverruns budgetOverruns, ObjectMapper objectMapper, MainPlanProjection projection,
+            ApplicationEventPublisher events) {
         this.trips = trips;
         this.plans = plans;
         this.provider = provider;
@@ -53,6 +60,7 @@ public class MainPlanService {
         this.budgetOverruns = budgetOverruns;
         this.objectMapper = objectMapper;
         this.projection = projection;
+        this.events = events;
     }
 
     // D4: gate order confirmed-check before readiness; one transaction for
@@ -115,13 +123,58 @@ public class MainPlanService {
                 .toList();
         plans.supersedeCurrentDrafts(tripId);
         int version = plans.maxVersion(tripId) + 1;
-        long draftId = plans.insertDraft(tripId, version,
-                result.costPerPersonCents(), writeJson(revisions));
+        long draftId = plans.insertDraft(tripId, version, result.costPerPersonCents(), writeJson(revisions),
+                writeJson(tripBasics(trip.destination(), trip.startDate(), trip.endDate(),
+                        completed.startLocation(), completed.endLocation())));
+        // US-079 路线1：坐标不由 AI/provider 产出——落库时查地址簿缓存补全；
+        // 缓存未命中的国内站由前端 JS API 查坐标后经 stop-locations 回写。
+        List<PlanResponse.Stop> completedStops = new ArrayList<>();
         for (MainPlanResult.PlannedStop stop : result.stops()) {
-            plans.insertStop(draftId, stop, writeJson(stop.interests()));
+            String city = stop.city() != null ? stop.city() : trip.destination();
+            Optional<MainPlanRepository.PlaceRow> cached = plans.cacheLookup(stop.name(), city);
+            String address = stop.address() != null ? stop.address()
+                    : cached.map(MainPlanRepository.PlaceRow::address).orElse(null);
+            Double lat = cached.map(MainPlanRepository.PlaceRow::lat).orElse(null);
+            Double lng = cached.map(MainPlanRepository.PlaceRow::lng).orElse(null);
+            plans.insertStop(draftId, stop, writeJson(stop.interests()), address, lat, lng);
+            completedStops.add(new PlanResponse.Stop(0L, stop.seq(), stop.name(), stop.startTime(),
+                    stop.endTime(), null, null, stop.travelMinutesToNext(), stop.interests(), address, lat, lng));
         }
         return new PlanResponse(tripId, version, false, false,
-                result.costPerPersonCents(), revisions, toStops(result.stops()));
+                result.costPerPersonCents(), revisions, completedStops);
+    }
+
+    /** US-079 路线1：程序查坐标回写请求体（seq + WGS-84 坐标 + 可选真实地址）。 */
+    public record StopLocation(int seq, double lat, double lng, String address) {
+    }
+
+    // 回写当前草稿站点坐标并沉淀进地址簿；门序同生成（trip→member→organizer→draft）。
+    @Transactional
+    public PlanResponse completeStopLocations(long tripId, long caller, List<StopLocation> locations) {
+        TripResponse trip = requireTrip(tripId);
+        requireMember(tripId, caller);
+        requireOrganizer(trip, caller);
+        MainPlanRepository.DraftRow draft = plans.findDraftByStatus(tripId, "current")
+                .orElseThrow(() -> new MainPlanApiException(404, "NO_DRAFT",
+                        "No main plan draft has been generated for this trip"));
+        List<MainPlanRepository.StopRow> stops = plans.stopsForDraft(draft.id());
+        String city = trip.destination() == null ? "" : trip.destination();
+        for (StopLocation location : locations) {
+            if (Math.abs(location.lat()) > 90 || Math.abs(location.lng()) > 180) {
+                throw new MainPlanApiException(422, "INVALID_COORDS", "Coordinates out of range");
+            }
+            MainPlanRepository.StopRow row = stops.stream()
+                    .filter(stop -> stop.seq() == location.seq())
+                    .findFirst()
+                    .orElseThrow(() -> new MainPlanApiException(422, "UNKNOWN_STOP",
+                            "Stop seq is not part of the current draft"));
+            String address = location.address() == null || location.address().isBlank()
+                    ? null : location.address().trim();
+            plans.updateStopLocation(draft.id(), location.seq(), location.lat(), location.lng(), address);
+            plans.cacheUpsert(row.name(), city, address != null ? address : row.address(),
+                    location.lat(), location.lng(), "geocode");
+        }
+        return readPlan(tripId, caller);
     }
 
     // D8: gate order trip -> member -> organizer -> no-draft ->
@@ -145,7 +198,7 @@ public class MainPlanService {
         }
         MainPlanRepository.DraftRow draft = current.orElseThrow();
         List<PlanResponse.InputRevision> revisions = readRevisions(draft.inputRevisionsJson());
-        if (isStale(tripId, revisions)) {
+        if (isStale(tripId, revisions, draft)) {
             throw new MainPlanApiException(409, "STALE_DRAFT",
                     "Member preferences changed since this draft was generated; regenerate before confirming");
         }
@@ -167,11 +220,204 @@ public class MainPlanService {
                     "The draft failed validation; fix the reported issues before confirming", detail);
         }
         plans.markDraftConfirmed(draft.id());
-        plans.setTripMainPlanConfirmed(tripId);
+        plans.setTripConfirmedAndJoiningClosed(tripId);
         // The confirmed plan becomes the trip's main-line nodes in the same transaction, so the splits
         // capability reads the very rows this confirmation approved instead of a separate synthetic set.
         projection.projectConfirmed(tripId);
         return readPlan(tripId, caller);
+    }
+
+    /**
+     * US-003 D7: the trip-detail shortcut keeps its URL but delegates to the same
+     * validated confirmation; only the organizer passes, and the response is the
+     * updated trip projection.
+     */
+    @Transactional
+    public TripResponse confirmShortcut(long tripId, long caller) {
+        confirm(tripId, caller);
+        return requireTrip(tripId);
+    }
+
+    /**
+     * US-090 「我的方案」: any trip member edits one main-plan stop (time/location from US-090, name from US-003).
+     * The stop must belong to this trip, the new window must stay ordered against its neighbours, and the edited
+     * rows are re-projected in the same transaction so the split boundaries keep reading the same stop ids. A route
+     * pair generated against the old times is dropped through {@link MainPlanStopsChanged}; the draft stays active.
+     */
+    @Transactional
+    public PlanResponse updateStop(long tripId, long caller, long stopId, UpdateStopRequest request) {
+        requireTrip(tripId);
+        requireMember(tripId, caller);
+        if (request == null) {
+            throw new MainPlanApiException(400, "INVALID_STOP_TIME", "A stop edit body is required");
+        }
+        MainPlanRepository.StopRow stop = plans.findStop(tripId, stopId)
+                .orElseThrow(() -> new MainPlanApiException(404, "STOP_NOT_FOUND",
+                        "No such stop in this trip's main plan"));
+        MainPlanRepository.DraftRow draft = requireEditableDraft(tripId, request.mainPlanVersion());
+        String start = requireClock(request.startTime());
+        String end = requireClock(request.endTime());
+        List<MainPlanRepository.StopRow> siblings = plans.stopsForDraft(draft.id());
+        // A stop id from an older version must not be editable through the current plan.
+        if (siblings.stream().noneMatch(sibling -> sibling.id() == stopId)) {
+            throw new MainPlanApiException(404, "STOP_NOT_FOUND", "No such stop in the current main plan");
+        }
+        if (end.compareTo(start) <= 0) {
+            throw stopTimeError("END_BEFORE_START", stop.seq(), "结束时间必须晚于开始时间");
+        }
+        for (MainPlanRepository.StopRow sibling : siblings) {
+            if (sibling.seq() < stop.seq() && start.compareTo(sibling.endLocal()) < 0) {
+                throw stopTimeError("NEIGHBOUR_CONFLICT", stop.seq(), "开始时间早于上一站结束时间");
+            }
+            if (sibling.seq() > stop.seq() && end.compareTo(sibling.startLocal()) > 0) {
+                throw stopTimeError("NEIGHBOUR_CONFLICT", stop.seq(), "结束时间晚于下一站开始时间");
+            }
+        }
+        // US-003 rename and US-090 title edit share the endpoint; a blank name keeps the stored one.
+        String name = request.name() == null || request.name().isBlank() ? stop.name() : request.name().trim();
+        if (name.length() > 80) {
+            throw new MainPlanApiException(400, "INVALID_STOP_NAME", "站点名称不能超过 80 个字符");
+        }
+        // 未提交的地点/备注保持原值（旧客户端不带这两个字段），显式空串表示清空；地图按标题导航，地点不再编辑。
+        String locationName = request.locationName() == null ? stop.locationName() : blankToNull(request.locationName());
+        String note = request.note() == null ? stop.note() : blankToNull(request.note());
+        requireNoteFits(note);
+        plans.updateStop(stopId, name, start, end, locationName, note);
+        // A time edit can leave an existing leg that no longer fits (TRAVEL_EXCEEDS_GAP); reject it here instead
+        // of saving a draft that confirmation would block later.
+        requireSchedulable(draft.id());
+        projection.projectConfirmed(tripId);
+        events.publishEvent(new MainPlanStopsChanged(tripId));
+        return readPlan(tripId, caller);
+    }
+
+    /**
+     * US-090 「我的方案」追加节点：任何行程成员把新站追加到主线末尾。新站必须晚于当前末站结束，不虚构路程或
+     * 兴趣标签；写入后同事务重投影并作废已生成的分队路线（与时间编辑一致）。
+     */
+    @Transactional
+    public PlanResponse addStop(long tripId, long caller, AddStopRequest request) {
+        requireTrip(tripId);
+        requireMember(tripId, caller);
+        String name = request == null || request.name() == null ? "" : request.name().trim();
+        if (name.isEmpty()) {
+            throw new MainPlanApiException(400, "INVALID_STOP_NAME", "站点名称不能为空");
+        }
+        if (name.length() > 80) {
+            throw new MainPlanApiException(400, "INVALID_STOP_NAME", "站点名称不能超过 80 个字符");
+        }
+        MainPlanRepository.DraftRow draft = requireEditableDraft(tripId, request.mainPlanVersion());
+        String start = requireClock(request.startTime());
+        String end = requireClock(request.endTime());
+        int seq = plans.nextSeq(draft.id());
+        if (end.compareTo(start) <= 0) {
+            throw stopTimeError("END_BEFORE_START", seq, "结束时间必须晚于开始时间");
+        }
+        MainPlanRepository.StopRow last = null;
+        for (MainPlanRepository.StopRow sibling : plans.stopsForDraft(draft.id())) {
+            if (last == null || sibling.seq() > last.seq()) {
+                last = sibling;
+            }
+        }
+        if (last != null && start.compareTo(last.endLocal()) < 0) {
+            throw stopTimeError("NEIGHBOUR_CONFLICT", seq, "开始时间早于上一站结束时间");
+        }
+        // The previous last stop becomes an intermediate stop, so it needs the leg that used to be "null on the
+        // last stop"; otherwise confirmation reports MISSING_LEG and the plan can never be confirmed.
+        if (last != null) {
+            plans.updateTravelMinutesToNext(last.id(), clockMinutes(start) - clockMinutes(last.endLocal()));
+        }
+        plans.insertStopRow(draft.id(), seq, name, start, end, blankToNull(request.locationName()),
+                requireNoteFits(blankToNull(request.note())));
+        requireSchedulable(draft.id());
+        projection.projectConfirmed(tripId);
+        events.publishEvent(new MainPlanStopsChanged(tripId));
+        return readPlan(tripId, caller);
+    }
+
+    /**
+     * US-090 「我的方案」删除节点：任何行程成员删除一站；最后一站不可删（主线至少要留一站）。其余站的 seq 不变，
+     * 因此 plan_node 主线站的 id 保持不变，只是被删的那一行随之消失。
+     */
+    @Transactional
+    public PlanResponse deleteStop(long tripId, long caller, long stopId) {
+        requireTrip(tripId);
+        requireMember(tripId, caller);
+        MainPlanRepository.StopRow stop = plans.findStop(tripId, stopId)
+                .orElseThrow(() -> new MainPlanApiException(404, "STOP_NOT_FOUND",
+                        "No such stop in this trip's main plan"));
+        MainPlanRepository.DraftRow draft = plans.findDraftByStatus(tripId, "confirmed")
+                .or(() -> plans.findDraftByStatus(tripId, "current"))
+                .orElseThrow(() -> new MainPlanApiException(404, "NO_DRAFT",
+                        "No main plan draft has been generated for this trip"));
+        List<MainPlanRepository.StopRow> siblings = plans.stopsForDraft(draft.id());
+        if (siblings.stream().noneMatch(sibling -> sibling.id() == stopId)) {
+            throw new MainPlanApiException(404, "STOP_NOT_FOUND", "No such stop in the current main plan");
+        }
+        if (siblings.size() <= 1) {
+            throw stopTimeError("LAST_STOP", stop.seq(), "主线方案至少保留一个站点");
+        }
+        plans.deleteStop(stopId);
+        requireSchedulable(draft.id());
+        projection.projectConfirmed(tripId);
+        events.publishEvent(new MainPlanStopsChanged(tripId));
+        return readPlan(tripId, caller);
+    }
+
+    /** The plan currently shown by 「我的方案」: the confirmed draft wins over a newer unconfirmed one. */
+    private MainPlanRepository.DraftRow requireEditableDraft(long tripId, int expectedVersion) {
+        MainPlanRepository.DraftRow draft = plans.findDraftByStatus(tripId, "confirmed")
+                .or(() -> plans.findDraftByStatus(tripId, "current"))
+                .orElseThrow(() -> new MainPlanApiException(404, "NO_DRAFT",
+                        "No main plan draft has been generated for this trip"));
+        if (expectedVersion != draft.version()) {
+            throw new MainPlanApiException(409, "STALE_PLAN_VERSION",
+                    "The main plan changed; reload before editing a stop");
+        }
+        return draft;
+    }
+
+    private MainPlanApiException stopTimeError(String type, int seq, String message) {
+        return new MainPlanApiException(422, "VALIDATION_FAILED", message,
+                Map.of("scheduleErrors", List.of(new ScheduleValidator.ScheduleError(type, seq, message))));
+    }
+
+    private String requireClock(String clock) {
+        String trimmed = clock == null ? "" : clock.trim();
+        if (!CLOCK.matcher(trimmed).matches()) {
+            throw new MainPlanApiException(400, "INVALID_STOP_TIME", "Time must be HH:MM");
+        }
+        return trimmed;
+    }
+
+    /** Rejects a write that would leave the plan failing the confirmation rules (single transaction → rollback). */
+    private void requireSchedulable(long draftId) {
+        List<ScheduleValidator.ScheduleError> errors = scheduleValidator.validate(plans.stopsForDraft(draftId));
+        if (!errors.isEmpty()) {
+            throw new MainPlanApiException(422, "VALIDATION_FAILED",
+                    "主线时间安排不合法，请先调整相邻站点或路程", Map.of("scheduleErrors", errors));
+        }
+    }
+
+    private static int clockMinutes(String clock) {
+        String[] parts = clock.split(":");
+        return Integer.parseInt(parts[0]) * 60 + Integer.parseInt(parts[1]);
+    }
+
+    private static String blankToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    /** 站点备注上限；超长拒绝而不是静默截断。 */
+    private static String requireNoteFits(String note) {
+        if (note != null && note.length() > 200) {
+            throw new MainPlanApiException(400, "INVALID_STOP_NOTE", "备注不能超过 200 个字符");
+        }
+        return note;
     }
 
     // D6: confirmed row wins over current; stale computed on read, confirmed
@@ -185,10 +431,11 @@ public class MainPlanService {
                         "No main plan draft has been generated for this trip"));
         boolean confirmed = "confirmed".equals(draft.status());
         List<PlanResponse.InputRevision> revisions = readRevisions(draft.inputRevisionsJson());
-        boolean stale = !confirmed && isStale(tripId, revisions);
+        boolean stale = !confirmed && isStale(tripId, revisions, draft);
         List<PlanResponse.Stop> stops = plans.stopsForDraft(draft.id()).stream()
-                .map(stop -> new PlanResponse.Stop(stop.seq(), stop.name(), stop.startLocal(),
-                        stop.endLocal(), stop.travelMinutesToNext(), readInterests(stop.interestsJson())))
+                .map(stop -> new PlanResponse.Stop(stop.id(), stop.seq(), stop.name(), stop.startLocal(),
+                        stop.endLocal(), stop.locationName(), stop.note(), stop.travelMinutesToNext(),
+                        readInterests(stop.interestsJson()), stop.address(), stop.lat(), stop.lng()))
                 .toList();
         return new PlanResponse(tripId, draft.version(), confirmed, stale,
                 draft.costPerPersonCents(), revisions, stops);
@@ -288,7 +535,8 @@ public class MainPlanService {
 
     // ---- staleness ----
 
-    boolean isStale(long tripId, List<PlanResponse.InputRevision> revisions) {
+    /** US-003 D6: preference revisions OR the trip-basics snapshot decide staleness; a missing snapshot is stale. */
+    boolean isStale(long tripId, List<PlanResponse.InputRevision> revisions, MainPlanRepository.DraftRow draft) {
         Map<Long, Integer> current = new LinkedHashMap<>();
         for (MainPlanRepository.MemberRow member : plans.members(tripId)) {
             current.put(member.userId(), member.preferenceRevision());
@@ -299,7 +547,25 @@ public class MainPlanService {
                 return true;
             }
         }
-        return false;
+        if (draft.tripBasicsJson() == null) {
+            return true;
+        }
+        TripResponse trip = requireTrip(tripId);
+        String snapshot = writeJson(tripBasics(trip.destination(), trip.startDate(), trip.endDate(),
+                trip.startLocation(), trip.endLocation()));
+        return !snapshot.equals(draft.tripBasicsJson());
+    }
+
+    /** US-003 D5: snapshot content shared by generation and the staleness comparison. */
+    private Map<String, Object> tripBasics(String destination, String startDate, String endDate,
+            String startLocation, String endLocation) {
+        Map<String, Object> basics = new LinkedHashMap<>();
+        basics.put("destination", destination);
+        basics.put("startDate", startDate);
+        basics.put("endDate", endDate);
+        basics.put("startLocation", startLocation);
+        basics.put("endLocation", endLocation);
+        return basics;
     }
 
     // ---- preference reads (read-only, REQ-019 owns writes) ----
@@ -393,10 +659,11 @@ public class MainPlanService {
 
     private List<PlanResponse.Stop> toStops(List<MainPlanResult.PlannedStop> stops) {
         return stops.stream()
-                .map(stop -> new PlanResponse.Stop(stop.seq(), stop.name(), stop.startTime(),
-                        stop.endTime(), stop.travelMinutesToNext(), stop.interests()))
+                .map(stop -> new PlanResponse.Stop(0L, stop.seq(), stop.name(), stop.startTime(),
+                        stop.endTime(), null, null, stop.travelMinutesToNext(), stop.interests(), null, null, null))
                 .toList();
     }
+
 
     private JsonNode parse(String json) {
         try {

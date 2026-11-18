@@ -2,16 +2,25 @@ package com.gogo.mainplan;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.gogo.auth.AccountPrincipal;
+import com.gogo.trip.TripResponse;
 
-// Four contractual routes (design D2); identity is the authenticated session principal.
+// Contractual main-plan routes; identity is the authenticated session principal.
+// US-079 adds stop-locations: programmatic geocode write-back at generation time.
 @RestController
 public class MainPlanController {
+
+    /** US-079 路线1：前端 JS API 查坐标后的回写请求体。 */
+    public record StopLocationsRequest(java.util.List<MainPlanService.StopLocation> stops) {
+    }
 
     private final MainPlanService service;
 
@@ -33,6 +42,14 @@ public class MainPlanController {
         return service.confirm(id, principal.id());
     }
 
+    /** US-003 D7: trip-detail shortcut, organizer-only, delegates to validated confirmation. */
+    @PostMapping("/api/trips/{id}/main-plan:confirm")
+    public TripResponse confirmShortcut(
+            @AuthenticationPrincipal AccountPrincipal principal,
+            @PathVariable long id) {
+        return service.confirmShortcut(id, principal.id());
+    }
+
     @GetMapping("/api/trips/{id}/main-plan")
     public PlanResponse read(
             @AuthenticationPrincipal AccountPrincipal principal,
@@ -45,5 +62,39 @@ public class MainPlanController {
             @AuthenticationPrincipal AccountPrincipal principal,
             @PathVariable long id) {
         return service.readInputs(id, principal.id());
+    }
+
+    @PutMapping("/api/trips/{id}/main-plan/stops/{stopId}")
+    public PlanResponse updateStop(
+            @AuthenticationPrincipal AccountPrincipal principal,
+            @PathVariable long id,
+            @PathVariable long stopId,
+            @RequestBody UpdateStopRequest request) {
+        return service.updateStop(id, principal.id(), stopId, request);
+    }
+
+    @PostMapping("/api/trips/{id}/main-plan/stops")
+    public PlanResponse addStop(
+            @AuthenticationPrincipal AccountPrincipal principal,
+            @PathVariable long id,
+            @RequestBody AddStopRequest request) {
+        return service.addStop(id, principal.id(), request);
+    }
+
+    @DeleteMapping("/api/trips/{id}/main-plan/stops/{stopId}")
+    public PlanResponse deleteStop(
+            @AuthenticationPrincipal AccountPrincipal principal,
+            @PathVariable long id,
+            @PathVariable long stopId) {
+        return service.deleteStop(id, principal.id(), stopId);
+    }
+
+    /** US-079 路线1：前端 JS API 查坐标后的回写请求体。 */
+    @PostMapping("/api/trips/{id}/main-plan/stop-locations")
+    public PlanResponse stopLocations(
+            @AuthenticationPrincipal AccountPrincipal principal,
+            @PathVariable long id,
+            @RequestBody StopLocationsRequest request) {
+        return service.completeStopLocations(id, principal.id(), request.stops());
     }
 }

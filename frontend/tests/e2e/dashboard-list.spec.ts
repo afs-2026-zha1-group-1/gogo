@@ -97,23 +97,19 @@ test('rejects a malformed current-trip response on the dashboard', async ({ page
   await expect(page.getByText('尚未选择行程')).toHaveCount(0)
 })
 
-test('opening a trip by id is available from the dashboard dock', async ({ page }) => {
+test('trip tab from the dashboard dock opens my trips', async ({ page }) => {
   await login(page, 'ben@example.com')
   await page.getByRole('link', { name: '行程', exact: true }).click()
-  await expect(page.getByLabel('按编号打开行程')).toBeEnabled()
-  await expect(page.getByRole('button', { name: '打开行程' })).toBeEnabled()
-  await expect(page).toHaveURL(/#\/dashboard\/trip-entry$/)
+  await expect(page).toHaveURL(/#\/my-trips$/)
+  await expect(page.getByText('Singapore Friends Day')).toBeVisible()
 })
 
-test('trip tab from dashboard provides the trip-number entry', async ({ page }) => {
+test('trip tab from a dashboard trip opens my trips', async ({ page }) => {
   await login(page, 'ben@example.com')
-  await page.evaluate(() => { window.location.hash = '#/trips/9001/main-plan' })
-  await expect(page.getByText('草稿', { exact: false }).first()).toBeVisible()
-  await page.getByRole('link', { name: '仪表盘', exact: true }).click()
   await page.goto('/#/dashboard/trips/9001')
   await page.getByRole('link', { name: '行程', exact: true }).click()
-  await expect(page).toHaveURL(/#\/dashboard\/trip-entry$/)
-  await expect(page.getByLabel('按编号打开行程')).toBeEnabled()
+  await expect(page).toHaveURL(/#\/my-trips$/)
+  await expect(page.getByText('Singapore Friends Day')).toBeVisible()
 })
 
 test('refreshing a dashboard-origin dock page does not expose current-trip details', async ({ page }) => {
@@ -124,7 +120,8 @@ test('refreshing a dashboard-origin dock page does not expose current-trip detai
   await expect(page.getByRole('region', { name: '成员列表' })).toBeVisible()
   await page.reload()
   await page.getByRole('link', { name: '行程', exact: true }).click()
-  await expect(page.getByLabel('按编号打开行程')).toBeEnabled()
+  await expect(page).toHaveURL(/#\/my-trips$/)
+  await expect(page.getByRole('region', { name: '旅程进度' })).toHaveCount(0)
 })
 
 test('the existing direct trip-details route remains available to a member', async ({ page }) => {
@@ -197,7 +194,8 @@ test('dashboard trip tab does not open the saved current trip or issue an invita
     await page.goto('/#/dashboard/trips/9001')
     await expect(page.getByRole('region', { name: '旅程进度' })).toBeVisible()
     await page.getByRole('link', { name: '行程', exact: true }).click()
-    await expect(page.getByLabel('按编号打开行程')).toBeEnabled()
+    await expect(page).toHaveURL(/#\/my-trips$/)
+    await expect(page.getByRole('region', { name: '旅程进度' })).toHaveCount(0)
     expect(db.prepare('SELECT COUNT(*) AS count FROM trip_invitation').get()?.count).toBe(before)
     expect(db.prepare('SELECT current_trip_id FROM app_user WHERE id = 1').get()?.current_trip_id).toBe(9002)
   } finally {
@@ -370,7 +368,7 @@ test('a new or failed dashboard selection cannot retain an older trip', async ({
   await expect(page).toHaveURL(/\/trips\/9001\/split\?from=dashboard$/)
   await page.goto('/#/dashboard/trips/999999')
   await expect(page.getByRole('alert')).toContainText('未找到行程')
-  await expect(page.getByRole('link', { name: '分队', exact: true })).toHaveAttribute('href', '#/dashboard/trip-entry')
+  await expect(page.getByRole('link', { name: '分队', exact: true })).toHaveAttribute('href', '#/my-trips')
 })
 
 test('refresh after a failed dashboard selection does not restore a saved current trip', async ({ page }) => {
@@ -383,8 +381,8 @@ test('refresh after a failed dashboard selection does not restore a saved curren
     await expect(page.getByRole('alert')).toContainText('未找到行程')
     await page.getByRole('link', { name: '分队', exact: true }).click()
     await page.reload()
-    await expect(page).toHaveURL(/#\/dashboard\/trip-entry$/)
-    await expect(page.getByRole('link', { name: '分队', exact: true })).toHaveAttribute('href', '#/dashboard/trip-entry')
+    await expect(page).toHaveURL(/#\/my-trips$/)
+    await expect(page.getByRole('link', { name: '分队', exact: true })).toHaveAttribute('href', '#/trips')
   } finally {
     db.prepare('UPDATE app_user SET current_trip_id = ? WHERE id = 2').run(previous?.current_trip_id ?? null)
     db.close()
@@ -404,7 +402,7 @@ test('a pending dashboard selection cannot use an older trip in the split tab', 
   try {
     await page.evaluate(() => { window.location.hash = '#/dashboard/trips/9001' })
     await expect(page.getByText('正在加载行程概览…')).toBeVisible()
-    await expect(page.getByRole('link', { name: '分队', exact: true })).toHaveAttribute('href', '#/dashboard/trip-entry')
+    await expect(page.getByRole('link', { name: '分队', exact: true })).toHaveAttribute('href', '#/my-trips')
   } finally {
     release?.()
   }

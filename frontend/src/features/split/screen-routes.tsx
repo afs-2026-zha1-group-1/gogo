@@ -6,6 +6,7 @@ import {
   useAssignGroup,
   useCheckTiming,
   useGenerateRoutes,
+  useSaveActivities,
   useSaveRoutes,
   useSplitDraft,
   useTripMembers,
@@ -15,39 +16,93 @@ import { SplitLayout } from "./split-layout"
 import { EmptyState, ErrorState, LoadingState } from "./states"
 import { RouteCard } from "./route-card"
 import { cleanStationName } from "./station-name"
-import type { GroupRoute, RouteEditInput, TimingResult } from "./types"
+import type { ActivitySource, GroupRoute, RouteActivity, RouteEditInput, TimingResult } from "./types"
 import type { TripMember } from "../../types"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Dialog } from "@/components/ui/dialog"
+import { AiGeneratingNotice } from "@/components/AiGeneratingNotice"
 import { IconAlert, IconArrowRight, IconBranch, IconCheck, IconEdit, IconFlag, IconNav, IconRoute, IconSparkle, IconUsers, IconX } from "@/components/icons"
-import { formatClock, shortId } from "@/lib/format"
+import { formatClock, formatCost, shortId } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
 /**
  * Screen 13 — group routes and inline route editing (spec US-040 + US-042 + US-087 + US-088). Group chips move a
  * member between A/B (any trip member, user ruling 2026-11-17). While the draft is active the A/B route cards become
  * editable: group A exposes read-only stop names with editable stay/travel minutes, group B exposes the single
- * activity breakdown plus an optional location. Next saves dirty edits first, then asks the backend to check the
- * reunion window; feasible=false keeps the user here behind a blocking dialog, while feasible=true moves on to the
- * read-only team-route preview (Screen 13b). The client never declares feasibility itself.
+ * activity breakdown plus an optional location. Each stop row also carries the group's per-person cost, so time and
+ * budget are edited on one card instead of a separate costed-activity card. Next saves dirty edits first (route pair
+ * and activity lists), then asks the backend to check the reunion window; feasible=false keeps the user here behind
+ * a blocking dialog, while feasible=true moves on to the read-only team-route preview (Screen 13b). The client never
+ * declares feasibility itself.
  */
+interface StepForm {
+  name: string
+  minutes: string
+  cost: string
+  /** 已存在的费用行：保留服务端名称/地点/来源，只开放费用编辑（沿主线、AI 或手动）。 */
+  activityName: string | null
+  location: string | null
+  source: ActivitySource | null
+}
+
+interface ExtraActivityForm {
+  name: string
+  location: string | null
+  cost: string
+  source: ActivitySource
+}
+
 interface RouteForm {
   groupLabel: string
-  steps: { name: string; minutes: string }[]
+  steps: StepForm[]
   travelLegsMinutes: string[]
+  /** 没有对应站点的费用行（历史 AI/手动活动），保留以便随卡一起展示与清理。 */
+  extras: ExtraActivityForm[]
+}
+
+/** 分 → 输入框里的元，去掉多余的 0（1250 → 12.5）。 */
+function centsToInput(cents: number): string {
+  const major = cents / 100
+  return Number.isInteger(major) ? String(major) : major.toFixed(2).replace(/0+$/, "").replace(/\.$/, "")
 }
 
 function toForm(route: GroupRoute): RouteForm {
-  const steps = route.steps && route.steps.length > 0
+  const rawSteps = route.steps && route.steps.length > 0
     ? route.steps
     : route.activityName
       ? [{ name: route.activityName, minutes: route.activityMinutes ?? 0 }]
       : []
+  const activities = route.activities ?? []
+  const used = new Set<number>()
+  const steps = rawSteps.map((step) => {
+    const name = cleanStationName(step.name)
+    const index = activities.findIndex(
+      (activity, position) => !used.has(position) && cleanStationName(activity.name) === name,
+    )
+    if (index >= 0) used.add(index)
+    const activity = index >= 0 ? activities[index] : null
+    return {
+      name,
+      minutes: String(step.minutes),
+      cost: activity ? centsToInput(activity.costCents) : "",
+      activityName: activity ? activity.name : null,
+      location: activity ? activity.location : null,
+      source: activity ? activity.source : null,
+    }
+  })
   return {
     groupLabel: route.groupLabel,
-    steps: steps.map((step) => ({ name: cleanStationName(step.name), minutes: String(step.minutes) })),
+    steps,
     travelLegsMinutes: (route.travelLegsMinutes ?? []).map((minutes) => (minutes != null ? String(minutes) : "")),
+    extras: activities
+      .filter((_, position) => !used.has(position))
+      .map((activity) => ({
+        name: activity.name,
+        location: activity.location,
+        cost: centsToInput(activity.costCents),
+        source: activity.source,
+      })),
   }
 }
 
@@ -86,6 +141,61 @@ function routeName(form: RouteForm): string {
   return !last || first === last ? first : `${first} → ${last}`
 }
 
+/** 输入框里的元 → 分；空值算 0（未填费用），非法值返回 null。 */
+function parseCostCents(value: string): number | null {
+  const trimmed = value.trim()
+  if (trimmed === "") return 0
+  const parsed = Number(trimmed)
+  if (!Number.isFinite(parsed) || parsed < 0) return null
+  return Math.round(parsed * 100)
+}
+
+/** 一张卡片上的站点与费用合成一份活动清单：接口仍按组整表替换（US-045）。 */
+function toActivities(form: RouteForm): RouteActivity[] {
+  const activities: RouteActivity[] = []
+  for (const step of form.steps) {
+    const costCents = parseCostCents(step.cost)
+    if (step.activityName == null) {
+      // 新站点没填费用就不产生费用记录，避免每站都多出一条 0 元活动。
+      if (!costCents) continue
+      activities.push({
+        name: cleanStationName(step.name) || "未命名活动",
+        location: null,
+        costCents,
+        source: "manual",
+      })
+      continue
+    }
+    activities.push({
+      name: step.activityName,
+      location: step.location,
+      costCents: costCents ?? 0,
+      source: step.source ?? "manual",
+    })
+  }
+  for (const extra of form.extras) {
+    activities.push({
+      name: extra.name,
+      location: extra.location,
+      costCents: parseCostCents(extra.cost) ?? 0,
+      source: extra.source,
+    })
+  }
+  return activities
+}
+
+/** 只比较站名/停留/路程，费用改动不必重写路线。 */
+function routeTimeKey(form: RouteForm): string {
+  return JSON.stringify({
+    steps: form.steps.map((step) => [step.name, step.minutes]),
+    legs: form.travelLegsMinutes,
+  })
+}
+
+function formCostTotal(form: RouteForm): number {
+  return toActivities(form).reduce((sum, activity) => sum + activity.costCents, 0)
+}
+
 export function ScreenRoutes() {
   const { tripId = "" } = useParams()
   const navigate = useSplitNavigate()
@@ -95,6 +205,7 @@ export function ScreenRoutes() {
   const generate = useGenerateRoutes(tripId)
   const assign = useAssignGroup(tripId)
   const save = useSaveRoutes(tripId)
+  const saveActivities = useSaveActivities(tripId)
   const check = useCheckTiming(tripId)
   const membersQuery = useTripMembers(tripId)
   const { accountId } = useAuth()
@@ -120,7 +231,10 @@ export function ScreenRoutes() {
   // A confirmed/cancelled draft is locked server-side (SPLIT_DRAFT_NOT_ACTIVE); mirror that in the CTAs.
   const draftActive = detail?.status === "active"
   const editable = draftActive && hasPair
-  const pending = save.isPending || check.isPending
+  const pending = save.isPending || saveActivities.isPending || check.isPending
+
+  // US-045: only the initiator may edit the draft (boundaries/routes/activities), matching the backend gate.
+  const canEditActivities = draftActive && myId != null && detail?.initiatorMemberId === myId
 
   useEffect(() => {
     if (!detail || detail.routes.length !== 2) return
@@ -131,7 +245,13 @@ export function ScreenRoutes() {
   }, [detail])
 
   const baseline = useMemo(() => (hasPair ? routes.map(toForm) : []), [routes, hasPair])
-  const dirty = editable && form.length === 2 && JSON.stringify(form) !== JSON.stringify(baseline)
+  const baselineTime = useMemo(() => baseline.map(routeTimeKey), [baseline])
+  const baselineActivities = useMemo(() => baseline.map(toActivities), [baseline])
+  const routesDirty =
+    editable && form.length === 2 && form.map(routeTimeKey).join("|") !== baselineTime.join("|")
+  const activitiesDirty =
+    canEditActivities && form.length === 2
+    && form.some((item, index) => JSON.stringify(toActivities(item)) !== JSON.stringify(baselineActivities[index]))
 
   const patchRoute = (index: number, patch: Partial<RouteForm>) =>
     setForm((prev) => prev.map((item, itemIndex) => (itemIndex === index ? { ...item, ...patch } : item)))
@@ -142,12 +262,27 @@ export function ScreenRoutes() {
     setActionError(null)
     try {
       let snapshot = detail.routes
-      if (dirty) {
+      let version = detail.draftVersion
+      if (routesDirty) {
         const saved = await save.mutateAsync({
-          draftVersion: detail.draftVersion,
+          draftVersion: version,
           routes: form.map(toApiRoute),
         })
         snapshot = saved.routes
+        version = saved.draftVersion
+      }
+      if (activitiesDirty) {
+        // 费用仍走 US-045 的整表替换接口，按组顺序保存，后续请求带上刚返回的草稿版本。
+        for (const [index, item] of form.entries()) {
+          const next = toActivities(item)
+          if (JSON.stringify(next) === JSON.stringify(baselineActivities[index])) continue
+          const saved = await saveActivities.mutateAsync({
+            groupLabel: item.groupLabel === "B" ? "B" : "A",
+            draftVersion: version,
+            activities: next,
+          })
+          version = saved.draftVersion
+        }
       }
       const timing = await check.mutateAsync({
         windowMinutes: detail.windowMinutes,
@@ -270,15 +405,22 @@ export function ScreenRoutes() {
             </p>
           )}
 
+          {generate.isPending ? (
+            <AiGeneratingNotice />
+          ) : null}
+
           {hasPair ? (
             <div className="flex flex-col gap-3">
               {routes.map((route, index) => (
-                editable && formVersion === detail.draftVersion ? (
+                <Fragment key={route.groupLabel}>
+                {editable && formVersion === detail.draftVersion ? (
                   <EditableRouteCard
                     key={route.groupLabel}
                     form={form[index] ?? toForm(route)}
                     tone={route.groupLabel === "B" ? "b" : "a"}
                     editable={editable && !pending}
+                    canEditCosts={canEditActivities && !pending}
+                    destination={detail.destination}
                     departureName={nameOf(route.departureStopId)}
                     reunionName={nameOf(route.reunionStopId)}
                     reunionClock={formatClock(detail.reunionAt, detail.destination)}
@@ -297,6 +439,25 @@ export function ScreenRoutes() {
                         ),
                       })
                     }
+                    onStepCostChange={(stepIndex, cost) =>
+                      patchRoute(index, {
+                        steps: (form[index]?.steps ?? []).map((step, itemIndex) =>
+                          itemIndex === stepIndex ? { ...step, cost } : step,
+                        ),
+                      })
+                    }
+                    onExtraCostChange={(extraIndex, cost) =>
+                      patchRoute(index, {
+                        extras: (form[index]?.extras ?? []).map((extra, itemIndex) =>
+                          itemIndex === extraIndex ? { ...extra, cost } : extra,
+                        ),
+                      })
+                    }
+                    onRemoveExtra={(extraIndex) =>
+                      patchRoute(index, {
+                        extras: (form[index]?.extras ?? []).filter((_, itemIndex) => itemIndex !== extraIndex),
+                      })
+                    }
                     onLegChange={(legIndex, minutes) =>
                       patchRoute(index, {
                         travelLegsMinutes: (form[index]?.travelLegsMinutes ?? []).map((value, itemIndex) =>
@@ -308,7 +469,10 @@ export function ScreenRoutes() {
                       const current = form[index]
                       if (!current) return
                       patchRoute(index, {
-                        steps: [...current.steps, { name: "", minutes: "0" }],
+                        steps: [
+                          ...current.steps,
+                          { name: "", minutes: "0", cost: "", activityName: null, location: null, source: null },
+                        ],
                         travelLegsMinutes: [...current.travelLegsMinutes, "0"],
                       })
                     }}
@@ -330,10 +494,12 @@ export function ScreenRoutes() {
                     departureName={nameOf(route.departureStopId)}
                     reunionName={nameOf(route.reunionStopId)}
                     reunionClock={formatClock(detail.reunionAt, detail.destination)}
+                    destination={detail.destination}
                     stale={(detail.groups[route.groupLabel] ?? []).length === 0}
                     windowMinutes={detail.windowMinutes}
                   />
-                )
+                )}
+                </Fragment>
               ))}
             </div>
           ) : (
@@ -392,12 +558,17 @@ function EditableRouteCard({
   form,
   tone,
   editable,
+  canEditCosts,
+  destination,
   departureName,
   reunionName,
   reunionClock,
   windowMinutes,
   onStepNameChange,
   onStepMinutesChange,
+  onStepCostChange,
+  onExtraCostChange,
+  onRemoveExtra,
   onLegChange,
   onAddStep,
   onRemoveStep,
@@ -405,18 +576,24 @@ function EditableRouteCard({
   form: RouteForm
   tone: "a" | "b"
   editable: boolean
+  canEditCosts: boolean
+  destination: string | null
   departureName: string
   reunionName: string
   reunionClock: string
   windowMinutes: number | null
   onStepNameChange: (stepIndex: number, name: string) => void
   onStepMinutesChange: (stepIndex: number, minutes: string) => void
+  onStepCostChange: (stepIndex: number, cost: string) => void
+  onExtraCostChange: (extraIndex: number, cost: string) => void
+  onRemoveExtra: (extraIndex: number) => void
   onLegChange: (legIndex: number, minutes: string) => void
   onAddStep: () => void
   onRemoveStep: (stepIndex: number) => void
 }) {
   const head = tone === "a" ? "from-a to-[#1e40af]" : "from-b to-[#9a3412]"
   const total = formTotal(form)
+  const costTotal = formCostTotal(form)
   const [editingRow, setEditingRow] = useState<string | null>(null)
   const stationKey = (index: number) => `${form.groupLabel}-station-${index}`
   const legKey = (index: number) => `${form.groupLabel}-leg-${index}`
@@ -425,6 +602,7 @@ function EditableRouteCard({
     "w-full rounded-control border border-line bg-surface px-2 py-1.5 text-[12px] text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft disabled:bg-surface-3 disabled:text-ink-3"
   const numberClass =
     "w-14 shrink-0 rounded-control border border-line bg-surface px-2 py-1 text-[12px] text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft disabled:bg-surface-3 disabled:text-ink-3"
+  const costClass = cn(numberClass, "w-16")
   const renderLeg = (legIndex: number) => {
     const minutes = form.travelLegsMinutes[legIndex]
     if (minutes === undefined) return null
@@ -501,7 +679,7 @@ function EditableRouteCard({
 
       <div className="flex flex-col gap-2.5 px-4 py-3">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[10px] font-semibold text-ink-3">站点（站名与停留分钟可改）</span>
+          <span className="text-[10px] font-semibold text-ink-3">站点（站名、停留与人均费用可改）</span>
           <Button
             size="sm"
             variant="outline"
@@ -542,6 +720,17 @@ function EditableRouteCard({
                       disabled={!editable}
                       onChange={(event) => onStepMinutesChange(index, event.target.value)}
                     />
+                    <input
+                      aria-label={`${form.groupLabel} 组 第 ${index + 1} 站人均费用`}
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      placeholder="人均费用"
+                      className={cn(costClass, "h-8 py-1")}
+                      value={step.cost}
+                      disabled={!editable || !canEditCosts}
+                      onChange={(event) => onStepCostChange(index, event.target.value)}
+                    />
                     <button
                       type="button"
                       aria-label={`${form.groupLabel} 组 完成编辑第 ${index + 1} 站`}
@@ -570,6 +759,9 @@ function EditableRouteCard({
                       {cleanStationName(step.name) || "未命名站点"}
                     </span>
                     <span className="text-[12px] tabular-nums text-ink-2">{displayMinutes(step.minutes)}</span>
+                    <span className="w-16 shrink-0 text-right text-[12px] tabular-nums font-semibold text-ink">
+                      {step.cost.trim() === "" ? "—" : formatCost(parseCostCents(step.cost), destination)}
+                    </span>
                     {editable ? (
                       <button
                         type="button"
@@ -588,9 +780,50 @@ function EditableRouteCard({
           })}
         </div>
 
+        {form.extras.length > 0 ? (
+          <div className="flex flex-col gap-1.5 border-t border-line-2 pt-2">
+            <span className="text-[10px] font-semibold text-ink-3">其他费用（不占时间）</span>
+            {form.extras.map((extra, extraIndex) => (
+              <div
+                key={`${form.groupLabel}-extra-${extraIndex}`}
+                className="flex items-center gap-2 rounded-[9px] px-1 py-1"
+              >
+                <span className="min-w-0 flex-1 truncate text-[12px] text-ink">
+                  {cleanStationName(extra.name) || "未命名活动"}
+                </span>
+                <input
+                  aria-label={`${form.groupLabel} 组 其他费用 ${extraIndex + 1} 人均费用`}
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  className={cn(costClass, "h-8 py-1")}
+                  value={extra.cost}
+                  disabled={!editable || !canEditCosts}
+                  onChange={(event) => onExtraCostChange(extraIndex, event.target.value)}
+                />
+                {canEditCosts ? (
+                  <button
+                    type="button"
+                    aria-label={`${form.groupLabel} 组 删除其他费用 ${extraIndex + 1}`}
+                    onClick={() => onRemoveExtra(extraIndex)}
+                    className="grid size-7 shrink-0 place-items-center rounded-[8px] text-ink-3 transition-colors hover:bg-white hover:text-ink [&_svg]:size-3.5"
+                  >
+                    <IconX />
+                  </button>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        ) : null}
+
         <div className="flex items-center justify-between gap-2 border-t border-line-2 pt-2 text-[12px]">
           <span className="font-bold text-ink">合计 {total != null ? `${total} 分` : "—"}</span>
-          <span className="text-ink-3">{windowMinutes != null ? `窗口 ${windowMinutes} 分` : "窗口未知"}</span>
+          <span className="flex items-center gap-2 text-ink-3">
+            <span className="rounded-full bg-brand-soft px-2 py-0.5 font-semibold text-brand-ink">
+              人均 {formatCost(costTotal, destination)}
+            </span>
+            {windowMinutes != null ? `窗口 ${windowMinutes} 分` : "窗口未知"}
+          </span>
         </div>
         {!editable ? (
           <p className="flex items-center gap-1 text-[11px] text-ink-3">
