@@ -6,6 +6,7 @@ import {
   useAssignGroup,
   useCheckTiming,
   useGenerateRoutes,
+  useRoundIndex,
   useSaveActivities,
   useSaveRoutes,
   useSplitDraft,
@@ -198,14 +199,15 @@ function formCostTotal(form: RouteForm): number {
 
 export function ScreenRoutes() {
   const { tripId = "" } = useParams()
+  const roundIndex = useRoundIndex()
   const navigate = useSplitNavigate()
   const { search } = useLocation()
   const dashboardOrigin = new URLSearchParams(search).get("from") === "dashboard"
-  const draft = useSplitDraft(tripId)
-  const generate = useGenerateRoutes(tripId)
-  const assign = useAssignGroup(tripId)
-  const save = useSaveRoutes(tripId)
-  const saveActivities = useSaveActivities(tripId)
+  const draft = useSplitDraft(tripId, roundIndex)
+  const generate = useGenerateRoutes(tripId, roundIndex)
+  const assign = useAssignGroup(tripId, roundIndex)
+  const save = useSaveRoutes(tripId, roundIndex)
+  const saveActivities = useSaveActivities(tripId, roundIndex)
   const check = useCheckTiming(tripId)
   const membersQuery = useTripMembers(tripId)
   const { accountId } = useAuth()
@@ -294,7 +296,7 @@ export function ScreenRoutes() {
         })),
       })
       if (timing.feasible) {
-        navigate(`/trips/${tripId}/split/preview`)
+        navigate(`/trips/${tripId}/split/rounds/${roundIndex}/preview`)
       } else {
         setDialog(timing)
       }
@@ -328,10 +330,10 @@ export function ScreenRoutes() {
 
   return (
     <SplitLayout
-      title="分组与路线"
+      title={roundIndex > 1 ? `第 ${roundIndex} 次分队 · 分组与路线` : "分组与路线"}
       subtitle="可调整路线 · 下一步校验时间窗"
       step={2}
-      backTo={`/trips/${tripId}/split/boundaries`}
+      backTo={`/trips/${tripId}/split/rounds/${roundIndex}/boundaries`}
       action={action}
     >
       {draft.isPending ? (
@@ -374,7 +376,7 @@ export function ScreenRoutes() {
           title="尚未保存边界"
           hint="生成路线前需先保存出发与会合边界。"
           action={
-            <Button size="sm" onClick={() => navigate(`/trips/${tripId}/split/boundaries`)}>
+            <Button size="sm" onClick={() => navigate(`/trips/${tripId}/split/rounds/${roundIndex}/boundaries`)}>
               去选择边界
             </Button>
           }

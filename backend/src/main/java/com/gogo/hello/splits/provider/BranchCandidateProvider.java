@@ -15,4 +15,13 @@ public interface BranchCandidateProvider {
 
     RouteCandidate candidateFor(String groupLabel, PlanStop departure, PlanStop reunion, String destination,
             List<PlanStop> mainPlanStops);
+
+    /**
+     * Round-aware overload (US-096). The default keeps existing providers compatible; implementations that care
+     * about prior-round activities override it.
+     */
+    default RouteCandidate candidateFor(String groupLabel, PlanStop departure, PlanStop reunion, String destination,
+            List<PlanStop> mainPlanStops, BranchCandidateContext context) {
+        return candidateFor(groupLabel, departure, reunion, destination, mainPlanStops);
+    }
 }

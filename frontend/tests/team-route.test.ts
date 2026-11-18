@@ -8,6 +8,7 @@ import {
   formatTime,
   routeLabelsFor,
   type StopInput,
+  type GraphRow,
 } from '../src/features/split/graph-model.ts'
 import { cleanRouteName, cleanStationName } from '../src/features/split/station-name.ts'
 
@@ -171,4 +172,49 @@ test('status action branches: start, continue, confirm, blocked', () => {
   assert.deepEqual(actionForStatus('active', true), { kind: 'boundaries', label: '继续分队' })
   assert.deepEqual(actionForStatus('confirmed', true), { kind: 'confirm', label: '查看已确认分队' })
   assert.deepEqual(actionForStatus(null, false), { kind: 'blocked', label: '发起分队' })
+})
+
+test('buildGraphRows: two rounds merge the shared join/fork and keep A/B stages aligned', () => {
+  const fiveStops: StopInput[] = [
+    ...stops,
+    { id: 's5', name: 'Clarke Quay', startLabel: '14:30', endLabel: '15:30' },
+  ]
+  const model = buildGraphRows({
+    stops: fiveStops,
+    rounds: [
+      {
+        roundIndex: 1,
+        departureStopId: 's1',
+        reunionStopId: 's2',
+        routes: [
+          { groupLabel: 'A', activityName: 'City Hall MRT', activityMinutes: 30, travelLegsMinutes: [60], bufferMinutes: 0, steps: [{ name: 'City Hall MRT', minutes: 30 }] },
+          { groupLabel: 'B', activityName: 'Gallery', activityMinutes: 60, travelLegsMinutes: [15, 15], bufferMinutes: 0, steps: [{ name: 'Gallery', minutes: 60 }] },
+        ],
+      },
+      {
+        roundIndex: 2,
+        departureStopId: 's2',
+        reunionStopId: 's4',
+        routes: [
+          { groupLabel: 'A', activityName: 'Merlion Park → Gardens by the Bay', activityMinutes: 90, travelLegsMinutes: [30, 30], bufferMinutes: 0, steps: [{ name: 'Merlion Park', minutes: 30 }, { name: 'Gardens by the Bay', minutes: 60 }] },
+          { groupLabel: 'B', activityName: 'Wings', activityMinutes: 90, travelLegsMinutes: [30, 30], bufferMinutes: 0, steps: [{ name: 'Wings', minutes: 90 }] },
+        ],
+      },
+    ],
+  })
+  assert.equal(model.rounds.length, 2)
+  const merged = model.rows.find((row) => row.kind === 'join-fork')
+  if (merged?.kind !== 'join-fork') throw new Error('missing join-fork')
+  assert.equal(merged.title, 'Merlion Park')
+  assert.equal(merged.nextRound, 2)
+  assert.equal(model.rounds[0].joinRow, model.rounds[1].forkRow)
+  assert.equal(
+    model.rows.filter((row) => row.kind === 'branch' && row.roundIndex === 2 && row.route === 'a' && row.title === 'Merlion Park').length,
+    0,
+  )
+  const stageRows = model.rows.filter(
+    (row): row is Extract<GraphRow, { kind: 'branch' }> => row.kind === 'branch' && row.roundIndex === 2,
+  )
+  assert.ok(stageRows.some((row) => row.route === 'a'))
+  assert.ok(stageRows.some((row) => row.route === 'b'))
 })

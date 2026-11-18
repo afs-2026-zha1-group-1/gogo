@@ -6,10 +6,10 @@
  */
 import { useCallback, useEffect, useState } from 'react'
 import { api, errorMessage } from '../api'
-import { fetchDraftDetail } from '../features/split/api'
+import { fetchRounds } from '../features/split/api'
 import type { SplitDraftDetail } from '../features/split/types'
 import { useAuth } from '../features/auth/AuthProvider'
-import { selectSchedule } from '../lib/personal-route'
+import { selectScheduleFromRounds } from '../lib/personal-route'
 import type { ScheduleItem } from '../lib/countdown'
 import type { Trip, TripMember, TripMemberList } from '../types'
 import type { MainPlan, MainPlanInputs } from '../types/mainPlan'
@@ -53,7 +53,7 @@ export function useTripOverview(tripId: number): TripOverviewState {
       api<MainPlan>(`/api/trips/${tripId}/main-plan`),
       api<MainPlanInputs>(`/api/trips/${tripId}/main-plan/inputs`),
       api<TripMemberList>(`/api/trips/${tripId}/members`),
-      fetchDraftDetail(String(tripId)),
+      fetchRounds(String(tripId)),
     ]).then(([tripResult, planResult, inputsResult, membersResult, splitResult]) => {
       if (!active) return
       if (tripResult.status === 'rejected') {
@@ -78,8 +78,10 @@ export function useTripOverview(tripId: number): TripOverviewState {
       const members = membersResult.status === 'fulfilled' && membersResult.value.ok && membersResult.value.data
         ? membersResult.value.data.members
         : []
-      const split = splitResult.status === 'fulfilled' ? splitResult.value : null
-      const schedule = selectSchedule(split, accountId, plan, trip.startDate)
+      const rounds = splitResult.status === 'fulfilled' ? splitResult.value?.rounds ?? [] : []
+      const confirmedRounds = rounds.filter((round) => round.status === 'confirmed')
+      const split = confirmedRounds[confirmedRounds.length - 1] ?? null
+      const schedule = selectScheduleFromRounds(confirmedRounds, accountId, plan, trip.startDate)
       const myGroupLabel = split?.status === 'confirmed' && accountId != null
         ? Object.entries(split.groups).find(([, groupMembers]) => groupMembers.includes(accountId))?.[0] ?? null
         : null

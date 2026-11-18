@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   derivePersonalRoute,
+  derivePersonalRouteFromRounds,
   scheduleFromMainPlan,
   selectSchedule,
 } from '../src/lib/personal-route.ts'
@@ -36,6 +37,7 @@ function route(label: string, overrides: Partial<GroupRoute> = {}): GroupRoute {
 
 function detail(overrides: Partial<SplitDraftDetail> = {}): SplitDraftDetail {
   return {
+    roundIndex: 1,
     initiatorMemberId: '1',
     mainPlanVersion: 1,
     draftVersion: 1,
@@ -264,4 +266,46 @@ test('B stations with incomplete timing remain ordered and have pending times', 
   assert.deepEqual(group.map((item) => item.name), ['甲秀楼', '文昌阁'])
   assert.ok(group.every((item) => item.start === null && item.end === null))
   assert.ok(items.findIndex((item) => item.name === '会合站') > items.indexOf(group[1]))
+})
+
+test('derivePersonalRouteFromRounds: concatenates confirmed rounds and keeps the join station once', () => {
+  const fiveStops = [
+    ...mainPlanStops,
+    { id: 's5', name: '晚餐二', startAt: iso(13, 0), endAt: iso(13, 30) },
+  ]
+  const roundOne = detail({ mainPlanStops: fiveStops })
+  const roundTwo = detail({
+    roundIndex: 2,
+    mainPlanStops: fiveStops,
+    departureStopId: 's3',
+    reunionStopId: 's5',
+    departureAt: iso(12, 0),
+    reunionAt: iso(13, 0),
+    windowMinutes: 60,
+    groups: { A: ['1', '3'], B: ['2', '4'] },
+    routes: [
+      route('A', {
+        departureStopId: 's3',
+        reunionStopId: 's5',
+        activityMinutes: 60,
+        travelLegsMinutes: [30, 30],
+        steps: [{ name: '会合站', minutes: 30 }, { name: '午餐', minutes: 30 }],
+      }),
+      route('B', {
+        departureStopId: 's3',
+        reunionStopId: 's5',
+        activityMinutes: 30,
+        travelLegsMinutes: [15, 15],
+        steps: [{ name: '咖啡二', minutes: 30 }],
+      }),
+    ],
+  })
+  const items = derivePersonalRouteFromRounds([roundOne, roundTwo], '3', plan)
+  assert.ok(items)
+  assert.equal(items.filter((item) => item.name === '会合站').length, 1)
+  const roundTwoMain = items.find((item) => item.name === '晚餐' && item.roundIndex === 2)
+  assert.ok(roundTwoMain)
+  assert.equal(roundTwoMain.groupLabel, 'A')
+  assert.equal(roundTwoMain.roundIndex, 2)
+  assert.ok(items.some((item) => item.roundIndex === 1 && item.groupLabel === 'B'))
 })

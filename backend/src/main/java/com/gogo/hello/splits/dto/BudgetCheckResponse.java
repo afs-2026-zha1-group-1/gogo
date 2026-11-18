@@ -18,7 +18,12 @@ public record BudgetCheckResponse(
         int remainingSharedCostCents,
         boolean blocked,
         boolean softReminder,
-        List<GroupBudget> groups) {
+        List<GroupBudget> groups,
+        List<RoundCost> rounds) {
+
+    /** Per-round group activity cost (US-096). */
+    public record RoundCost(int roundIndex, String groupLabel, int squadCostCents) {
+    }
 
     public record GroupBudget(String groupLabel, List<String> memberIds, int squadCostCents, int totalCostCents,
             List<MemberVerdict> members) {

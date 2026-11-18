@@ -13,6 +13,7 @@ import java.util.Map;
  * snapshot without guesses. Read-only: assembling this never mutates the draft or bumps the version.
  */
 public record SplitDraftDetailResponse(
+        int roundIndex,
         String initiatorMemberId,
         int mainPlanVersion,
         int draftVersion,

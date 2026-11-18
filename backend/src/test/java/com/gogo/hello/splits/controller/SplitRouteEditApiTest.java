@@ -44,10 +44,10 @@ class SplitRouteEditApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.data.routes[1].groupLabel").value("B"))
                 .andExpect(jsonPath("$.data.routes[1].activityName").value("Gardens by the Bay"))
                 .andExpect(jsonPath("$.data.routes[1].locationName").value("Gardens by the Bay"));
-        Map<String, Object> rowA = splitRouteRow("split-a");
+        Map<String, Object> rowA = splitRouteRow("split-r1-a");
         assertThat(rowA.get("title")).isEqualTo("City Hall MRT → Gardens by the Bay");
         assertThat(rowA.get("location_name")).isEqualTo("City Hall MRT");
-        Map<String, Object> rowB = splitRouteRow("split-b");
+        Map<String, Object> rowB = splitRouteRow("split-r1-b");
         assertThat(rowB.get("location_name")).isEqualTo("Gardens by the Bay");
         assertThat(draftRoutes().get("A").get("activityMinutes").asInt()).isEqualTo(65);
         assertThat(draftRoutes().get("A").get("steps").get(1).get("name").asText()).isEqualTo("National Gallery (edited)");
@@ -64,7 +64,7 @@ class SplitRouteEditApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.data").doesNotExist())
                 .andExpect(jsonPath("$.error.code").value("STALE_DRAFT_VERSION"));
         assertThat(draftRoutes().get("A").get("activityMinutes").asInt()).isEqualTo(75);
-        assertThat(splitRouteRow("split-a").get("location_name")).isEqualTo("City Hall MRT");
+        assertThat(splitRouteRow("split-r1-a").get("location_name")).isEqualTo("City Hall MRT");
         assertThat(draftVersionColumn()).isEqualTo(version);
     }
 
@@ -143,7 +143,7 @@ class SplitRouteEditApiTest extends AbstractSplitApiTest {
         assertThat(draftRoutes().get("B").get("activityMinutes").asInt()).isEqualTo(150);
         assertThat(draftRoutes().get("B").get("travelLegsMinutes")).hasSize(4);
         assertThat(draftRoutes().get("B").get("bufferMinutes").asInt()).isZero();
-        assertThat(splitRouteRow("split-b").get("title")).isEqualTo("Gardens by the Bay → 摩天轮");
+        assertThat(splitRouteRow("split-r1-b").get("title")).isEqualTo("Gardens by the Bay → 摩天轮");
     }
 
     @Test

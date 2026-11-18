@@ -39,11 +39,14 @@ export interface MainRow {
 }
 
 export interface JunctionRow {
-  kind: "fork" | "join"
+  kind: "fork" | "join" | "join-fork"
   id: string
   title: string
   meta: string
   side: LabelSide
+  roundIndex?: number
+  /** join-fork only: the round whose fork shares this node. */
+  nextRound?: number
 }
 
 export interface BranchRow {
@@ -52,15 +55,33 @@ export interface BranchRow {
   route: RouteKey
   title: string
   meta: string
+  roundIndex?: number
 }
 
 export type GraphRow = MainRow | JunctionRow | BranchRow
+
+/** One fork→join span in a multi-round graph. A merged join-fork uses the same row for both ends. */
+export interface RoundSpan {
+  roundIndex: number
+  forkRow: number | null
+  joinRow: number | null
+}
+
+/** One round accepted by the multi-round graph builder. Cancelled rounds are filtered by the caller. */
+export interface RoundInput {
+  roundIndex: number
+  departureStopId: string | null
+  reunionStopId: string | null
+  routes: RouteInput[]
+}
 
 export interface GraphModel {
   rows: GraphRow[]
   forkRow: number | null
   joinRow: number | null
   routeLabels: Record<RouteKey, string>
+  /** Multi-round spans; empty for the legacy single-round graph. */
+  rounds: RoundSpan[]
 }
 
 export const PENDING_LABEL = "待补全"
@@ -125,19 +146,21 @@ function locationSuffix(route: RouteInput): string {
 }
 
 /** One route's branch nodes in travel order: places and legs alternate; zero buffer is omitted. */
-function branchRowsFor(route: RouteInput, key: RouteKey): BranchRow[] {
+function branchRowsFor(route: RouteInput, key: RouteKey, roundIndex?: number): BranchRow[] {
   const steps = route.steps ?? []
   const legs = route.travelLegsMinutes
   const rows: BranchRow[] = []
+  const prefix = roundIndex == null ? "" : `${roundIndex}-`
   const pushLeg = (legIndex: number) => {
     if (legIndex < 0 || legIndex >= legs.length) return
     const minutes = legs[legIndex]
     rows.push({
       kind: "branch",
-      id: `${key}-leg-${legIndex}`,
+      id: `${prefix}${key}-leg-${legIndex}`,
       route: key,
       title: "路程",
       meta: minutes == null ? `路程 · ${PENDING_LABEL}` : `路程 · ${minutes} 分钟`,
+      roundIndex,
     })
   }
   if (steps.length > 0) {
@@ -146,10 +169,11 @@ function branchRowsFor(route: RouteInput, key: RouteKey): BranchRow[] {
     steps.forEach((step, index) => {
       rows.push({
         kind: "branch",
-        id: `${key}-step-${index}`,
+        id: `${prefix}${key}-step-${index}`,
         route: key,
         title: cleanStationName(step.name),
         meta: `活动 · ${formatMinutes(step.minutes)}`,
+        roundIndex,
       })
       pushLeg(key === "b" ? index + 1 : index)
     })
@@ -158,10 +182,11 @@ function branchRowsFor(route: RouteInput, key: RouteKey): BranchRow[] {
     if (key === "b") pushLeg(0)
     rows.push({
       kind: "branch",
-      id: `${key}-activity`,
+      id: `${prefix}${key}-activity`,
       route: key,
       title: cleanRouteName(route.activityName) || "活动",
       meta: `活动 · ${formatMinutes(route.activityMinutes)}${locationSuffix(route)}`,
+      roundIndex,
     })
     const start = key === "b" ? 1 : 0
     for (let index = start; index < legs.length; index += 1) pushLeg(index)
@@ -169,21 +194,22 @@ function branchRowsFor(route: RouteInput, key: RouteKey): BranchRow[] {
   if (route.bufferMinutes !== 0) {
     rows.push({
       kind: "branch",
-      id: `${key}-buffer`,
+      id: `${prefix}${key}-buffer`,
       route: key,
       title: "缓冲",
       meta: `缓冲 · ${formatMinutes(route.bufferMinutes)}`,
+      roundIndex,
     })
   }
   return rows
 }
 
 /** Interleave A/B step by step so the two lanes advance together: A活动, B活动, A路程, B路程, ... */
-export function buildBranchRows(routes: RouteInput[]): BranchRow[] {
+export function buildBranchRows(routes: RouteInput[], roundIndex?: number): BranchRow[] {
   const byKey: Record<RouteKey, BranchRow[]> = { a: [], b: [] }
   routes.forEach((route, index) => {
     const key = routeKeyFor(route.groupLabel, index)
-    byKey[key] = branchRowsFor(route, key)
+    byKey[key] = branchRowsFor(route, key, roundIndex)
   })
   const max = Math.max(byKey.a.length, byKey.b.length)
   const rows: BranchRow[] = []
@@ -192,6 +218,19 @@ export function buildBranchRows(routes: RouteInput[]): BranchRow[] {
     if (byKey.b[step]) rows.push(byKey.b[step])
   }
   return rows
+}
+
+/** Re-interleave after a row was absorbed into a junction, so A/B stay stage-aligned. */
+function interleaveBranchRows(rows: BranchRow[]): BranchRow[] {
+  const a = rows.filter((row) => row.route === "a")
+  const b = rows.filter((row) => row.route === "b")
+  const max = Math.max(a.length, b.length)
+  const out: BranchRow[] = []
+  for (let step = 0; step < max; step += 1) {
+    if (a[step]) out.push(a[step])
+    if (b[step]) out.push(b[step])
+  }
+  return out
 }
 
 function mainRow(stop: StopInput, counter: number): MainRow {
@@ -208,14 +247,19 @@ function mainRow(stop: StopInput, counter: number): MainRow {
 /**
  * Builds the full graph. When both boundaries resolve inside the main line, the main line is split
  * into before / fork / branches / join / after; otherwise only the main line is returned.
+ * Passing `rounds` builds the multi-round variant used by US-096.
  */
 export function buildGraphRows(input: {
   stops: StopInput[]
-  departureStopId: string | null
-  reunionStopId: string | null
-  routes: RouteInput[]
+  departureStopId?: string | null
+  reunionStopId?: string | null
+  routes?: RouteInput[]
+  rounds?: RoundInput[]
 }): GraphModel {
-  const { stops, departureStopId, reunionStopId, routes } = input
+  if (input.rounds != null && input.rounds.length > 0) {
+    return buildMultiRoundGraphRows(input.stops, input.rounds)
+  }
+  const { stops, departureStopId = null, reunionStopId = null, routes = [] } = input
   const forkIndex = departureStopId ? stops.findIndex((stop) => stop.id === departureStopId) : -1
   const joinIndex = reunionStopId ? stops.findIndex((stop) => stop.id === reunionStopId) : -1
   const routeLabels = routeLabelsFor(routes)
@@ -226,6 +270,7 @@ export function buildGraphRows(input: {
       forkRow: null,
       joinRow: null,
       routeLabels,
+      rounds: [],
     }
   }
 
@@ -268,7 +313,144 @@ export function buildGraphRows(input: {
     mainCounter += 1
   }
 
-  return { rows, forkRow, joinRow, routeLabels }
+  return { rows, forkRow, joinRow, routeLabels, rounds: [] }
+}
+
+interface PreparedRound {
+  input: RoundInput
+  roundIndex: number
+  depIndex: number
+  reuIndex: number
+  forkTitle: string
+  joinTitle: string
+  forkStartLabel: string
+  joinStartLabel: string
+  firstA: BranchRow | null
+  sameDeparture: boolean
+  branches: BranchRow[]
+}
+
+/**
+ * Multi-round graph (US-096). Builds one fork→join span per round on the same three lanes.
+ * A join and the next fork at the same stop collapse into one `join-fork` row, and the next
+ * round's A first activity is absorbed into that row so the stop is not drawn twice.
+ */
+function buildMultiRoundGraphRows(stops: StopInput[], rounds: RoundInput[]): GraphModel {
+  const prepared: PreparedRound[] = rounds
+    .filter((round) => round.departureStopId != null && round.reunionStopId != null)
+    .map((round) => {
+      const depIndex = stops.findIndex((stop) => stop.id === round.departureStopId)
+      const reuIndex = stops.findIndex((stop) => stop.id === round.reunionStopId)
+      if (depIndex < 0 || reuIndex <= depIndex) return null
+      const fork = stops[depIndex]
+      const join = stops[reuIndex]
+      const branches = buildBranchRows(round.routes, round.roundIndex)
+      const forkTitle = cleanStationName(fork.name)
+      const firstA = branches.find((row) => row.route === "a" && row.title === forkTitle) ?? null
+      const sameDeparture = firstA != null && forkTitle !== ""
+      return {
+        input: round,
+        roundIndex: round.roundIndex,
+        depIndex,
+        reuIndex,
+        forkTitle,
+        joinTitle: cleanStationName(join.name),
+        forkStartLabel: fork.startLabel,
+        joinStartLabel: join.startLabel,
+        firstA,
+        sameDeparture,
+        branches: interleaveBranchRows(sameDeparture ? branches.filter((row) => row !== firstA) : branches),
+      }
+    })
+    .filter((round): round is PreparedRound => round != null)
+    .sort((left, right) => left.roundIndex - right.roundIndex)
+
+  const routeLabels = prepared.length > 1
+    ? { a: "Route A · 两次", b: "Route B · 两次" }
+    : routeLabelsFor(prepared[prepared.length - 1]?.input.routes ?? [])
+
+  if (prepared.length === 0) {
+    return {
+      rows: stops.map((stop, index) => mainRow(stop, index)),
+      forkRow: null,
+      joinRow: null,
+      routeLabels,
+      rounds: [],
+    }
+  }
+
+  const rows: GraphRow[] = []
+  const spans: RoundSpan[] = []
+  let mainCounter = 0
+  let cursor = 0
+  let consumedFork: { roundIndex: number; row: number } | null = null
+
+  prepared.forEach((round, index) => {
+    const span: RoundSpan = { roundIndex: round.roundIndex, forkRow: null, joinRow: null }
+    if (consumedFork != null && consumedFork.roundIndex === round.roundIndex) {
+      span.forkRow = consumedFork.row
+    } else {
+      for (let stopIndex = cursor; stopIndex < round.depIndex; stopIndex += 1) {
+        rows.push(mainRow(stops[stopIndex], mainCounter))
+        mainCounter += 1
+      }
+      span.forkRow = rows.length
+      const forkMeta = `${round.forkStartLabel} · 第 ${round.roundIndex} 次分头`
+      rows.push({
+        kind: "fork",
+        id: `${round.roundIndex}-fork-${stops[round.depIndex].id}`,
+        title: round.forkTitle,
+        meta: forkMeta,
+        side: "right",
+        roundIndex: round.roundIndex,
+      })
+    }
+
+    rows.push(...round.branches)
+
+    const next = prepared[index + 1]
+    if (next != null && next.depIndex === round.reuIndex) {
+      const mergedRow = rows.length
+      rows.push({
+        kind: "join-fork",
+        id: `${round.roundIndex}-${next.roundIndex}-join-fork-${stops[round.reuIndex].id}`,
+        title: round.joinTitle,
+        meta: `${round.joinStartLabel} · 会合 · 再分头`,
+        side: "left",
+        roundIndex: round.roundIndex,
+        nextRound: next.roundIndex,
+      })
+      span.joinRow = mergedRow
+      consumedFork = { roundIndex: next.roundIndex, row: mergedRow }
+    } else {
+      span.joinRow = rows.length
+      rows.push({
+        kind: "join",
+        id: `${round.roundIndex}-join-${stops[round.reuIndex].id}`,
+        title: round.joinTitle,
+        meta: `${round.joinStartLabel} · 第 ${round.roundIndex} 次会合`,
+        side: "left",
+        roundIndex: round.roundIndex,
+      })
+      consumedFork = null
+    }
+
+    spans.push(span)
+    cursor = round.reuIndex + 1
+  })
+
+  for (let stopIndex = cursor; stopIndex < stops.length; stopIndex += 1) {
+    rows.push(mainRow(stops[stopIndex], mainCounter))
+    mainCounter += 1
+  }
+
+  return {
+    rows,
+    forkRow: spans[0]?.forkRow ?? null,
+    joinRow: spans[spans.length - 1]?.joinRow ?? null,
+    routeLabels,
+    rounds: spans,
+  }
 }
 
 export interface StatusAction {

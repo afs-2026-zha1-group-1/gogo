@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { useParams } from "react-router-dom"
 import { useSplitNavigate } from "./split-navigation"
-import { useSaveBoundaries, useSplitDraft } from "./hooks"
+import { useSaveBoundaries, useRoundIndex, useSplitDraft, useSplitRounds } from "./hooks"
 import { SplitLayout } from "./split-layout"
 import { EmptyState, ErrorState, LoadingState } from "./states"
 import { Card } from "@/components/ui/card"
@@ -20,27 +20,36 @@ import { formatClock, formatWindow } from "@/lib/format"
  */
 export function ScreenBoundary() {
   const { tripId = "" } = useParams()
+  const roundIndex = useRoundIndex()
   const navigate = useSplitNavigate()
-  const draft = useSplitDraft(tripId)
-  const save = useSaveBoundaries(tripId)
+  const rounds = useSplitRounds(tripId)
+  const draft = useSplitDraft(tripId, roundIndex)
+  const save = useSaveBoundaries(tripId, roundIndex)
   const detail = draft.data
 
   const [departure, setDeparture] = useState<string | null>(null)
   const [reunion, setReunion] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
 
+  const previousRound = rounds.data?.rounds.find((round) => round.roundIndex === roundIndex - 1) ?? null
+  const previousReunionId = roundIndex > 1 ? previousRound?.reunionStopId ?? null : null
+
   // Seed the selection once from the saved snapshot; polling must not clobber an unsaved choice.
   useEffect(() => {
-    if (detail && !ready) {
-      setDeparture(detail.departureStopId)
+    const canSeed = roundIndex === 1 || rounds.data != null
+    if (detail && canSeed && !ready) {
+      setDeparture(detail.departureStopId ?? previousReunionId)
       setReunion(detail.reunionStopId)
       setReady(true)
     }
-  }, [detail, ready])
+  }, [detail, previousReunionId, ready, roundIndex, rounds.data])
 
   const stops = detail?.mainPlanStops ?? []
   const departureIndex = stops.findIndex((stop) => stop.id === departure)
   const reunionIndex = stops.findIndex((stop) => stop.id === reunion)
+  const previousReunionIndex = previousReunionId
+    ? stops.findIndex((stop) => stop.id === previousReunionId)
+    : -1
   const departureStop = departureIndex >= 0 ? stops[departureIndex] : null
   const reunionStop = reunionIndex >= 0 ? stops[reunionIndex] : null
   // Both picks must still resolve to a main-line stop in the right order; a boundary stop removed from the plan
@@ -55,12 +64,12 @@ export function ScreenBoundary() {
   async function next() {
     if (!detail || departure == null || reunion == null) return
     if (!dirty) {
-      navigate(`/trips/${tripId}/split/routes`)
+      navigate(`/trips/${tripId}/split/rounds/${roundIndex}/routes`)
       return
     }
     try {
       await save.mutateAsync({ departureStopId: departure, reunionStopId: reunion, draftVersion: detail.draftVersion })
-      navigate(`/trips/${tripId}/split/routes`)
+      navigate(`/trips/${tripId}/split/rounds/${roundIndex}/routes`)
     } catch {
       // save.error renders below; stay on this screen with the picked values intact.
     }
@@ -74,8 +83,8 @@ export function ScreenBoundary() {
 
   return (
     <SplitLayout
-      title="分头与会合边界"
-      subtitle="出发 / 会合 · 仅主线节点"
+      title={roundIndex > 1 ? `第 ${roundIndex} 次分队 · 边界` : "分头与会合边界"}
+      subtitle={roundIndex > 1 ? "只能从上一轮会合站或之后分头" : "出发 / 会合 · 仅主线节点"}
       step={1}
       backTo={`/trips/${tripId}/split`}
       action={action}
@@ -98,8 +107,9 @@ export function ScreenBoundary() {
       ) : (
         <div className="flex flex-col gap-3">
           <p className="text-[11.5px] leading-relaxed text-ink-3">
-            出发时刻取所选站点的开始时间（即在该站开始分头），会合时刻取所选站点的开始时间。会合站必须排在出发站之后；
-            窗口 = 会合开始 − 出发开始，合法性以服务端校验为准。
+            {roundIndex > 1
+              ? `第 ${roundIndex - 1} 次会合后再次分头：分头站必须不早于上一轮会合站，允许选同一站（会合后立即再分头）。`
+              : "出发时刻取所选站点的开始时间（即在该站开始分头），会合时刻取所选站点的开始时间。会合站必须排在出发站之后；窗口 = 会合开始 − 出发开始，合法性以服务端校验为准。"}
           </p>
 
           {danglingBoundary ? (
@@ -122,7 +132,8 @@ export function ScreenBoundary() {
             </div>
             <div className="flex flex-wrap gap-2">
               {stops.map((stop, index) => {
-                const blocked = departure !== stop.id && reunionIndex >= 0 && index >= reunionIndex
+                const beforePrevious = previousReunionIndex >= 0 && index < previousReunionIndex
+                const blocked = beforePrevious || (departure !== stop.id && reunionIndex >= 0 && index >= reunionIndex)
                 return (
                   <Chip
                     key={stop.id}

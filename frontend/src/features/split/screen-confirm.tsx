@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { useLocation, useParams } from "react-router-dom"
 import { useSplitNavigate } from "./split-navigation"
-import { useBudgetCheck, useCancelConfirmedSplit, useCancelDraft, useConfirmDraft, useSplitDraft, useTripMembers, useTripOrganizer } from "./hooks"
+import { useBudgetCheck, useCancelConfirmedSplit, useCancelDraft, useConfirmDraft, useRoundIndex, useSplitDraft, useTripMembers, useTripOrganizer } from "./hooks"
 import ConfirmDialog from "@/components/ui/confirm-dialog"
 import { useAuth } from "../auth/AuthProvider"
 import { SplitLayout } from "./split-layout"
@@ -28,14 +28,15 @@ import { cn } from "@/lib/utils"
  */
 export function ScreenConfirm() {
   const { tripId = "" } = useParams()
+  const roundIndex = useRoundIndex()
   const navigate = useSplitNavigate()
   const { search } = useLocation()
   const dashboardOrigin = new URLSearchParams(search).get("from") === "dashboard"
-  const draft = useSplitDraft(tripId)
-  const confirm = useConfirmDraft(tripId)
-  const cancel = useCancelDraft(tripId)
-  const budget = useBudgetCheck(tripId, draft.data?.draftVersion)
-  const cancelConfirmed = useCancelConfirmedSplit(tripId)
+  const draft = useSplitDraft(tripId, roundIndex)
+  const confirm = useConfirmDraft(tripId, roundIndex)
+  const cancel = useCancelDraft(tripId, roundIndex)
+  const budget = useBudgetCheck(tripId, roundIndex, draft.data?.draftVersion)
+  const cancelConfirmed = useCancelConfirmedSplit(tripId, roundIndex)
   const trip = useTripOrganizer(tripId)
   const { accountId } = useAuth()
   const membersQuery = useTripMembers(tripId)
@@ -120,10 +121,10 @@ export function ScreenConfirm() {
   return (
     <>
       <SplitLayout
-      title="复核并确认分队"
+      title={roundIndex > 1 ? `复核并确认 · 第 ${roundIndex} 次分队` : "复核并确认分队"}
       subtitle="服务端重校验通过后成对生效"
       step={4}
-      backTo={status === "confirmed" ? undefined : `/trips/${tripId}/split/preview`}
+      backTo={status === "confirmed" ? undefined : `/trips/${tripId}/split/rounds/${roundIndex}/preview`}
       right={
         <Badge variant={status === "confirmed" ? "ok" : status === "cancelled" ? "warn" : "brand"}>
           {status === "confirmed" ? "已确认" : status === "cancelled" ? "已取消" : "待确认"}
@@ -173,7 +174,7 @@ export function ScreenConfirm() {
               }
               action={
                 status === "active" ? (
-                  <Button size="sm" onClick={() => navigate(`/trips/${tripId}/split/routes`)}>去生成路线</Button>
+                  <Button size="sm" onClick={() => navigate(`/trips/${tripId}/split/rounds/${roundIndex}/routes`)}>去生成路线</Button>
                 ) : (
                   <Button size="sm" variant="outline" onClick={() => navigate(`/trips/${tripId}/split`)}>
                     返回分队首页
@@ -253,7 +254,7 @@ export function ScreenConfirm() {
           }}
           onEditActivities={() => {
             confirm.reset()
-            navigate(`/trips/${tripId}/split/routes`)
+            navigate(`/trips/${tripId}/split/rounds/${roundIndex}/routes`)
           }}
           onClose={() => confirm.reset()}
         />

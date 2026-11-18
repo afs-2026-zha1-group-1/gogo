@@ -96,7 +96,7 @@ public class SplitBudgetCalculator {
         return index;
     }
 
-    private MemberResult verdict(String groupLabel, String memberId, int totalCostCents, MemberBudget budget) {
+    public MemberResult verdict(String groupLabel, String memberId, int totalCostCents, MemberBudget budget) {
         Integer amount = budget == null ? null : budget.amount();
         String currency = budget == null ? null : budget.currency();
         String limitType = budget == null ? null : budget.limitType();

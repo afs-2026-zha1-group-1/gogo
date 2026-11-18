@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom"
 import { useSplitNavigate } from "./split-navigation"
-import { useSplitDraft } from "./hooks"
+import { useRoundIndex, useSplitDraft, useSplitRounds } from "./hooks"
 import { SplitLayout } from "./split-layout"
 import { EmptyState, ErrorState, LoadingState } from "./states"
 import { TeamRouteGraph } from "./team-route-graph"
@@ -19,24 +19,38 @@ import { IconAlert, IconArrowRight, IconBranch, IconCheck, IconClock, IconRoute 
  */
 export function ScreenPreview() {
   const { tripId = "" } = useParams()
+  const roundIndex = useRoundIndex()
   const navigate = useSplitNavigate()
-  const draft = useSplitDraft(tripId)
+  const rounds = useSplitRounds(tripId)
+  const draft = useSplitDraft(tripId, roundIndex)
   const detail = draft.data
   const status = detail?.status ?? null
   const routes = detail?.routes ?? []
 
-  const stops = (detail?.mainPlanStops ?? []).map((stop) => ({
+  const roundDetails = (rounds.data?.rounds ?? []).filter((round) => round.status !== "cancelled")
+  const stopsSource = detail ?? roundDetails[0] ?? null
+  const stops = (stopsSource?.mainPlanStops ?? []).map((stop) => ({
     id: stop.id,
     name: stop.name,
-    startLabel: formatTime(stop.startAt, "iso", detail?.destination),
-    endLabel: formatTime(stop.endAt, "iso", detail?.destination),
+    startLabel: formatTime(stop.startAt, "iso", stopsSource?.destination),
+    endLabel: formatTime(stop.endAt, "iso", stopsSource?.destination),
   }))
-  const model = buildGraphRows({
-    stops,
-    departureStopId: detail?.departureStopId ?? null,
-    reunionStopId: detail?.reunionStopId ?? null,
-    routes,
-  })
+  const model = roundDetails.length > 0
+    ? buildGraphRows({
+        stops,
+        rounds: roundDetails.map((round) => ({
+          roundIndex: round.roundIndex,
+          departureStopId: round.departureStopId,
+          reunionStopId: round.reunionStopId,
+          routes: round.routes,
+        })),
+      })
+    : buildGraphRows({
+        stops,
+        departureStopId: detail?.departureStopId ?? null,
+        reunionStopId: detail?.reunionStopId ?? null,
+        routes,
+      })
   const hasPair = routes.length === 2
   const active = status === "active"
   const counts = {
@@ -61,7 +75,7 @@ export function ScreenPreview() {
 
   const action = active ? (
     confirmable ? (
-      <Button className="flex-1" onClick={() => navigate(`/trips/${tripId}/split/confirm`)}>
+      <Button className="flex-1" onClick={() => navigate(`/trips/${tripId}/split/rounds/${roundIndex}/confirm`)}>
         下一步 <IconArrowRight />
       </Button>
     ) : (
@@ -73,10 +87,10 @@ export function ScreenPreview() {
 
   return (
     <SplitLayout
-      title="队伍路线预览"
+      title={roundIndex > 1 ? `第 ${roundIndex} 次分队 · 路线预览` : "队伍路线预览"}
       subtitle={active ? "只读预览 · 不能在此编辑路线" : "已结束的草稿 · 只读"}
       step={3}
-      backTo={`/trips/${tripId}/split/routes`}
+      backTo={`/trips/${tripId}/split/rounds/${roundIndex}/routes`}
       action={action}
     >
       {draft.isPending ? (
@@ -139,7 +153,7 @@ export function ScreenPreview() {
                 size="sm"
                 variant="outline"
                 className="mt-2.5"
-                onClick={() => navigate(`/trips/${tripId}/split/routes`)}
+                onClick={() => navigate(`/trips/${tripId}/split/rounds/${roundIndex}/routes`)}
               >
                 返回分组与路线
               </Button>

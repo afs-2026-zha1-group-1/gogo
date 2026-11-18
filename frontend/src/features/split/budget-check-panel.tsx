@@ -74,17 +74,25 @@ export function BudgetCheckPanel({
           value={`${formatCost(check.replacedCostCents, destination)} / 人`}
           muted
         />
-        {check.groups.map((group) => (
-          <Row
-            key={group.groupLabel}
-            label={`${group.groupLabel} 组分队活动`}
-            value={`${formatCost(group.squadCostCents, destination)} / 人`}
-          />
-        ))}
+        {check.rounds && check.rounds.length > 0
+          ? check.rounds.map((round) => (
+              <Row
+                key={`${round.roundIndex}-${round.groupLabel}`}
+                label={`第 ${round.roundIndex} 轮 ${round.groupLabel} 组活动`}
+                value={`${formatCost(round.squadCostCents, destination)} / 人`}
+              />
+            ))
+          : check.groups.map((group) => (
+              <Row
+                key={group.groupLabel}
+                label={`${group.groupLabel} 组分队活动`}
+                value={`${formatCost(group.squadCostCents, destination)} / 人`}
+              />
+            ))}
       </dl>
 
       <p className="mt-2 text-[10.5px] leading-relaxed text-ink-3">
-        每人合计 = 仍适用的共享费用 + 所在组分队活动；被替换的共享活动只列出、不再相加。
+        每人合计 = 仍适用的共享费用 + 各轮所在组的分队活动；换组后按各轮所属组分别计入。被替换的共享活动只列出、不再相加。
       </p>
 
       <div className="mt-2.5 flex flex-col gap-2">

@@ -8,6 +8,7 @@ import java.time.Instant;
  * {@code windowMinutes} = reunion - departure. Jackson serializes the instants as ISO-8601 UTC strings.
  */
 public record BoundaryResponse(
+        int roundIndex,
         String departureStopId,
         String reunionStopId,
         Instant departureAt,
