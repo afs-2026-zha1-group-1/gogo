@@ -38,6 +38,12 @@
 - 影响面：仅首站起点可观察口径；错误码/端点/存储形状不变。
 - 复审：待 IO Emily / SA Lumi 复签（记 **C-R1**，不阻塞 apply，随 G2 一并闭环）。
 
+## Revision R2（2026-11-18，P4 措辞澄清）
+
+- 内容：G8 场景措辞澄清为"缓存 miss 时 lat/lng 留 null、provider 供给的 address 保留"，
+  与实现一致（address 来自 AI 契约不应因缓存 miss 丢弃）；仅措辞澄清，无行为变更。
+- 复审：待 IO Emily / SA Lumi 复签（记 **C-R2**，随 G2 一并闭环）。
+
 ## Next
 
 P3：`/sdd:atdd-design` + `/sdd:task-plan`（design.md / tasks.md 本轮起才生成）。
