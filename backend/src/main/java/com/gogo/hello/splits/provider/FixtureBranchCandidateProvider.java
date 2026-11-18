@@ -10,16 +10,15 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import org.springframework.stereotype.Component;
 
 /**
  * Fixed in-process fixture provider (design D12, US-089). Group A keeps following the confirmed main plan, so its
  * candidate is derived from the main-plan stops inside the boundary pair (names, scheduled durations and the gaps
  * between them); group B receives a destination-keyed synthetic activity so the two lanes differ. No external
  * network call; the failing-provider double for G2-N replaces this bean in tests. US-045 adds the costed
- * activities of each lane so the budget check can price what the group pays inside the window.
+ * activities of each lane so the budget check can price what the group pays inside the window. Not a Spring
+ * component: the {@link BranchCandidateProviderConfig} selects it when no AI key is configured.
  */
-@Component
 public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
 
     private record Branch(String activityName, int activityMinutes, List<Integer> travelLegsMinutes,

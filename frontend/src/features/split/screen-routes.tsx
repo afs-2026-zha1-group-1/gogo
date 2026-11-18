@@ -20,6 +20,7 @@ import type { TripMember } from "../../types"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Dialog } from "@/components/ui/dialog"
+import { AiGeneratingNotice } from "@/components/AiGeneratingNotice"
 import { IconAlert, IconArrowRight, IconBranch, IconCheck, IconEdit, IconFlag, IconNav, IconRoute, IconSparkle, IconUsers, IconX } from "@/components/icons"
 import { ActivityEditor } from "./activity-editor"
 import { formatClock, shortId } from "@/lib/format"
@@ -273,6 +274,10 @@ export function ScreenRoutes() {
               （共 {detail.windowMinutes} 分钟），由你在上一步选的出发/会合站决定；两条路线的合计都需不超过它。
             </p>
           )}
+
+          {generate.isPending ? (
+            <AiGeneratingNotice />
+          ) : null}
 
           {hasPair ? (
             <div className="flex flex-col gap-3">

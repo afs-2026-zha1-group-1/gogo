@@ -14,9 +14,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-// The internal DeepSeek gateway is OpenAI compatible (design D1): one JSON chat
+// The internal DeepSeek gateway is OpenAI compatible (main-plan design D1, split design D1): one JSON chat
 // call, bearer key, JSON-object response, no thinking field, single attempt.
-class HttpDeepSeekPlanClient implements DeepSeekPlanClient {
+public class HttpDeepSeekPlanClient implements DeepSeekPlanClient {
 
     private static final int CONNECT_TIMEOUT_MILLIS = 5_000;
 
@@ -30,7 +30,7 @@ class HttpDeepSeekPlanClient implements DeepSeekPlanClient {
         this.objectMapper = objectMapper;
     }
 
-    static HttpDeepSeekPlanClient create(PlanAiProperties properties, ObjectMapper objectMapper) {
+    public static HttpDeepSeekPlanClient create(PlanAiProperties properties, ObjectMapper objectMapper) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(CONNECT_TIMEOUT_MILLIS);
         factory.setReadTimeout((int) properties.timeout().toMillis());

@@ -107,6 +107,29 @@ test('P2 different members see different routes (isolation)', () => {
   assert.ok(chloe.every((item) => item.groupLabel !== 'A'))
 })
 
+test('P13 B group with generated steps still renders its own activity, not the main line', () => {
+  // ai-split-route-generation: group B now carries steps (station list) just like group A.
+  // The main-line judgment must key off the group label, not the presence of steps.
+  const d = detail({
+    routes: [
+      route('A', { steps: [{ name: '出发站', minutes: 30 }] }),
+      route('B', {
+        activityName: '滨海湾花园',
+        steps: [{ name: '滨海湾花园', minutes: 60 }],
+      }),
+    ],
+  })
+  const items = derivePersonalRoute(d, '3', plan)
+  assert.ok(items)
+  // B member's own block is the generated activity, not the shared main-line stops.
+  const bBlocks = items.filter((item) => item.groupLabel === 'B')
+  assert.equal(bBlocks.length, 1)
+  assert.equal(bBlocks[0].name, '滨海湾花园')
+  // The B member never gets the shared main-line stop inside the window labeled as their own block.
+  const departure = items.find((item) => item.name === '出发站')
+  assert.ok(!departure || departure.groupLabel !== 'B')
+})
+
 test('P3 unassigned member gets no personal route', () => {
   assert.equal(derivePersonalRoute(detail(), '9', plan), null)
 })
@@ -191,4 +214,54 @@ test('P10 selectSchedule priority: personal route > main plan > empty', () => {
   assert.deepEqual(selectSchedule(null, '1', plan, START_DATE), scheduleFromMainPlan(plan, START_DATE))
   assert.deepEqual(selectSchedule(detail(), '9', null, START_DATE), [])
   assert.deepEqual(selectSchedule(null, null, null, START_DATE), [])
+})
+
+test('B personal route expands every station in order using the outbound and between-station legs', () => {
+  const d = detail({
+    reunionAt: iso(14, 30),
+    routes: [route('A', { steps: [{ name: '出发站', minutes: 30 }] }), route('B', {
+      activityName: '甲秀楼 → 花溪公园',
+      steps: [
+        { name: '甲秀楼', minutes: 50 }, { name: '文昌阁', minutes: 30 },
+        { name: '阳明祠', minutes: 40 }, { name: '花溪公园', minutes: 50 },
+      ],
+      travelLegsMinutes: [20, 10, 15, 35, 40],
+      bufferMinutes: 0,
+    })],
+  })
+  const items = derivePersonalRoute(d, '3', plan)
+  assert.ok(items)
+  const departure = items.find((item) => item.key === 's2')
+  assert.ok(departure)
+  assert.equal(departure.groupLabel, null)
+  assert.equal(departure.start, ms(9, 30))
+  assert.equal(departure.end, ms(9, 30))
+  assert.equal(departure.kind, 'split-departure')
+  assert.equal(departure.travelMinutesToNext, 20)
+  const group = items.filter((item) => item.groupLabel === 'B')
+  assert.deepEqual(group.map((item) => item.name), ['甲秀楼', '文昌阁', '阳明祠', '花溪公园'])
+  assert.deepEqual(group.map((item) => [item.start, item.end]), [
+    [ms(9, 50), ms(10, 40)], [ms(10, 50), ms(11, 20)],
+    [ms(11, 35), ms(12, 15)], [ms(12, 50), ms(13, 40)],
+  ])
+  assert.deepEqual(group.map((item) => item.travelMinutesToNext), [10, 15, 35, 40])
+  assert.ok(items.indexOf(departure) < items.indexOf(group[0]))
+  assert.equal(items.filter((item) => item.key === 's2').length, 1)
+  assert.ok(items.some((item) => item.name === '早餐' && item.groupLabel === null))
+  assert.ok(items.some((item) => item.name === '晚餐' && item.groupLabel === null))
+  assert.ok(items.findIndex((item) => item.name === '会合站') > items.indexOf(group[3]))
+  assert.ok(!items.some((item) => item.name === '甲秀楼 → 花溪公园'))
+})
+
+test('B stations with incomplete timing remain ordered and have pending times', () => {
+  const d = detail({ routes: [route('A'), route('B', {
+    steps: [{ name: '甲秀楼', minutes: 30 }, { name: '文昌阁', minutes: 20 }],
+    travelLegsMinutes: [10],
+  })] })
+  const items = derivePersonalRoute(d, '3', plan)
+  assert.ok(items)
+  const group = items.filter((item) => item.groupLabel === 'B')
+  assert.deepEqual(group.map((item) => item.name), ['甲秀楼', '文昌阁'])
+  assert.ok(group.every((item) => item.start === null && item.end === null))
+  assert.ok(items.findIndex((item) => item.name === '会合站') > items.indexOf(group[1]))
 })

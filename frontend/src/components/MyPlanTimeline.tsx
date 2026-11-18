@@ -39,6 +39,7 @@ function dayLabel(startDate: string): string {
 
 function timeLabel(item: ScheduleItem): string {
   if (item.start == null || item.end == null) return '时间待确认'
+  if (item.kind === 'split-departure') return `${formatClock(item.start)} · 分头`
   return `${formatClock(item.start)} – ${formatClock(item.end)}`
 }
 
@@ -82,9 +83,10 @@ export default function MyPlanTimeline({
                     </span>
                     <div className="act-main">
                       <div className="act-name">{item.name}</div>
-                      <div className="act-sub">
-                        {item.location ? `${item.location} · ` : ''}
-                        {item.groupLabel ? `${item.groupLabel} 组` : '全员'} · 免费
+<div className="act-sub">
+                        {item.kind === 'split-departure'
+                          ? '全员 · 分头'
+                          : `${item.location ? `${item.location} · ` : ''}${item.groupLabel ? `${item.groupLabel} 组` : '全员'} · 免费`}
                       </div>
                       {item.interests.length > 0 && (
                         <div className="chips" style={{ marginTop: 6 }}>
