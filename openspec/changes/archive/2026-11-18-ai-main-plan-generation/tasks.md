@@ -59,9 +59,9 @@
 
 ## 7. 门禁与交付
 
-- [ ] 7.1 P4：推送 change 分支并开 PR（需用户授权；不直推 `main`，不为追平 `main` 而合并）——**本地实现完成，等待授权**
-- [ ] 7.2 CI 双 job 绿（Backend tests / Frontend build）
-- [ ] 7.3 G2 记录（G1 Pass 已记录：IO Emily + SA Elian；G2 待 PR/CI）
+- [x] 7.1 P4：推送 change 分支并开 PR #152（解决 main 冲突后合并 `09b5685`；用户 2026-11-18 授权合并）
+- [x] 7.2 CI 全绿：runs 44251508951 / 44251514957（Backend tests / Frontend build / Browser acceptance）
+- [x] 7.3 G2 Pass（VL lumi，2026-11-18，按用户指定代记；见 `g2-decision.md`）
 - [x] 7.4 `openspec validate ai-main-plan-generation --strict` 通过
-- [ ] 7.5 归档前对账 `docs/knowledge/architecture/tech-stack-plan.md`：记录 §7 AI provider 落地与 `gogo.plan.ai.*` 配置，并在 `docs/knowledge/_LOG.md` 追加一行
-- [ ] 7.6 归档前最终回归：`openspec validate ai-main-plan-generation --strict`、后端 `mvn -B test`、前端 `typecheck + test:unit + build` 全绿
+- [x] 7.5 归档前对账：`tech-stack-plan.md` §28 + `docs/knowledge/_LOG.md` 一行已补
+- [x] 7.6 最终回归：`openspec validate --strict` valid；CI runs 44251508951 / 44251514957 三项全绿（backend / frontend / browser）

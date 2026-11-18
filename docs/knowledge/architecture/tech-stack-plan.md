@@ -614,3 +614,30 @@ US-087-088 shipped in PR #135, merge `5c6840e`. The living `splits` delta is
   Playwright 85/85, CI runs 44234803228 / 44234811292 green; local-verify Pass;
   G2 Pass (VL Leo). G1 Revision 2–4 IO re-sign remains tracked.
 
+## 28. Landed reconciliation — US-031-AI DeepSeek main plan (archived 2026-11-18)
+
+`ai-main-plan-generation` shipped in PR #152, merge `09b5685`. It realizes §7's
+single-provider + fallback contract with the DeepSeek gateway configured in
+opencode (not a new stack).
+
+- **Provider:** `AiMainPlanProvider` replaces the fake provider when a key is
+  configured. It calls the internal `llm-gateway-alicloud` endpoint
+  (`https://mlop-llm-gateway-dev.home-np.oocl.com/v2/openai/deployments/ali-copilot/chat/completions`)
+  with `Authorization: Bearer $LLM_API_KEY`, `deepseek-v4.1-flash`, JSON-object
+  mode, `max_tokens` 8192, 5s connect / 30s read, one attempt.
+- **Config:** `gogo.plan.ai.api-key = ${LLM_API_KEY:}`,
+  `PLAN_AI_BASE_URL`, `PLAN_AI_MODEL`, `PLAN_AI_MAX_TOKENS`,
+  `PLAN_AI_TIMEOUT`. A blank key keeps `FakeMainPlanProvider` (city fixtures)
+  for tests, CI and offline demos.
+- **Validation + fallback:** AI output must have ≥2 stops, contiguous `seq`,
+  `HH:mm` times with end > start, valid travel legs and nonnegative cost. Any
+  timeout/HTTP/empty/invalid output persists `MinimalFallbackPlan` instead:
+  start location 09:00–09:30 (30-minute leg) → end location 17:00–17:30
+  (null leg), per-person cost 0, using the already-completed trip locations.
+- **API / data:** no endpoint, error-code, schema or migration change.
+- **Frontend:** `AiGeneratingNotice` shows a non-blocking “AI 正在生成中…”
+  strip on the inputs screen and plan-page regeneration; confirm is unaffected.
+- **Verification:** backend 398/398, frontend typecheck + 45 unit tests + build,
+  browser E1–E4 + R-E1 Pass, real generation produced 5 stops / S$65 in under
+  30s; CI runs 44251508951 / 44251514957 green; local verify Pass; G1 Pass
+  (IO Emily + SA Elian Jiang), G2 Pass (VL lumi); PR #152 merged `09b5685`.
