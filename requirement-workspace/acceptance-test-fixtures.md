@@ -764,3 +764,36 @@ Alice 的预期顺序（以 2026-11-16 为“今天”，2026-11-17 修订：**�
 
 - 保存新边界后 `routes` 清空、`split-a/b` 节点删除，详情 `routes=[]`。
 - 行程详情：Ben（A）逐站显示主线站点并标 A 组；Eve（B）显示香港故宫活动并标 B 组；无“沿主线方案”卡片。
+
+## US-087-088 — 路线可编辑 + 下一步校验与队伍路线预览（2026-11-18）
+
+### API 夹具（后端 `AbstractSplitApiTest`，trip 99xx）
+
+| Fixture | 草稿状态 / 数据 | 覆盖场景 |
+|---|---|---|
+| F1 基准 | `active` v3；边界 City Hall 09:00 → Merlion 11:30（窗口 150）；A/B 均为站点列表：A = City Hall(30)/National Gallery(30)/Gardens(15)，legs 30/30/15；B = Gardens(60)，legs 20/20；buffer 均 0；A 合计 150、B 合计 100 | S2/S2b/D1/S7/CF1 |
+| F2 编辑后 | A 第二站站名改为 National Gallery (edited)、30→20（合计 140）；B 可添加/删除站点与路程 | S2/S2b 持久化 |
+| F3 A 超窗 | A 第三站 15→40（合计 175，窗口 150，超 25） | N3a `check-timing` 数值（feasible=false / overrun=25） |
+| F4 版本/缺失/终态 | 请求 v2；`routes=null`；`status=confirmed`；`status=cancelled` | S3/S4/S6 |
+| F5 非法载荷 | 非两条；组别重复/非 A/B；负分钟；A `legs.size ≠ steps.size`；B legs 由 2 段改 3 段；活动名全空格 | S5（`INVALID_ROUTE_PAIR`/`INVALID_GROUP_LABEL`/`INVALID_ROUTE_INPUT`） |
+| F6 权限 | Eve 非成员；未认证会话；非发起人成员保存 | S8（403/401）与 BQ-6（非发起人保存仍 200） |
+
+不变式：A 的 `activityMinutes = Σ steps.minutes`、`bufferMinutes = 0`；保存不判定时间窗；超窗只由下一步 `check-timing` 拦截。
+
+### E2E 夹具（Playwright，trip 9101）
+
+- 行程「路线编辑演示」，destination `Singapore`，organizer Alice(1)，成员 Alice/Ben/Chloe/Daniel；主线 v1 同 F1 四站。
+- `split_draft` v3 `active`：groups A=[1,2]、B=[3,4]；`document.routes` 含 A steps 与 B 分解；`plan_node` split-a/b 已写入。
+- 登录：`ben@example.com`（A 组成员，验证任意成员编辑）/ `alice@example.com`（组织者，验证复核）。
+- 数据文件：`frontend/tests/fixtures/split-route-edit.sql`，由 `playwright.config.ts` 与 `dashboard.sql` 并列加载；`run-e2e.mjs` 每次创建/删除临时库。
+
+### 反向验收
+
+| 断言 | 层 |
+|---|---|
+| 路线卡无活动名/地点/缓冲输入；A/B 均为站点列表可增删 | E2E |
+| A/B 站名与停留分钟均可编辑；可添加/删除站点 | E2E |
+| `GroupRoute` JSON 无 fee 字段 | API |
+| 无新增 `V*.sql`、无新依赖、`ci.yml` 不改 | 静态（git diff） |
+| 非发起人 `routes:generate` 仍 403；保存仍 200（BQ-6） | API |
+

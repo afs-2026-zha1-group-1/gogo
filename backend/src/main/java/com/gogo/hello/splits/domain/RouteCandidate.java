@@ -12,6 +12,7 @@ import java.util.List;
 public record RouteCandidate(
         String groupLabel,
         String activityName,
+        String locationName,
         int activityMinutes,
         List<Integer> travelLegsMinutes,
         int bufferMinutes,

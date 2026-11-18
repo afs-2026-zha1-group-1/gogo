@@ -61,7 +61,8 @@ class SplitRouteGenerationApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.data.draftVersion").value(4))
                 .andExpect(jsonPath("$.data.routes.length()").value(2))
                 .andExpect(jsonPath("$.data.routes[0].groupLabel").value("A"))
-                .andExpect(jsonPath("$.data.routes[0].activityName").value("沿主线方案"))
+                .andExpect(jsonPath("$.data.routes[0].activityName").value("City Hall MRT → Gardens by the Bay"))
+                .andExpect(jsonPath("$.data.routes[0].locationName").value("City Hall MRT"))
                 .andExpect(jsonPath("$.data.routes[0].departureStopId").value(cityHall))
                 .andExpect(jsonPath("$.data.routes[0].reunionStopId").value(merlion))
                 .andExpect(jsonPath("$.data.routes[0].activityMinutes").value(75))
@@ -70,11 +71,14 @@ class SplitRouteGenerationApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.data.routes[0].bufferMinutes").value(0))
                 .andExpect(jsonPath("$.data.routes[1].groupLabel").value("B"))
                 .andExpect(jsonPath("$.data.routes[1].activityName").value("Gardens by the Bay"))
+                .andExpect(jsonPath("$.data.routes[1].locationName").value("Singapore"))
                 .andExpect(jsonPath("$.data.routes[1].departureStopId").value(cityHall))
                 .andExpect(jsonPath("$.data.routes[1].reunionStopId").value(merlion))
                 .andExpect(jsonPath("$.data.routes[1].travelLegsMinutes[0]").value(20))
                 .andExpect(jsonPath("$.data.routes[1].travelLegsMinutes[1]").value(20))
-                .andExpect(jsonPath("$.data.routes[1].bufferMinutes").value(10));
+                .andExpect(jsonPath("$.data.routes[1].bufferMinutes").value(0))
+                .andExpect(jsonPath("$.data.routes[1].steps[0].name").value("Gardens by the Bay"))
+                .andExpect(jsonPath("$.data.routes[1].steps[0].minutes").value(60));
         assertThat(splitRouteCount()).isEqualTo(2);
         assertThat(mainStopCount()).isEqualTo(4);
         JsonNode draft = objectMapper.readTree(draftJson());
