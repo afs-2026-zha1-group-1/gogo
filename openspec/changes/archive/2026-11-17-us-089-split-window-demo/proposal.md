@@ -41,7 +41,7 @@
 | Auth | 无变更（splits 维持 `permitAll` + `MemberGuard`） |
 | Demo data | `scripts/demo-seed.py` 重写（自适应 V1–V10 结构，自动建两条演示行程，Ben+Eve 均就绪） |
 | Specs | `openspec/specs/splits/spec.md`（3 MODIFIED + 示例同步）、`openspec/specs/trips/spec.md`（1 MODIFIED） |
-| Requirement source | `requirement-workspace/requirements/US-089.md` |
+| Requirement source | GitHub issue #144；`requirement-workspace/requirements/US-089.md` |
 | Cross-change | 复用 US-040 的成员分组与 `MainPlanProjection`；不改变分组、确认、取消状态机 |
 
 ## Gates
