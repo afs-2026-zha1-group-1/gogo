@@ -28,7 +28,8 @@ public record SplitDraftDocument(
      * duration components are nullable so a missing estimate stays expressible (Jackson maps JSON null to null
      * rather than zero), letting confirmation report missing inputs instead of silently treating them as 0.
      */
-    public record RouteDurations(Integer activityMinutes, List<Integer> travelLegsMinutes, Integer bufferMinutes) {
+    public record RouteDurations(Integer activityMinutes, List<Integer> travelLegsMinutes, Integer bufferMinutes,
+            List<RouteStep> steps) {
     }
 
     /**
@@ -73,12 +74,13 @@ public record SplitDraftDocument(
 
     /**
      * Returns a new document with the saved boundary stop ids and {@code draftVersion + 1} (design D7/D9): any
-     * draft change bumps the version. Groups, routes, initiator and createdAt are preserved; updatedAt advances.
+     * draft change bumps the version. Route durations are cleared because they were computed against the
+     * previous window; the pair must be regenerated for the new boundaries.
      */
     public SplitDraftDocument withBoundaries(String departureStopId, String reunionStopId, String now) {
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion + 1, status,
-                departureStopId, reunionStopId, groups, routes, createdAt, now);
+                departureStopId, reunionStopId, groups, null, createdAt, now);
     }
 
     /**

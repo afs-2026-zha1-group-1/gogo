@@ -11,10 +11,10 @@
 
 ## Inputs
 
-- **Local verification:** [20261117-201615 local verify report](../../../docs/ai4se-plugins/20261117-201615-local-verify-report.md) —
+- **Local verification:** [20261117-201615 local verify report](../../../../docs/ai4se-plugins/20261117-201615-local-verify-report.md) —
   Partial; describes an earlier working tree, not verification of the final
   revision.
-- **CI:** [20261117-201615 pipeline report](../../../docs/ai4se-plugins/20261117-201615-pipeline-report.md) —
+- **CI:** [20261117-201615 pipeline report](../../../../docs/ai4se-plugins/20261117-201615-pipeline-report.md) —
   Partial for the worktree assessed; its successful CI run covers an older
   commit, not the current final revision.
 - **CD:** Requirement and evidence to be confirmed.

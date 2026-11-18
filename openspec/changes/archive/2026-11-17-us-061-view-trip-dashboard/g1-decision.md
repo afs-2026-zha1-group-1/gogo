@@ -49,7 +49,7 @@
 - `openspec validate us-061-view-trip-dashboard --strict` reports three
   app-shell modified-requirement errors involving omitted existing scenarios.
   The earlier [AC / DoV review](dov-ac-review.md), [alignment self-check](alignment-self-check.md),
-  and [local requirement](../../../requirement-workspace/requirements/US-061.md)
+  and [local requirement](../../../../requirement-workspace/requirements/US-061.md)
   describe the superseded interim scope and need reconciliation.
 - The previous Pass below applies only to the earlier interim scope. The
   revised scope has not passed G1 and is not authorized by that earlier Pass.
@@ -79,7 +79,7 @@ subject to the applicable gate and test prerequisites.
 - [Proposal](proposal.md), [trip-dashboard delta](specs/trip-dashboard/spec.md),
   [app-shell delta](specs/app-shell/spec.md), [interim AC / DoV review](dov-ac-review.md),
   [alignment self-check](alignment-self-check.md), [ATDD design](atdd-design.md),
-  and [local requirement](../../../requirement-workspace/requirements/US-061.md).
+  and [local requirement](../../../../requirement-workspace/requirements/US-061.md).
 - The interim scope lists all member trips and shows completion-dependent
   progress as unavailable. US-058 integration and archive are deferred; unsafe
   details navigation remains blocked. Existing session authentication is reused.
@@ -115,7 +115,7 @@ above remain required in their respective later workflows.
   and dependency and tracker questions remain open.
 - [Consistency lint](consistency-lint.md): Partial, with 0 blockers and 3
   warnings; the report also identifies tracker and API-plan drift.
-- [US-061 requirement](../../../requirement-workspace/requirements/US-061.md)
+- [US-061 requirement](../../../../requirement-workspace/requirements/US-061.md)
 
 ## Findings
 

@@ -1,7 +1,7 @@
 # US-087-088 AC / DoV review (delta-craft)
 
 Reviewer: sdd-delta-craft (P2), 2026-11-17 · change: `us-087-088-split-route-edit-preview` ·
-delta: `specs/splits/spec.md`（1 ADDED + 4 MODIFIED / 43 场景）· evidence:
+delta: `specs/splits/spec.md`（1 ADDED + 4 MODIFIED / 46 场景）· evidence:
 `requirement-workspace/requirements/US-087-088.md`、`analysis/us-087-088-dor.md`、
 `deep-dive.md` §US-087-088、`impact-brief.md` §US-087-088、`proposal.md`。
 
@@ -9,9 +9,9 @@ delta: `specs/splits/spec.md`（1 ADDED + 4 MODIFIED / 43 场景）· evidence:
 
 | # | Item | Result | Evidence | Notes |
 |---|------|--------|----------|-------|
-| AC-1 | Each requirement has ≥1 testable AC | **Pass** | 5 条 requirement 共 43 场景：ADDED `Split route pair edit` 6；MODIFIED `Group route generation` 8、`Reunion timing check` 12、`Split draft detail read` 7、`Split confirmation` 10 | 每条 requirement 至少 6 条场景 |
+| AC-1 | Each requirement has ≥1 testable AC | **Pass** | 5 条 requirement 共 46 场景：ADDED `Split route pair edit` 7；MODIFIED `Group route generation` 9、`Reunion timing check` 13、`Split draft detail read` 7、`Split confirmation` 10 | 每条 requirement 至少 7 条场景 |
 | AC-2 | ACs are observable | **Pass** | 断言落在 HTTP 码/`error.code`、`draftVersion`、`plan_node`/文档写入、弹窗字段、路由 URL、页面只读态 | 无「工作正常」类表述 |
-| AC-3 | Negative / edge cases | **Pass** | S3 过期版本、S4 无路线、S5 非法输入、S6 终态、S8 权限；N3 不可行弹窗、N4 请求失败；T2/T3 超窗/缺输入；CF2/CF3/CF7/CF8 复核拒绝；D3–D5 权限；S7 旧地点回填 | 覆盖写/读/校验/确认四层失败面 |
+| AC-3 | Negative / edge cases | **Pass** | S3 过期版本、S4 无路线、S5 非法输入、S6 终态、S8 权限；S2b 站点派生、N3a A 超窗、N3 不可行弹窗、N4 请求失败；T2/T3 超窗/缺输入；CF2/CF3/CF7/CF8 复核拒绝；D3–D5 权限；S7 旧地点回填 | 覆盖写/读/校验/确认四层失败面 |
 | AC-4 | ACs not disguised impl detail | **Pass** | 场景描述「保存后返回新值」「弹窗列出合计与超窗」等可观察行为；未绑定组件库内部实现或方法名 | Dialog 以「仅关闭 + 完整明细」行为描述 |
 
 ## Definition of Verified (DoV)
@@ -19,17 +19,18 @@ delta: `specs/splits/spec.md`（1 ADDED + 4 MODIFIED / 43 场景）· evidence:
 | # | Item | Result | Evidence | Notes |
 |---|------|--------|----------|-------|
 | DoV-1 | Scope matches proposal | **Pass** | proposal：单 change、1 ADDED + 4 MODIFIED、零迁移；delta 未引入费用/必做标识/通知/地图 | 无静默扩容 |
-| DoV-2 | Ambiguities listed or resolved | **Pass** | BQ-1…BQ-6 全 resolved；D-1/D-2/D-3/D-4 resolved；D-5（费用/必做标识）明确移出并另立 | 无 blocking OQ 遗留 |
+| DoV-2 | Ambiguities listed or resolved | **Pass** | BQ-1…BQ-8 全 resolved；D-1/D-2/D-3/D-4 resolved；D-5（费用/必做标识）明确移出并另立；US-089 合并后的 A `steps` 编辑已由 BQ-7/BQ-8 收敛 | 无 blocking OQ 遗留 |
 | DoV-3 | Role concerns noted | **Pass** | IO：`INVALID_ROUTE_INPUT` 契约扩展、任意成员编辑 vs 仅发起人生成、弹窗信息项；SA：双写原子性、版本 CAS、5s 轮询 stale、旧地址重定向 | 见下「Residual concerns」 |
 | DoV-4 | No code claimed as done | **Pass** | 本次仅 P2 提案与 delta 复核 | 未修改业务代码 |
-| DoV-5 | Requirements trace to proposal / approved requirements | **Pass** | 43 场景可回溯到 P1 的 18 条场景与 proposal 的 5 条能力声明；映射见下表 | 无未匹配项 |
+| DoV-5 | Requirements trace to proposal / approved requirements | **Pass** | 46 场景可回溯到 P1 的 20 条场景与 proposal 的 5 条能力声明；映射见下表 | 无未匹配项 |
 
 ## Traceability（P1 场景 → Delta 场景）
 
 | P1 场景 | Delta 覆盖 | 状态 |
 |---|---|---|
-| S1 编辑态与终态只读 | `Group route generation` · «路线卡内联编辑与终态只读（S1）» + Screen 13 场景扩展 | ✅ |
-| S2 任意成员保存成功 | ADDED · «任意成员保存整对路线（S2）» | ✅ |
+| S1 编辑态与终态只读 | `Group route generation` · «路线卡内联编辑与终态只读（S1）» + Screen 13 场景扩展（A 逐站） | ✅ |
+| S2 任意成员保存成功 | ADDED · «任意成员保存整对路线（S2）»（含 A steps/B 分解） | ✅ |
+| S2b A 站点派生合计 | ADDED · «A 组站点编辑派生合计（S2b）» | ✅ |
 | S3 过期版本 | ADDED · «过期版本拒绝且不部分写入（S3）» | ✅ |
 | S4 无路线 | ADDED · «尚未生成路线时拒绝保存（S4）» | ✅ |
 | S5 非法输入 | ADDED · «非法输入拒绝（S5）» | ✅ |
@@ -39,6 +40,7 @@ delta: `specs/splits/spec.md`（1 ADDED + 4 MODIFIED / 43 场景）· evidence:
 | N1 先保存后校验通过 | `Reunion timing check` · «下一步先保存后校验并通过（N1）» | ✅ |
 | N2 无改动跳过保存 | «无改动继续跳过保存（N2）» | ✅ |
 | N3 不可行弹窗 | «校验不可行弹窗阻断（N3）» | ✅ |
+| N3a A 超窗 | «A 组编辑超过时间窗被拦（N3a）» | ✅ |
 | N4/N5 请求失败 | «保存或校验请求失败不跳转（N4-N）» | ✅ |
 | N6 预览展示 | «队伍路线预览展示契约（Screen 13b）» | ✅ |
 | N7 复核入口 | `Split confirmation` · «编辑后确认按新路线复算（CF9）» + Screen 15 返回目标 | ✅ |
@@ -57,12 +59,21 @@ delta: `specs/splits/spec.md`（1 ADDED + 4 MODIFIED / 43 场景）· evidence:
 - **IO**：
   - 新增错误码 `INVALID_ROUTE_INPUT`（400）属契约扩展，请在 G1 明确接受或提出替代；
   - 任意成员可编辑路线、重新生成仍仅发起人（BQ-6）——请确认这是期望的权限面；
+  - A 组逐站编辑后合计 SHALL ≤ 时间窗，超窗由下一步弹窗阻断（BQ-7）——请确认交互可接受；
   - 失败弹窗仅「关闭」+ 完整明细（D-3）与预览页文案（D-4）已按 2026-11-17 裁决写入，请复核。
 - **SA**：
-  - `plan_node` + 文档 `routes` 双写与 `draftVersion+1` 必须同事务，失败整体回滚；
+  - `plan_node` + 文档 `routes`（含 `steps`）双写与 `draftVersion+1` 必须同事务，失败整体回滚；
+  - A 组合计由服务端派生，客户端声明不参与；
   - 5s 轮询/多人并发下以 `STALE_DRAFT_VERSION` 收敛，前端提示重新拉取；
   - 旧 `/split/timing` 重定向与 Screen 15 返回目标需在 P3/P4 回归。
 
+## Revision review（2026-11-18，合并 origin/main US-089 后）
+
+- 触发：合并 `origin/main`（含 US-089）后，A 组改为 `RouteStep` 站点序列且「生成时 A 合计 = 时间窗」；原「A/B 均改三项分钟」口径不再成立。
+- 重基线：4 条 MODIFIED 复制 US-089 最新正文并保留全部原场景（含 G7）；新增 A `steps` 编辑、S2b、N3a；`openspec validate --strict` 仍 valid（46 场景）。
+- 用户裁决（SA）：A 按站点逐项编辑停留/路程，服务端派生合计，合计 SHALL ≤ 时间窗。
+- 状态：本修订已提交 PR #135，待 IO 复审确认；本轮 G1 Revision 见 `g1-decision.md`。
+
 ## Verdict
 
-**AC 4/4 Pass · DoV 5/5 Pass**。无阻塞 Fail/Partial，可进入 G1 决策记录；本文件不是 Gate 决定，G1 须由具名 IO + SA 签署。
+**AC 4/4 Pass · DoV 5/5 Pass**（含 US-089 重基线修订）。无阻塞 Fail/Partial，可进入 G1 决策记录；本文件不是 Gate 决定，G1 须由具名 IO + SA 签署。

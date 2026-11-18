@@ -57,6 +57,22 @@ Rationale：Delta 与 proposal / P1 需求 / impact 一致；AC 4/4、DoV 5/5 �
 | N3 | `screen-timing` 移除、`/split/timing` 重定向、Screen 15 `backTo` 改预览的回归项 | Dev | P3/P4 |
 | N4 | 失败弹窗信息项与预览页文案按 D-3/D-4 实现 | Dev | P3/P4 |
 
+## Revision（2026-11-18，合并 origin/main US-089 后）
+
+- Trigger: `origin/main` 已归档 US-089（A 组改为 `RouteStep` 站点序列，生成时 A 合计 = 时间窗），与本变更原「A/B 均改三项分钟」口径冲突。
+- Rebaseline: 4 条 MODIFIED 复制 US-089 最新正文并保留全部原场景（含 G7）；新增 A `steps` 编辑、S2b、N3a；`openspec validate --strict` = valid（deltaCount = 5 / 46 场景）。
+- Product ruling（SA）: A 组按站点逐项编辑停留/路程，服务端派生合计；合计 SHALL ≤ 时间窗，超窗由下一步弹窗阻断。
+- AC/DoV: 仍为 AC 4/4 Pass、DoV 5/5 Pass（Revision review 见 `dov-ac-review.md`）。
+
+| Role | Name | Revision decision | Date |
+|---|---|---|---|
+| SA | Leo | **Pass** | 2026-11-18 |
+| IO | Emily | **Pass（代记）** | 2026-11-18 |
+
+IO Emily 的 Revision Pass 由用户在本会话明确转达后记录（代记），代理不代签、不独立核验身份。
+
+Revision Decision: **Pass**。非阻塞承接同 N1–N4，新增：P3 design 需定义 A `steps` 编辑控件与派生合计算法，P4 E2E 补 S2b/N3a。
+
 ## Next
 
-G1 Pass → 进入 P3：`/sdd:atdd-design` → `/sdd:task-plan` → `/sdd:quality-checklist stage=p3`。本记录不是 G2/G3 决定。
+G1 Pass（含 Revision Pass）→ 进入 P3：`/sdd:atdd-design` → `/sdd:task-plan` → `/sdd:quality-checklist stage=p3`。本记录不是 G2/G3 决定。

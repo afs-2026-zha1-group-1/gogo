@@ -544,3 +544,51 @@ US-040（issue #84；PR #117）G2 Pass（VL Leo），待 G1 Revision C8（IO）�
 - 后端/数据：**零迁移、零新依赖，未改 `SecurityConfig`**（splits 维持 `permitAll` + `MemberGuard`）。
 - 验证：后端 356/356（合并 main 后）、前端 typecheck/build 绿、E2E 12 行 Pass、E1 run 44046339433 双绿。
 - 残留：TS-1 陈旧路线提示为常驻（未记录路线生成版本）；存量单人 active 草稿仍不可生成/确认。
+
+## 25. Landed reconciliation — US-061 trip dashboard (archived 2026-11-17)
+
+US-061 shipped in PR #118, merge `2c67247`. The living specifications add
+`trip-dashboard` and update `app-shell`.
+
+- **Frontend:** `#/` displays the signed-in member's current-trip overview or
+  an empty/error state; `#/dashboard/trips/<id>` opens a selected-trip overview
+  without persisting that selection. The dashboard composes existing reads for
+  role-specific planning milestones, recommendations and destination links.
+  Reunion and completion remain unknown.
+- **API and data:** no production backend endpoint or migration was added.
+  The dashboard reuses `GET /api/trips/current`, `GET /api/trips/{id}`,
+  `GET /api/trips/{id}/main-plan/inputs`, `GET /api/trips/{id}/main-plan`
+  and `GET /api/trips/{id}/split-draft`; it stores no dashboard progress.
+  Organizer navigation to invitation or trip-details pages can invoke the
+  existing `POST /api/trips/{id}/invitation`, so destination navigation is not
+  necessarily read-only.
+- **Testing tooling:** Playwright was added as a development dependency, with
+  an isolated browser-test runner. Earlier local and CI evidence does not
+  establish final-revision verification; see the archived change summary.
+- **Decision status:** the revised-scope G1 and G2 decisions remain pending.
+  The user confirmed merge readiness and requested that incomplete tasks not
+  block archival; this does not represent gate approval.
+
+## 26. Landed reconciliation — US-089 split window + A follows the main plan (archived 2026-11-17)
+
+US-089 shipped in PR #138, merge `3fcfbfc`. The living specifications modify
+4 `splits` requirements and 1 `trips` requirement.
+
+- **Splits backend:** the split window is `reunion.start_at - departure.start_at`;
+  saving boundaries clears the previous route pair (document `routes = null` and
+  the `split-a/split-b` `plan_node` rows) in the same transaction. Group A is
+  derived from the confirmed main-plan stops inside the boundaries and carried as
+  ordered `RouteStep` entries (stay minutes plus scheduled gaps); group B keeps a
+  destination-keyed synthetic activity. Route views and the draft document expose
+  an additive, nullable `steps` array; the detail read also returns `destination`.
+  No new endpoint, no migration, no dependency, `SecurityConfig` unchanged.
+- **Trips / frontend:** the personal timeline expands the main-line group into
+  its scheduled stops instead of a synthetic block; boundary chips show start
+  times and disable invalid pairs; route cards show total vs window; display
+  zone (Hong Kong/London/Singapore) and currency follow the destination.
+- **Demo data:** `scripts/demo-seed.py` is schema-adaptive and can create the two
+  demo trips (Ben + Eve, ready) on an empty database.
+- **Verification:** backend 371/371, frontend typecheck + 45 unit tests + build,
+  CI runs 44112482366 / 44112533101 green (Backend tests, Frontend build, Browser
+  acceptance). G1 Pass (SA Johnson + IO Johnson), G2 Pass (VL Leo), G3 Pass.
+

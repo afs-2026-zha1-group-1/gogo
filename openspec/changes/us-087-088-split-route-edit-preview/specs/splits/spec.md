@@ -4,16 +4,24 @@
 
 ### Requirement: Split route pair edit
 
-系统 SHALL 提供 `PUT /api/trips/{tripId}/split-draft/routes` 整对保存路线：仅 `active` 草稿、任意成员可写，body 含 `draftVersion` 与两条路线（组别、活动名、地点、活动/路程/缓冲分钟）。SHALL 单事务更新 split-a/split-b 的 `plan_node.title`/`location_name` 与文档 `routes` 并 `draftVersion+1`，失败回滚。错误码：`SPLIT_DRAFT_INCOMPLETE`（无路线）、`STALE_DRAFT_VERSION`、`SPLIT_DRAFT_NOT_ACTIVE`、`INVALID_ROUTE_PAIR`、`INVALID_GROUP_LABEL`、`INVALID_ROUTE_INPUT`。成功返回 200 `{draftVersion,routes[]}`；不改 groups/边界/main，生成仍仅发起人。
+系统 SHALL 提供 `PUT /api/trips/{tripId}/split-draft/routes` 整对保存路线：仅 `active` 草稿、任意成员可写。A 组提交有序 `steps`（站名 + 停留分钟）与各段路程分钟，B 组提交单一活动分解；服务端按 A 的 `steps` 派生活动/路程合计并写入文档 `routes.steps`。SHALL 单事务更新 split-a/split-b 的 `plan_node.title`/`location_name` 与文档 `routes` 并 `draftVersion+1`，失败回滚。错误码：`SPLIT_DRAFT_INCOMPLETE`（无路线）、`STALE_DRAFT_VERSION`、`SPLIT_DRAFT_NOT_ACTIVE`、`INVALID_ROUTE_PAIR`、`INVALID_GROUP_LABEL`、`INVALID_ROUTE_INPUT`。成功返回 200 `{draftVersion,routes[]}`；不改 groups/边界/main，生成仍仅发起人。
 
 #### Scenario: 任意成员保存整对路线（S2）
 
 - **GIVEN** 活跃草稿已生成 A/B 两条路线，成员 Ben（非发起人）打开第 2 步
-- **WHEN** Ben 提交 `draftVersion` 与两条修改后的路线（活动名、地点、活动/路程/缓冲分钟）
-- **THEN** 响应 `200`，`data.draftVersion` 比提交值大 1，`data.routes` 返回两条更新后的 `GroupRoute`
-- **AND** `GET /api/trips/{tripId}/split-draft` 返回新的活动名、`locationName` 与时长
-- **AND** `plan_node` 中 `branch_id = split-a/split-b` 的 `title`、`location_name` 与草稿文档 `routes`、`updated_at` 在同一事务内更新
-- **AND** `groups`、`departureStopId`/`reunionStopId`、main 节点与 `status` 不变
+- **WHEN** Ben 提交 `draftVersion`、A 组 `steps`（站名与停留分钟）与各段路程、B 组活动名/地点/三项分钟
+- **THEN** 响应 `200`，`data.draftVersion` 比提交值大 1，`data.routes` 返回更新后的两条 `GroupRoute`
+- **AND** A 组的 `activityMinutes`/`travelLegsMinutes` 由 `steps` 与路段派生，`steps` 原样落库
+- **AND** `GET /api/trips/{tripId}/split-draft` 返回新的活动名、`locationName`、`steps` 与时长
+- **AND** `plan_node` 的 split-a/split-b `title`、`location_name` 与文档 `routes`、`updated_at` 在同一事务内更新
+- **AND** `groups`、边界、main 节点与 `status` 不变
+
+#### Scenario: A 组站点编辑派生合计（S2b）
+
+- **GIVEN** A 组原 `steps` = City Hall MRT(30) / National Gallery(30) / Gardens by the Bay(15)，legs = [30,30,15]
+- **WHEN** 成员把 National Gallery 停留改为 20 分钟并保存
+- **THEN** A 组 `activityMinutes` = 70、`travelLegsMinutes` 保持 3 段、`bufferMinutes` = 0
+- **AND** 保存响应与后续 `GET split-draft` 的 `steps`/分钟一致，前端不自行改写派生值
 
 #### Scenario: 过期版本拒绝且不部分写入（S3）
 
@@ -32,7 +40,7 @@
 
 #### Scenario: 非法输入拒绝（S5）
 
-- **WHEN** 请求路线数不为 2、组别重复或非 A/B、活动名为空、分钟为负或非整数、或路程段数与既有不一致
+- **WHEN** 请求路线数不为 2、组别重复或非 A/B、活动名或站名为空、分钟为负或非整数、A 组路段数与站点数不一致、或 B 组路程段数与既有不一致
 - **THEN** 响应 `400`，按事实返回 `INVALID_ROUTE_PAIR`、`INVALID_GROUP_LABEL` 或 `INVALID_ROUTE_INPUT`
 - **AND** `plan_node` 与文档 `routes` 均无写入
 
@@ -53,28 +61,36 @@
 
 ### Requirement: Group route generation
 
-The system SHALL expose `POST /api/trips/{tripId}/split-draft/routes:generate` with `draftVersion` for the initiator after boundaries are saved and while the draft is `active`. Before generating, it SHALL require a complete group partition: both `groups.A` and `groups.B` non-empty, every current trip member assigned exactly once. An incomplete partition SHALL be rejected with `409 SPLIT_DRAFT_INCOMPLETE` and `error.details.missing` listing `groups.A` / `groups.B` / `groups.unassigned` / `groups.duplicate` as applicable, with no route rows written and no version change. When complete, it SHALL atomically replace both group routes using fixed in-process candidates, preserve main-plan rows, increment the version on success, roll back on failure, and reject stale results without overwriting newer state. Routes SHALL be generated for the current `groups` keys (A/B) regardless of membership changes since the last generation. Each saved route SHALL bind to a group label only and SHALL NOT carry member ids; a later group change SHALL NOT invalidate, rewrite or delete the saved pair. A `confirmed` or `cancelled` draft SHALL be rejected with `SPLIT_DRAFT_NOT_ACTIVE`. After generation, any trip member SHALL be able to edit the saved pair through Split route pair edit; generation itself SHALL remain initiator-only.
+The system SHALL expose `POST /api/trips/{tripId}/split-draft/routes:generate` with `draftVersion` for the initiator after boundaries are saved and while the draft is `active`. Before generating, it SHALL require a complete group partition: both `groups.A` and `groups.B` non-empty, every current trip member assigned exactly once; incomplete partitions SHALL be rejected with `409 SPLIT_DRAFT_INCOMPLETE` and `error.details.missing`. When complete, it SHALL atomically replace both group routes, preserve main-plan rows, increment the version on success, roll back on failure, and reject stale results without overwriting newer state.
+
+Group A SHALL keep the confirmed itinerary: its candidate SHALL be derived from the main-plan stops from the departure stop (inclusive) to the reunion stop (exclusive), exposing ordered `RouteStep` entries (`name` + scheduled stay minutes); `activityMinutes` = sum of stays, `travelLegsMinutes` = scheduled gaps between consecutive stops (last gap ends at the reunion start), `bufferMinutes` = 0, so the total equals the window exactly. Group B SHALL keep a destination-keyed synthetic activity with empty `steps`. Persisted route views and the draft document SHALL carry `steps` (nullable for old documents). A `confirmed` or `cancelled` draft SHALL be rejected with `SPLIT_DRAFT_NOT_ACTIVE`. After generation, any trip member SHALL be able to edit the pair through Split route pair edit; generation itself SHALL remain initiator-only.
 
 #### Scenario: 成对生成（G1）
 
-- **GIVEN** 草稿含完整分组 A 组（Alice+Ben）、B 组（Chloe+Daniel），边界 City Hall MRT 09:30 → Merlion Park 11:30，发起人携带当前 draftVersion 触发
-- **THEN** 响应 `200`，恰好两条路线成对保存：A 访问 National Gallery Singapore、B 访问 Gardens by the Bay，两条均起于 City Hall MRT、终于 Merlion Park
-- **AND** 时长分解 = 活动 60 分钟、交通 A: 15/20 与 B: 20/20 分钟、buffer 各 10 分钟
-- **AND** draftVersion 递增
-- **AND** candidates come from replaceable `BranchCandidateProvider`, with a fixed in-process fixture implementation and no external network call
-- **AND** routes use existing `plan_node` rows with `branch_id = split-a/split-b`, associated by trip id without new columns; structured duration JSON contains `activityMinutes`, `travelLegsMinutes[]` and `bufferMinutes`
+- **GIVEN** 草稿含完整分组，边界 City Hall MRT 09:00 → Merlion Park 11:30，发起人携带当前 draftVersion 触发
+- **THEN** 响应 `200`，恰好两条路线成对保存，均起于 City Hall MRT、终于 Merlion Park
+- **AND** A 组为「沿主线方案」：steps = City Hall MRT(30) / National Gallery Singapore(30) / Gardens by the Bay(15)，activity = 75，legs = [30, 30, 15]，buffer = 0
+- **AND** B 组为夹具活动：Gardens by the Bay，activity = 60，legs = [20, 20]，buffer = 10
+- **AND** draftVersion 递增；candidates come from replaceable `BranchCandidateProvider`（无外部网络）
+- **AND** routes 使用既有 `plan_node` split-a/split-b 行；结构化时长 JSON 含 `activityMinutes`、`travelLegsMinutes[]`、`bufferMinutes` 与 `steps[]`
 - **AND** replacement deletes the old pair and inserts the new pair in one transaction, preserving main-plan rows
+
+#### Scenario: A 组合计等于时间窗（G7）
+
+- **GIVEN** 主线在边界之间按序排列且无重叠
+- **WHEN** 生成路线
+- **THEN** A 组 `activityMinutes + ΣtravelLegsMinutes + bufferMinutes` = `windowMinutes`
+- **AND** A 组 `steps` 的名称与顺序 = 边界之间的主线站点
 
 #### Scenario: 半对失败整对回滚（G2-N）
 
 - **WHEN** 夹具构造提供者对 B 组抛错（A 组成功）
 - **THEN** 错误响应 `error.code = ROUTE_GENERATION_FAILED`
-- **AND** 库中无该草稿的任何新路线（无可确认半成品对），draftVersion 不变
-- **AND** any previously saved pair and all main-plan rows remain unchanged
+- **AND** 库中无该草稿的任何新路线，draftVersion 不变；既有路线与全部主线行保持原样
 
 #### Scenario: 过期结果拒绝（G3-N）
 
-- **WHEN** generation starts at current draftVersion N after boundary selection, and a concurrent boundary re-selection advances the draft to N+1 before results return
+- **WHEN** generation starts at draftVersion N and a concurrent boundary re-selection advances the draft to N+1 before results return
 - **THEN** 响应 `409` 且 `error.code = STALE_DRAFT_VERSION`
 - **AND** the result for N is discarded and state at N+1 is not overwritten
 
@@ -86,36 +102,33 @@ The system SHALL expose `POST /api/trips/{tripId}/split-draft/routes:generate` w
 
 #### Scenario: 非发起人拒绝（G5-N）
 
-- **WHEN** 非发起人成员 Chloe 触发生成
+- **WHEN** 非发起人成员触发生成
 - **THEN** 响应 `403` 且 `error.code = NOT_SPLIT_INITIATOR`
 - **AND** 无路线落库
 
 #### Scenario: 分组不完整时拒绝生成（G6-N）
 
-- **GIVEN** 草稿初始状态 B 组为空，或夹具构造出某成员不在任何组 / 同时出现在 A 与 B；边界已保存、版本为当前
-- **WHEN** 发起人触发生成
+- **WHEN** 草稿存在空组、未分组或重复分组成员
 - **THEN** 响应 `409` 且 `error.code = SPLIT_DRAFT_INCOMPLETE`
-- **AND** `error.details.missing` 按事实列出：`groups.B`（B 组无人）、`groups.unassigned`（有成员未分组）、`groups.duplicate`（有成员重复分组）
-- **AND** 该行程 `split-a` / `split-b` 的 `plan_node` 行数为 0，`draftVersion` 不变
+- **AND** `error.details.missing` 按事实列出 `groups.A` / `groups.B` / `groups.unassigned` / `groups.duplicate`
+- **AND** `split-a` / `split-b` 行数为 0，draftVersion 不变
 
 #### Scenario: 路线卡内联编辑与终态只读（S1）
 
 - **GIVEN** 草稿为 `active` 且已生成 A/B 两条路线
 - **WHEN** 任一成员打开分组路线屏幕
-- **THEN** 两张路线卡的活动名称、地点、活动分钟、每段路程分钟与缓冲分钟均为可编辑控件
+- **THEN** A 组卡按 `steps` 逐站提供站名与停留分钟编辑，并提供各段路程分钟编辑；B 组卡提供活动名、地点、活动/路程/缓冲分钟编辑
 - **AND** 草稿为 `confirmed` 或 `cancelled` 时同样字段只读，且不出现「下一步」动作
 - **AND** 前端不自行判定路线合法性或时间可行性（判定归后端）
 
 #### Scenario: 分组路线屏幕展示契约（Screen 13）
 
-- **GIVEN** 发起人或任一成员打开分组路线屏幕（草稿 active，可能尚无路线）
-- **WHEN** 草稿读取返回
-- **THEN** 页面呈现分组卡（A/B 组人数与成员名、「我」标记、切组控件）与成对路线卡（组标签、活动名、地点、起终点、时长/交通/buffer 分解）
+- **WHEN** 任一成员打开分组路线屏幕
+- **THEN** 页面呈现分组卡与成对路线卡；A 组卡按 `steps` 逐站显示（站名 + 分钟），B 组卡显示单一活动分解
 - **AND** 路线卡字段按 S1 可编辑；「下一步」在保存/校验进行中禁用重复点击
-- **AND** 已生成路线在成员改组后仍原样呈现，并提示「分组已更新，路线仍为上次生成的版本，可点击重新生成」
-- **AND** 任一组被搬空且仍留有旧路线时，该组路线卡标注「需重新生成」，且不得暗示可直接确认
-- **AND** 分组不完整 / 无边界 / 失败 / 过期错误态与 loading / empty / permission 态均可观察；非发起人的「重新生成」不可用
-- **AND** 前端不自行判定分组完整性或路线合法性（判定归后端）
+- **AND** 每张路线卡显示「合计 X 分 / 窗口 Y 分」；超窗在表头标红并提示回边界页把会合站后移或下调站点/路程分钟
+- **AND** 顶部显示时间窗与「由所选出发/会合站决定」的说明
+- **AND** 已生成路线在成员改组后仍原样呈现并提示需重新生成；终态路线只读；判定归后端
 
 ### Requirement: Reunion timing check
 
@@ -161,10 +174,10 @@ The system SHALL expose `POST /api/trips/{tripId}/split-draft/routes:check-timin
 
 #### Scenario: 下一步先保存后校验并通过（N1）
 
-- **GIVEN** 草稿 `active`，成员修改了 A 组活动时长且本地值已变更
+- **GIVEN** 草稿 `active`，成员修改了 A 组某站停留或 B 组时长且本地值已变更
 - **WHEN** 成员点击「下一步」
 - **THEN** 系统先调用 Split route pair edit 保存，`draftVersion + 1`
-- **AND** 随后以保存后的两条路线与 `windowMinutes` 调用 check-timing
+- **AND** 随后以保存后的两条路线（A 由 `steps` 派生合计）与 `windowMinutes` 调用 check-timing
 - **AND** `feasible=true` 时导航到 `/trips/{tripId}/split/preview`
 
 #### Scenario: 无改动继续跳过保存（N2）
@@ -173,6 +186,14 @@ The system SHALL expose `POST /api/trips/{tripId}/split-draft/routes:check-timin
 - **WHEN** 成员点击「下一步」
 - **THEN** 系统不调用保存端点，`draftVersion` 不变
 - **AND** 直接调用 check-timing，并按结果进入预览或弹窗
+
+#### Scenario: A 组编辑超过时间窗被拦（N3a）
+
+- **GIVEN** A 组编辑后合计为 160 分、窗口 150 分
+- **WHEN** 成员点击「下一步」并完成校验
+- **THEN** 响应 `200` 且 `feasible=false`，A 项 `totalMinutes=160`、`overrunMinutes=10`
+- **AND** 弹窗提示 A 组超窗 10 分并停留在第 2 步，不进入预览
+- **AND** 已保存的编辑值保留
 
 #### Scenario: 校验不可行弹窗阻断（N3）
 
@@ -193,28 +214,28 @@ The system SHALL expose `POST /api/trips/{tripId}/split-draft/routes:check-timin
 - **GIVEN** 第 2 步校验通过
 - **WHEN** 成员进入 `/trips/{tripId}/split/preview`
 - **THEN** 页面标题为「队伍路线预览」、副标题为「校验通过 · 只读预览」，顶部显示 A 组 / B 组人数徽标
-- **AND** 复用队伍路线图展示主线、分头、A/B 分支、会合与暂停段，分支显示活动·路程·缓冲时长与地点（地点为空或等于活动名时不重复显示）
+- **AND** 复用队伍路线图展示主线、分头、A/B 分支、会合与暂停段；A 组节点按编辑后的 `steps` 展开，B 组显示活动·路程·缓冲；地点为空或等于活动名时不重复显示
 - **AND** 页面只读，底部「前往复核并确认」进入 `/split/confirm`，返回目标为第 2 步
 - **AND** loading / error / 无草稿 / 无路线对 / 终态只读态均可观察
 
 #### Scenario: 窗口校验屏幕展示契约（Screen 14）
 
 - **WHEN** 成员在第 2 步点击「下一步」并完成校验
-- **THEN** 页面不再渲染可编辑校验表单；可行时进入 Screen 13b 预览，不可行时以弹窗呈现 A/B 组活动/交通/buffer 合计、时间窗、超窗与缺失项三态
+- **THEN** 页面不再渲染可编辑校验表单；可行时进入 Screen 13b 预览，不可行时以弹窗呈现 A/B 组合计、时间窗、超窗与缺失项三态
 - **AND** 直接访问旧 `/trips/{tripId}/split/timing` 时重定向到 `/split/preview`
 - **AND** loading / empty / permission 态可观察；前端不自行宣布可行
 
 ### Requirement: Split draft detail read
 
-The system SHALL expose member-only `GET /api/trips/{tripId}/split-draft` using the shared identity guards (authenticated session) and `{data,error}` envelope. It SHALL return a consistent saved draft snapshot with versions, status, groups, selectable main-plan stops, boundaries, window and route pair, including `confirmed` and `cancelled` drafts. Each route view SHALL include an additive nullable `locationName` read from `plan_node.location_name`. An existing trip without any draft row SHALL return 200 with `data=null` and `error=null`. Reads SHALL NOT mutate the draft, routes or versions, and SHALL NOT require initiator status.
+The system SHALL expose member-only `GET /api/trips/{tripId}/split-draft` using the shared identity guards and `{data,error}` envelope. It SHALL return a consistent saved draft snapshot with versions, status, groups, selectable main-plan stops, boundaries, window, route pair and the trip `destination`. Each route view SHALL include `groupLabel`, `activityName`, additive nullable `locationName`, boundary ids, `activityMinutes`, `travelLegsMinutes[]`, `bufferMinutes` and nullable `steps[]` (group A carries its main-plan or edited steps). An existing trip without any draft row SHALL return 200 with `data=null`. Reads SHALL NOT mutate the draft, routes or versions, and SHALL NOT require initiator status.
 
 #### Scenario: Member reloads the saved draft and routes (D1)
 
-- **WHEN** member Chloe refreshes the draft page after Ben saves boundaries and generates both routes, then requests the draft detail endpoint
-- **THEN** response is 200 with `error=null`; `data` contains `initiatorMemberId`, `mainPlanVersion`, `draftVersion`, `status`, `groups`, `createdAt`, `updatedAt`, `mainPlanStops`, `departureStopId`, `reunionStopId`, `departureAt`, `reunionAt`, `windowMinutes` and `routes`
-- **AND** stops belong to the draft's main-plan version with id, name, start/end timestamps; boundaries yield window 120 and routes contain A/B groups, activity names, `locationName`, departure/reunion stops and `activityMinutes`, `travelLegsMinutes[]`, `bufferMinutes`, sufficient to build the timing snapshot without client guesses
-- **AND** before boundary selection boundary ids/times/window are null; before generation `routes=[]`; otherwise saved boundary and pair values are returned
-- **AND** all fields describe one consistent saved state; no version is incremented
+- **WHEN** member refreshes the draft page after boundaries and routes are saved
+- **THEN** response is 200 with `error=null`; `data` contains versions, status, groups, timestamps, `mainPlanStops`, boundary ids/times, `windowMinutes`, `routes` and `destination`
+- **AND** boundaries yield window = reunion start − departure start (150 for City Hall → Merlion); routes expose `steps`, `locationName` for group A and B's activity breakdown
+- **AND** before boundary selection boundary ids/times/window are null; before generation `routes=[]`
+- **AND** no version is incremented
 
 #### Scenario: 旧草稿地点回填活动名（S7）
 
@@ -227,115 +248,90 @@ The system SHALL expose member-only `GET /api/trips/{tripId}/split-draft` using 
 
 - **GIVEN** the draft was confirmed or cancelled by a previous call
 - **WHEN** a member reads the draft detail
-- **THEN** response is 200 with `status` = `confirmed` or `cancelled`; a `confirmed` draft returns its saved groups/boundaries/routes, a `cancelled` draft returns `routes = []` (its split nodes were removed and the document routes cleared)
+- **THEN** response is 200 with `status` = `confirmed` or `cancelled`; a `confirmed` draft returns its saved groups/boundaries/routes, a `cancelled` draft returns `routes = []`
 - **AND** no version or document change is caused by the read
 
 #### Scenario: Existing trip has no active draft (D2)
 
 - **WHEN** a member requests detail for an existing trip with no draft row
-- **THEN** response is 200 with `data=null` and `error=null` for the empty state
+- **THEN** response is 200 with `data=null` and `error=null`
 - **AND** no draft is created and no data or version changes
 
 #### Scenario: Known outsider cannot read draft detail (D3-N)
 
-- **WHEN** Eve uses her known user id to read the fixture trip's draft detail
+- **WHEN** a known non-member reads the draft detail
 - **THEN** response is 403 with `error.code=NOT_A_MEMBER` and `data=null`
-- **AND** no trip, draft or route values are returned
 
 #### Scenario: Missing or globally unknown identity cannot read detail (D4-N)
 
 - **WHEN** a detail request has no authenticated session
 - **THEN** response is 401 with `error.code=MEMBER_REQUIRED` and `data=null`
-- **AND** no trip, draft or route values are returned
 
 #### Scenario: Known member requests an unknown trip (D5-N)
 
 - **WHEN** a known member requests detail with a trip id that does not exist
 - **THEN** response is 404 with `error.code=TRIP_NOT_FOUND` and `data=null`
-- **AND** no draft is created and no data or version changes
 
 ### Requirement: Split confirmation
 
-系统 SHALL 提供 `POST /api/trips/{tripId}/split-draft:confirm`（认证会话，body 含 `draftVersion`），仅允许行程组织者确认当前活跃草稿。校验顺序 = 成员资格 → 组织者 → 活跃草稿 → 版本一致 → 草稿完整性（边界已存、两条路线齐备、**分组完整**），随后从草稿文档复算两条路线的时长与窗口；客户端声明不参与判定。拒绝时不改变 `status` 与 `draftVersion`，按缺失/不可行返回 `SPLIT_DRAFT_INCOMPLETE` 或 `SPLIT_TIMING_INFEASIBLE`；分组缺失项 SHALL 以 `groups.A` / `groups.B` / `groups.unassigned` / `groups.duplicate` 出现在 `error.details.missing`。成功 SHALL 在单一事务内将 `status` 置 `confirmed`（版本不变），路线对、分组与边界成对生效并锁定编辑（写端点 `409 SPLIT_DRAFT_NOT_ACTIVE`），响应返回草稿详情投影。复核屏 SHALL 以队伍路线预览为返回目标，且确认复算 SHALL 使用最近一次保存的编辑后路线。
+系统 SHALL 提供 `POST /api/trips/{tripId}/split-draft:confirm`（认证会话，body 含 `draftVersion`），仅允许行程组织者确认当前活跃草稿。校验顺序 = 成员资格 → 组织者 → 活跃草稿 → 版本一致 → 草稿完整性（边界已存、两条路线齐备、分组完整），随后从草稿文档复算两条路线的时长与新窗口（会合开始 − 出发开始）；客户端声明不参与判定。拒绝时不改变 `status` 与 `draftVersion`，按缺失/不可行返回 `SPLIT_DRAFT_INCOMPLETE` 或 `SPLIT_TIMING_INFEASIBLE`。成功 SHALL 在单一事务内将 `status` 置 `confirmed`（版本不变），路线对、分组与边界成对生效并锁定编辑，响应返回草稿详情投影。复核屏 SHALL 以队伍路线预览为返回目标，且确认复算 SHALL 使用最近一次保存的编辑后路线。
 
 #### Scenario: 组织者确认成功并锁定（CF1）
 
-- **GIVEN** 活跃草稿为版本 3（发起 1 → 保存边界 2 → 生成路线 3），两组齐全互斥，边界已保存，路线对 A = 15+60+20+10 = 105、B = 20+60+20+10 = 110（窗口 120）
-- **WHEN** 组织者 Alice（`X-User-Id: 1`）携带 `draftVersion: 3` 调用确认
+- **GIVEN** 活跃草稿为版本 3（发起 1 → 保存边界 2 → 生成路线 3），两组齐全互斥，边界已保存，路线对 A = 75+30+30+15+0 = 150、B = 60+20+20+10 = 110（窗口 150）
+- **WHEN** 组织者携带 `draftVersion: 3` 调用确认
 - **THEN** 响应 `200`，`data.status = confirmed`，`data.draftVersion = 3`
-- **AND** 再次读取草稿详情返回同一 `status = confirmed`
-- **AND** 之后的 `PUT .../boundaries` 与 `POST .../routes:generate` 均返回 `409 SPLIT_DRAFT_NOT_ACTIVE`
+- **AND** 之后边界保存与路线生成均返回 `409 SPLIT_DRAFT_NOT_ACTIVE`
 
 #### Scenario: 编辑后确认按新路线复算（CF9）
 
-- **GIVEN** 成员通过 Split route pair edit 保存了修改后的活动名/地点/时长（版本 4），复算仍可行
+- **GIVEN** 成员通过 Split route pair edit 保存了修改后的 A `steps` 与 B 分解（版本 4），复算仍可行
 - **WHEN** 组织者携带 `draftVersion: 4` 确认
-- **THEN** 响应 `200`，`data.status = confirmed`，确认使用编辑后的路线值
+- **THEN** 响应 `200`，`data.status = confirmed`，确认使用编辑后的派生合计
 - **AND** 若编辑值不可行，同样返回 `409 SPLIT_TIMING_INFEASIBLE` 且 `error.details.routes` 反映编辑后的合计与超窗
 
 #### Scenario: 超窗拦住整对确认（CF2-N）
 
-- **GIVEN** 客户端声明可确认，但 A 路线末段交通为 40 分钟（A = 125），窗口 120
-- **WHEN** 组织者调用确认
-- **THEN** 响应 `409` 且 `error.code = SPLIT_TIMING_INFEASIBLE`
-- **AND** `error.details.routes` 为长度 2 的数组，每项 `{groupLabel, totalMinutes, overrunMinutes, missingInputs}`：A 项 `totalMinutes = 125`、`overrunMinutes = 5`、`missingInputs = []`；B 项 `totalMinutes = 110`、`overrunMinutes = 0`
-- **AND** 草稿仍为 `active`，`draftVersion` 不变
-- **AND** 服务端判定不读取客户端声明
+- **GIVEN** 客户端声明可确认，但 A 路线末段交通被改为 80 分钟（A = 215），窗口 150
+- **THEN** 响应 `409` 且 `error.code = SPLIT_TIMING_INFEASIBLE`，`status` 与版本不变
+- **AND** `error.details.routes` 为长度 2 的数组：A 项 `totalMinutes = 215`、`overrunMinutes = 65`；B 项 `totalMinutes = 110`、`overrunMinutes = 0`
 
 #### Scenario: 缺输入不得判为可确认（CF3-N）
 
-- **GIVEN** A 路线的活动时长或末段交通估算缺失
-- **WHEN** 组织者调用确认
-- **THEN** 响应 `409` 且 `error.code = SPLIT_TIMING_INFEASIBLE`
-- **AND** `error.details.routes` 中 A 项的 `missingInputs` 非空（以字段名标识，如 `activityMinutes` / `travelLegsMinutes[1]` / `bufferMinutes`），B 项 `missingInputs = []`
-- **AND** 草稿仍为 `active`
+- **WHEN** 任一必填时长（activity / travel leg / buffer）缺失
+- **THEN** 响应 `409` 且 `SPLIT_TIMING_INFEASIBLE`；`error.details.routes` 对应项列出缺失字段
+- **AND** 不得把缺失输入按 0 处理为可行
 
 #### Scenario: 草稿不完整无确认（CF7-N）
 
-- **GIVEN** 活跃草稿版本 3，边界已保存但路线未生成（`routes = null`）；或边界只保存一侧（半边界）
-- **WHEN** 组织者调用确认
-- **THEN** 响应 `409` 且 `error.code = SPLIT_DRAFT_INCOMPLETE`
-- **AND** `error.details.missing` 列出缺失项（`boundaries` / `routes` / 某一组路线）
-- **AND** 草稿仍为 `active`，`draftVersion` 不变；不进入时间复算
+- **WHEN** 边界或任一路线缺失
+- **THEN** 响应 `409` 且 `SPLIT_DRAFT_INCOMPLETE`，`details.missing` 列出缺失部分
 
 #### Scenario: 分组不完整无确认（CF8-N）
 
-- **GIVEN** 边界与两条路线齐备，但 `groups.B` 为空；或夹具构造出成员漏分组 / 重复分组
-- **WHEN** 组织者调用确认
-- **THEN** 响应 `409` 且 `error.code = SPLIT_DRAFT_INCOMPLETE`
-- **AND** `error.details.missing` 恰含 `groups.B`、`groups.unassigned` 或 `groups.duplicate` 中对应项，不混入无关缺失项
-- **AND** 不进入时间复算，草稿仍为 `active`，`draftVersion` 不变
+- **WHEN** 分组有空组 / 未分组 / 重复
+- **THEN** 响应 `409` 且 `SPLIT_DRAFT_INCOMPLETE`，`details.missing` 列出 `groups.*`
 
 #### Scenario: 版本过期拒绝（CF4-N）
 
-- **GIVEN** 活跃草稿已推进到版本 3
-- **WHEN** 确认请求携带 `draftVersion: 1`
-- **THEN** 响应 `409` 且 `error.code = STALE_DRAFT_VERSION`
-- **AND** 草稿状态与版本不变
+- **WHEN** 携带过期 `draftVersion` 确认
+- **THEN** 响应 `409` 且 `STALE_DRAFT_VERSION`
 
 #### Scenario: 非组织者拒绝（CF5-N）
 
-- **GIVEN** Ben（`X-User-Id: 2`）是本行程成员但不是组织者（组织者 = Alice 1）
-- **WHEN** Ben 调用确认
-- **THEN** 响应 `403` 且 `error.code = NOT_SPLIT_ORGANIZER`
-- **AND** 草稿状态与版本不变
+- **WHEN** 非组织者成员确认
+- **THEN** 响应 `403` 且 `NOT_SPLIT_ORGANIZER`
 
 #### Scenario: 无活跃草稿时确认拒绝（CF6-N）
 
-- **GIVEN** 该行程从未发起草稿，或草稿已 `confirmed`，或草稿已 `cancelled`
-- **WHEN** 成员调用确认
-- **THEN** 三情形均响应 `409` 且 `error.code = SPLIT_DRAFT_NOT_ACTIVE`
-- **AND** 无任何状态变化
+- **WHEN** 无草稿或草稿处于终态
+- **THEN** 响应 `409` 且 `SPLIT_DRAFT_NOT_ACTIVE`（或 `404 NO_DRAFT`，按既有顺序）
 
 #### Scenario: 确认屏幕展示契约（Screen 15）
 
-- **GIVEN** 行程存在一份活跃草稿（已存边界与成对路线）
-- **WHEN** 成员打开拆分复核与确认屏幕
-- **THEN** 页面呈现两条路线卡（组标签、分组、活动/地点/交通/buffer 分解、合计与窗口对比）、边界与窗口、校验结论与草稿状态徽标；A/B 组以成员名展示
-- **AND** 组织者可见确认按钮，非组织者只见只读视图（permission 态）
-- **AND** 若分组在路线生成之后被变更，页面 SHALL 显示与 Screen 13 相同的「分组已更新，路线仍为上次生成的版本」提示，不得让查看者把旧路线当作当前分组的结果
-- **AND** 超窗 / 缺输入 / 不完整（含分组不完整）错误态按 `error.details` 渲染逐路线数值与缺失项（`groups.*` 映射为中文提示），已确认终态、loading 与 empty（无草稿）态均可观察
-- **AND** 返回目标为 `/split/preview`，前端不自行宣布可确认（判定归后端）
+- **WHEN** 组织者打开复核页
+- **THEN** 页面显示边界时间窗、分组、每条路线分解与状态；A 组按编辑后的 `steps` 展示；确认由服务端复算，客户端不宣布可行性
+- **AND** 失败明细来自 `error.details`；终态只读；返回目标为 `/split/preview`
 
 ## REMOVED Requirements
 

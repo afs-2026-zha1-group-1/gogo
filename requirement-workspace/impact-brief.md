@@ -1652,11 +1652,11 @@ No critical blocker. 可进入 P2 proposal-split。
 > milestones. Organizer invitation and details destinations invoke the
 > existing invitation POST on load. The changed boundary requires renewed
 > IO/SA alignment; see [US-061](requirements/US-061.md) and its
-> [proposal](../openspec/changes/us-061-view-trip-dashboard/proposal.md).
+> [proposal](../openspec/changes/archive/2026-11-17-us-061-view-trip-dashboard/proposal.md).
 
 > Historical impact analysis for the earlier active-only scope. The current
 > interim scope is recorded in [US-061](requirements/US-061.md) and the
-> [proposal](../openspec/changes/us-061-view-trip-dashboard/proposal.md).
+> [proposal](../openspec/changes/archive/2026-11-17-us-061-view-trip-dashboard/proposal.md).
 > US-058 integration and archive are deferred; the unsafe details destination
 > remains blocked until its separate fix is verified.
 
@@ -1940,7 +1940,7 @@ No critical blocker invalidates US-040; split may proceed.
 
 | 资产 | 证据 | 现状 |
 |---|---|---|
-| Living Spec — splits | `openspec/specs/splits/spec.md` | 8 条 requirement：draft start / boundary selection / group route generation（Screen 13 展示契约）/ reunion timing check（Screen 14 契约）/ draft detail read / confirmation（Screen 15 契约）/ cancellation / member group assignment；**无路线编辑写入**，Screen 13 规定为只读展示 |
+| Living Spec — splits | `openspec/specs/splits/spec.md` | 8 条 requirement（US-089 已重基线：A 组 `RouteStep` 站点、`destination`、边界从 `start_at` 起算）；**无路线编辑写入**，Screen 13 为只读展示 |
 | 后端端点 | `backend/.../splits/SplitDraftController.java` | 8 个入口（GET/POST draft、PUT boundaries、routes:generate、routes:check-timing、PUT assignment、:confirm、:cancel）；**无 routes 保存** |
 | 后端写链 | `SplitDraftService.java` | `generateRoutes` 成对原子写 `plan_node` + 文档 `routes`；`checkTiming` 只读快照；`confirmDraft` 从文档复算；`assign` 保留 routes 并 `+1` |
 | 路线读取 | `SplitDraftService.getDraftDetail` + `SplitDraftRepository.findSplitRouteActivities` | 活动名从 `plan_node.title`（split-a/split-b）读；时长从文档 `routes` 读；`GroupRoute` **无 locationName** |
@@ -1963,15 +1963,15 @@ No critical blocker invalidates US-040; split may proceed.
 
 **As-is**：无路线编辑端点；路线仅在 generate 时成对写入，活动名与时长分开存储且不可单独更新。
 
-**Proposed delta**：新增 `PUT /api/trips/{tripId}/split-draft/routes`——body `{draftVersion, routes[2]{groupLabel, activityName, locationName?, activityMinutes, travelLegsMinutes[], bufferMinutes}}`；任意行程成员、仅 `active`；单事务更新 `plan_node.title`/`location_name`（split-a/split-b）与文档 `routes`/`updated_at`，CAS `draftVersion + 1`；返回 `{draftVersion, routes[]}`（复用 `RouteGenerationResponse` 形状）。新错误码 `INVALID_ROUTE_INPUT`（400）。
+**Proposed delta**：新增 `PUT /api/trips/{tripId}/split-draft/routes`——body `{draftVersion, routes[2]}`：A 组提交 `steps[{name, stayMinutes}]` + 路段分钟（服务端派生 activity/travel），B 组提交活动名/地点/活动/路程/缓冲分钟；任意行程成员、仅 `active`；单事务更新 `plan_node.title`/`location_name` 与文档 `routes`/`updated_at`，CAS `draftVersion + 1`；返回 `{draftVersion, routes[]}`。新错误码 `INVALID_ROUTE_INPUT`（400）。
 
 ### 3.2 `splits` 能力（MODIFIED）
 
 | Requirement | As-is | Proposed delta |
 |---|---|---|
-| Group route generation | Screen 13 为只读展示；生成仅发起人 | Screen 13 变为可编辑（活动名/地点/三项分钟）；「下一步」先保存再继续；生成仍仅发起人、仍成对原子 |
-| Reunion timing check | 校验入口在 Screen 14，独立页面可编辑快照 | 端点与计算域不变；校验入口迁移到第 2 步「下一步」；Screen 14 由只读队伍路线预览取代（旧地址重定向） |
-| Split draft detail read | `GroupRoute` 无地点 | `GroupRoute` additive 新增 `locationName`；其余读取语义不变 |
+| Group route generation | Screen 13 为只读展示；生成仅发起人；A 组由主线站点派生且合计=窗口 | Screen 13 变为可编辑（A 按 `steps` 逐站、B 活动分解）；「下一步」先保存再继续；生成仍仅发起人、仍成对原子；A 编辑后合计须 ≤ 窗口 |
+| Reunion timing check | 校验入口在 Screen 14，独立页面可编辑快照 | 端点与计算域不变；校验入口迁移到第 2 步「下一步」；Screen 14 由只读队伍路线预览取代（旧地址重定向）；A 合计>窗口时弹窗阻断 |
+| Split draft detail read | `GroupRoute` 无地点 | `GroupRoute` additive 新增 `locationName`；`steps` 沿用 US-089（A 组返回编辑后站点） |
 | Split confirmation | Screen 15 返回 `/split/timing` | 判定与错误码不变；返回目标改为 `/split/preview` |
 
 ### 3.3 前端页面与路由
@@ -2011,7 +2011,7 @@ No critical blocker invalidates US-040; split may proceed.
 
 | 类别 | 影响 |
 |---|---|
-| Specs | `splits` +1 ADDED、4 MODIFIED（P2 delta）；MODIFIED 必须保留全部既有场景标题 |
+| Specs | `splits` +1 ADDED、4 MODIFIED（46 场景，P2 delta）；MODIFIED 必须保留全部既有场景标题（含 US-089 G7） |
 | 测试 | 后端新增 `SplitRouteEditApiTest`（保存矩阵）；既有 splits 测试需补 `locationName` 断言；前端 `team-route.test.ts` 扩展 + `tsc`/build；E2E 新增 S/N 链 |
 | 文档 | `registry.md` 登记行；`deep-dive.md`/`impact-brief.md` 已更新；`acceptance-test-fixtures.md` §US-087-088（P3）；`docs/knowledge/_LOG.md`（落地对账） |
 | 归档 | 无（新 change 结束后归档） |
@@ -2033,7 +2033,8 @@ No critical blocker invalidates US-040; split may proceed.
 | R6 | 保存后 5s 轮询/他人并发写导致版本过期 | 并发 | 409 `STALE_DRAFT_VERSION` → 前端重新拉取并提示重试（S3/N4） |
 | R7 | 移除 Screen 14 破坏旧书签与 E2E 断言 | 回归 | `/split/timing` 重定向；E2E 与路由断言同步更新（N8） |
 | R8 | 校验失败后已保存草稿可能被误认为「已通过」 | 业务认知 | 弹窗明确「未通过」；预览只在 `feasible=true` 时进入；确认仍服务端复算（N3/N7） |
-| R9 | 编辑控件在 430px shell 内挤压卡片 | 可用性 | P3 定版式；P4 E2E 检查不横向滚动 |
+| R9 | 编辑控件在 430px shell 内挤压卡片（A 组多站时更长） | 可用性 | P3 定版式；P4 E2E 检查不横向滚动 |
+| R10 | US-089 合并后 A 组改为 `steps` 派生，与原「A/B 均改三项分钟」口径冲突 | spec 冲突 | 2026-11-18 用户裁决：A 按站点逐项编辑、服务端派生合计、合计 ≤ 时间窗；delta 已按 US-089 重基线并保留 G7 |
 
 无 critical blocker 使需求失效，可进入 `/sdd:proposal-split`；G1 需 IO 对新增错误码与 4 条 MODIFIED 复核。
 
