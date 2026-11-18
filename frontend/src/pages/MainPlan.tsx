@@ -357,8 +357,8 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
       </div>
 
       {plan.confirmed ? (
-        <div className="actionbar">
-          {isOrganizer ? (
+        <div className="actionbar" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {isOrganizer && (
             <button
               className="btn btn-primary"
               type="button"
@@ -366,7 +366,15 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
             >
               <Icon name="fork" className="sm" /> 进入智能分队
             </button>
-          ) : (
+          )}
+          {/* US-090: the confirmed plan gets a second exit back to the trip for every member. */}
+          <a
+            className="btn btn-ghost"
+            href={dashboardOrigin ? `#/dashboard/trips/${tripId}` : `#/trips/${tripId}`}
+          >
+            <Icon name="left" className="sm" /> 返回行程
+          </a>
+          {!isOrganizer && (
             <p className="hint" style={{ textAlign: 'center' }}>
               主线方案已确认，等待组织者发起智能分队。
             </p>

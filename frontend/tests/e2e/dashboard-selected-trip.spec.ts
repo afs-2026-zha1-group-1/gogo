@@ -40,31 +40,36 @@ test('dashboard offers selection when no current trip exists and reports lookup 
   await expect(page.getByRole('alert')).toContainText('服务不可用')
 })
 
-test('trip-number lookup opens member details and validates invalid input', async ({ page }) => {
+test('trip tab opens my trips and a card becomes the selected trip', async ({ page }) => {
   await login(page)
   await page.getByRole('link', { name: '行程', exact: true }).click()
-  const input = page.getByLabel('按编号打开行程')
-  await expect(input).toBeEnabled()
-  await input.fill('0')
-  await page.getByRole('button', { name: '打开行程' }).click()
-  await expect(page.getByRole('alert')).toBeVisible()
-  await input.fill('9001')
-  await page.getByRole('button', { name: '打开行程' }).click()
-  await expect(page).toHaveURL(/#\/trips\/9001$/)
-  await expect(page.getByRole('heading', { name: 'Stale draft trip' })).toBeVisible()
+  await expect(page).toHaveURL(/#\/my-trips$/)
+  const card = page.getByRole('button', { name: /Singapore Friends Day/ })
+  await card.click()
+  await expect(card).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('link', { name: '行程', exact: true })).toHaveAttribute('aria-current', 'page')
 })
 
-test('trip-number lookup preserves missing and forbidden trip responses', async ({ page }) => {
+test('deep-linked missing and forbidden trips keep their states', async ({ page }) => {
   await login(page, 'eve@example.com')
-  await page.getByRole('link', { name: '行程', exact: true }).click()
-  await page.getByLabel('按编号打开行程').fill('9001')
-  await page.getByRole('button', { name: '打开行程' }).click()
+  await page.evaluate(() => { window.location.hash = '#/trips/9001' })
   await expect(page.getByText('没有访问权限', { exact: true })).toBeVisible()
-  await page.getByRole('link', { name: '仪表盘', exact: true }).click()
-  await page.getByRole('link', { name: '行程', exact: true }).click()
-  await page.getByLabel('按编号打开行程').fill('999999')
-  await page.getByRole('button', { name: '打开行程' }).click()
+  await page.evaluate(() => { window.location.hash = '#/trips/999999' })
   await expect(page.getByText('行程不存在', { exact: true })).toBeVisible()
+})
+
+test('members tab falls back to the current trip when no trip context is set', async ({ page }) => {
+  const db = new DatabaseSync(process.env.GOGO_E2E_DB_PATH!)
+  const previous = db.prepare('SELECT current_trip_id FROM app_user WHERE id = 2').get()?.current_trip_id
+  try {
+    db.prepare('UPDATE app_user SET current_trip_id = ? WHERE id = 2').run(9001)
+    await login(page, 'ben@example.com')
+    await page.goto('/#/members')
+    await expect(page.getByRole('region', { name: '成员列表' })).toBeVisible()
+  } finally {
+    db.prepare('UPDATE app_user SET current_trip_id = ? WHERE id = 2').run(previous ?? null)
+    db.close()
+  }
 })
 
 test('dashboard quick links use existing pages without unavailable actions', async ({ page }) => {

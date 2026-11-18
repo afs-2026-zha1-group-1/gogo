@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api, errorMessage as apiErrorMessage } from '../api'
 import Icon from '../Icons'
+import { isCurrentTripResponse } from '../lib/current-trip'
 import type { TripMemberList } from '../types'
 
 type MembersState =
@@ -31,23 +32,31 @@ export default function Members({ tripId, tripsHref, tripHref }: MembersProps) {
   )
 
   const load = useCallback(() => {
-    if (tripId == null) {
-      setState({ kind: 'no-trip' })
-      return
-    }
     let active = true
     setState({ kind: 'loading' })
-    api<TripMemberList>(`/api/trips/${tripId}/members`)
-      .then(({ status, ok, data }) => {
-        if (!active) return
-        if (ok && data) setState({ kind: 'ready', members: data.members })
-        else if (status === 401 || status === 403) setState({ kind: 'denied', message: apiErrorMessage(data) })
-        else if (status === 404) setState({ kind: 'missing', message: apiErrorMessage(data) })
-        else setState({ kind: 'failed', message: apiErrorMessage(data) ?? `HTTP ${status}` })
-      })
-      .catch((cause: unknown) => {
-        if (active) setState({ kind: 'failed', message: causeMessage(cause) })
-      })
+    // With no explicit trip the roster follows the account's current trip, so the 成员 tab keeps working after
+    // leaving the trip list (US-071/US-090 navigation).
+    const run = async () => {
+      let id = tripId
+      if (id == null) {
+        const current = await api<unknown>('/api/trips/current')
+        id = current.ok && isCurrentTripResponse(current.data) ? current.data.tripId : null
+      }
+      if (!active) return
+      if (id == null) {
+        setState({ kind: 'no-trip' })
+        return
+      }
+      const { status, ok, data } = await api<TripMemberList>(`/api/trips/${id}/members`)
+      if (!active) return
+      if (ok && data) setState({ kind: 'ready', members: data.members })
+      else if (status === 401 || status === 403) setState({ kind: 'denied', message: apiErrorMessage(data) })
+      else if (status === 404) setState({ kind: 'missing', message: apiErrorMessage(data) })
+      else setState({ kind: 'failed', message: apiErrorMessage(data) ?? `HTTP ${status}` })
+    }
+    run().catch((cause: unknown) => {
+      if (active) setState({ kind: 'failed', message: causeMessage(cause) })
+    })
     return () => {
       active = false
     }

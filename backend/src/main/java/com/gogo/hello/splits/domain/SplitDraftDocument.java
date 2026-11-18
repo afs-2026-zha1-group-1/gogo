@@ -94,6 +94,28 @@ public record SplitDraftDocument(
     }
 
     /**
+     * Returns a new document with the generated pair cleared and {@code draftVersion + 1} (US-090): a main-plan
+     * stop edit changes the times the pair was computed against, so the pair must be regenerated. Boundaries,
+     * groups, initiator and status are preserved so the draft stays usable.
+     */
+    public SplitDraftDocument withClearedRoutes(String now) {
+        return new SplitDraftDocument(
+                initiatorMemberId, mainPlanVersion, draftVersion + 1, status,
+                departureStopId, reunionStopId, groups, null, createdAt, now);
+    }
+
+    /**
+     * Returns a new document with the pair AND the boundary ids cleared and {@code draftVersion + 1} (US-090): the
+     * boundary stop was removed from the main plan, so keeping its id would leave the boundary page and the route
+     * page bouncing between "saved" and "missing".
+     */
+    public SplitDraftDocument withClearedBoundariesAndRoutes(String now) {
+        return new SplitDraftDocument(
+                initiatorMemberId, mainPlanVersion, draftVersion + 1, status,
+                null, null, groups, null, createdAt, now);
+    }
+
+    /**
      * Returns the confirmed document (design D4/D5): status becomes {@code confirmed}, the document version and every
      * saved field (routes, groups, boundaries) are preserved so the confirmed pair stays the effective agreement.
      */

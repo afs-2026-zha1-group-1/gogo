@@ -1,6 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { api, errorMessage } from '../api'
 import Icon from '../Icons'
+import { persistCurrentTrip } from '../lib/current-trip'
+import { queueNotice } from '../lib/notice'
 import type { AcceptResult, InvitationPreview } from '../types'
 import { useAuth } from '../features/auth/AuthProvider'
 
@@ -100,6 +102,11 @@ export default function Join({ token }: JoinProps) {
         { method: 'POST' },
       )
       if (result.ok && result.data) {
+        // US-090: accepting an invitation switches the current trip; an already-member re-open never does.
+        if (!result.data.alreadyMember) {
+          const switched = await persistCurrentTrip(result.data.tripId)
+          if (!switched) queueNotice('当前行程未切换，可在「我的行程」中手动选择这个行程。')
+        }
         setState({
           kind: 'joined',
           preview,

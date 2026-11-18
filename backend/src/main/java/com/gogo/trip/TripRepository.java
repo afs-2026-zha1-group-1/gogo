@@ -127,4 +127,14 @@ public class TripRepository {
     public int confirmMainPlan(long tripId) {
         return jdbc.update("UPDATE trip SET main_plan_confirmed = 1 WHERE id = ?", tripId);
     }
+
+    /**
+     * True when the trip really has a confirmed main-plan draft. The legacy colon route uses this before flipping
+     * the flag, so {@code trip.main_plan_confirmed} can never drift away from {@code main_plan_draft} again.
+     */
+    public boolean hasConfirmedDraft(long tripId) {
+        Long count = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM main_plan_draft WHERE trip_id = ? AND status = 'confirmed'", Long.class, tripId);
+        return count != null && count > 0;
+    }
 }

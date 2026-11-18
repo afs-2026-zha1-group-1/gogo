@@ -7,7 +7,11 @@
 /** One timeline entry shared by the countdown and the 我的方案 section (design DD-2). */
 export interface ScheduleItem {
   key: string
+  // Set only for main-plan stops: the stop a「我的方案」edit targets (US-090).
+  stopId?: number
   name: string
+  // Main-plan display location; null when the stop has none or comes from the split snapshot.
+  location?: string | null
   /** epoch ms; null = time pending confirmation (never fabricated). */
   start: number | null
   end: number | null

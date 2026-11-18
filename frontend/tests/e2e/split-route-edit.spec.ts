@@ -63,10 +63,10 @@ test('step-2 editing validates the window and hands off to the preview', async (
   await page.getByRole('button', { name: /下一步/ }).click()
   await expect(page).toHaveURL(/\/split\/preview$/)
   await expect(page.getByText('队伍路线预览')).toBeVisible()
-  await expect(page.getByText('校验通过 · 只读预览')).toBeVisible()
+  await expect(page.getByText('只读预览 · 不能在此编辑路线')).toBeVisible()
   await expect(page.getByText('A 组 2 人')).toBeVisible()
 
-  await page.getByRole('button', { name: /前往复核并确认/ }).click()
+  await page.getByRole('button', { name: /下一步/ }).click()
   await expect(page).toHaveURL(/\/split\/confirm$/)
   await expect(page.getByText('复核并确认分队')).toBeVisible()
 
@@ -108,5 +108,5 @@ test('confirmed draft shows the preview and route cards read-only', async ({ pag
   await page.goto('/trips/9102/split/preview')
   await expect(page.getByText('队伍路线预览')).toBeVisible()
   await expect(page.getByText('已确认', { exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: /前往复核并确认/ })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /下一步/ })).toHaveCount(0)
 })

@@ -74,10 +74,14 @@ export interface PlanInputRevision {
 }
 
 export interface PlanStop {
+  // Persisted main_plan_stop row id (US-090 「我的方案」edit target).
+  id?: number
   seq: number
   name: string
   startTime: string
   endTime: string
+  // Edited display location; absent for plans generated before US-090.
+  locationName?: string | null
   travelMinutesToNext: number | null
   interests: string[]
 }

@@ -57,9 +57,12 @@ export function ScreenStart() {
         }))
 
   const withDraft = detail != null && status !== "cancelled"
-  const departureStopId = withDraft ? detail.departureStopId : null
-  const reunionStopId = withDraft ? detail.reunionStopId : null
-  const routes = withDraft ? detail.routes ?? [] : []
+  // US-090: until the split is confirmed this page shows the shared main line only. The A/B branch graph is the
+  // confirmed agreement, so an unconfirmed draft must never be read as the team's route.
+  const showSplitRoutes = status === "confirmed"
+  const departureStopId = withDraft && showSplitRoutes ? detail.departureStopId : null
+  const reunionStopId = withDraft && showSplitRoutes ? detail.reunionStopId : null
+  const routes = withDraft && showSplitRoutes ? detail.routes ?? [] : []
   const model = buildGraphRows({ stops, departureStopId, reunionStopId, routes })
 
   const groupCounts = {
@@ -71,9 +74,12 @@ export function ScreenStart() {
     ? buildNodeDetail(selectedNode, { groupCounts, totalMembers })
     : null
 
+  const rawHasBoundaries = withDraft && detail.departureStopId != null && detail.reunionStopId != null
+  const rawRouteCount = withDraft ? (detail.routes ?? []).length : 0
   const hasBoundaries = model.forkRow != null && model.joinRow != null
-  const awaitingBoundaries = status === "active" && !hasBoundaries
-  const awaitingRoutes = status === "active" && hasBoundaries && routes.length === 0
+  const awaitingBoundaries = status === "active" && !rawHasBoundaries
+  const awaitingRoutes = status === "active" && rawHasBoundaries && rawRouteCount === 0
+  const awaitingConfirmation = status === "active" && rawRouteCount === 2
 
   // A split needs two groups with at least one member each (US-040 S10-N); block the entry instead of
   // letting the user start a draft that can never be confirmed.
@@ -215,7 +221,13 @@ export function ScreenStart() {
                 <HintCard title="待选择分头 / 会合边界" hint="选好边界后会显示分头、会合节点和中间暂停的主线。" />
               ) : null}
               {awaitingRoutes ? (
-                <HintCard title="两条路线待生成" hint="生成 Route A / B 后会在这里展开两条分支的活动与时长。" />
+                <HintCard title="两条路线待生成" hint="生成 Route A / B 后，确认分队时会用到它们；确认前本页只显示共享主线。" />
+              ) : null}
+              {awaitingConfirmation ? (
+                <HintCard
+                  title="分队方案待确认"
+                  hint="A/B 路线已生成。确认分队后这里会展示分队路线图；确认前只显示全员共享的主线。"
+                />
               ) : null}
               {!withDraft ? (
                 <HintCard

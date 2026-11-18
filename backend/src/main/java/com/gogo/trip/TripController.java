@@ -96,6 +96,11 @@ public class TripController {
         return repository.findMembers(id);
     }
 
+    /**
+     * Legacy colon route kept for old links. It never confirms a plan by itself: only a trip whose main plan is
+     * already confirmed through {@code POST /api/trips/{id}/main-plan/confirm} may flip the flag, so the flag can
+     * never drift away from {@code main_plan_draft} again (V11 repairs the drift it used to cause).
+     */
     @PostMapping("/{id}/main-plan:confirm")
     public TripResponse confirmMainPlan(
             @AuthenticationPrincipal AccountPrincipal principal,
@@ -105,6 +110,10 @@ public class TripController {
                 .orElseThrow(() -> new TripApiException(404, "TRIP_NOT_FOUND", "No trip with id " + id));
         if (!repository.isMember(id, userId)) {
             throw new TripApiException(403, "NOT_A_MEMBER", "Caller is not a member of this trip");
+        }
+        if (!repository.hasConfirmedDraft(id)) {
+            throw new TripApiException(409, "MAIN_PLAN_NOT_CONFIRMED",
+                    "Confirm the main plan through POST /api/trips/" + id + "/main-plan/confirm");
         }
         repository.confirmMainPlan(id);
         return repository.findById(id)

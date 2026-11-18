@@ -19,8 +19,14 @@ public class MainPlanRepository {
             int costPerPersonCents, String inputRevisionsJson) {
     }
 
-    public record StopRow(int seq, String name, String startLocal, String endLocal,
-            Integer travelMinutesToNext, String interestsJson) {
+    public record StopRow(long id, int seq, String name, String startLocal, String endLocal,
+            String locationName, Integer travelMinutesToNext, String interestsJson) {
+
+        /** Rows built without a persisted id (provider fixtures) keep id 0 and no edited location. */
+        public StopRow(int seq, String name, String startLocal, String endLocal,
+                Integer travelMinutesToNext, String interestsJson) {
+            this(0L, seq, name, startLocal, endLocal, null, travelMinutesToNext, interestsJson);
+        }
     }
 
     public record MemberRow(long userId, String displayName, boolean ready, int preferenceRevision,
@@ -83,12 +89,66 @@ public class MainPlanRepository {
 
     public List<StopRow> stopsForDraft(long draftId) {
         return jdbc.query(
-                "SELECT seq, name, start_local, end_local, travel_minutes_to_next, interests_json "
+                "SELECT id, seq, name, start_local, end_local, location_name, travel_minutes_to_next, interests_json "
                         + "FROM main_plan_stop WHERE draft_id = ? ORDER BY seq",
-                (rs, rowNum) -> new StopRow(rs.getInt("seq"), rs.getString("name"),
-                        rs.getString("start_local"), rs.getString("end_local"),
-                        (Integer) rs.getObject("travel_minutes_to_next"), rs.getString("interests_json")),
+                MainPlanRepository::toStopRow,
                 draftId);
+    }
+
+    /**
+     * One draft stop scoped to the trip (US-090 「我的方案」edit); empty when the id is not a stop of this trip's
+     * main plan, so a foreign stop id can never be edited through this route.
+     */
+    public Optional<StopRow> findStop(long tripId, long stopId) {
+        List<StopRow> rows = jdbc.query(
+                "SELECT s.id, s.seq, s.name, s.start_local, s.end_local, s.location_name, "
+                        + "s.travel_minutes_to_next, s.interests_json "
+                        + "FROM main_plan_stop s JOIN main_plan_draft d ON d.id = s.draft_id "
+                        + "WHERE s.id = ? AND d.trip_id = ?",
+                MainPlanRepository::toStopRow,
+                stopId, tripId);
+        return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
+    }
+
+    /** Writes an edited stop time pair and location (US-090); the name, seq and legs stay untouched. */
+    public int updateStop(long stopId, String startLocal, String endLocal, String locationName) {
+        return jdbc.update(
+                "UPDATE main_plan_stop SET start_local = ?, end_local = ?, location_name = ? WHERE id = ?",
+                startLocal, endLocal, locationName, stopId);
+    }
+
+    /** Next free position for an appended stop (US-090 新增节点); positions are never renumbered. */
+    public int nextSeq(long draftId) {
+        Integer max = jdbc.queryForObject(
+                "SELECT MAX(seq) FROM main_plan_stop WHERE draft_id = ?", Integer.class, draftId);
+        return max == null ? 1 : max + 1;
+    }
+
+    /** Appends a manually authored stop to the draft (US-090 新增节点); no legs or interests are invented. */
+    public void insertStopRow(long draftId, int seq, String name, String startLocal, String endLocal,
+            String locationName) {
+        jdbc.update("INSERT INTO main_plan_stop (draft_id, seq, name, start_local, end_local, location_name, "
+                        + "travel_minutes_to_next, interests_json) VALUES (?, ?, ?, ?, ?, ?, NULL, '[]')",
+                draftId, seq, name, startLocal, endLocal, locationName);
+    }
+
+    /** Removes one stop (US-090 删除节点); the remaining positions keep their seq so plan_node ids stay put. */
+    public int deleteStop(long stopId) {
+        return jdbc.update("DELETE FROM main_plan_stop WHERE id = ?", stopId);
+    }
+
+    /**
+     * Fills the leg of the stop that stops being last once another stop is appended (US-090); a non-last stop
+     * without travel minutes makes the plan unconfirmable (MISSING_LEG).
+     */
+    public int updateTravelMinutesToNext(long stopId, int minutes) {
+        return jdbc.update("UPDATE main_plan_stop SET travel_minutes_to_next = ? WHERE id = ?", minutes, stopId);
+    }
+
+    private static StopRow toStopRow(java.sql.ResultSet rs, int rowNum) throws java.sql.SQLException {
+        return new StopRow(rs.getLong("id"), rs.getInt("seq"), rs.getString("name"),
+                rs.getString("start_local"), rs.getString("end_local"), rs.getString("location_name"),
+                (Integer) rs.getObject("travel_minutes_to_next"), rs.getString("interests_json"));
     }
 
     public void markDraftConfirmed(long draftId) {
