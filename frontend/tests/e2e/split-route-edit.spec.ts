@@ -7,11 +7,15 @@ import { expect, test } from '@playwright/test'
  */
 test.describe.configure({ mode: 'serial' })
 
-async function login(page: import('@playwright/test').Page) {
+async function loginAs(page: import('@playwright/test').Page, email: string) {
   await page.goto('/')
-  await page.getByLabel('邮箱').fill('ben@example.com')
+  await page.getByLabel('邮箱').fill(email)
   await page.getByLabel('密码').fill('gogo-demo-2026')
   await page.getByRole('button', { name: '登录', exact: true }).click()
+}
+
+async function login(page: import('@playwright/test').Page) {
+  await loginAs(page, 'ben@example.com')
   await expect(page.getByText('你好，Ben')).toBeVisible()
 }
 
@@ -21,6 +25,10 @@ test('step-2 editing validates the window and hands off to the preview', async (
 
   await expect(page.getByText('National Gallery Singapore').first()).toBeVisible()
   await expect(page.getByText('主线·National Gallery Singapore')).toHaveCount(0)
+  // Time and budget share one card: the separate activity card and its (unimplemented) AI button are gone.
+  await expect(page.getByText(/组活动与费用/)).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /AI 推荐活动/ })).toHaveCount(0)
+  await expect(page.getByText(/人均/).first()).toBeVisible()
   await expect(page.getByRole('button', { name: 'A 组 编辑第 2 站' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'A 组 编辑路程 1' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'A 组 编辑路程 3' })).toBeVisible()
@@ -96,6 +104,32 @@ test('step-2 editing validates the window and hands off to the preview', async (
   await page.goto('/trips/9101/split/timing')
   await expect(page).toHaveURL(/\/split\/preview$/)
   await expect(page.getByText('队伍路线预览')).toBeVisible()
+})
+
+test('the per-stop cost is edited on the same card and persisted through the activity write', async ({ page }) => {
+  // Only the initiator may write costed activities (backend gate), so this flow runs as alice.
+  await loginAs(page, 'alice@example.com')
+  await expect(page.getByText(/你好/)).toBeVisible()
+  await page.goto('/trips/9101/split/routes')
+
+  const activityWrites: string[] = []
+  page.on('request', (request) => {
+    if (request.method() === 'PUT' && request.url().endsWith('/split-draft/activities')) activityWrites.push(request.url())
+  })
+
+  await page.getByRole('button', { name: 'A 组 编辑第 1 站' }).click()
+  await page.getByLabel('A 组 第 1 站人均费用').fill('8')
+  await page.getByRole('button', { name: 'A 组 完成编辑第 1 站' }).click()
+  await expect(page.getByText('S$8').first()).toBeVisible()
+
+  await page.getByRole('button', { name: /下一步/ }).click()
+  await expect(page).toHaveURL(/\/split\/preview$/)
+  expect(activityWrites).toHaveLength(1)
+
+  // Reloading shows the saved cost in the same row, matched to the stop by name.
+  await page.goto('/trips/9101/split/routes')
+  await page.getByRole('button', { name: 'A 组 编辑第 1 站' }).click()
+  await expect(page.getByLabel('A 组 第 1 站人均费用')).toHaveValue('8')
 })
 
 test('confirmed draft shows the preview and route cards read-only', async ({ page }) => {
