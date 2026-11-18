@@ -2,8 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "../../api"
 import type { TripMemberList } from "../../types"
 import type { MainPlan } from "../../types/mainPlan"
-import { SplitApiError, assignGroup, cancelSplitDraft, checkTiming, confirmSplitDraft, fetchDraftDetail, generateRoutes, saveBoundaries, startDraft } from "./api"
-import type { AssignmentRequest, CheckTimingRequest, GenerateRoutesRequest, SaveBoundariesRequest } from "./types"
+import { SplitApiError, assignGroup, cancelSplitDraft, checkTiming, confirmSplitDraft, fetchBudgetCheck, fetchDraftDetail, generateRoutes, recommendActivities, saveActivities, saveBoundaries, startDraft } from "./api"
+import type { AssignmentRequest, CheckTimingRequest, GenerateRoutesRequest, RecommendActivitiesRequest, SaveActivitiesRequest, SaveBoundariesRequest } from "./types"
 
 /**
  * TanStack Query v5 data hooks. The member-only GET detail snapshot is polled so a concurrent
@@ -11,6 +11,7 @@ import type { AssignmentRequest, CheckTimingRequest, GenerateRoutesRequest, Save
  * session cookie; mutations invalidate the detail query on success.
  */
 const DETAIL_KEY = "split-draft"
+const BUDGET_KEY = "split-budget"
 const POLL_MS = 5000
 
 export function useSplitDraft(tripId: string) {
@@ -110,5 +111,36 @@ export function useCancelDraft(tripId: string) {
   return useMutation({
     mutationFn: (draftVersion: number) => cancelSplitDraft(tripId, draftVersion),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [DETAIL_KEY, tripId] }),
+  })
+}
+
+/**
+ * Member-readable budget check for the current draft (US-045). Keyed by the draft version so any edit (regenerate,
+ * activities, assignment) fetches a fresh projection; enabled only once a draft snapshot exists.
+ */
+export function useBudgetCheck(tripId: string, draftVersion: number | null | undefined) {
+  return useQuery({
+    queryKey: [BUDGET_KEY, tripId, draftVersion ?? 0],
+    queryFn: () => fetchBudgetCheck(tripId),
+    enabled: tripId.length > 0 && draftVersion != null,
+  })
+}
+
+/** Replaces one group's costed activities (US-045); refresh both the draft and the budget check on success. */
+export function useSaveActivities(tripId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: SaveActivitiesRequest) => saveActivities(tripId, body),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: [DETAIL_KEY, tripId] })
+      void queryClient.invalidateQueries({ queryKey: [BUDGET_KEY, tripId] })
+    },
+  })
+}
+
+/** Asks the mock AI for a budget-fitting activity suggestion (US-045); no write happens here. */
+export function useRecommendActivities(tripId: string) {
+  return useMutation({
+    mutationFn: (body: RecommendActivitiesRequest) => recommendActivities(tripId, body),
   })
 }

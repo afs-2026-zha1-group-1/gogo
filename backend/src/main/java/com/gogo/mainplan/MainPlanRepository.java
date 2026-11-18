@@ -20,7 +20,13 @@ public class MainPlanRepository {
     }
 
     public record StopRow(int seq, String name, String startLocal, String endLocal,
-            Integer travelMinutesToNext, String interestsJson) {
+            Integer travelMinutesToNext, String interestsJson, int costCents) {
+
+        /** Cost-less convenience for schedule-only fixtures (US-045 adds the cost column). */
+        public StopRow(int seq, String name, String startLocal, String endLocal,
+                Integer travelMinutesToNext, String interestsJson) {
+            this(seq, name, startLocal, endLocal, travelMinutesToNext, interestsJson, 0);
+        }
     }
 
     public record MemberRow(long userId, String displayName, boolean ready, int preferenceRevision,
@@ -65,9 +71,9 @@ public class MainPlanRepository {
 
     public void insertStop(long draftId, MainPlanResult.PlannedStop stop, String interestsJson) {
         jdbc.update("INSERT INTO main_plan_stop (draft_id, seq, name, start_local, end_local, "
-                + "travel_minutes_to_next, interests_json) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                + "travel_minutes_to_next, interests_json, cost_cents) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 draftId, stop.seq(), stop.name(), stop.startTime(), stop.endTime(),
-                stop.travelMinutesToNext(), interestsJson);
+                stop.travelMinutesToNext(), interestsJson, stop.costCents());
     }
 
     public Optional<DraftRow> findDraftByStatus(long tripId, String status) {
@@ -83,11 +89,12 @@ public class MainPlanRepository {
 
     public List<StopRow> stopsForDraft(long draftId) {
         return jdbc.query(
-                "SELECT seq, name, start_local, end_local, travel_minutes_to_next, interests_json "
+                "SELECT seq, name, start_local, end_local, travel_minutes_to_next, interests_json, cost_cents "
                         + "FROM main_plan_stop WHERE draft_id = ? ORDER BY seq",
                 (rs, rowNum) -> new StopRow(rs.getInt("seq"), rs.getString("name"),
                         rs.getString("start_local"), rs.getString("end_local"),
-                        (Integer) rs.getObject("travel_minutes_to_next"), rs.getString("interests_json")),
+                        (Integer) rs.getObject("travel_minutes_to_next"), rs.getString("interests_json"),
+                        rs.getInt("cost_cents")),
                 draftId);
     }
 

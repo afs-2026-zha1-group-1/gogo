@@ -2,16 +2,21 @@ package com.gogo.hello.splits;
 
 import com.gogo.auth.AccountPrincipal;
 import com.gogo.hello.common.ApiResponse;
+import com.gogo.hello.splits.domain.RouteActivity;
 import com.gogo.hello.splits.domain.SplitDraftDocument;
 import com.gogo.hello.splits.domain.TimingResult;
 import com.gogo.hello.splits.dto.AssignmentRequest;
 import com.gogo.hello.splits.dto.BoundaryResponse;
+import com.gogo.hello.splits.dto.BudgetCheckResponse;
 import com.gogo.hello.splits.dto.CheckTimingRequest;
 import com.gogo.hello.splits.dto.DraftVersionRequest;
 import com.gogo.hello.splits.dto.GenerateRoutesRequest;
+import com.gogo.hello.splits.dto.RecommendActivitiesRequest;
 import com.gogo.hello.splits.dto.RouteGenerationResponse;
+import com.gogo.hello.splits.dto.SaveActivitiesRequest;
 import com.gogo.hello.splits.dto.SaveBoundariesRequest;
 import com.gogo.hello.splits.dto.SplitDraftDetailResponse;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -89,6 +94,35 @@ public class SplitDraftController {
             @RequestBody AssignmentRequest request) {
         SplitDraftDetailResponse detail = service.assign(tripId, caller(authentication), request);
         return ResponseEntity.ok(ApiResponse.ok(detail));
+    }
+
+    /** Member-readable budget check for the current draft (US-045, Screen 15). */
+    @GetMapping("/split-draft/budget-check")
+    public ResponseEntity<ApiResponse<BudgetCheckResponse>> budgetCheck(
+            @PathVariable String tripId,
+            Authentication authentication) {
+        BudgetCheckResponse response = service.budgetCheck(tripId, caller(authentication));
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    /** Replaces one group's costed activities (US-045 manual entry / accepted AI recommendation). */
+    @PutMapping("/split-draft/activities")
+    public ResponseEntity<ApiResponse<SplitDraftDetailResponse>> saveActivities(
+            @PathVariable String tripId,
+            Authentication authentication,
+            @RequestBody SaveActivitiesRequest request) {
+        SplitDraftDetailResponse detail = service.saveActivities(tripId, caller(authentication), request);
+        return ResponseEntity.ok(ApiResponse.ok(detail));
+    }
+
+    /** Returns the mock AI's budget-fitting squad activity suggestion (US-045, no persistence). */
+    @PostMapping("/split-draft/activities:recommend")
+    public ResponseEntity<ApiResponse<List<RouteActivity>>> recommendActivities(
+            @PathVariable String tripId,
+            Authentication authentication,
+            @RequestBody RecommendActivitiesRequest request) {
+        List<RouteActivity> suggestion = service.recommendActivities(tripId, caller(authentication), request);
+        return ResponseEntity.ok(ApiResponse.ok(suggestion));
     }
 
     /** Confirms the current draft as the trip's split (US-049, design D1/D5). */

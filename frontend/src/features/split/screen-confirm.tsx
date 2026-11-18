@@ -1,11 +1,14 @@
 import { useEffect } from "react"
 import { useLocation, useParams } from "react-router-dom"
 import { useSplitNavigate } from "./split-navigation"
-import { useCancelDraft, useConfirmDraft, useSplitDraft, useTripMembers } from "./hooks"
+import { useBudgetCheck, useCancelDraft, useConfirmDraft, useSplitDraft, useTripMembers } from "./hooks"
 import { useAuth } from "../auth/AuthProvider"
 import { SplitLayout } from "./split-layout"
 import { EmptyState, ErrorState, LoadingState } from "./states"
-import type { GroupRoute, SplitDraftStatus } from "./types"
+import type { BudgetOverrunDetail, GroupRoute, SplitDraftStatus } from "./types"
+import { SplitApiError } from "./api"
+import { BudgetCheckPanel } from "./budget-check-panel"
+import { BudgetOverrunDialog } from "./budget-overrun-dialog"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -29,6 +32,7 @@ export function ScreenConfirm() {
   const draft = useSplitDraft(tripId)
   const confirm = useConfirmDraft(tripId)
   const cancel = useCancelDraft(tripId)
+  const budget = useBudgetCheck(tripId, draft.data?.draftVersion)
   const { accountId } = useAuth()
   const membersQuery = useTripMembers(tripId)
   const detail = draft.data
@@ -38,7 +42,18 @@ export function ScreenConfirm() {
     ids && ids.length > 0 ? ids.map(nameOf).join(" / ") : "暂无成员"
   const status: SplitDraftStatus | undefined = detail?.status
   const isInitiator = detail != null && accountId != null && detail.initiatorMemberId === accountId
+  const viewerIsOrganizer =
+    membersQuery.data?.some(
+      (member) => member.organizer && String(member.userId) === String(accountId),
+    ) === true
   const busy = confirm.isPending || cancel.isPending
+  // US-045: a hard-budget rejection carries one row per overrun member; the dialog renders those amounts and
+  // asks about the budget first, then about the squad activities. Other rejections stay inline.
+  const overrunDetails: BudgetOverrunDetail[] =
+    confirm.error instanceof SplitApiError && confirm.error.code === "SPLIT_BUDGET_HARD_OVERRUN"
+      ? (confirm.error.details?.overruns ?? [])
+      : []
+  const budgetBlockedShown = overrunDetails.length > 0
 
   // US-084 AC1: a successful confirmation returns to the same trip's detail page,
   // where the confirmed personal route is derived. Cross-router-space navigation
@@ -150,6 +165,15 @@ export function ScreenConfirm() {
             </div>
           )}
 
+          {detail.routes.length > 0 ? (
+            <BudgetCheckPanel
+              check={budget.data}
+              loading={budget.isPending}
+              error={budget.error}
+              destination={detail.destination}
+            />
+          ) : null}
+
           {status === "confirmed" ? (
             <Card className="flex items-start gap-2.5 border-[#a7f3d0] bg-ok-soft p-3.5">
               <span className="grid size-7 shrink-0 place-items-center rounded-full bg-ok/15 text-ok [&_svg]:size-4">
@@ -178,20 +202,27 @@ export function ScreenConfirm() {
             </Card>
           ) : null}
 
-          {confirm.error ? <ErrorState error={confirm.error} /> : null}
+          {confirm.error && !budgetBlockedShown ? <ErrorState error={confirm.error} /> : null}
           {cancel.error ? <ErrorState error={cancel.error} /> : null}
-
-          {detail.routes.length > 0 ? (
-            <p className="text-[10.5px] leading-relaxed text-ink-3">
-              路线为上次生成的版本；若分组已调整，请返回分组页由发起人重新生成。
-            </p>
-          ) : null}
-
-          <p className="text-[10.5px] leading-relaxed text-ink-3">
-            确认由服务端从草稿复算时间窗，客户端声明不参与判定；失败时下方明细来自 error.details。
-          </p>
         </div>
       )}
+
+      {budgetBlockedShown ? (
+        <BudgetOverrunDialog
+          overruns={overrunDetails}
+          destination={detail?.destination ?? null}
+          viewerId={accountId == null ? null : String(accountId)}
+          viewerIsOrganizer={viewerIsOrganizer}
+          onAdjustBudget={(memberId) => {
+            window.location.href = `/#/trips/${tripId}/members/${memberId}/preferences`
+          }}
+          onEditActivities={() => {
+            confirm.reset()
+            navigate(`/trips/${tripId}/split/routes`)
+          }}
+          onClose={() => confirm.reset()}
+        />
+      ) : null}
     </SplitLayout>
   )
 }

@@ -31,6 +31,8 @@ const ERROR_TEXT: Record<string, string> = {
   INVALID_GROUP_LABEL: "目标组别无效，只能是 A 或 B。",
   SPLIT_MEMBERS_INSUFFICIENT: "行程至少需要两名成员才能发起与确认分队。",
   ROUTE_GENERATION_FAILED: "路线生成失败，整对已回滚（无半成品路线）。",
+  SPLIT_BUDGET_HARD_OVERRUN: "有成员将超出硬性预算：确认被阻止，请调整预算或分队活动。",
+  INVALID_ACTIVITIES: "分队活动不合法：活动内容必填，费用需在允许范围内。",
   ENDPOINT_NOT_FOUND: "接口不可用（404）：请确认后端已更新并重启到最新版本。",
 }
 

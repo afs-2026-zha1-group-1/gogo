@@ -112,7 +112,7 @@ export type Route =
   | { page: 'main-plan'; tripId: number; dashboardOrigin?: boolean }
   | { page: 'main-plan-inputs'; tripId: number; dashboardOrigin?: boolean; backToDashboard?: boolean }
   | { page: 'scan' }
-  | { page: 'preferences'; tripId: number; dashboardOrigin?: boolean }
+  | { page: 'preferences'; tripId: number; dashboardOrigin?: boolean; memberId?: number }
   | { page: 'my-preferences' }
 
 // login, registration, join, main-plan, preference, scan and invitation screens

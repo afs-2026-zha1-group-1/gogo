@@ -75,6 +75,14 @@ function parseRoute(hash: string): Route {
   if (mainPlanInputsMatch) return { page: 'main-plan-inputs', tripId: Number(mainPlanInputsMatch[1]) }
   const mainPlanMatch = path.match(/^\/trips\/(\d+)\/main-plan$/)
   if (mainPlanMatch) return { page: 'main-plan', tripId: Number(mainPlanMatch[1]) }
+  const memberPreferencesMatch = path.match(/^\/trips\/(\d+)\/members\/(\d+)\/preferences$/)
+  if (memberPreferencesMatch) {
+    return {
+      page: 'preferences',
+      tripId: Number(memberPreferencesMatch[1]),
+      memberId: Number(memberPreferencesMatch[2]),
+    }
+  }
   const preferencesMatch = path.match(/^\/trips\/(\d+)\/preferences$/)
   if (preferencesMatch) return { page: 'preferences', tripId: Number(preferencesMatch[1]) }
   // US-083 R4: the invitation page is trip-scoped; match before the generic `/trips/<id>`.
@@ -196,7 +204,8 @@ export default function App() {
     } else if (route.page === 'my-trips') {
       explicitTripContext.current = false
       setLastTripId(null)
-    } else if (route.page === 'details' || route.page === 'main-plan' || route.page === 'main-plan-inputs') {
+    } else if (route.page === 'details' || route.page === 'main-plan' || route.page === 'main-plan-inputs'
+      || (route.page === 'preferences' && route.memberId != null)) {
       explicitTripContext.current = true
       setLastTripId(route.tripId)
     }
@@ -283,7 +292,14 @@ export default function App() {
       <div className="app">
         <PreferencesPage
           tripId={route.tripId}
-          backHref={route.dashboardOrigin ? `#/dashboard/trips/${route.tripId}` : undefined}
+          memberId={route.memberId}
+          backHref={
+            route.memberId != null
+              ? '#/members'
+              : route.dashboardOrigin
+                ? `#/dashboard/trips/${route.tripId}`
+                : undefined
+          }
         />
       </div>
     )

@@ -35,7 +35,7 @@ class SplitDraftDocumentStatusTest {
     void withBoundaries_andWithRoutes_bumpDocumentVersion() {
         SplitDraftDocument draft = SplitDraftDocument.initial("2", 1, groups(), NOW)
                 .withBoundaries("stop-a", "stop-b", NOW)
-                .withRoutes(routes(), NOW);
+                .withRoutes(routes(), null, NOW);
         assertThat(draft.draftVersion()).isEqualTo(3);
         assertThat(draft.status()).isEqualTo("active");
         assertThat(draft.routes()).containsKeys("A", "B");
@@ -83,7 +83,7 @@ class SplitDraftDocumentStatusTest {
         SplitDraftDocument draft = new SplitDraftDocument("2", 1, 3, "active", "stop-a", "stop-b", groups(),
                 Map.of("A", new RouteDurations(null, List.of(15, 20), null, null),
                         "B", new RouteDurations(60, List.of(20, 20), 10, null)),
-                NOW, NOW);
+                null, NOW, NOW);
         String json = mapper.writeValueAsString(draft);
         SplitDraftDocument parsed = mapper.readValue(json, SplitDraftDocument.class);
         assertThat(parsed.routes().get("A").activityMinutes()).isNull();
@@ -94,7 +94,7 @@ class SplitDraftDocumentStatusTest {
     private SplitDraftDocument activeWithRoutes() {
         return SplitDraftDocument.initial("2", 1, groups(), NOW)
                 .withBoundaries("stop-a", "stop-b", NOW)
-                .withRoutes(routes(), NOW);
+                .withRoutes(routes(), null, NOW);
     }
 
     private Map<String, List<String>> groups() {

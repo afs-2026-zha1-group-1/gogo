@@ -84,13 +84,14 @@ public class SplitDraftRepository {
             return Optional.empty();
         }
         List<PlanStop> stops = jdbcTemplate.query(
-                "SELECT id, title, start_at, end_at FROM plan_node "
+                "SELECT id, title, start_at, end_at, cost_cents FROM plan_node "
                         + "WHERE trip_id = ? AND id = ? AND branch_id = 'main' AND plan_version = ?",
                 (rs, rowNum) -> new PlanStop(
                         rs.getString("id"),
                         rs.getString("title"),
                         parseInstant(rs.getString("start_at")),
-                        parseInstant(rs.getString("end_at"))),
+                        parseInstant(rs.getString("end_at")),
+                        rs.getInt("cost_cents")),
                 tripId, stopId, planVersion);
         return stops.stream().findFirst();
     }
@@ -184,14 +185,41 @@ public class SplitDraftRepository {
     /** Loads all confirmed main-plan stops at a version (design D14), ordered by sort_order. */
     public List<PlanStop> findMainPlanStops(String tripId, int planVersion) {
         return jdbcTemplate.query(
-                "SELECT id, title, start_at, end_at FROM plan_node "
+                "SELECT id, title, start_at, end_at, cost_cents FROM plan_node "
                         + "WHERE trip_id = ? AND branch_id = 'main' AND plan_version = ? ORDER BY sort_order",
                 (rs, rowNum) -> new PlanStop(
                         rs.getString("id"),
                         rs.getString("title"),
                         parseInstant(rs.getString("start_at")),
-                        parseInstant(rs.getString("end_at"))),
+                        parseInstant(rs.getString("end_at")),
+                        rs.getInt("cost_cents")),
                 tripId, planVersion);
+    }
+
+    /** Trip members keyed by user id, ordered by display name (US-045 budget result names). */
+    public Map<String, String> findMemberNames(String tripId) {
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT tm.user_id, u.display_name FROM trip_member tm JOIN app_user u ON u.id = tm.user_id "
+                        + "WHERE tm.trip_id = ? ORDER BY u.display_name",
+                tripId);
+        Map<String, String> names = new LinkedHashMap<>();
+        for (Map<String, Object> row : rows) {
+            names.put(String.valueOf(row.get("user_id")), (String) row.get("display_name"));
+        }
+        return names;
+    }
+
+    /** Raw {@code kind = 'budget'} preference payloads keyed by user id; the service owns the JSON contract. */
+    public Map<String, String> findBudgetPayloads(String tripId) {
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT user_id, payload FROM member_preference WHERE trip_id = ? AND kind = 'budget' "
+                        + "ORDER BY user_id",
+                tripId);
+        Map<String, String> payloads = new LinkedHashMap<>();
+        for (Map<String, Object> row : rows) {
+            payloads.put(String.valueOf(row.get("user_id")), (String) row.get("payload"));
+        }
+        return payloads;
     }
 
     /** Reads the split route pair's activity names keyed by branch id (design D6/D14), ordered by sort_order. */

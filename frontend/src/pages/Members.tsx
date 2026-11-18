@@ -2,11 +2,12 @@ import { useCallback, useEffect, useState } from 'react'
 import { api, errorMessage as apiErrorMessage } from '../api'
 import Icon from '../Icons'
 import type { TripMemberList } from '../types'
+import type { MemberProfile } from '../types/preferences'
 
 type MembersState =
   | { kind: 'no-trip' }
   | { kind: 'loading' }
-  | { kind: 'ready'; members: TripMemberList['members'] }
+  | { kind: 'ready'; members: TripMemberList['members']; profiles: MemberProfile[] }
   | { kind: 'denied'; message?: string }
   | { kind: 'missing'; message?: string }
   | { kind: 'failed'; message: string }
@@ -17,6 +18,22 @@ function initial(name: string) {
 
 function causeMessage(cause: unknown) {
   return cause instanceof Error ? cause.message : String(cause)
+}
+
+// Budgets are stored in major units; the symbol follows the member's own currency code.
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  SGD: 'S$',
+  CNY: '¥',
+  USD: 'US$',
+  EUR: '€',
+  JPY: 'JP¥',
+}
+
+function budgetText(profile: MemberProfile | undefined) {
+  if (!profile || !profile.budget) return '未设预算'
+  const { amount, currency, limitType } = profile.budget
+  const symbol = CURRENCY_SYMBOLS[currency]
+  return `${symbol ? `${symbol}${amount}` : `${currency} ${amount}`} · ${limitType === 'hard' ? '硬上限' : '软上限'}`
 }
 
 interface MembersProps {
@@ -37,13 +54,23 @@ export default function Members({ tripId, tripsHref, tripHref }: MembersProps) {
     }
     let active = true
     setState({ kind: 'loading' })
-    api<TripMemberList>(`/api/trips/${tripId}/members`)
-      .then(({ status, ok, data }) => {
+    // Roster + each member's preference summary (US-045 follow-up); one retry reloads both.
+    Promise.all([
+      api<TripMemberList>(`/api/trips/${tripId}/members`),
+      api<{ members: MemberProfile[] }>(`/api/trips/${tripId}/preferences/members`),
+    ])
+      .then(([roster, profiles]) => {
         if (!active) return
-        if (ok && data) setState({ kind: 'ready', members: data.members })
-        else if (status === 401 || status === 403) setState({ kind: 'denied', message: apiErrorMessage(data) })
-        else if (status === 404) setState({ kind: 'missing', message: apiErrorMessage(data) })
-        else setState({ kind: 'failed', message: apiErrorMessage(data) ?? `HTTP ${status}` })
+        if (roster.ok && roster.data && profiles.ok && profiles.data) {
+          setState({ kind: 'ready', members: roster.data.members, profiles: profiles.data.members })
+        } else if (roster.status === 401 || roster.status === 403) {
+          setState({ kind: 'denied', message: apiErrorMessage(roster.data) })
+        } else if (roster.status === 404) {
+          setState({ kind: 'missing', message: apiErrorMessage(roster.data) })
+        } else {
+          const failure = !roster.ok ? roster : profiles
+          setState({ kind: 'failed', message: apiErrorMessage(failure.data) ?? `HTTP ${failure.status}` })
+        }
       })
       .catch((cause: unknown) => {
         if (active) setState({ kind: 'failed', message: causeMessage(cause) })
@@ -71,7 +98,7 @@ export default function Members({ tripId, tripsHref, tripHref }: MembersProps) {
         <div className="logo"><Icon name="users" /></div>
         <div className="grow">
           <div className="title">成员</div>
-          <div className="sub">谁已加入 · 谁是组织者</div>
+          <div className="sub">谁已加入 · 偏好与预算一览</div>
         </div>
       </header>
       <div className="body">
@@ -118,33 +145,61 @@ export default function Members({ tripId, tripsHref, tripHref }: MembersProps) {
                 </div>
                 <section className="card pad" aria-label="成员列表">
                   <div className="member-list">
-                    {state.members.map((member) => (
-                      <div className="member-row" key={member.userId}>
-                        <div
-                          className={`member-avatar tone-${((member.userId - 1) % 4) + 1}`}
-                          aria-hidden="true"
-                        >
-                          {initial(member.displayName)}
-                        </div>
-                        <div className="member-main">
-                          <div className="member-name">{member.displayName}</div>
-                          <div className="member-meta">
-                            {member.organizer ? '负责确认共享方案' : '已加入'}
+                    {state.members.map((member) => {
+                      const profile = state.profiles.find((item) => item.userId === member.userId)
+                      const tags = profile?.interests ?? []
+                      return (
+                        <div className="member-row" key={member.userId} style={{ alignItems: 'flex-start' }}>
+                          <div
+                            className={`member-avatar tone-${((member.userId - 1) % 4) + 1}`}
+                            aria-hidden="true"
+                          >
+                            {initial(member.displayName)}
                           </div>
+                          <div className="member-main">
+                            <div className="member-name">
+                              {member.displayName}
+                              {member.organizer && (
+                                <span className="pill brand" style={{ marginLeft: 8 }}>
+                                  <Icon name="sparkle" className="sm" />
+                                  组织者
+                                </span>
+                              )}
+                            </div>
+                            <div className="member-meta">
+                              {member.organizer ? '负责确认共享方案' : '已加入'}
+                              <span style={{ margin: '0 6px', opacity: 0.5 }}>·</span>
+                              {budgetText(profile)}
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                              {tags.length === 0 ? (
+                                <span className="hint" style={{ fontSize: 11 }}>未选择兴趣</span>
+                              ) : (
+                                tags.map((tag) => (
+                                  <span className="pill" key={tag} style={{ fontSize: 10.5 }}>
+                                    {tag}
+                                  </span>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                          {tripId != null && (
+                            <a
+                              className="btn btn-ghost sm"
+                              style={{ alignSelf: 'center', whiteSpace: 'nowrap' }}
+                              href={`#/trips/${tripId}/members/${member.userId}/preferences`}
+                            >
+                              偏好设置
+                            </a>
+                          )}
                         </div>
-                        {member.organizer && (
-                          <span className="pill brand">
-                            <Icon name="sparkle" className="sm" />
-                            组织者
-                          </span>
-                        )}
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </section>
               </>
             )}
-            <p className="hint">本页只展示成员和组织者；偏好与就绪状态不在成员页。</p>
+            <p className="hint">点「偏好设置」可查看该成员的兴趣与预算；组织者可直接编辑，其他成员只读。</p>
             <a className="btn btn-ghost" href={tripHref}>
               <Icon name="left" className="sm" />
               返回行程

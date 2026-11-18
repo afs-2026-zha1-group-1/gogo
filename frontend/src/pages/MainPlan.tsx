@@ -24,7 +24,13 @@ const ERROR_LABELS: Record<string, string> = {
 // Per-person cost is stored in the destination's currency (cents); the symbol follows the trip.
 function money(cents: number, destination?: string | null) {
   const value = destination ?? ''
-  const symbol = /香港|hong\s*kong/i.test(value) ? 'HK$' : /伦敦|london/i.test(value) ? '£' : 'S$'
+  const symbol = /香港|hong\s*kong/i.test(value)
+    ? 'HK$'
+    : /伦敦|london/i.test(value)
+      ? '£'
+      : /合肥|hefei/i.test(value)
+        ? '¥'
+        : 'S$'
   return `${symbol}${cents / 100}`
 }
 

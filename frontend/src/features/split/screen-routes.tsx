@@ -9,6 +9,7 @@ import { RouteCard } from "./route-card"
 import type { TripMember } from "../../types"
 import { Button } from "@/components/ui/button"
 import { IconArrowRight, IconBranch, IconRoute, IconSparkle, IconUsers } from "@/components/icons"
+import { ActivityEditor } from "./activity-editor"
 import { formatClock, shortId } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
@@ -46,6 +47,8 @@ export function ScreenRoutes() {
     (detail?.groups.A?.length ?? 0) > 0 && (detail?.groups.B?.length ?? 0) > 0
   // A confirmed/cancelled draft is locked server-side (SPLIT_DRAFT_NOT_ACTIVE); mirror that in the CTAs.
   const draftActive = detail?.status === "active"
+  // US-045: only the initiator may edit the draft (boundaries/routes/activities), matching the backend gate.
+  const canEditActivities = draftActive && myId != null && detail?.initiatorMemberId === myId
 
   const action = tooFewMembers ? null : (
     <>
@@ -149,16 +152,24 @@ export function ScreenRoutes() {
           {hasPair ? (
             <div className="flex flex-col gap-3">
               {routes.map((route) => (
-                <RouteCard
-                  key={route.groupLabel}
-                  route={route}
-                  tone={route.groupLabel === "B" ? "b" : "a"}
-                  departureName={nameOf(route.departureStopId)}
-                  reunionName={nameOf(route.reunionStopId)}
-                  reunionClock={formatClock(detail.reunionAt, detail.destination)}
-                  stale={(detail.groups[route.groupLabel] ?? []).length === 0}
-                  windowMinutes={detail.windowMinutes}
-                />
+                <div key={route.groupLabel} className="flex flex-col gap-2.5">
+                  <RouteCard
+                    route={route}
+                    tone={route.groupLabel === "B" ? "b" : "a"}
+                    departureName={nameOf(route.departureStopId)}
+                    reunionName={nameOf(route.reunionStopId)}
+                    reunionClock={formatClock(detail.reunionAt, detail.destination)}
+                    stale={(detail.groups[route.groupLabel] ?? []).length === 0}
+                    windowMinutes={detail.windowMinutes}
+                  />
+                  <ActivityEditor
+                    tripId={tripId}
+                    detail={detail}
+                    route={route}
+                    canEdit={canEditActivities}
+                    destination={detail.destination}
+                  />
+                </div>
               ))}
             </div>
           ) : (

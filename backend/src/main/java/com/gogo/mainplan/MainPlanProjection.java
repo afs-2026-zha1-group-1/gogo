@@ -59,11 +59,11 @@ public class MainPlanProjection {
                 tripId, draft.version());
         for (MainPlanRepository.StopRow stop : stops) {
             jdbc.update("INSERT INTO plan_node (id, trip_id, plan_version, parent_id, branch_id, node_type, title, "
-                            + "start_at, end_at, location_name, lat, lng, sort_order, created_at) "
-                            + "VALUES (?, ?, ?, NULL, 'main', 'stop', ?, ?, ?, ?, NULL, NULL, ?, ?)",
+                            + "start_at, end_at, location_name, lat, lng, sort_order, created_at, cost_cents) "
+                            + "VALUES (?, ?, ?, NULL, 'main', 'stop', ?, ?, ?, ?, NULL, NULL, ?, ?, ?)",
                     UUID.randomUUID().toString(), tripId, draft.version(), stop.name(),
                     instant(startDate, stop.startLocal(), zone), instant(startDate, stop.endLocal(), zone),
-                    stop.name(), stop.seq(), now);
+                    stop.name(), stop.seq(), now, stop.costCents());
         }
         return Optional.of(draft.version());
     }
