@@ -85,19 +85,19 @@
   - 我的页名字编辑展开/保存/取消/错误态；退出登录仍在
 - [x] 8. 回归：创建行程、详情各入口、成员名册、邀请发放/预览/加入、偏好、主线生成/确认、分队全链路、US-082 返回
 - [x] 8. 反向验证：`PATCH/DELETE /api/trips/{id}` 不存在；非组织者改名称 403；分队锁态改规划 409；无守卫 `confirmMainPlan` 已删除
-- [ ] 8.4 stop 编辑 E2E：组织者未确认可编辑、成员/确认后无入口、时间格式/结束≤开始拦截、编辑致重叠确认被 422 拦、重生成提示与值回退、直达 PUT 409/404
+- [x] 8.4 stop 编辑 E2E：组织者未确认可编辑、成员/确认后无入口、时间格式/结束≤开始拦截、编辑致重叠确认被 422 拦、重生成提示与值回退、直达 PUT 409/404（2026-11-18 浏览器复验：E8/E9；重生成提示与「值回退」由 D12 既有 API 用例覆盖）
 
 ## 9. Spec 与文档
 
 - [x] 9. `openspec validate us-003-edit-trip-basics` = valid（deltaCount = 11 / capabilities = 5）；`--strict` 预期仅 5 条 >500 字符 WARNING，无结构错误
 - [x] 9. 更新 `requirement-workspace/registry.md`：US-003 行注明合并 #61–#64、本 change 取代确认后锁定/组织者独占规划字段、新增 US-051
-- [ ] 9.3 归档前对账：`docs/knowledge/architecture/tech-stack-plan.md` 增补 `PUT /api/trips/{id}`、`POST /split:cancel`、V10 列、`SPLIT_DRAFT_ACTIVE`/`SPLIT_CONFIRMED`/`SPLIT_ALREADY_DEPARTED`/`joiningClosed`；`docs/knowledge/_LOG.md` 追加一行
-- [ ] 9.4 记录既有漂移：Living trips「不暴露确认操作」与列表 read-only 措辞（不在本 change 修）
-- [ ] 9.5 归档前补 `PUT /main-plan/stops/{seq}`、`STOP_NOT_FOUND`/`INVALID_TIME`/`INVALID_TIME_RANGE`、stop 编辑与重生成提示的 API/交互记录
+- [x] 9.3 归档前对账：`docs/knowledge/architecture/tech-stack-plan.md` §28 增补 `PUT /api/trips/{id}`、`POST /split:cancel`、V10 列、`SPLIT_DRAFT_ACTIVE`/`SPLIT_CONFIRMED`/`SPLIT_ALREADY_DEPARTED`/`joiningClosed`；`docs/knowledge/_LOG.md` 追加一行
+- [x] 9.4 记录既有漂移：Living trips「不暴露确认操作」与列表 read-only 措辞（不在本 change 修；见 §28）
+- [x] 9.5 归档前补 `PUT /main-plan/stops/{seq}`、`STOP_NOT_FOUND`/`INVALID_TIME`/`INVALID_TIME_RANGE`、stop 编辑与重生成提示的 API/交互记录（§28）
 
 ## 10. 验证与门禁
 
 - [x] 10.1 G1 输入齐备：cross-change-scan.md（SA 具名）+ IO/SA 签署；新错误码 IO 批准（G1 已记 Pass）
-- [ ] 10.2 local-verify 报告（后端测试数、前端 build、E2E 证据）
+- [x] 10.2 local-verify 报告（后端 444/444、前端 47/47 + typecheck/build、浏览器 E8–E10；`docs/ai4se-plugins/20261118-143428-local-verify-report.md`）
 - [ ] 10.3 PR CI 双 job 绿（backend `mvn -B test` + frontend typecheck/build）
 - [ ] 10.4 G2（具名 VL）逐条审 → 合并 PR → living-merge（trips +2、main-itinerary 3 MODIFIED + 2 ADDED、invitations 2 MODIFIED、splits +1、auth MODIFIED 全文替换）+ G3（具名 SA）→ 归档

@@ -614,3 +614,48 @@ US-087-088 shipped in PR #135, merge `5c6840e`. The living `splits` delta is
   Playwright 85/85, CI runs 44234803228 / 44234811292 green; local-verify Pass;
   G2 Pass (VL Leo). G1 Revision 2–4 IO re-sign remains tracked.
 
+## 28. Landed reconciliation — US-003 trip basics edit (pre-merge 2026-11-18)
+
+US-003 is implemented on branch `US-003-edit-trip-basics` and reconciled with
+`group1/main` `519b76a` (merge `8e78238`); PR #120 is still open. Living delta:
+5 capabilities / 11 requirements (`trips` +2, `main-itinerary` 3 MODIFIED +
+2 ADDED, `invitations` 2 MODIFIED, `splits` +1, `auth` 1 MODIFIED).
+
+- **Migration:** `V10__add_joining_closed_and_trip_snapshot.sql` adds
+  `trip.joining_closed` (backfilled from `main_plan_confirmed`) and
+  `main_plan_draft.trip_basics_json`. V10 is the reconciled number; the older
+  branch comment that says V9 is stale.
+- **Trip update:** `PUT /api/trips/{id}` accepts the full basic-info form.
+  Planning fields (destination/dates/start/end location) are member-writable;
+  `name` is organizer-only (`NOT_ORGANIZER`). A planning change resets
+  `main_plan_confirmed`, supersedes the confirmed draft, keeps
+  `joining_closed = 1`, and returns 409 `SPLIT_DRAFT_ACTIVE` / `SPLIT_CONFIRMED`
+  while a split blocks the edit.
+- **Confirmation:** `POST /api/trips/{id}/main-plan:confirm` is organizer-only
+  and delegates to the validated confirm; it now writes trip state and
+  `joining_closed` first and then calls `MainPlanProjection.projectConfirmed`
+  so splits read the rows just approved.
+- **Stop edit:** `PUT /api/trips/{id}/main-plan/stops/{seq}` edits name and
+  `HH:MM` times on the organizer's current unconfirmed draft with seq CAS;
+  errors are `STOP_NOT_FOUND` 404, `INVALID_TIME` / `INVALID_TIME_RANGE` 400,
+  `ALREADY_CONFIRMED` 409. Regeneration replaces the whole draft and discards
+  manual edits.
+- **Split cancel:** `POST /api/trips/{id}/split:cancel` implements US-051;
+  departure is guarded by `SPLIT_ALREADY_DEPARTED` 409.
+- **Invitations:** preview/accept expose additive `joiningClosed`; joining
+  closes on first confirmation and stays closed after a planning reset.
+  Existing viewer fields `organizerId`/`tripId`/`viewerMember` are preserved.
+- **Frontend:** `#/trips/{id}/edit` EditTrip page with in-app save dialog;
+  trip detail edit entry for all members; organizer-only confirm; MainPlan
+  stop edit and stale prompt; split confirmed-cancel dialog; My Account name
+  edit is a pencil button that expands in place.
+- **Drift recorded (not fixed here):** Living `trips` still says the trip
+  response 「不暴露确认操作」 and the trip list is read-only; this change does
+  not add those operations to the list response and leaves the wording for the
+  owning change.
+- **Verification:** backend 444/444, frontend typecheck + build + 47/47,
+  `openspec validate --strict` valid; Playwright E6R/E8–E10 Pass on a fresh
+  V1–V10 database; report `docs/ai4se-plugins/20261118-143428-local-verify-report.md`.
+- **Open:** push and CI for PR #120, named G2 VL, merge, living-merge and G3.
+
+
