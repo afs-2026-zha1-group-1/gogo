@@ -33,3 +33,27 @@ export function shortId(id: string | null | undefined): string {
   if (!id) return "未设置"
   return id.length > 8 ? `${id.slice(0, 8)}…` : id
 }
+
+/**
+ * Per-person activity cost in cents rendered with the trip's currency symbol (same convention as the main-plan
+ * screen: 香港 / 伦敦 / 合肥 fixtures carry their own symbol, everything else is SGD).
+ */
+export function formatCost(cents: number | null | undefined, destination?: string | null): string {
+  if (cents == null) return "—"
+  const value = destination ?? ""
+  const symbol = /香港|hong\s*kong/i.test(value)
+    ? "HK$"
+    : /伦敦|london/i.test(value)
+      ? "£"
+      : /合肥|hefei/i.test(value)
+        ? "¥"
+        : "S$"
+  const major = cents / 100
+  return `${symbol}${Number.isInteger(major) ? major : major.toFixed(2)}`
+}
+
+/** A stored member budget (major units) labelled with its own ISO currency code. */
+export function formatBudget(amount: number | null | undefined, currency?: string | null): string {
+  if (amount == null) return "未设置"
+  return `${currency ?? ""} ${amount}`.trim()
+}

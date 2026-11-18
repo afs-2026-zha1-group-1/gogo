@@ -11,8 +11,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.gogo.auth.AccountPrincipal;
+import com.gogo.trip.TripResponse;
 
-// Four contractual routes (design D2); identity is the authenticated session principal.
+// Contractual main-plan routes; identity is the authenticated session principal.
 @RestController
 public class MainPlanController {
 
@@ -34,6 +35,14 @@ public class MainPlanController {
             @AuthenticationPrincipal AccountPrincipal principal,
             @PathVariable long id) {
         return service.confirm(id, principal.id());
+    }
+
+    /** US-003 D7: trip-detail shortcut, organizer-only, delegates to validated confirmation. */
+    @PostMapping("/api/trips/{id}/main-plan:confirm")
+    public TripResponse confirmShortcut(
+            @AuthenticationPrincipal AccountPrincipal principal,
+            @PathVariable long id) {
+        return service.confirmShortcut(id, principal.id());
     }
 
     @GetMapping("/api/trips/{id}/main-plan")

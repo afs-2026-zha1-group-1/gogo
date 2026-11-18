@@ -6,8 +6,10 @@ import com.gogo.hello.common.ApiException;
 import com.gogo.hello.common.ErrorCode;
 import com.gogo.hello.splits.domain.PlanStop;
 import com.gogo.hello.splits.domain.ReunionTimingCalculator;
+import com.gogo.hello.splits.domain.RouteActivity;
 import com.gogo.hello.splits.domain.RouteCandidate;
 import com.gogo.hello.splits.domain.RoutePairEdit;
+import com.gogo.hello.splits.domain.SplitBudgetCalculator;
 import com.gogo.hello.splits.domain.SplitDraftDocument;
 import com.gogo.hello.splits.domain.SplitDraftDocument.RouteDurations;
 import com.gogo.hello.splits.domain.RouteTimingInput;
@@ -16,15 +18,19 @@ import com.gogo.hello.splits.domain.SplitWindow;
 import com.gogo.hello.splits.domain.TimingResult;
 import com.gogo.hello.splits.dto.AssignmentRequest;
 import com.gogo.hello.splits.dto.BoundaryResponse;
+import com.gogo.hello.splits.dto.BudgetCheckResponse;
 import com.gogo.hello.splits.dto.CheckTimingRequest;
 import com.gogo.hello.splits.dto.GenerateRoutesRequest;
 import com.gogo.hello.splits.dto.GroupRoute;
+import com.gogo.hello.splits.dto.RecommendActivitiesRequest;
 import com.gogo.hello.splits.dto.RouteEditInput;
 import com.gogo.hello.splits.dto.RouteGenerationResponse;
+import com.gogo.hello.splits.dto.SaveActivitiesRequest;
 import com.gogo.hello.splits.dto.SaveBoundariesRequest;
 import com.gogo.hello.splits.dto.SaveRoutesRequest;
 import com.gogo.hello.splits.dto.SplitDraftDetailResponse;
 import com.gogo.hello.splits.provider.BranchCandidateProvider;
+import com.gogo.hello.splits.provider.MockSquadActivityRecommender;
 import com.gogo.mainplan.MainPlanProjection;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -51,17 +57,24 @@ public class SplitDraftService {
     private final SplitDraftRepository repository;
     private final ObjectMapper objectMapper;
     private final BranchCandidateProvider provider;
+    private final MockSquadActivityRecommender activityRecommender;
     private final MainPlanProjection mainPlanProjection;
     private final TransactionTemplate transactionTemplate;
     private final ReunionTimingCalculator calculator = new ReunionTimingCalculator();
+    private final SplitBudgetCalculator budgetCalculator = new SplitBudgetCalculator();
+
+    /** Whole-list activity write guard (US-045): a group cannot accumulate unbounded cost rows. */
+    private static final int MAX_ACTIVITIES_PER_GROUP = 20;
+    private static final int MAX_ACTIVITY_COST_CENTS = 10_000_000;
 
     public SplitDraftService(MemberGuard guard, SplitDraftRepository repository, ObjectMapper objectMapper,
-            BranchCandidateProvider provider, MainPlanProjection mainPlanProjection,
-            PlatformTransactionManager transactionManager) {
+            BranchCandidateProvider provider, MockSquadActivityRecommender activityRecommender,
+            MainPlanProjection mainPlanProjection, PlatformTransactionManager transactionManager) {
         this.guard = guard;
         this.repository = repository;
         this.objectMapper = objectMapper;
         this.provider = provider;
+        this.activityRecommender = activityRecommender;
         this.mainPlanProjection = mainPlanProjection;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
@@ -228,6 +241,82 @@ public class SplitDraftService {
     }
 
     /**
+     * Member-readable budget check for the current draft (US-045, Screen 15). Read-only: it projects the main-plan
+     * stop costs, the cost of the activities the split window replaced and each group's costed activities, then
+     * compares the per-person total with every member's stored budget. Only the caller's membership is required, so
+     * a member can watch the result before the organizer confirms.
+     */
+    public BudgetCheckResponse budgetCheck(String tripId, String memberId) {
+        guard.requireMember(memberId, tripId);
+        SplitDraftDocument draft = currentDraft(tripId);
+        if (draft == null) {
+            throw new ApiException(ErrorCode.SPLIT_DRAFT_NOT_ACTIVE, "no active split draft");
+        }
+        return budgetCheckOf(tripId, draft);
+    }
+
+    /**
+     * Replaces one group's costed activities (US-045 manual entry or an accepted mock-AI recommendation). The draft
+     * must be active and the caller the initiator, mirroring boundaries/routes; the version guard makes a concurrent
+     * edit a 409 instead of a lost update. Route durations are untouched: changing activities changes cost, not the
+     * time window the pair already fits.
+     */
+    public SplitDraftDetailResponse saveActivities(String tripId, String memberId,
+            SaveActivitiesRequest request) {
+        guard.requireMember(memberId, tripId);
+        SplitDraftDocument draft = requireActiveDraft(tripId);
+        if (!draft.initiatorMemberId().equals(memberId)) {
+            throw new ApiException(ErrorCode.NOT_SPLIT_INITIATOR, "only the initiator may edit the draft");
+        }
+        if (request == null || request.draftVersion() != draft.draftVersion()) {
+            throw new ApiException(ErrorCode.STALE_DRAFT_VERSION, "draft version is stale");
+        }
+        String groupLabel = requireGroupLabel(request.groupLabel());
+        List<RouteActivity> activities = toActivities(request.activities());
+        SplitDraftDocument updated = draft.withActivities(groupLabel, activities, Instant.now().toString());
+        if (repository.updateDraftIfVersion(tripId, toJson(updated), draft.draftVersion()) == 0) {
+            throw new ApiException(ErrorCode.STALE_DRAFT_VERSION, "draft version is stale");
+        }
+        return getDraftDetail(tripId, memberId);
+    }
+
+    /**
+     * Returns the mock AI's squad-activity suggestion for one group (US-045). The recommendation never exceeds the
+     * tightest remaining budget among the group's members (hard and soft limits both count, since the point is to
+     * stay in budget), and an empty list means nothing in the catalogue fits. Nothing is persisted here: the client
+     * saves an accepted suggestion through {@link #saveActivities}.
+     */
+    public List<RouteActivity> recommendActivities(String tripId, String memberId,
+            RecommendActivitiesRequest request) {
+        guard.requireMember(memberId, tripId);
+        SplitDraftDocument draft = requireActiveDraft(tripId);
+        if (!draft.initiatorMemberId().equals(memberId)) {
+            throw new ApiException(ErrorCode.NOT_SPLIT_INITIATOR, "only the initiator may edit the draft");
+        }
+        if (request == null || request.draftVersion() != draft.draftVersion()) {
+            throw new ApiException(ErrorCode.STALE_DRAFT_VERSION, "draft version is stale");
+        }
+        String groupLabel = requireGroupLabel(request.groupLabel());
+        BudgetCheckResponse budget = budgetCheckOf(tripId, draft);
+        BudgetCheckResponse.GroupBudget group = budget.groups().stream()
+                .filter(item -> item.groupLabel().equals(groupLabel))
+                .findFirst()
+                .orElseThrow(() -> new ApiException(ErrorCode.INVALID_GROUP_LABEL, "unknown group label"));
+        Integer remaining = null;
+        for (BudgetCheckResponse.MemberVerdict member : group.members()) {
+            if (member.budgetAmount() == null) {
+                continue;
+            }
+            long memberRemaining = (long) member.budgetAmount() * 100 - budget.remainingSharedCostCents();
+            int bounded = (int) Math.max(Integer.MIN_VALUE, Math.min(Integer.MAX_VALUE, memberRemaining));
+            if (remaining == null || bounded < remaining) {
+                remaining = bounded;
+            }
+        }
+        return activityRecommender.recommend(repository.findDestination(tripId).orElse(null), remaining);
+    }
+
+    /**
      * Generates the paired group routes (spec REQ-006, design D6/D10/D11/D12). After the shared guard, requires
      * an active draft, the initiator, saved boundaries and the current version. Candidates are computed by the
      * replaceable provider OUTSIDE the persistence transaction, so the single connection stays free (a provider
@@ -279,16 +368,18 @@ public class SplitDraftService {
         }
         String now = Instant.now().toString();
         Map<String, RouteDurations> durations = new LinkedHashMap<>();
+        Map<String, List<RouteActivity>> activities = new LinkedHashMap<>();
         List<GroupRoute> routeViews = new ArrayList<>();
         for (Map.Entry<String, RouteCandidate> entry : candidates.entrySet()) {
             RouteCandidate candidate = entry.getValue();
             durations.put(entry.getKey(), new RouteDurations(candidate.activityMinutes(),
                     candidate.travelLegsMinutes(), candidate.bufferMinutes(), candidate.steps()));
+            activities.put(entry.getKey(), List.copyOf(candidate.activities()));
             routeViews.add(new GroupRoute(entry.getKey(), candidate.activityName(), candidate.locationName(),
                     departure.id(), reunion.id(), candidate.activityMinutes(), candidate.travelLegsMinutes(),
-                    candidate.bufferMinutes(), candidate.steps()));
+                    candidate.bufferMinutes(), candidate.steps(), candidate.activities()));
         }
-        SplitDraftDocument updated = draft.withRoutes(durations, now);
+        SplitDraftDocument updated = draft.withRoutes(durations, activities, now);
         String updatedJson = toJson(updated);
         transactionTemplate.executeWithoutResult(status -> {
             repository.deleteSplitRoutes(tripId);
@@ -365,10 +456,10 @@ public class SplitDraftService {
             derivedLocations.put(label, locationName);
             routeViews.add(new GroupRoute(label, activityName, locationName, draft.departureStopId(),
                     draft.reunionStopId(), durations.activityMinutes(), durations.travelLegsMinutes(),
-                    durations.bufferMinutes(), durations.steps()));
+                    durations.bufferMinutes(), durations.steps(), archivedActivities(draft, label)));
         }
         String now = Instant.now().toString();
-        SplitDraftDocument updated = draft.withRoutes(updatedRoutes, now);
+        SplitDraftDocument updated = draft.withRoutes(updatedRoutes, draft.activities(), now);
         String updatedJson = toJson(updated);
         transactionTemplate.executeWithoutResult(status -> {
             for (String label : List.of("A", "B")) {
@@ -435,7 +526,9 @@ public class SplitDraftService {
             if (departure != null && reunion != null) {
                 departureAt = departure.startAt();
                 reunionAt = reunion.startAt();
-                windowMinutes = SplitWindow.between(departureAt, reunionAt).minutes();
+                if (departureAt != null && reunionAt != null) {
+                    windowMinutes = SplitWindow.between(departureAt, reunionAt).minutes();
+                }
             }
         }
         List<GroupRoute> routes = new ArrayList<>();
@@ -446,10 +539,13 @@ public class SplitDraftService {
                 RouteDurations durations = entry.getValue();
                 SplitDraftRepository.SplitRouteActivity activity =
                         activities.get("split-" + label.toLowerCase(Locale.ROOT));
+                List<RouteActivity> costedActivities = draft.activities() == null
+                        ? null
+                        : draft.activities().get(label);
                 routes.add(new GroupRoute(label, activity == null ? null : activity.title(),
                         activity == null ? null : activity.locationName(), departureStopId, reunionStopId,
                         durations.activityMinutes(), durations.travelLegsMinutes(), durations.bufferMinutes(),
-                        durations.steps()));
+                        durations.steps(), costedActivities));
             }
         }
         return new SplitDraftDetailResponse(
@@ -482,6 +578,14 @@ public class SplitDraftService {
             throw new ApiException(ErrorCode.SPLIT_TIMING_INFEASIBLE, "the route pair does not fit the window",
                     Map.of("routes", timingDetails(timing)));
         }
+        // US-045: a hard budget overrun blocks confirmation after the clock check. Soft overruns stay a
+        // reminder only, so the draft remains confirmable for members who accepted the soft limit.
+        BudgetCheckResponse budget = budgetCheckOf(tripId, draft);
+        if (budget.blocked()) {
+            throw new ApiException(ErrorCode.SPLIT_BUDGET_HARD_OVERRUN,
+                    "a member's hard budget would be exceeded; adjust the budget or the group activities",
+                    budgetHardOverrunDetails(budget));
+        }
         String now = Instant.now().toString();
         if (repository.confirmDraftIfActive(tripId, draftVersion, toJson(draft.confirmed(now)), now) == 0) {
             SplitDraftDocument current = currentDraft(tripId);
@@ -511,6 +615,40 @@ public class SplitDraftService {
         SplitDraftDocument cancelled = draft.cancelled(now);
         transactionTemplate.executeWithoutResult(status -> {
             if (repository.cancelDraftIfActive(tripId, draftVersion, toJson(cancelled), now) == 0) {
+                throw new ApiException(ErrorCode.STALE_DRAFT_VERSION, "draft version is stale");
+            }
+            repository.deleteSplitRoutes(tripId);
+        });
+        return getDraftDetail(tripId, memberId);
+    }
+
+    /**
+     * US-051: cancels a confirmed split before departure (design D9). Only the trip organizer may cancel; the
+     * departure instant is the confirmed draft's departure stop {@code start_at}, and a missing value counts as
+     * not departed in this MVP. The status write and the split route node deletion share one transaction.
+     */
+    public SplitDraftDetailResponse cancelConfirmedSplit(String tripId, String memberId, int draftVersion) {
+        guard.requireMember(memberId, tripId);
+        requireOrganizer(tripId, memberId);
+        SplitDraftDocument draft = currentDraft(tripId);
+        if (draft == null || !"confirmed".equals(draft.status())) {
+            throw new ApiException(ErrorCode.SPLIT_DRAFT_NOT_ACTIVE, "no confirmed split to cancel");
+        }
+        if (draft.draftVersion() != draftVersion) {
+            throw new ApiException(ErrorCode.STALE_DRAFT_VERSION, "draft version is stale");
+        }
+        Instant departureAt = null;
+        if (draft.departureStopId() != null) {
+            departureAt = repository.findMainPlanStop(tripId, draft.departureStopId(), draft.mainPlanVersion())
+                    .map(PlanStop::startAt).orElse(null);
+        }
+        if (departureAt != null && !departureAt.isAfter(Instant.now())) {
+            throw new ApiException(ErrorCode.SPLIT_ALREADY_DEPARTED, "the split has already departed");
+        }
+        String now = Instant.now().toString();
+        SplitDraftDocument cancelled = draft.cancelled(now);
+        transactionTemplate.executeWithoutResult(status -> {
+            if (repository.cancelConfirmedIfConfirmed(tripId, draftVersion, toJson(cancelled), now) == 0) {
                 throw new ApiException(ErrorCode.STALE_DRAFT_VERSION, "draft version is stale");
             }
             repository.deleteSplitRoutes(tripId);
@@ -647,8 +785,174 @@ public class SplitDraftService {
         return details;
     }
 
+    private String requireGroupLabel(String groupLabel) {
+        if (!"A".equals(groupLabel) && !"B".equals(groupLabel)) {
+            throw new ApiException(ErrorCode.INVALID_GROUP_LABEL, "group label must be A or B");
+        }
+        return groupLabel;
+    }
+
+    /** Strict whole-list validation for the US-045 activity write; a rejection leaves the stored draft untouched. */
+    private List<RouteActivity> toActivities(List<SaveActivitiesRequest.ActivityInput> inputs) {
+        if (inputs == null) {
+            throw new ApiException(ErrorCode.INVALID_ACTIVITIES, "activities must be a list");
+        }
+        if (inputs.size() > MAX_ACTIVITIES_PER_GROUP) {
+            throw new ApiException(ErrorCode.INVALID_ACTIVITIES,
+                    "a group may keep at most " + MAX_ACTIVITIES_PER_GROUP + " activities");
+        }
+        List<RouteActivity> activities = new ArrayList<>();
+        for (SaveActivitiesRequest.ActivityInput input : inputs) {
+            if (input == null) {
+                throw new ApiException(ErrorCode.INVALID_ACTIVITIES, "an activity must be an object");
+            }
+            String name = input.name() == null ? "" : input.name().trim();
+            if (name.isEmpty() || name.length() > 60) {
+                throw new ApiException(ErrorCode.INVALID_ACTIVITIES, "activity name is required (max 60 chars)");
+            }
+            String location = input.location() == null ? null : input.location().trim();
+            if (location != null && location.length() > 60) {
+                throw new ApiException(ErrorCode.INVALID_ACTIVITIES, "activity location is too long (max 60 chars)");
+            }
+            Integer cost = input.costCents();
+            if (cost == null || cost < 0 || cost > MAX_ACTIVITY_COST_CENTS) {
+                throw new ApiException(ErrorCode.INVALID_ACTIVITIES,
+                        "activity cost must be between 0 and " + MAX_ACTIVITY_COST_CENTS + " cents");
+            }
+            String source = RouteActivity.SOURCE_AI.equals(input.source())
+                    ? RouteActivity.SOURCE_AI
+                    : RouteActivity.SOURCE_MANUAL;
+            activities.add(new RouteActivity(name, location, cost, source));
+        }
+        return activities;
+    }
+
+    /**
+     * Shared projection behind the member check and the confirmation gate (US-045 SB1–SB5): total shared cost from
+     * the main-plan stops, the replaced window cost, and each group's costed activities. Both callers see identical
+     * numbers, so the screen can never promise a confirmation the server would refuse.
+     */
+    private BudgetCheckResponse budgetCheckOf(String tripId, SplitDraftDocument draft) {
+        List<PlanStop> stops = repository.findMainPlanStops(tripId, draft.mainPlanVersion());
+        int totalShared = stops.stream().mapToInt(PlanStop::costCents).sum();
+        int replaced = windowStops(stops, draft).stream().mapToInt(PlanStop::costCents).sum();
+        Map<String, String> names = repository.findMemberNames(tripId);
+        Map<String, SplitBudgetCalculator.MemberBudget> budgets = budgetsOf(tripId, names);
+        List<SplitBudgetCalculator.GroupInput> groups = new ArrayList<>();
+        for (String label : List.of("A", "B")) {
+            List<String> memberIds = draft.groups() == null
+                    ? List.of()
+                    : draft.groups().getOrDefault(label, List.of());
+            List<RouteActivity> activities = draft.activities() == null ? null : draft.activities().get(label);
+            groups.add(new SplitBudgetCalculator.GroupInput(label, memberIds, activities));
+        }
+        SplitBudgetCalculator.Result result = budgetCalculator.compute(totalShared, replaced, groups, budgets);
+        List<BudgetCheckResponse.GroupBudget> groupViews = new ArrayList<>();
+        for (SplitBudgetCalculator.GroupResult group : result.groups()) {
+            List<BudgetCheckResponse.MemberVerdict> members = new ArrayList<>();
+            for (SplitBudgetCalculator.MemberResult member : group.members()) {
+                members.add(new BudgetCheckResponse.MemberVerdict(member.memberId(), member.displayName(),
+                        member.budgetAmount(), member.currency(), member.limitType(), member.totalCostCents(),
+                        member.overrunCents(), member.status()));
+            }
+            groupViews.add(new BudgetCheckResponse.GroupBudget(group.groupLabel(), group.memberIds(),
+                    group.squadCostCents(), group.totalCostCents(), members));
+        }
+        return new BudgetCheckResponse(draft.draftVersion(), result.totalSharedCostCents(),
+                result.replacedCostCents(), result.remainingSharedCostCents(), result.blocked(),
+                result.softReminder(), groupViews);
+    }
+
+    /** Main-plan stops inside the split window: departure inclusive, reunion exclusive (design US-089). */
+    private List<PlanStop> windowStops(List<PlanStop> stops, SplitDraftDocument draft) {
+        if (draft.departureStopId() == null || draft.reunionStopId() == null) {
+            return List.of();
+        }
+        int from = indexOfStop(stops, draft.departureStopId());
+        int to = indexOfStop(stops, draft.reunionStopId());
+        if (from < 0 || to <= from) {
+            return List.of();
+        }
+        return stops.subList(from, to);
+    }
+
+    private static int indexOfStop(List<PlanStop> stops, String id) {
+        for (int index = 0; index < stops.size(); index++) {
+            if (stops.get(index).id().equals(id)) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    private record BudgetFields(Integer amount, String currency, String limitType) {
+    }
+
+    /** Reads the US-024 budget payload; an amount is the only thing that makes a budget real. */
+    private Map<String, SplitBudgetCalculator.MemberBudget> budgetsOf(String tripId, Map<String, String> names) {
+        Map<String, String> payloads = repository.findBudgetPayloads(tripId);
+        List<SplitBudgetCalculator.MemberBudget> budgets = new ArrayList<>();
+        for (Map.Entry<String, String> member : names.entrySet()) {
+            BudgetFields fields = readBudget(payloads.get(member.getKey()));
+            budgets.add(new SplitBudgetCalculator.MemberBudget(member.getKey(), member.getValue(),
+                    fields.amount(), fields.currency(), fields.limitType()));
+        }
+        return budgetCalculator.index(budgets);
+    }
+
+    private BudgetFields readBudget(String payload) {
+        if (payload == null || payload.isBlank()) {
+            return new BudgetFields(null, null, null);
+        }
+        try {
+            com.fasterxml.jackson.databind.JsonNode node = objectMapper.readTree(payload);
+            if (node == null || !node.isObject() || !node.path("amount").isNumber()) {
+                return new BudgetFields(null, null, null);
+            }
+            return new BudgetFields(node.path("amount").asInt(), node.path("currency").asText(null),
+                    node.path("limitType").asText(null));
+        } catch (JsonProcessingException ex) {
+            return new BudgetFields(null, null, null);
+        }
+    }
+
+    /** Machine-readable hard-overrun detail rows for {@code error.details} (US-045 confirmation block). */
+    private Map<String, Object> budgetHardOverrunDetails(BudgetCheckResponse budget) {
+        List<Map<String, Object>> overruns = new ArrayList<>();
+        for (BudgetCheckResponse.GroupBudget group : budget.groups()) {
+            for (BudgetCheckResponse.MemberVerdict member : group.members()) {
+                if (!SplitBudgetCalculator.STATUS_HARD_OVERRUN.equals(member.status())) {
+                    continue;
+                }
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("memberId", member.memberId());
+                row.put("displayName", member.displayName());
+                row.put("groupLabel", group.groupLabel());
+                row.put("totalCostCents", member.totalCostCents());
+                row.put("budgetAmount", member.budgetAmount());
+                row.put("currency", member.currency());
+                row.put("overrunCents", member.overrunCents());
+                overruns.add(row);
+            }
+        }
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("overruns", overruns);
+        details.put("remainingSharedCostCents", budget.remainingSharedCostCents());
+        details.put("replacedCostCents", budget.replacedCostCents());
+        return details;
+    }
+
     private static PlanStop stopById(List<PlanStop> stops, String id) {
         return stops.stream().filter(stop -> stop.id().equals(id)).findFirst().orElse(null);
+    }
+
+    /** Costed activities already stored for a group; an edited route keeps its budget row unchanged (US-045). */
+    private static List<RouteActivity> archivedActivities(SplitDraftDocument draft, String label) {
+        if (draft.activities() == null) {
+            return List.of();
+        }
+        List<RouteActivity> stored = draft.activities().get(label);
+        return stored == null ? List.of() : stored;
     }
 
     private String toJson(SplitDraftDocument draft) {

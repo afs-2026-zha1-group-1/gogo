@@ -279,9 +279,13 @@ class MainPlanStopEditApiTest {
                                 + "\"startDate\":\"2026-12-05\",\"endDate\":\"2026-12-05\"}"))
                 .andExpect(status().isCreated());
         long newTrip = jdbc.queryForObject("SELECT id FROM trip WHERE name = 'Legacy Guard Trip'", Long.class);
+        // The colon shortcut delegates to the validated confirmation, so it can never flip the flag on its own.
         mockMvc.perform(post("/api/trips/" + newTrip + "/main-plan:confirm").with(TestAuth.asUser("1")))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("MAIN_PLAN_NOT_CONFIRMED"));
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NO_DRAFT"));
+        Integer flag = jdbc.queryForObject(
+                "SELECT main_plan_confirmed FROM trip WHERE id = ?", Integer.class, newTrip);
+        assertThat(flag).isZero();
     }
 
     private Integer legOf(String name) {

@@ -447,9 +447,11 @@ class PreferenceApiTest {
         mockMvc.perform(get("/api/greeting"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Hello World"));
+        // US-003 adds the trip full-form PUT; the preferences capability does not own it,
+        // so an empty body is still rejected by the trip validation (400), never handled here.
         mockMvc.perform(put("/api/trips/" + seededTripId()).with(TestAuth.asUser("1"))
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))
-                .andExpect(status().isMethodNotAllowed());
+                .andExpect(status().isBadRequest());
     }
 
     @Test

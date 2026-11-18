@@ -107,6 +107,7 @@ export default function InvitationPage({ tripId, backHref = `#/trips/${tripId}` 
         <InvitationPanel
           tripId={tripId}
           isOrganizer={isOrganizer}
+          joiningClosed={state.trip.joiningClosed === true}
           showTitle={false}
           onReadyChange={setInvitationReady}
         />

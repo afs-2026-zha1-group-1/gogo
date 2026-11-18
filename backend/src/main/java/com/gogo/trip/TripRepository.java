@@ -3,6 +3,7 @@ package com.gogo.trip;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -51,17 +52,17 @@ public class TripRepository {
         long tripId = keyHolder.getKey().longValue();
         jdbc.update("INSERT INTO trip_member (trip_id, user_id) VALUES (?, ?)", tripId, organizerId);
         return new TripResponse(tripId, request.name(), request.destination(), request.startDate(),
-                request.endDate(), request.startLocation(), request.endLocation(), organizerId, false);
+                request.endDate(), request.startLocation(), request.endLocation(), organizerId, false, false);
     }
 
     public Optional<TripResponse> findById(long tripId) {
         List<TripResponse> rows = jdbc.query(
-                "SELECT id, name, destination, start_date, end_date, start_location, end_location, organizer_id, main_plan_confirmed "
-                        + "FROM trip WHERE id = ?",
+                "SELECT id, name, destination, start_date, end_date, start_location, end_location, organizer_id, "
+                        + "main_plan_confirmed, joining_closed FROM trip WHERE id = ?",
                 (rs, rowNum) -> new TripResponse(rs.getLong("id"), rs.getString("name"),
                         rs.getString("destination"), rs.getString("start_date"), rs.getString("end_date"),
                         rs.getString("start_location"), rs.getString("end_location"), rs.getLong("organizer_id"),
-                        rs.getInt("main_plan_confirmed") != 0),
+                        rs.getInt("main_plan_confirmed") != 0, rs.getInt("joining_closed") != 0),
                 tripId);
         return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }
@@ -86,7 +87,78 @@ public class TripRepository {
         return new TripMemberListResponse(tripId, members);
     }
 
-    /** US-071: the caller's trips; unfinished first, then start date then id (ended last). */
+    /** US-003: full-form update with name/organizer and split gates plus plan invalidation (design D1-D3). */
+    @Transactional
+    public TripResponse updateBasics(long tripId, long callerId, TripCreateRequest request) {
+        TripResponse existing = findById(tripId)
+                .orElseThrow(() -> new TripApiException(404, "TRIP_NOT_FOUND", "No trip with id " + tripId));
+        if (!isMember(tripId, callerId)) {
+            throw new TripApiException(403, "NOT_A_MEMBER", "Caller is not a member of this trip");
+        }
+        boolean nameChanged = !Objects.equals(existing.name(), request.name());
+        if (nameChanged && existing.organizerId() != callerId) {
+            throw new TripApiException(403, "NOT_ORGANIZER", "Only the organizer can rename the trip");
+        }
+        boolean planningChanged = !Objects.equals(existing.destination(), request.destination())
+                || !Objects.equals(existing.startDate(), request.startDate())
+                || !Objects.equals(existing.endDate(), request.endDate())
+                || !Objects.equals(existing.startLocation(), request.startLocation())
+                || !Objects.equals(existing.endLocation(), request.endLocation());
+        if (planningChanged) {
+            String splitStatus = findSplitStatus(tripId);
+            if ("active".equals(splitStatus)) {
+                throw new TripApiException(409, "SPLIT_DRAFT_ACTIVE",
+                        "Cancel the split draft before changing planning basics");
+            }
+            if ("confirmed".equals(splitStatus)) {
+                throw new TripApiException(409, "SPLIT_CONFIRMED",
+                        "Cancel the confirmed split before changing planning basics");
+            }
+        }
+        boolean invalidate = planningChanged && existing.mainPlanConfirmed();
+        int confirmed = invalidate ? 0 : (existing.mainPlanConfirmed() ? 1 : 0);
+        int joiningClosed = (existing.joiningClosed() || existing.mainPlanConfirmed()) ? 1 : 0;
+        String sql = "UPDATE trip SET name = ?, destination = ?, start_date = ?, end_date = ?, start_location = ?, "
+                + "end_location = ?, main_plan_confirmed = ?, joining_closed = ? WHERE id = ?";
+        int updated;
+        if (planningChanged) {
+            updated = jdbc.update(sql + " AND NOT EXISTS (SELECT 1 FROM split_draft WHERE trip_id = ? "
+                    + "AND json_extract(document, '$.status') IN ('active', 'confirmed'))",
+                    request.name(), request.destination(), request.startDate(), request.endDate(),
+                    request.startLocation(), request.endLocation(), confirmed, joiningClosed, tripId, tripId);
+        } else {
+            updated = jdbc.update(sql, request.name(), request.destination(), request.startDate(),
+                    request.endDate(), request.startLocation(), request.endLocation(), confirmed, joiningClosed,
+                    tripId);
+        }
+        if (updated == 0) {
+            String splitStatus = findSplitStatus(tripId);
+            if ("confirmed".equals(splitStatus)) {
+                throw new TripApiException(409, "SPLIT_CONFIRMED",
+                        "Cancel the confirmed split before changing planning basics");
+            }
+            if ("active".equals(splitStatus)) {
+                throw new TripApiException(409, "SPLIT_DRAFT_ACTIVE",
+                        "Cancel the split draft before changing planning basics");
+            }
+            throw new TripApiException(404, "TRIP_NOT_FOUND", "No trip with id " + tripId);
+        }
+        if (invalidate) {
+            jdbc.update("UPDATE main_plan_draft SET status = 'superseded' "
+                    + "WHERE trip_id = ? AND status = 'confirmed'", tripId);
+        }
+        return findById(tripId)
+                .orElseThrow(() -> new TripApiException(404, "TRIP_NOT_FOUND", "No trip with id " + tripId));
+    }
+
+    /** Draft/split status from the splits document, or null when the trip has no split row. */
+    public String findSplitStatus(long tripId) {
+        List<String> statuses = jdbc.queryForList(
+                "SELECT json_extract(document, '$.status') FROM split_draft WHERE trip_id = ?",
+                String.class, tripId);
+        return statuses.isEmpty() ? null : statuses.get(0);
+    }
+
     public TripListResponse findTripsForUser(long userId) {
         List<TripListItem> trips = jdbc.query(
                 "SELECT t.id, t.name, t.destination, t.start_date, t.end_date, t.main_plan_confirmed, "
@@ -121,20 +193,5 @@ public class TripRepository {
         }
         jdbc.update("UPDATE app_user SET current_trip_id = ? WHERE id = ?", tripId, userId);
         return new CurrentTripResponse(tripId);
-    }
-
-    /** Confirms the trip's main plan so the split flow (REQ-004 precondition) can start. */
-    public int confirmMainPlan(long tripId) {
-        return jdbc.update("UPDATE trip SET main_plan_confirmed = 1 WHERE id = ?", tripId);
-    }
-
-    /**
-     * True when the trip really has a confirmed main-plan draft. The legacy colon route uses this before flipping
-     * the flag, so {@code trip.main_plan_confirmed} can never drift away from {@code main_plan_draft} again.
-     */
-    public boolean hasConfirmedDraft(long tripId) {
-        Long count = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM main_plan_draft WHERE trip_id = ? AND status = 'confirmed'", Long.class, tripId);
-        return count != null && count > 0;
     }
 }

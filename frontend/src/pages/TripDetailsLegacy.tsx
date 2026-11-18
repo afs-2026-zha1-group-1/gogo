@@ -119,7 +119,12 @@ export default function TripDetailsLegacy({ tripId }: TripDetailsProps) {
           </div>
         </section>
 
-        <div className="sec-title"><Icon name="info" className="sm" /> 行程信息</div>
+        <div className="sec-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Icon name="info" className="sm" /> 行程信息
+          <a className="iconbtn" href={`#/trips/${trip.id}/edit`} aria-label="编辑行程信息" style={{ marginLeft: 'auto' }}>
+            <Icon name="edit" className="sm" />
+          </a>
+        </div>
         <section className="card pad">
           <div className="valid">
             <div className="valid-item">
@@ -166,6 +171,7 @@ export default function TripDetailsLegacy({ tripId }: TripDetailsProps) {
         <InvitationPanel
           tripId={trip.id}
           isOrganizer={isOrganizer}
+          joiningClosed={trip.joiningClosed === true}
         />
 
         <div className="sec-title" style={{ marginTop: 18 }}><Icon name="sparkle" className="sm" /> 主线方案</div>

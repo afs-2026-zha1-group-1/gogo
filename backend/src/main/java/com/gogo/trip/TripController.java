@@ -32,22 +32,17 @@ public class TripController {
     public ResponseEntity<TripResponse> create(
             @AuthenticationPrincipal AccountPrincipal principal,
             @RequestBody TripCreateRequest request) {
-        long userId = principal.id();
-        LocalDate start = parseDate(request.startDate());
-        LocalDate end = parseDate(request.endDate());
-        if (isBlank(request.name())) {
-            throw new TripApiException(400, "NAME_REQUIRED", "Trip name must not be blank");
-        }
-        if (isBlank(request.destination())) {
-            throw new TripApiException(400, "DESTINATION_REQUIRED", "Trip destination must not be blank");
-        }
-        if (start.isAfter(end)) {
-            throw new TripApiException(400, "INVALID_DATE_RANGE", "Start date must not be after end date");
-        }
-        TripCreateRequest normalized = new TripCreateRequest(request.name(), request.destination(),
-                request.startDate(), request.endDate(), blankToNull(request.startLocation()),
-                blankToNull(request.endLocation()));
-        return ResponseEntity.status(201).body(repository.create(normalized, userId));
+        TripCreateRequest normalized = validate(request);
+        return ResponseEntity.status(201).body(repository.create(normalized, principal.id()));
+    }
+
+    /** US-003: members edit planning basics; the name stays organizer-only (design D1-D3). */
+    @PutMapping("/{id}")
+    public TripResponse update(
+            @AuthenticationPrincipal AccountPrincipal principal,
+            @PathVariable long id,
+            @RequestBody TripCreateRequest request) {
+        return repository.updateBasics(id, principal.id(), validate(request));
     }
 
     @GetMapping
@@ -96,28 +91,21 @@ public class TripController {
         return repository.findMembers(id);
     }
 
-    /**
-     * Legacy colon route kept for old links. It never confirms a plan by itself: only a trip whose main plan is
-     * already confirmed through {@code POST /api/trips/{id}/main-plan/confirm} may flip the flag, so the flag can
-     * never drift away from {@code main_plan_draft} again (V11 repairs the drift it used to cause).
-     */
-    @PostMapping("/{id}/main-plan:confirm")
-    public TripResponse confirmMainPlan(
-            @AuthenticationPrincipal AccountPrincipal principal,
-            @PathVariable long id) {
-        long userId = principal.id();
-        repository.findById(id)
-                .orElseThrow(() -> new TripApiException(404, "TRIP_NOT_FOUND", "No trip with id " + id));
-        if (!repository.isMember(id, userId)) {
-            throw new TripApiException(403, "NOT_A_MEMBER", "Caller is not a member of this trip");
+    private static TripCreateRequest validate(TripCreateRequest request) {
+        LocalDate start = parseDate(request.startDate());
+        LocalDate end = parseDate(request.endDate());
+        if (isBlank(request.name())) {
+            throw new TripApiException(400, "NAME_REQUIRED", "Trip name must not be blank");
         }
-        if (!repository.hasConfirmedDraft(id)) {
-            throw new TripApiException(409, "MAIN_PLAN_NOT_CONFIRMED",
-                    "Confirm the main plan through POST /api/trips/" + id + "/main-plan/confirm");
+        if (isBlank(request.destination())) {
+            throw new TripApiException(400, "DESTINATION_REQUIRED", "Trip destination must not be blank");
         }
-        repository.confirmMainPlan(id);
-        return repository.findById(id)
-                .orElseThrow(() -> new TripApiException(404, "TRIP_NOT_FOUND", "No trip with id " + id));
+        if (start.isAfter(end)) {
+            throw new TripApiException(400, "INVALID_DATE_RANGE", "Start date must not be after end date");
+        }
+        return new TripCreateRequest(request.name(), request.destination(),
+                request.startDate(), request.endDate(), blankToNull(request.startLocation()),
+                blankToNull(request.endLocation()));
     }
 
     private static LocalDate parseDate(String value) {

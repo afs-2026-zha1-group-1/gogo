@@ -1643,6 +1643,41 @@ body {
   margin-top: 18px;
 }
 
+/* US-031-AI: non-blocking generation notice */
+.ai-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.ai-progress-sub {
+  color: var(--ink-3);
+}
+
+.spinner {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--brand-soft);
+  border-top-color: var(--brand);
+  border-radius: 999px;
+  animation: ai-spin 0.8s linear infinite;
+}
+
+@keyframes ai-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* --- US-067 Scanner ---------------------------------------------------
  * Full-screen flow outside the shell + TabBar (design D1, G1 C2).
  * Reuses existing tokens (.screen column, .appbar, .card, .btn, .field,

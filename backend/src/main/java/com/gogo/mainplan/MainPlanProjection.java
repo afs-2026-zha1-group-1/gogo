@@ -26,11 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
  * boundaries always come from the plan its members actually confirmed.
  *
  * Local HH:MM stop times are placed on the trip start date in the trip's own zone (香港/伦敦/新加坡 default, see
- * {@link TripZones}), so ISO consumers need no locale knowledge. Rows of other versions are left untouched
- * (history stays readable); the confirmed version is reconciled in place by {@code (plan_version, sort_order)}
- * so every stop keeps its {@code plan_node.id} across re-projections. That keeps the boundary stop ids stored by
- * an active split draft resolvable after a "my plan" save (US-090 R1); existing rows are updated, new orders are
- * inserted with a deterministic id, and orders the plan no longer uses are removed.
+ * {@link TripZones}), so ISO consumers need no locale knowledge. Rows of other versions
+ * are left untouched (history stays readable); only the confirmed version is rewritten, which makes the
+ * projection idempotent and self-healing for plans confirmed before the projection existed.
  */
 @Component
 public class MainPlanProjection {
@@ -66,15 +64,16 @@ public class MainPlanProjection {
             Instant endAt = instant(startDate, stop.endLocal(), zone);
             if (ids == null || ids.isEmpty()) {
                 jdbc.update("INSERT INTO plan_node (id, trip_id, plan_version, parent_id, branch_id, node_type, title, "
-                                + "start_at, end_at, location_name, lat, lng, sort_order, created_at) "
-                                + "VALUES (?, ?, ?, NULL, 'main', 'stop', ?, ?, ?, ?, NULL, NULL, ?, ?)",
+                                + "start_at, end_at, location_name, lat, lng, sort_order, created_at, cost_cents) "
+                                + "VALUES (?, ?, ?, NULL, 'main', 'stop', ?, ?, ?, ?, NULL, NULL, ?, ?, ?)",
                         stableId(tripId, draft.version(), stop.seq()), tripId, draft.version(), stop.name(),
-                        startAt, endAt, locationOf(stop), stop.seq(), now);
+                        startAt, endAt, locationOf(stop), stop.seq(), now, stop.costCents());
                 continue;
             }
             // The row already occupying this order keeps its id, so split drafts that stored it stay valid.
-            jdbc.update("UPDATE plan_node SET title = ?, start_at = ?, end_at = ?, location_name = ? WHERE id = ?",
-                    stop.name(), startAt, endAt, locationOf(stop), ids.get(0));
+            jdbc.update("UPDATE plan_node SET title = ?, start_at = ?, end_at = ?, location_name = ?, cost_cents = ? "
+                            + "WHERE id = ?",
+                    stop.name(), startAt, endAt, locationOf(stop), stop.costCents(), ids.get(0));
             for (String duplicate : ids.subList(1, ids.size())) {
                 jdbc.update("DELETE FROM plan_node WHERE id = ?", duplicate);
             }

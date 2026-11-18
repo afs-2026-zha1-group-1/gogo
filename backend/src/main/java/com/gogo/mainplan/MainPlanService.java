@@ -123,8 +123,9 @@ public class MainPlanService {
                 .toList();
         plans.supersedeCurrentDrafts(tripId);
         int version = plans.maxVersion(tripId) + 1;
-        long draftId = plans.insertDraft(tripId, version,
-                result.costPerPersonCents(), writeJson(revisions));
+        long draftId = plans.insertDraft(tripId, version, result.costPerPersonCents(), writeJson(revisions),
+                writeJson(tripBasics(trip.destination(), trip.startDate(), trip.endDate(),
+                        completed.startLocation(), completed.endLocation())));
         for (MainPlanResult.PlannedStop stop : result.stops()) {
             plans.insertStop(draftId, stop, writeJson(stop.interests()));
         }
@@ -153,7 +154,7 @@ public class MainPlanService {
         }
         MainPlanRepository.DraftRow draft = current.orElseThrow();
         List<PlanResponse.InputRevision> revisions = readRevisions(draft.inputRevisionsJson());
-        if (isStale(tripId, revisions)) {
+        if (isStale(tripId, revisions, draft)) {
             throw new MainPlanApiException(409, "STALE_DRAFT",
                     "Member preferences changed since this draft was generated; regenerate before confirming");
         }
@@ -175,7 +176,7 @@ public class MainPlanService {
                     "The draft failed validation; fix the reported issues before confirming", detail);
         }
         plans.markDraftConfirmed(draft.id());
-        plans.setTripMainPlanConfirmed(tripId);
+        plans.setTripConfirmedAndJoiningClosed(tripId);
         // The confirmed plan becomes the trip's main-line nodes in the same transaction, so the splits
         // capability reads the very rows this confirmation approved instead of a separate synthetic set.
         projection.projectConfirmed(tripId);
@@ -183,10 +184,21 @@ public class MainPlanService {
     }
 
     /**
-     * US-090 「我的方案」: any trip member edits one main-plan stop's start/end time and location. The stop must
-     * belong to this trip, the new window must stay ordered against its neighbours, and the edited rows are
-     * re-projected in the same transaction so the split boundaries keep reading the same stop ids. A route pair
-     * generated against the old times is dropped through {@link MainPlanStopsChanged}; the draft stays active.
+     * US-003 D7: the trip-detail shortcut keeps its URL but delegates to the same
+     * validated confirmation; only the organizer passes, and the response is the
+     * updated trip projection.
+     */
+    @Transactional
+    public TripResponse confirmShortcut(long tripId, long caller) {
+        confirm(tripId, caller);
+        return requireTrip(tripId);
+    }
+
+    /**
+     * US-090 「我的方案」: any trip member edits one main-plan stop (time/location from US-090, name from US-003).
+     * The stop must belong to this trip, the new window must stay ordered against its neighbours, and the edited
+     * rows are re-projected in the same transaction so the split boundaries keep reading the same stop ids. A route
+     * pair generated against the old times is dropped through {@link MainPlanStopsChanged}; the draft stays active.
      */
     @Transactional
     public PlanResponse updateStop(long tripId, long caller, long stopId, UpdateStopRequest request) {
@@ -204,8 +216,7 @@ public class MainPlanService {
         List<MainPlanRepository.StopRow> siblings = plans.stopsForDraft(draft.id());
         // A stop id from an older version must not be editable through the current plan.
         if (siblings.stream().noneMatch(sibling -> sibling.id() == stopId)) {
-            throw new MainPlanApiException(404, "STOP_NOT_FOUND",
-                    "No such stop in the current main plan");
+            throw new MainPlanApiException(404, "STOP_NOT_FOUND", "No such stop in the current main plan");
         }
         if (end.compareTo(start) <= 0) {
             throw stopTimeError("END_BEFORE_START", stop.seq(), "结束时间必须晚于开始时间");
@@ -218,18 +229,18 @@ public class MainPlanService {
                 throw stopTimeError("NEIGHBOUR_CONFLICT", stop.seq(), "结束时间晚于下一站开始时间");
             }
         }
-        plans.updateStop(stopId, start, end, blankToNull(request.locationName()));
+        // US-003 rename keeps working through the same endpoint; US-090 leaves the name untouched.
+        String name = request.name() == null || request.name().isBlank() ? stop.name() : request.name().trim();
+        if (name.length() > 80) {
+            throw new MainPlanApiException(400, "INVALID_STOP_NAME", "站点名称不能超过 80 个字符");
+        }
+        plans.updateStop(stopId, name, start, end, blankToNull(request.locationName()));
         // A time edit can leave an existing leg that no longer fits (TRAVEL_EXCEEDS_GAP); reject it here instead
         // of saving a draft that confirmation would block later.
         requireSchedulable(draft.id());
         projection.projectConfirmed(tripId);
         events.publishEvent(new MainPlanStopsChanged(tripId));
         return readPlan(tripId, caller);
-    }
-
-    private MainPlanApiException stopTimeError(String type, int seq, String message) {
-        return new MainPlanApiException(422, "VALIDATION_FAILED", message,
-                Map.of("scheduleErrors", List.of(new ScheduleValidator.ScheduleError(type, seq, message))));
     }
 
     /**
@@ -317,6 +328,11 @@ public class MainPlanService {
         return draft;
     }
 
+    private MainPlanApiException stopTimeError(String type, int seq, String message) {
+        return new MainPlanApiException(422, "VALIDATION_FAILED", message,
+                Map.of("scheduleErrors", List.of(new ScheduleValidator.ScheduleError(type, seq, message))));
+    }
+
     private String requireClock(String clock) {
         String trimmed = clock == null ? "" : clock.trim();
         if (!CLOCK.matcher(trimmed).matches()) {
@@ -358,7 +374,7 @@ public class MainPlanService {
                         "No main plan draft has been generated for this trip"));
         boolean confirmed = "confirmed".equals(draft.status());
         List<PlanResponse.InputRevision> revisions = readRevisions(draft.inputRevisionsJson());
-        boolean stale = !confirmed && isStale(tripId, revisions);
+        boolean stale = !confirmed && isStale(tripId, revisions, draft);
         List<PlanResponse.Stop> stops = plans.stopsForDraft(draft.id()).stream()
                 .map(stop -> new PlanResponse.Stop(stop.id(), stop.seq(), stop.name(), stop.startLocal(),
                         stop.endLocal(), stop.locationName(), stop.travelMinutesToNext(),
@@ -462,7 +478,8 @@ public class MainPlanService {
 
     // ---- staleness ----
 
-    boolean isStale(long tripId, List<PlanResponse.InputRevision> revisions) {
+    /** US-003 D6: preference revisions OR the trip-basics snapshot decide staleness; a missing snapshot is stale. */
+    boolean isStale(long tripId, List<PlanResponse.InputRevision> revisions, MainPlanRepository.DraftRow draft) {
         Map<Long, Integer> current = new LinkedHashMap<>();
         for (MainPlanRepository.MemberRow member : plans.members(tripId)) {
             current.put(member.userId(), member.preferenceRevision());
@@ -473,7 +490,25 @@ public class MainPlanService {
                 return true;
             }
         }
-        return false;
+        if (draft.tripBasicsJson() == null) {
+            return true;
+        }
+        TripResponse trip = requireTrip(tripId);
+        String snapshot = writeJson(tripBasics(trip.destination(), trip.startDate(), trip.endDate(),
+                trip.startLocation(), trip.endLocation()));
+        return !snapshot.equals(draft.tripBasicsJson());
+    }
+
+    /** US-003 D5: snapshot content shared by generation and the staleness comparison. */
+    private Map<String, Object> tripBasics(String destination, String startDate, String endDate,
+            String startLocation, String endLocation) {
+        Map<String, Object> basics = new LinkedHashMap<>();
+        basics.put("destination", destination);
+        basics.put("startDate", startDate);
+        basics.put("endDate", endDate);
+        basics.put("startLocation", startLocation);
+        basics.put("endLocation", endLocation);
+        return basics;
     }
 
     // ---- preference reads (read-only, REQ-019 owns writes) ----

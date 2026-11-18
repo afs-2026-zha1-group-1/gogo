@@ -1,6 +1,7 @@
 package com.gogo.hello.splits.provider;
 
 import com.gogo.hello.splits.domain.PlanStop;
+import com.gogo.hello.splits.domain.RouteActivity;
 import com.gogo.hello.splits.domain.RouteCandidate;
 import com.gogo.hello.splits.domain.RoutePairEdit;
 import com.gogo.hello.splits.domain.RouteStep;
@@ -15,18 +16,20 @@ import org.springframework.stereotype.Component;
  * Fixed in-process fixture provider (design D12, US-089). Group A keeps following the confirmed main plan, so its
  * candidate is derived from the main-plan stops inside the boundary pair (names, scheduled durations and the gaps
  * between them); group B receives a destination-keyed synthetic activity so the two lanes differ. No external
- * network call; the failing-provider double for G2-N replaces this bean in tests.
+ * network call; the failing-provider double for G2-N replaces this bean in tests. US-045 adds the costed
+ * activities of each lane so the budget check can price what the group pays inside the window.
  */
 @Component
 public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
 
     private record Branch(String activityName, int activityMinutes, List<Integer> travelLegsMinutes,
-            int bufferMinutes) {
+            int bufferMinutes, int costCents) {
     }
 
     private static final String SINGAPORE = "Singapore";
     private static final String HONG_KONG = "香港";
     private static final String LONDON = "伦敦";
+    private static final String HEFEI = "合肥";
 
     @Override
     public RouteCandidate candidateFor(String groupLabel, PlanStop departure, PlanStop reunion, String destination,
@@ -38,8 +41,10 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
         String activityName = RoutePairEdit.cleanStationName(branch.activityName());
         String location = destination == null || destination.isBlank() ? activityName : destination.trim();
         List<RouteStep> steps = List.of(new RouteStep(activityName, branch.activityMinutes()));
+        List<RouteActivity> activities = List.of(new RouteActivity(activityName, location,
+                branch.costCents(), RouteActivity.SOURCE_AI));
         return new RouteCandidate(groupLabel, activityName, location, branch.activityMinutes(),
-                branch.travelLegsMinutes(), 0, steps);
+                branch.travelLegsMinutes(), 0, steps, activities);
     }
 
     // Group A follows the confirmed itinerary: every main-plan stop from the departure (inclusive) to the reunion
@@ -71,7 +76,14 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
                 ? departure.name()
                 : departure.locationName();
         location = RoutePairEdit.cleanStationName(location);
-        return new RouteCandidate(groupLabel, activityName, location, activityMinutes, legs, 0, steps);
+        List<RouteActivity> activities = new ArrayList<>();
+        for (int index = from; index < to; index++) {
+            PlanStop stop = mainPlanStops.get(index);
+            activities.add(new RouteActivity(stop.name(), stop.name(), stop.costCents(),
+                    RouteActivity.SOURCE_MAIN));
+        }
+        return new RouteCandidate(groupLabel, activityName, location, activityMinutes, legs, 0, steps,
+                activities);
     }
 
     private static int indexOf(List<PlanStop> stops, String id) {
@@ -93,21 +105,28 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
     private static Branch branchFor(String city, String groupLabel) {
         if (HONG_KONG.equals(city)) {
             return switch (groupLabel) {
-                case "A" -> new Branch("PMQ 元创方（手作市集）", 50, List.of(15, 20), 10);
-                case "B" -> new Branch("香港故宫文化博物馆", 50, List.of(20, 10), 10);
+                case "A" -> new Branch("PMQ 元创方（手作市集）", 50, List.of(15, 20), 10, 6000);
+                case "B" -> new Branch("香港故宫文化博物馆", 50, List.of(20, 10), 10, 12000);
                 default -> throw new IllegalArgumentException("unknown group label: " + groupLabel);
             };
         }
         if (LONDON.equals(city)) {
             return switch (groupLabel) {
-                case "A" -> new Branch("泰特现代美术馆", 50, List.of(15, 15), 10);
-                case "B" -> new Branch("博罗市场美食探索", 50, List.of(20, 20), 10);
+                case "A" -> new Branch("泰特现代美术馆", 50, List.of(15, 15), 10, 0);
+                case "B" -> new Branch("博罗市场美食探索", 50, List.of(20, 20), 10, 3000);
+                default -> throw new IllegalArgumentException("unknown group label: " + groupLabel);
+            };
+        }
+        if (HEFEI.equals(city)) {
+            return switch (groupLabel) {
+                case "A" -> new Branch("天鹅湖漫步", 50, List.of(15, 15), 10, 0);
+                case "B" -> new Branch("合柴 1972 文创园", 50, List.of(20, 20), 10, 4000);
                 default -> throw new IllegalArgumentException("unknown group label: " + groupLabel);
             };
         }
         return switch (groupLabel) {
-            case "A" -> new Branch("National Gallery Singapore", 60, List.of(15, 20), 10);
-            case "B" -> new Branch("Gardens by the Bay", 60, List.of(20, 20), 10);
+            case "A" -> new Branch("National Gallery Singapore", 60, List.of(15, 20), 10, 1500);
+            case "B" -> new Branch("Gardens by the Bay", 60, List.of(20, 20), 10, 2500);
             default -> throw new IllegalArgumentException("unknown group label: " + groupLabel);
         };
     }
@@ -120,6 +139,9 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
         }
         if (value.contains("伦敦") || lower.contains("london")) {
             return LONDON;
+        }
+        if (value.contains("合肥") || lower.contains("hefei")) {
+            return HEFEI;
         }
         return SINGAPORE;
     }
