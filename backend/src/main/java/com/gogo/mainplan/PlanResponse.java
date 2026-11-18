@@ -23,6 +23,7 @@ public record PlanResponse(
             String startTime,
             String endTime,
             String locationName,
+            String note,
             Integer travelMinutesToNext,
             List<String> interests,
             String address,

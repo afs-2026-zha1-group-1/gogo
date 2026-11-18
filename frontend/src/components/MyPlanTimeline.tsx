@@ -3,7 +3,7 @@
  * (main-plan stops or the member's confirmed personal route) with the MainPlan page's
  * tl-* markup pattern; an empty schedule shows the no-plan state, never another
  * trip's or another group's route. US-090: a main-plan stop carries an edit entry
- * (pencil) that opens the time/location dialog; split route items stay read-only.
+ * (pencil) that opens the name/time/note dialog; split route items stay read-only.
  * US-079: every stop card carries a mint Amap button on its right opening the
  * embedded map modal; the address + navigation live on the countdown card's
  * next-stop row, not on the timeline; map failures never blank the trip.
@@ -86,7 +86,7 @@ export default function MyPlanTimeline({
 <div className="act-sub">
                         {item.kind === 'split-departure'
                           ? '全员 · 分头'
-                          : `${item.location ? `${item.location} · ` : ''}${item.groupLabel ? `${item.groupLabel} 组` : '全员'} · 免费`}
+                          : `${item.note ? `${item.note} · ` : ''}${item.groupLabel ? `${item.groupLabel} 组` : '全员'} · 免费`}
                       </div>
                       {item.interests.length > 0 && (
                         <div className="chips" style={{ marginTop: 6 }}>
@@ -101,7 +101,7 @@ export default function MyPlanTimeline({
                         type="button"
                         className="tl-edit"
                         disabled={busy}
-                        aria-label={`编辑 ${item.name} 的时间与地点`}
+                        aria-label={`编辑 ${item.name}`}
                         onClick={() => onEditStop(item)}
                       >
                         <Icon name="edit" className="sm" />

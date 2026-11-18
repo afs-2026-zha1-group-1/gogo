@@ -20,20 +20,20 @@ public class MainPlanRepository {
     }
 
     public record StopRow(long id, int seq, String name, String startLocal, String endLocal,
-            String locationName, Integer travelMinutesToNext, String interestsJson,
+            String locationName, String note, Integer travelMinutesToNext, String interestsJson,
             String address, Double lat, Double lng, int costCents) {
 
         /** Cost-less convenience for schedule-only fixtures (US-045 adds the cost column). */
         public StopRow(int seq, String name, String startLocal, String endLocal,
                 Integer travelMinutesToNext, String interestsJson) {
-            this(0L, seq, name, startLocal, endLocal, null, travelMinutesToNext, interestsJson,
+            this(0L, seq, name, startLocal, endLocal, null, null, travelMinutesToNext, interestsJson,
                     null, null, null, 0);
         }
 
         /** US-045 fixtures keep the cost slot while staying id-less and location-less. */
         public StopRow(int seq, String name, String startLocal, String endLocal,
                 Integer travelMinutesToNext, String interestsJson, int costCents) {
-            this(0L, seq, name, startLocal, endLocal, null, travelMinutesToNext, interestsJson,
+            this(0L, seq, name, startLocal, endLocal, null, null, travelMinutesToNext, interestsJson,
                     null, null, null, costCents);
         }
 
@@ -41,7 +41,7 @@ public class MainPlanRepository {
         public StopRow(int seq, String name, String startLocal, String endLocal,
                 Integer travelMinutesToNext, String interestsJson, String address, Double lat, Double lng,
                 int costCents) {
-            this(0L, seq, name, startLocal, endLocal, null, travelMinutesToNext, interestsJson,
+            this(0L, seq, name, startLocal, endLocal, null, null, travelMinutesToNext, interestsJson,
                     address, lat, lng, costCents);
         }
     }
@@ -143,7 +143,7 @@ public class MainPlanRepository {
 
     public List<StopRow> stopsForDraft(long draftId) {
         return jdbc.query(
-                "SELECT id, seq, name, start_local, end_local, location_name, travel_minutes_to_next, "
+                "SELECT id, seq, name, start_local, end_local, location_name, note, travel_minutes_to_next, "
                         + "interests_json, address, lat, lng, cost_cents FROM main_plan_stop WHERE draft_id = ? ORDER BY seq",
                 MainPlanRepository::toStopRow,
                 draftId);
@@ -161,7 +161,7 @@ public class MainPlanRepository {
      */
     public Optional<StopRow> findStop(long tripId, long stopId) {
         List<StopRow> rows = jdbc.query(
-                "SELECT s.id, s.seq, s.name, s.start_local, s.end_local, s.location_name, "
+                "SELECT s.id, s.seq, s.name, s.start_local, s.end_local, s.location_name, s.note, "
                         + "s.travel_minutes_to_next, s.interests_json, s.address, s.lat, s.lng, s.cost_cents "
                         + "FROM main_plan_stop s JOIN main_plan_draft d ON d.id = s.draft_id "
                         + "WHERE s.id = ? AND d.trip_id = ?",
@@ -171,13 +171,15 @@ public class MainPlanRepository {
     }
 
     /**
-     * Writes one edited stop (US-090 time/location, US-003 name): name, time pair and location change in one row;
-     * seq, legs and cost stay untouched.
+     * Writes one edited stop (US-090 name/time/note, US-003 name): name, time pair, location and note change in one
+     * row; seq, legs and cost stay untouched.
      */
-    public int updateStop(long stopId, String name, String startLocal, String endLocal, String locationName) {
+    public int updateStop(long stopId, String name, String startLocal, String endLocal, String locationName,
+            String note) {
         return jdbc.update(
-                "UPDATE main_plan_stop SET name = ?, start_local = ?, end_local = ?, location_name = ? WHERE id = ?",
-                name, startLocal, endLocal, locationName, stopId);
+                "UPDATE main_plan_stop SET name = ?, start_local = ?, end_local = ?, location_name = ?, note = ? "
+                        + "WHERE id = ?",
+                name, startLocal, endLocal, locationName, note, stopId);
     }
 
     /** Next free position for an appended stop (US-090 新增节点); positions are never renumbered. */
@@ -189,11 +191,11 @@ public class MainPlanRepository {
 
     /** Appends a manually authored stop (US-090 新增节点); no legs, interests or cost invented. */
     public void insertStopRow(long draftId, int seq, String name, String startLocal, String endLocal,
-            String locationName) {
-        jdbc.update("INSERT INTO main_plan_stop (draft_id, seq, name, start_local, end_local, location_name, "
+            String locationName, String note) {
+        jdbc.update("INSERT INTO main_plan_stop (draft_id, seq, name, start_local, end_local, location_name, note, "
                         + "travel_minutes_to_next, interests_json, cost_cents) "
-                        + "VALUES (?, ?, ?, ?, ?, ?, NULL, '[]', 0)",
-                draftId, seq, name, startLocal, endLocal, locationName);
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, NULL, '[]', 0)",
+                draftId, seq, name, startLocal, endLocal, locationName, note);
     }
 
     /** Removes one stop (US-090 删除节点); the remaining positions keep their seq so plan_node ids stay put. */
@@ -212,6 +214,7 @@ public class MainPlanRepository {
     private static StopRow toStopRow(java.sql.ResultSet rs, int rowNum) throws java.sql.SQLException {
         return new StopRow(rs.getLong("id"), rs.getInt("seq"), rs.getString("name"),
                 rs.getString("start_local"), rs.getString("end_local"), rs.getString("location_name"),
+                rs.getString("note"),
                 (Integer) rs.getObject("travel_minutes_to_next"), rs.getString("interests_json"),
                 rs.getString("address"), (Double) rs.getObject("lat"), (Double) rs.getObject("lng"),
                 rs.getInt("cost_cents"));

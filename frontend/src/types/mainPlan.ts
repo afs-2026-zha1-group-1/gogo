@@ -82,6 +82,8 @@ export interface PlanStop {
   endTime: string
   // Edited display location; absent for plans generated before US-090.
   locationName?: string | null
+  // 站点备注（「编辑站点」弹窗中编辑）；地图按名称导航，备注只作展示。
+  note?: string | null
   travelMinutesToNext: number | null
   interests: string[]
   // US-079 路线1：落库地址/坐标；后端非空序列化会省略 null，故可选。

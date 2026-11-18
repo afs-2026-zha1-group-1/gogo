@@ -10,8 +10,8 @@ export interface ScheduleItem {
   // Set only for main-plan stops: the stop a「我的方案」edit targets (US-090).
   stopId?: number
   name: string
-// Main-plan display location; null when the stop has none or comes from the split snapshot.
-  location?: string | null
+  // 站点备注（主线站可编辑）；null/省略 = 无备注，时间线不额外展示说明。
+  note?: string | null
   /** Shared split junction at a specific instant, rather than an activity interval. */
   kind?: 'split-departure'
   /** epoch ms; null = time pending confirmation (never fabricated). */

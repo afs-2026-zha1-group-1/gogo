@@ -138,7 +138,7 @@ public class MainPlanService {
             Double lng = cached.map(MainPlanRepository.PlaceRow::lng).orElse(null);
             plans.insertStop(draftId, stop, writeJson(stop.interests()), address, lat, lng);
             completedStops.add(new PlanResponse.Stop(0L, stop.seq(), stop.name(), stop.startTime(),
-                    stop.endTime(), null, stop.travelMinutesToNext(), stop.interests(), address, lat, lng));
+                    stop.endTime(), null, null, stop.travelMinutesToNext(), stop.interests(), address, lat, lng));
         }
         return new PlanResponse(tripId, version, false, false,
                 result.costPerPersonCents(), revisions, completedStops);
@@ -270,12 +270,16 @@ public class MainPlanService {
                 throw stopTimeError("NEIGHBOUR_CONFLICT", stop.seq(), "结束时间晚于下一站开始时间");
             }
         }
-        // US-003 rename keeps working through the same endpoint; US-090 leaves the name untouched.
+        // US-003 rename and US-090 title edit share the endpoint; a blank name keeps the stored one.
         String name = request.name() == null || request.name().isBlank() ? stop.name() : request.name().trim();
         if (name.length() > 80) {
             throw new MainPlanApiException(400, "INVALID_STOP_NAME", "站点名称不能超过 80 个字符");
         }
-        plans.updateStop(stopId, name, start, end, blankToNull(request.locationName()));
+        // 未提交的地点/备注保持原值（旧客户端不带这两个字段），显式空串表示清空；地图按标题导航，地点不再编辑。
+        String locationName = request.locationName() == null ? stop.locationName() : blankToNull(request.locationName());
+        String note = request.note() == null ? stop.note() : blankToNull(request.note());
+        requireNoteFits(note);
+        plans.updateStop(stopId, name, start, end, locationName, note);
         // A time edit can leave an existing leg that no longer fits (TRAVEL_EXCEEDS_GAP); reject it here instead
         // of saving a draft that confirmation would block later.
         requireSchedulable(draft.id());
@@ -320,7 +324,8 @@ public class MainPlanService {
         if (last != null) {
             plans.updateTravelMinutesToNext(last.id(), clockMinutes(start) - clockMinutes(last.endLocal()));
         }
-        plans.insertStopRow(draft.id(), seq, name, start, end, blankToNull(request.locationName()));
+        plans.insertStopRow(draft.id(), seq, name, start, end, blankToNull(request.locationName()),
+                requireNoteFits(blankToNull(request.note())));
         requireSchedulable(draft.id());
         projection.projectConfirmed(tripId);
         events.publishEvent(new MainPlanStopsChanged(tripId));
@@ -404,6 +409,14 @@ public class MainPlanService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
+    /** 站点备注上限；超长拒绝而不是静默截断。 */
+    private static String requireNoteFits(String note) {
+        if (note != null && note.length() > 200) {
+            throw new MainPlanApiException(400, "INVALID_STOP_NOTE", "备注不能超过 200 个字符");
+        }
+        return note;
+    }
+
     // D6: confirmed row wins over current; stale computed on read, confirmed
     // rows frozen.
     public PlanResponse readPlan(long tripId, long caller) {
@@ -418,7 +431,7 @@ public class MainPlanService {
         boolean stale = !confirmed && isStale(tripId, revisions, draft);
         List<PlanResponse.Stop> stops = plans.stopsForDraft(draft.id()).stream()
                 .map(stop -> new PlanResponse.Stop(stop.id(), stop.seq(), stop.name(), stop.startLocal(),
-                        stop.endLocal(), stop.locationName(), stop.travelMinutesToNext(),
+                        stop.endLocal(), stop.locationName(), stop.note(), stop.travelMinutesToNext(),
                         readInterests(stop.interestsJson()), stop.address(), stop.lat(), stop.lng()))
                 .toList();
         return new PlanResponse(tripId, draft.version(), confirmed, stale,
@@ -644,7 +657,7 @@ public class MainPlanService {
     private List<PlanResponse.Stop> toStops(List<MainPlanResult.PlannedStop> stops) {
         return stops.stream()
                 .map(stop -> new PlanResponse.Stop(0L, stop.seq(), stop.name(), stop.startTime(),
-                        stop.endTime(), null, stop.travelMinutesToNext(), stop.interests(), null, null, null))
+                        stop.endTime(), null, null, stop.travelMinutesToNext(), stop.interests(), null, null, null))
                 .toList();
     }
 
