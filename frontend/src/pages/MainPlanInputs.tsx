@@ -3,6 +3,7 @@ import { api } from '../api'
 import { useAuth } from '../features/auth/AuthProvider'
 import Icon from '../Icons'
 import { geocodeAddress } from '../lib/amap-geocode'
+import { AiGeneratingNotice } from '../components/AiGeneratingNotice'
 import { INTEREST_OPTIONS } from '../types/preferences'
 import type { MainPlan, MainPlanError, MainPlanInputs, TripSummary } from '../types/mainPlan'
 
@@ -315,6 +316,8 @@ export default function MainPlanInputs({ tripId, dashboardOrigin = false, backTo
         </section>
 
         {actionError && <p role="alert" className="error" style={{ marginTop: 12 }}>{actionError}</p>}
+
+        {generating && <AiGeneratingNotice />}
 
         {isOrganizer ? (
           <>

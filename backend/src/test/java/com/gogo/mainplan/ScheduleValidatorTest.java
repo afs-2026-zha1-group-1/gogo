@@ -16,10 +16,10 @@ class ScheduleValidatorTest {
 
     private List<MainPlanRepository.StopRow> fixtureStops() {
         List<MainPlanRepository.StopRow> stops = new ArrayList<>();
-        stops.add(new MainPlanRepository.StopRow(1, "City Hall MRT", "09:00", "09:30", 30, null, null, null, null));
-        stops.add(new MainPlanRepository.StopRow(2, "National Gallery Singapore", "10:00", "10:30", 30, null, null, null, null));
-        stops.add(new MainPlanRepository.StopRow(3, "Gardens by the Bay", "11:00", "11:15", 15, null, null, null, null));
-        stops.add(new MainPlanRepository.StopRow(4, "Merlion Park", "11:30", "12:00", null, null, null, null, null));
+        stops.add(new MainPlanRepository.StopRow(1, "City Hall MRT", "09:00", "09:30", 30, null, null, null, null, 500));
+        stops.add(new MainPlanRepository.StopRow(2, "National Gallery Singapore", "10:00", "10:30", 30, null, null, null, null, 1500));
+        stops.add(new MainPlanRepository.StopRow(3, "Gardens by the Bay", "11:00", "11:15", 15, null, null, null, null, 2000));
+        stops.add(new MainPlanRepository.StopRow(4, "Merlion Park", "11:30", "12:00", null, null, null, null, null, 1000));
         return stops;
     }
 
@@ -36,21 +36,21 @@ class ScheduleValidatorTest {
     @Test
     void outOfOrderStartIsFlaggedOnTheLaterSeq() {
         List<MainPlanRepository.StopRow> stops = fixtureStops();
-        stops.set(1, new MainPlanRepository.StopRow(2, "National Gallery Singapore", "08:00", "10:30", 30, null, null, null, null));
+        stops.set(1, new MainPlanRepository.StopRow(2, "National Gallery Singapore", "08:00", "10:30", 30, null, null, null, null, 1500));
         assertTrue(hasError(validator.validate(stops), "OUT_OF_ORDER", 2));
     }
 
     @Test
     void overlapIsFlaggedOnTheOverlappingStop() {
         List<MainPlanRepository.StopRow> stops = fixtureStops();
-        stops.set(1, new MainPlanRepository.StopRow(2, "National Gallery Singapore", "09:15", "10:30", 30, null, null, null, null));
+        stops.set(1, new MainPlanRepository.StopRow(2, "National Gallery Singapore", "09:15", "10:30", 30, null));
         assertTrue(hasError(validator.validate(stops), "OVERLAP", 2));
     }
 
     @Test
     void missingLegIsFlaggedOnTheNonLastStop() {
         List<MainPlanRepository.StopRow> stops = fixtureStops();
-        stops.set(0, new MainPlanRepository.StopRow(1, "City Hall MRT", "09:00", "09:30", null, null, null, null, null));
+        stops.set(0, new MainPlanRepository.StopRow(1, "City Hall MRT", "09:00", "09:30", null, null));
         assertTrue(hasError(validator.validate(stops), "MISSING_LEG", 1));
     }
 
@@ -63,7 +63,7 @@ class ScheduleValidatorTest {
     @Test
     void travelExceedingGapIsFlaggedOnTheLegCarryingStop() {
         List<MainPlanRepository.StopRow> stops = fixtureStops();
-        stops.set(0, new MainPlanRepository.StopRow(1, "City Hall MRT", "09:00", "09:30", 45, null, null, null, null));
+        stops.set(0, new MainPlanRepository.StopRow(1, "City Hall MRT", "09:00", "09:30", 45, null));
         List<ScheduleValidator.ScheduleError> errors = validator.validate(stops);
         assertTrue(hasError(errors, "TRAVEL_EXCEEDS_GAP", 1));
     }
@@ -71,38 +71,38 @@ class ScheduleValidatorTest {
     @Test
     void oneMinuteOverTheGapBlocks() {
         List<MainPlanRepository.StopRow> stops = fixtureStops();
-        stops.set(0, new MainPlanRepository.StopRow(1, "City Hall MRT", "09:00", "09:30", 31, null, null, null, null));
+        stops.set(0, new MainPlanRepository.StopRow(1, "City Hall MRT", "09:00", "09:30", 31, null));
         assertTrue(hasError(validator.validate(stops), "TRAVEL_EXCEEDS_GAP", 1));
     }
 
     @Test
     void outOfDayStartIsFlagged() {
         List<MainPlanRepository.StopRow> stops = fixtureStops();
-        stops.set(2, new MainPlanRepository.StopRow(3, "Gardens by the Bay", "25:00", "11:15", 15, null, null, null, null));
+        stops.set(2, new MainPlanRepository.StopRow(3, "Gardens by the Bay", "25:00", "11:15", 15, null));
         assertTrue(hasError(validator.validate(stops), "OUT_OF_DAY", 3));
     }
 
     @Test
     void outOfDayEndIsFlagged() {
         List<MainPlanRepository.StopRow> stops = fixtureStops();
-        stops.set(3, new MainPlanRepository.StopRow(4, "Merlion Park", "11:30", "24:30", null, null, null, null, null));
+        stops.set(3, new MainPlanRepository.StopRow(4, "Merlion Park", "11:30", "24:30", null, null));
         assertTrue(hasError(validator.validate(stops), "OUT_OF_DAY", 4));
     }
 
     @Test
     void dayWindowBoundariesAreInclusive() {
         List<MainPlanRepository.StopRow> stops = List.of(
-                new MainPlanRepository.StopRow(1, "Early", "00:00", "00:30", null, null, null, null, null));
+                new MainPlanRepository.StopRow(1, "Early", "00:00", "00:30", null, null));
         assertTrue(validator.validate(stops).isEmpty());
         List<MainPlanRepository.StopRow> late = List.of(
-                new MainPlanRepository.StopRow(1, "Late", "23:00", "23:59", null, null, null, null, null));
+                new MainPlanRepository.StopRow(1, "Late", "23:00", "23:59", null, null));
         assertTrue(validator.validate(late).isEmpty());
     }
 
     @Test
     void everyErrorCarriesTypeSeqAndMessage() {
         List<MainPlanRepository.StopRow> stops = fixtureStops();
-        stops.set(0, new MainPlanRepository.StopRow(1, "City Hall MRT", "09:00", "09:30", 45, null, null, null, null));
+        stops.set(0, new MainPlanRepository.StopRow(1, "City Hall MRT", "09:00", "09:30", 45, null));
         List<ScheduleValidator.ScheduleError> errors = validator.validate(stops);
         assertEquals(1, errors.size());
         assertEquals("TRAVEL_EXCEEDS_GAP", errors.get(0).type());

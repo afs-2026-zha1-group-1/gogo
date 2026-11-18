@@ -6,7 +6,7 @@ apply 执行组 6–7、9–10（缺口测试先红后绿 + 验收证据 + 门�
 
 ## 组 1 存储与生成补全（DD1/DD2）— done
 
-- [x] 1.1 V10__stop_location.sql：三可空列 + place_cache + 19 种子
+- [x] 1.1 V12__stop_location.sql（原 V10，撞号顺延）：可空列 + place_cache + 19 种子
 - [x] 1.2 MainPlanRepository：StopRow/insertStop/stopsForDraft 带三字段 + cacheLookup/cacheUpsert
 - [x] 1.3 MainPlanService.generate 逐站查缓存补全（miss 留 null）
 - [x] 1.4 FakeMainPlanProvider 夹具补 address/city（17 站）
@@ -31,7 +31,7 @@ apply 执行组 6–7、9–10（缺口测试先红后绿 + 验收证据 + 门�
 - [x] 4.4 lib/stop-icon.ts + Icons 七图标 + lib/place-book.ts 兜底
 - [x] 4.5 删 StopMapModal 与 iframe 样式（grep 零残留）
 - [x] 4.6 前端单测 amap/coord/place-book/stop-icon + 夹具同步（64/64）
-- [x] 4.7 R1 首站固定出发点=珠海南方软件园（place-book FIRST_STOP_ORIGIN + V11 种子 + StopMapButton 默认 origin + 单测）
+- [x] 4.7 R1 首站固定出发点=珠海南方软件园（place-book FIRST_STOP_ORIGIN + V13 种子 + StopMapButton 默认 origin + 单测）
 
 ## 组 5 查坐标回写客户端与 Key 治理（DD11/DD12）— done
 

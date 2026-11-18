@@ -60,11 +60,11 @@ public class MainPlanProjection {
         for (MainPlanRepository.StopRow stop : stops) {
             // US-079：确认投影把站点坐标抄进 plan_node 预留列（分队地图将来直接用）。
             jdbc.update("INSERT INTO plan_node (id, trip_id, plan_version, parent_id, branch_id, node_type, title, "
-                            + "start_at, end_at, location_name, lat, lng, sort_order, created_at) "
-                            + "VALUES (?, ?, ?, NULL, 'main', 'stop', ?, ?, ?, ?, ?, ?, ?, ?)",
+                            + "start_at, end_at, location_name, lat, lng, sort_order, created_at, cost_cents) "
+                            + "VALUES (?, ?, ?, NULL, 'main', 'stop', ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     UUID.randomUUID().toString(), tripId, draft.version(), stop.name(),
                     instant(startDate, stop.startLocal(), zone), instant(startDate, stop.endLocal(), zone),
-                    stop.name(), stop.lat(), stop.lng(), stop.seq(), now);
+                    stop.name(), stop.lat(), stop.lng(), stop.seq(), now, stop.costCents());
         }
         return Optional.of(draft.version());
     }

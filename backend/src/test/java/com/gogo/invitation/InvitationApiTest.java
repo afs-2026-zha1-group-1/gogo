@@ -48,7 +48,7 @@ class InvitationApiTest {
                 "SELECT MIN(id) FROM trip WHERE name = 'Singapore Friends Day'", Long.class);
         jdbcTemplate.update("DELETE FROM trip_invitation WHERE trip_id = ?", tripId);
         jdbcTemplate.update("DELETE FROM trip_member WHERE trip_id = ? AND user_id = 5", tripId);
-        jdbcTemplate.update("UPDATE trip SET main_plan_confirmed = 0 WHERE id = ?", tripId);
+        jdbcTemplate.update("UPDATE trip SET main_plan_confirmed = 0, joining_closed = 0 WHERE id = ?", tripId);
     }
 
     private long invitationCount() {
@@ -69,7 +69,9 @@ class InvitationApiTest {
     }
 
     private void setMainPlanConfirmed(boolean confirmed) {
-        jdbcTemplate.update("UPDATE trip SET main_plan_confirmed = ? WHERE id = ?", confirmed ? 1 : 0, tripId);
+        // US-003 D8: confirmation closes joining permanently; test-only setup mirrors both flags.
+        jdbcTemplate.update("UPDATE trip SET main_plan_confirmed = ?, joining_closed = ? WHERE id = ?",
+                confirmed ? 1 : 0, confirmed ? 1 : 0, tripId);
     }
 
     private MvcResult issue(String userId) throws Exception {

@@ -57,7 +57,8 @@ public class SecurityConfig {
                                 "/api/greeting").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/invitations/*").permitAll()
                         .requestMatchers("/api/trips/*/split-draft", "/api/trips/*/split-draft/**",
-                                "/api/trips/*/split-draft:confirm", "/api/trips/*/split-draft:cancel").permitAll()
+                                "/api/trips/*/split-draft:confirm", "/api/trips/*/split-draft:cancel",
+                                "/api/trips/*/split:cancel").permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))

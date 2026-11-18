@@ -67,7 +67,7 @@ apply 随缺口测试同步夹具（ScheduleItem lat/lon 已加）。
 
 ## 4. Fixtures 策略
 
-- V10 种子 place_cache 19 站（name+city → address/lat/lng，source=seed）；
+- V12 种子 place_cache 19 行（name+city → address/lat/lng，source=seed；原 V10 撞号顺延）；
 - G8：test-only `DELETE FROM place_cache WHERE name=…` 后生成；
 - W6：第二行程（test-only 建 trip+member 就绪）同名站生成；
 - 会话身份 TestAuth.asUser；E2E 用 alice/ben 演示账号；

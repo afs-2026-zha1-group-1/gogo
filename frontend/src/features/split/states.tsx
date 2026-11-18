@@ -23,6 +23,7 @@ const ERROR_TEXT: Record<string, string> = {
   NONPOSITIVE_SPLIT_WINDOW: "时间窗必须为正：会合时刻需晚于出发时刻。",
   BOUNDARY_NOT_IN_MAIN_PLAN: "边界节点不在已确认主线内，请仅从主线 stop 选择。",
   INVALID_ROUTE_PAIR: "快照非法：需恰好两条分组路线。",
+  INVALID_ROUTE_INPUT: "路线输入非法：站点至少 1 个、站名必填、分钟需为非负整数；A 组路段数=站点数，B 组路段数=站点数+1。",
   MAIN_PLAN_NOT_CONFIRMED: "主线尚未全员确认，暂不能发起分队。",
   SPLIT_DRAFT_CONFLICT: "该行程已存在活跃草稿（每次行程仅一次分队）。",
   SPLIT_DRAFT_NOT_ACTIVE: "当前无活跃草稿，请先发起。",
@@ -31,6 +32,8 @@ const ERROR_TEXT: Record<string, string> = {
   INVALID_GROUP_LABEL: "目标组别无效，只能是 A 或 B。",
   SPLIT_MEMBERS_INSUFFICIENT: "行程至少需要两名成员才能发起与确认分队。",
   ROUTE_GENERATION_FAILED: "路线生成失败，整对已回滚（无半成品路线）。",
+  SPLIT_BUDGET_HARD_OVERRUN: "有成员将超出硬性预算：确认被阻止，请调整预算或分队活动。",
+  INVALID_ACTIVITIES: "分队活动不合法：活动内容必填，费用需在允许范围内。",
   ENDPOINT_NOT_FOUND: "接口不可用（404）：请确认后端已更新并重启到最新版本。",
 }
 

@@ -4,11 +4,11 @@
 G1 `g1-decision.md`（Pass，ce4982f）。后端 379/379、前端 65/65 已绿；
 apply 执行缺口测试与验收证据。
 
-## DD1 存储形状（V10）
+## DD1 存储形状（V12；原编号 V10，合并 main 撞号顺延）
 
 `main_plan_stop` + `address TEXT / lat REAL / lng REAL`（均可空，只加不改）；
 新表 `place_cache(name, city, address, lat, lng, source)`，PK(name, city)，
-source ∈ seed/geocode/manual；V10 带 19 站种子（与前端 place-book 逐字对齐）。
+source ∈ seed/geocode/manual；V12 带 19 站种子（与前端 place-book 逐字对齐）。
 坐标存 WGS-84；纠偏只发生在拼网址时（DD6）。
 
 ## DD2 生成时补全
@@ -51,7 +51,7 @@ dir 直链 `from[name]/from[lnglat]/to[name]/to[lnglat]`（lng,lat 序）。
 ## DD8 起点口径
 
 时间轴：index>0 取 schedule[index-1]；**首站（from=null）统一固定出发点=珠海南方软件园
-（R1，用户 2026-11-18 裁决；place-book FIRST_STOP_ORIGIN + V11 种子；WGS 22.375463,113.572607
+（R1，用户 2026-11-18 裁决；place-book FIRST_STOP_ORIGIN + V13 种子；WGS 22.375463,113.572607
 由高德 POI GCJ 反算）**；地址簿缺该行才退空起点。
 倒计时：during 取 state.item；between 取 timed[index-1]；next 为首个 timed 站时同 R1 默认起点。
 

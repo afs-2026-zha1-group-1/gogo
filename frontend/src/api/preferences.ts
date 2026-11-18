@@ -2,6 +2,7 @@ import { api } from '../api'
 import type {
   BudgetLimitType,
   BudgetsResponse,
+  MemberProfilesResponse,
   MustDoItem,
   MustDosResponse,
   PreferencesResponse,
@@ -49,11 +50,22 @@ export function fetchPreferences(tripId: number): Promise<PreferencesResponse> {
   return request<PreferencesResponse>(`/api/trips/${tripId}/preferences`)
 }
 
+/** US-045 follow-up: roster rows with each member's interests, budget and edit permission. */
+export function fetchMemberProfiles(tripId: number): Promise<MemberProfilesResponse> {
+  return request<MemberProfilesResponse>(`/api/trips/${tripId}/preferences/members`)
+}
+
+/** Member-scoped writes: `memberId` targets another member (organizer only); omitted = the session user. */
+function memberQuery(memberId?: number | null): string {
+  return memberId == null ? '' : `?memberId=${memberId}`
+}
+
 export function savePreferences(
   tripId: number,
   interests: string[],
+  memberId?: number | null,
 ): Promise<SavePreferencesResponse> {
-  return request<SavePreferencesResponse>(`/api/trips/${tripId}/preferences`, {
+  return request<SavePreferencesResponse>(`/api/trips/${tripId}/preferences${memberQuery(memberId)}`, {
     method: 'PUT',
     body: { interests },
   })
@@ -68,8 +80,9 @@ export function fetchMustDos(tripId: number): Promise<MustDosResponse> {
 export function saveMustDos(
   tripId: number,
   items: MustDoItem[],
+  memberId?: number | null,
 ): Promise<SaveMustDosResponse> {
-  return request<SaveMustDosResponse>(`/api/trips/${tripId}/preferences/must-dos`, {
+  return request<SaveMustDosResponse>(`/api/trips/${tripId}/preferences/must-dos${memberQuery(memberId)}`, {
     method: 'PUT',
     body: { items },
   })
@@ -85,9 +98,10 @@ export function saveBudget(
   amount: number | null,
   currency?: string,
   limitType?: BudgetLimitType,
+  memberId?: number | null,
 ): Promise<SaveBudgetResponse> {
   const body = amount === null ? { amount: null } : { amount, currency, limitType }
-  return request<SaveBudgetResponse>(`/api/trips/${tripId}/preferences/budget`, {
+  return request<SaveBudgetResponse>(`/api/trips/${tripId}/preferences/budget${memberQuery(memberId)}`, {
     method: 'PUT',
     body,
   })

@@ -1925,6 +1925,128 @@ No critical blocker invalidates US-040; split may proceed.
 
 ---
 
+# Impact brief — US-087-088
+
+## 1. Requirement set
+
+| id | Path |
+|---|---|
+| US-087（#122） | `requirement-workspace/requirements/US-087-088.md` §US-087 |
+| US-088（#134） | `requirement-workspace/requirements/US-087-088.md` §US-088 |
+
+支撑：`intents/2026-11-17-us-087-088.md`、`analysis/us-087-088-dor.md`、`deep-dive.md` §US-087-088、`docs/ai4se-plugins/20261117-215840-quality-checklist-report.md`。
+
+## 2. As-is asset inventory（证据路径）
+
+| 资产 | 证据 | 现状 |
+|---|---|---|
+| Living Spec — splits | `openspec/specs/splits/spec.md` | 8 条 requirement（US-089 已重基线：A 组 `RouteStep` 站点、`destination`、边界从 `start_at` 起算）；**无路线编辑写入**，Screen 13 为只读展示 |
+| 后端端点 | `backend/.../splits/SplitDraftController.java` | 8 个入口（GET/POST draft、PUT boundaries、routes:generate、routes:check-timing、PUT assignment、:confirm、:cancel）；**无 routes 保存** |
+| 后端写链 | `SplitDraftService.java` | `generateRoutes` 成对原子写 `plan_node` + 文档 `routes`；`checkTiming` 只读快照；`confirmDraft` 从文档复算；`assign` 保留 routes 并 `+1` |
+| 路线读取 | `SplitDraftService.getDraftDetail` + `SplitDraftRepository.findSplitRouteActivities` | 活动名从 `plan_node.title`（split-a/split-b）读；时长从文档 `routes` 读；`GroupRoute` **无 locationName** |
+| 数据库 | `V4__splits.sql` / `V5__create_main_plan.sql` | `split_draft`（文档 + draft_version）、`plan_node`（含 `location_name`、`branch_id`）；本变更零迁移 |
+| 错误码 | `backend/.../common/ErrorCode.java` | 17 个稳定码；无字段级输入校验码 |
+| Screen 13 | `frontend/src/features/split/screen-routes.tsx`、`route-card.tsx` | 分组卡可切组；路线卡只读；「下一步」直接导航 `/split/timing` |
+| Screen 14 | `frontend/src/features/split/screen-timing.tsx` | 可编辑快照输入 + 「校验时间窗」按钮 + 结果卡；`useCheckTiming` |
+| Screen 15 | `frontend/src/features/split/screen-confirm.tsx` | `backTo = /split/timing`；确认由服务端复算 |
+| 预览能力 | `team-route-graph.tsx`、`graph-model.ts` | Screen 11 已使用；支持主线/分头/会合/A-B 分支与空时长占位 |
+| 路由 | `frontend/src/router.tsx` | `/split`、`/boundaries`、`/routes`、`/timing`、`/confirm`；无 preview |
+| 前端契约 | `features/split/types.ts`、`hooks.ts`、`api.ts` | `GroupRoute` 无 locationName；`useCheckTiming` 为只读 mutation |
+| 测试基线 | `backend/.../splits/controller/{SplitRouteGenerationApiTest, SplitAssignmentApiTest, SplitConfirmApiTest, SplitCancelApiTest, SplitDraftDetailApiTest}.java`；`frontend/tests/{team-route.test.ts, run-e2e.mjs}` | splits 回归面广；E2E 覆盖分队 11–15 屏 |
+| 知识库 | `docs/knowledge/architecture/tech-stack-plan.md`、`docs/knowledge/rules/` | 技术栈与规则；本变更不新增规则 |
+| UI 参考 | 用户 2026-11-17 三张截图（Screen 13/14/11）；`ui-design-reference/screenshots/screen-13*.png`、`screen-14*.png`、`screen-11-split-start.png` | 截图仅视觉参考，验收以 AC 为准 |
+| 验收夹具 | `requirement-workspace/acceptance-test-fixtures.md` | 尚无 §US-087-088（P3 ATDD 补） |
+
+## 3. As-is → proposed delta
+
+### 3.1 `splits` 能力（ADDED）— Split route pair edit
+
+**As-is**：无路线编辑端点；路线仅在 generate 时成对写入，活动名与时长分开存储且不可单独更新。
+
+**Proposed delta**：新增 `PUT /api/trips/{tripId}/split-draft/routes`——body `{draftVersion, routes[2]}`：A 组提交 `steps[{name, stayMinutes}]` + 路段分钟（服务端派生 activity/travel），B 组提交活动名/地点/活动/路程/缓冲分钟；任意行程成员、仅 `active`；单事务更新 `plan_node.title`/`location_name` 与文档 `routes`/`updated_at`，CAS `draftVersion + 1`；返回 `{draftVersion, routes[]}`。新错误码 `INVALID_ROUTE_INPUT`（400）。
+
+### 3.2 `splits` 能力（MODIFIED）
+
+| Requirement | As-is | Proposed delta |
+|---|---|---|
+| Group route generation | Screen 13 为只读展示；生成仅发起人；A 组由主线站点派生且合计=窗口 | Screen 13 变为可编辑（A 按 `steps` 逐站、B 活动分解）；「下一步」先保存再继续；生成仍仅发起人、仍成对原子；A 编辑后合计须 ≤ 窗口 |
+| Reunion timing check | 校验入口在 Screen 14，独立页面可编辑快照 | 端点与计算域不变；校验入口迁移到第 2 步「下一步」；Screen 14 由只读队伍路线预览取代（旧地址重定向）；A 合计>窗口时弹窗阻断 |
+| Split draft detail read | `GroupRoute` 无地点 | `GroupRoute` additive 新增 `locationName`；`steps` 沿用 US-089（A 组返回编辑后站点） |
+| Split confirmation | Screen 15 返回 `/split/timing` | 判定与错误码不变；返回目标改为 `/split/preview` |
+
+### 3.3 前端页面与路由
+
+- `screen-routes.tsx`：路线卡改为受控编辑（活动名/地点/分钟），新增保存→校验→导航链；无改动时跳过保存。
+- 新增 `screen-preview.tsx`（`/trips/:tripId/split/preview`）：复用 `TeamRouteGraph`/`buildGraphRows`，只读 + 「前往复核并确认」。
+- `screen-confirm.tsx`：`backTo` 改为 `/split/preview`。
+- `router.tsx`：新增 preview 路由；`/split/timing` 重定向到 preview；`screen-timing.tsx` 的页面职责移除（组件可删除）。
+- `types.ts`/`api.ts`/`hooks.ts`：新增保存请求/响应类型与 `useSaveRoutes`；`GroupRoute.locationName`。
+
+### 3.4 数据 / 安全 / 迁移
+
+**As-is**：`plan_node.location_name` 已存在；splits 路径已由 `SecurityConfig` 的 `/api/trips/*/split-draft/**` 覆盖。
+
+**Proposed delta**：**零迁移、零新依赖、不改 SecurityConfig**；PUT 自动受会话保护，401 由 `MemberGuard` 产出。
+
+### 3.5 已检查、无影响
+
+| 资产 | 结论 |
+|---|---|
+| 主线（`main-itinerary`）与 `main_plan_stop` | 不读写；保存只改 split-a/split-b 行 |
+| 分组（US-040 `assignment`） | 保存不改 `groups`；重新生成仍仅发起人 |
+| 确认/取消（US-049/050） | 状态机与复算不变；仅前端返回目标变化 |
+| Screen 11（US-086） | 复用图组件，不改其 props/契约 |
+| `app-shell` / `auth` / `trips` / `invitations` / `preferences` | 无契约变更 |
+| 个人路线 / 倒计时（US-052/US-063） | 不涉及 |
+
+## 4. Blast radius
+
+- 后端：`splits` 包新增 1 个 controller 方法、1 个 service 方法、2 个 DTO、1 个错误码、1 个 repository 更新方法；改动 generate 写入路径的复用逻辑（双写事务）。
+- 前端：Screen 13 编辑态 + 新预览页 + 路由重定向 + Screen 15 返回 + 类型/API/hook；`screen-timing.tsx` 退出流程。
+- 数据：只写既有 `split_draft.document` 与 `plan_node` split 行；无迁移、无新表。
+- 用户可见面：第 2 步从只读变可编辑；第 3 步从校验表单变只读预览；失败反馈由页内卡片变弹窗。
+- 回归面：分队 11–15 屏、确认复算、E2E 全链、后端 splits 现有 6 个测试类。
+
+## 5. Artifact impact
+
+| 类别 | 影响 |
+|---|---|
+| Specs | `splits` +1 ADDED、4 MODIFIED（46 场景，P2 delta）；MODIFIED 必须保留全部既有场景标题（含 US-089 G7） |
+| 测试 | 后端新增 `SplitRouteEditApiTest`（保存矩阵）；既有 splits 测试需补 `locationName` 断言；前端 `team-route.test.ts` 扩展 + `tsc`/build；E2E 新增 S/N 链 |
+| 文档 | `registry.md` 登记行；`deep-dive.md`/`impact-brief.md` 已更新；`acceptance-test-fixtures.md` §US-087-088（P3）；`docs/knowledge/_LOG.md`（落地对账） |
+| 归档 | 无（新 change 结束后归档） |
+
+## 6. Dual-track notes
+
+- OpenSpec：单 change（`us-087-088-split-route-edit-preview`），5 条 delta（1 ADDED + 4 MODIFIED），垂直切片完整（保存 → 校验 → 预览 → 确认入口）。
+- Agile：issue #122 / #134 已存在并在看板 `Req Analysis`；`/sdd:story-split` 可跳过；两卡随同一 change 推进。
+
+## 7. Risks & blockers
+
+| id | 风险 | 严重度 | 状态 |
+|---|---|---|---|
+| R1 | Living Spec Screen 13/14/15 契约与本变更冲突 | spec 冲突 | 由 4 条 MODIFIED 收敛；P2 保留既有场景标题 |
+| R2 | 活动名写在 `plan_node`、时长写在文档，双写不在同一事务会产生幽灵数据 | 数据一致性 | 单事务 + CAS 版本；失败整体回滚（S2/S3） |
+| R3 | 任意成员可保存与「仅发起人可重新生成」权限不一致 | 权限口径 | 用户裁决 BQ-6；在 delta 场景中显式写清，生成权限不变 |
+| R4 | 旧草稿 `location_name` 回填活动名导致重复展示 | 展示 | D-2：相等或为空不重复渲染 |
+| R5 | 新增 `INVALID_ROUTE_INPUT` 属契约扩展 | 契约 | G1 交 IO 复核错误枚举；P2 delta 列明 |
+| R6 | 保存后 5s 轮询/他人并发写导致版本过期 | 并发 | 409 `STALE_DRAFT_VERSION` → 前端重新拉取并提示重试（S3/N4） |
+| R7 | 移除 Screen 14 破坏旧书签与 E2E 断言 | 回归 | `/split/timing` 重定向；E2E 与路由断言同步更新（N8） |
+| R8 | 校验失败后已保存草稿可能被误认为「已通过」 | 业务认知 | 弹窗明确「未通过」；预览只在 `feasible=true` 时进入；确认仍服务端复算（N3/N7） |
+| R9 | 编辑控件在 430px shell 内挤压卡片（A 组多站时更长） | 可用性 | P3 定版式；P4 E2E 检查不横向滚动 |
+| R10 | US-089 合并后 A 组改为 `steps` 派生，与原「A/B 均改三项分钟」口径冲突 | spec 冲突 | 2026-11-18 用户裁决：A 按站点逐项编辑、服务端派生合计、合计 ≤ 时间窗；delta 已按 US-089 重基线并保留 G7 |
+
+无 critical blocker 使需求失效，可进入 `/sdd:proposal-split`；G1 需 IO 对新增错误码与 4 条 MODIFIED 复核。
+
+## 8. Suggested split boundaries
+
+单 change（`us-087-088-split-route-edit-preview`）：`splits` 1 ADDED + 4 MODIFIED；后端 1 端点 + 双写事务；前端 Screen 13 编辑态 + 新预览页 + 路由/返回调整。P3 建议拆三组顺序实现：
+
+1. **后端保存能力**：`PUT routes`、DTO、错误码、repository 双写、`GroupRoute.locationName`、`SplitRouteEditApiTest`。
+2. **Screen 13 编辑与下一步**：受控编辑态、脏值判断、保存→校验链、失败弹窗、终态只读。
+3. **预览页与流转**：`screen-preview.tsx`、`TeamRouteGraph` 复用、路由与重定向、Screen 15 `backTo`、E2E 与回归。
+
+Effort：L（跨前后端，回归面含 6 个 splits 测试类与分队 E2E）。
 ## §US-079 地图导航（P1，2026-11-18）
 
 ### As-is

@@ -2,16 +2,22 @@ package com.gogo.hello.splits;
 
 import com.gogo.auth.AccountPrincipal;
 import com.gogo.hello.common.ApiResponse;
+import com.gogo.hello.splits.domain.RouteActivity;
 import com.gogo.hello.splits.domain.SplitDraftDocument;
 import com.gogo.hello.splits.domain.TimingResult;
 import com.gogo.hello.splits.dto.AssignmentRequest;
 import com.gogo.hello.splits.dto.BoundaryResponse;
+import com.gogo.hello.splits.dto.BudgetCheckResponse;
 import com.gogo.hello.splits.dto.CheckTimingRequest;
 import com.gogo.hello.splits.dto.DraftVersionRequest;
 import com.gogo.hello.splits.dto.GenerateRoutesRequest;
+import com.gogo.hello.splits.dto.RecommendActivitiesRequest;
 import com.gogo.hello.splits.dto.RouteGenerationResponse;
+import com.gogo.hello.splits.dto.SaveActivitiesRequest;
 import com.gogo.hello.splits.dto.SaveBoundariesRequest;
+import com.gogo.hello.splits.dto.SaveRoutesRequest;
 import com.gogo.hello.splits.dto.SplitDraftDetailResponse;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -72,6 +78,16 @@ public class SplitDraftController {
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
+    /** Saves a manual A/B route edit for any trip member while the draft is active (US-087 S2/S2b). */
+    @PutMapping("/split-draft/routes")
+    public ResponseEntity<ApiResponse<RouteGenerationResponse>> saveRoutes(
+            @PathVariable String tripId,
+            Authentication authentication,
+            @RequestBody SaveRoutesRequest request) {
+        RouteGenerationResponse response = service.saveRoutes(tripId, caller(authentication), request);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
     @PostMapping("/split-draft/routes:check-timing")
     public ResponseEntity<ApiResponse<TimingResult>> checkTiming(
             @PathVariable String tripId,
@@ -91,6 +107,35 @@ public class SplitDraftController {
         return ResponseEntity.ok(ApiResponse.ok(detail));
     }
 
+    /** Member-readable budget check for the current draft (US-045, Screen 15). */
+    @GetMapping("/split-draft/budget-check")
+    public ResponseEntity<ApiResponse<BudgetCheckResponse>> budgetCheck(
+            @PathVariable String tripId,
+            Authentication authentication) {
+        BudgetCheckResponse response = service.budgetCheck(tripId, caller(authentication));
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    /** Replaces one group's costed activities (US-045 manual entry / accepted AI recommendation). */
+    @PutMapping("/split-draft/activities")
+    public ResponseEntity<ApiResponse<SplitDraftDetailResponse>> saveActivities(
+            @PathVariable String tripId,
+            Authentication authentication,
+            @RequestBody SaveActivitiesRequest request) {
+        SplitDraftDetailResponse detail = service.saveActivities(tripId, caller(authentication), request);
+        return ResponseEntity.ok(ApiResponse.ok(detail));
+    }
+
+    /** Returns the mock AI's budget-fitting squad activity suggestion (US-045, no persistence). */
+    @PostMapping("/split-draft/activities:recommend")
+    public ResponseEntity<ApiResponse<List<RouteActivity>>> recommendActivities(
+            @PathVariable String tripId,
+            Authentication authentication,
+            @RequestBody RecommendActivitiesRequest request) {
+        List<RouteActivity> suggestion = service.recommendActivities(tripId, caller(authentication), request);
+        return ResponseEntity.ok(ApiResponse.ok(suggestion));
+    }
+
     /** Confirms the current draft as the trip's split (US-049, design D1/D5). */
     @PostMapping("/split-draft:confirm")
     public ResponseEntity<ApiResponse<SplitDraftDetailResponse>> confirmDraft(
@@ -108,6 +153,17 @@ public class SplitDraftController {
             Authentication authentication,
             @RequestBody DraftVersionRequest request) {
         SplitDraftDetailResponse detail = service.cancelDraft(tripId, caller(authentication), request.draftVersion());
+        return ResponseEntity.ok(ApiResponse.ok(detail));
+    }
+
+    /** US-051: the organizer cancels a confirmed split before departure (design D9). */
+    @PostMapping("/split:cancel")
+    public ResponseEntity<ApiResponse<SplitDraftDetailResponse>> cancelConfirmedSplit(
+            @PathVariable String tripId,
+            Authentication authentication,
+            @RequestBody DraftVersionRequest request) {
+        SplitDraftDetailResponse detail =
+                service.cancelConfirmedSplit(tripId, caller(authentication), request.draftVersion());
         return ResponseEntity.ok(ApiResponse.ok(detail));
     }
 

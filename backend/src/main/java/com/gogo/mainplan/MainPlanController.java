@@ -5,12 +5,14 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.gogo.auth.AccountPrincipal;
+import com.gogo.trip.TripResponse;
 
-// Contractual routes (design D2); identity is the authenticated session principal.
+// Contractual main-plan routes; identity is the authenticated session principal.
 // US-079 adds stop-locations: programmatic geocode write-back at generation time.
 @RestController
 public class MainPlanController {
@@ -37,6 +39,24 @@ public class MainPlanController {
             @AuthenticationPrincipal AccountPrincipal principal,
             @PathVariable long id) {
         return service.confirm(id, principal.id());
+    }
+
+    /** US-003 D7: trip-detail shortcut, organizer-only, delegates to validated confirmation. */
+    @PostMapping("/api/trips/{id}/main-plan:confirm")
+    public TripResponse confirmShortcut(
+            @AuthenticationPrincipal AccountPrincipal principal,
+            @PathVariable long id) {
+        return service.confirmShortcut(id, principal.id());
+    }
+
+    /** US-003 D10: organizer edits one stop's name/times on the current unconfirmed draft. */
+    @PutMapping("/api/trips/{id}/main-plan/stops/{seq}")
+    public PlanResponse editStop(
+            @AuthenticationPrincipal AccountPrincipal principal,
+            @PathVariable long id,
+            @PathVariable int seq,
+            @RequestBody(required = false) StopEditRequest request) {
+        return service.editStop(id, principal.id(), seq, request);
     }
 
     @GetMapping("/api/trips/{id}/main-plan")

@@ -16,6 +16,21 @@ export interface RouteErrorDetail {
 export interface SplitErrorDetails {
   routes?: RouteErrorDetail[]
   missing?: string[]
+  /** US-045 hard-budget block: one row per member whose hard limit is exceeded. */
+  overruns?: BudgetOverrunDetail[]
+  remainingSharedCostCents?: number
+  replacedCostCents?: number
+}
+
+/** One hard-budget overrun row inside the confirmation error details (backend budgetHardOverrunDetails). */
+export interface BudgetOverrunDetail {
+  memberId: string
+  displayName: string | null
+  groupLabel: string
+  totalCostCents: number
+  budgetAmount: number | null
+  currency: string | null
+  overrunCents: number
 }
 
 /** Rejection detail (backend ApiResponse.ApiError). */
@@ -40,6 +55,8 @@ export interface PlanStop {
   name: string
   startAt: string | null
   endAt: string | null
+  /** US-045 per-person cost of the shared stop in cents (0 = free). */
+  costCents?: number
 }
 
 /** Per-group duration breakdown (backend SplitDraftDocument.RouteDurations); nullable estimates. */
@@ -47,6 +64,8 @@ export interface RouteDurations {
   activityMinutes: number | null
   travelLegsMinutes: number[]
   bufferMinutes: number | null
+  /** Ordered stops for group A (US-089); nullable for legacy documents. */
+  steps?: RouteStep[] | null
 }
 
 /** One visible step of a branch route (backend RouteStep); group A follows the main-plan stops. */
@@ -55,16 +74,31 @@ export interface RouteStep {
   minutes: number
 }
 
+/** Where a costed activity came from (backend RouteActivity.source). */
+export type ActivitySource = "main" | "ai" | "manual"
+
+/** One costed activity the group pays for (backend RouteActivity, US-045), cost is per person in cents. */
+export interface RouteActivity {
+  name: string
+  location: string | null
+  costCents: number
+  source: ActivitySource
+}
+
 /** One group's route view (backend GroupRoute), shared by generation response and detail snapshot. */
 export interface GroupRoute {
   groupLabel: string
   activityName: string | null
+  /** Editable display location (US-087 additive); legacy generated rows backfill the activity name. */
+  locationName?: string | null
   departureStopId: string | null
   reunionStopId: string | null
   activityMinutes: number | null
   travelLegsMinutes: number[]
   bufferMinutes: number | null
   steps?: RouteStep[] | null
+  /** US-045 costed activities generated with the route (null on documents created before the feature). */
+  activities?: RouteActivity[] | null
 }
 
 /** Draft document returned by POST start (backend SplitDraftDocument). */
@@ -172,4 +206,72 @@ export interface SaveBoundariesRequest {
 /** POST routes:generate body (backend GenerateRoutesRequest). */
 export interface GenerateRoutesRequest {
   draftVersion: number
+}
+
+/** Budget verdict for one member (backend SplitBudgetCalculator status). */
+export type BudgetStatus = "within" | "soft_over" | "hard_over" | "no_budget"
+
+/** One member's budget verdict inside a group (backend BudgetCheckResponse.MemberVerdict, US-045). */
+export interface BudgetMemberVerdict {
+  memberId: string
+  displayName: string | null
+  budgetAmount: number | null
+  currency: string | null
+  limitType: "hard" | "soft" | null
+  totalCostCents: number
+  overrunCents: number
+  status: BudgetStatus
+}
+
+/** One group's cost projection in the budget check (backend BudgetCheckResponse.GroupBudget). */
+export interface GroupBudget {
+  groupLabel: string
+  memberIds: string[]
+  squadCostCents: number
+  totalCostCents: number
+  members: BudgetMemberVerdict[]
+}
+
+/** GET .../split-draft/budget-check (backend BudgetCheckResponse, US-045). */
+export interface BudgetCheck {
+  draftVersion: number
+  totalSharedCostCents: number
+  replacedCostCents: number
+  remainingSharedCostCents: number
+  blocked: boolean
+  softReminder: boolean
+  groups: GroupBudget[]
+}
+
+/** PUT .../split-draft/activities body (backend SaveActivitiesRequest, US-045). */
+export interface SaveActivitiesRequest {
+  groupLabel: "A" | "B"
+  activities: { name: string; location?: string | null; costCents: number }[]
+  draftVersion: number
+}
+
+/** POST .../split-draft/activities:recommend body (backend RecommendActivitiesRequest, US-045). */
+export interface RecommendActivitiesRequest {
+  groupLabel: "A" | "B"
+  draftVersion: number
+}
+
+/** One editable station (US-087 Revision 3): both groups own their stop names and stay minutes. */
+export interface RouteStepInput {
+  name: string
+  minutes: number | null
+}
+
+/** One editable group route in a PUT .../split-draft/routes request (spec US-087 Revision 3). */
+export interface RouteEditInput {
+  groupLabel: "A" | "B"
+  steps: RouteStepInput[]
+  /** Group A: one leg after every stop; group B: outbound + return around the stops (stops + 1). */
+  travelLegsMinutes: (number | null)[]
+}
+
+/** PUT .../split-draft/routes body (backend SaveRoutesRequest). */
+export interface SaveRoutesRequest {
+  draftVersion: number
+  routes: RouteEditInput[]
 }

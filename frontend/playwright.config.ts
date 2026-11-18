@@ -24,7 +24,10 @@ export default defineConfig({
         SERVER_PORT: '18080',
         SPRING_DATASOURCE_URL: `jdbc:sqlite:${database}`,
         SPRING_SQL_INIT_MODE: 'always',
-        SPRING_SQL_INIT_DATA_LOCATIONS: pathToFileURL(resolve('tests/fixtures/dashboard.sql')).href,
+        SPRING_SQL_INIT_DATA_LOCATIONS: [
+          pathToFileURL(resolve('tests/fixtures/dashboard.sql')).href,
+          pathToFileURL(resolve('tests/fixtures/split-route-edit.sql')).href,
+        ].join(','),
       },
       reuseExistingServer: false,
       timeout: 180_000,

@@ -2,11 +2,16 @@ import { csrfHeaders } from "../../lib/csrf"
 import type {
   AssignmentRequest,
   BoundaryResult,
+  BudgetCheck,
   CheckTimingRequest,
   Envelope,
   GenerateRoutesRequest,
+  RecommendActivitiesRequest,
+  RouteActivity,
   RouteGenerationResult,
+  SaveActivitiesRequest,
   SaveBoundariesRequest,
+  SaveRoutesRequest,
   SplitDraftDetail,
   SplitDraftDocument,
   SplitErrorDetails,
@@ -85,6 +90,14 @@ export function assignGroup(tripId: string, body: AssignmentRequest): Promise<Sp
   })
 }
 
+/** PUT save the full A/B route pair while the draft is active (US-087 S2); any member may edit. */
+export function saveRoutes(tripId: string, body: SaveRoutesRequest): Promise<RouteGenerationResult> {
+  return request<RouteGenerationResult>(`/${tripId}/split-draft/routes`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  })
+}
+
 /** POST generate the paired group routes (spec REQ-006). */
 export function generateRoutes(tripId: string, body: GenerateRoutesRequest): Promise<RouteGenerationResult> {
   return request<RouteGenerationResult>(`/${tripId}/split-draft/routes:generate`, {
@@ -112,6 +125,38 @@ export function confirmSplitDraft(tripId: string, draftVersion: number): Promise
 /** POST cancel the initiator's unconfirmed draft (US-050); frees the row for a replacement. */
 export function cancelSplitDraft(tripId: string, draftVersion: number): Promise<SplitDraftDetail> {
   return request<SplitDraftDetail>(`/${tripId}/split-draft:cancel`, {
+    method: "POST",
+    body: JSON.stringify({ draftVersion }),
+  })
+}
+
+/** GET the member-readable budget check (US-045): squad + remaining shared cost, per-member verdicts. */
+export function fetchBudgetCheck(tripId: string): Promise<BudgetCheck> {
+  return request<BudgetCheck>(`/${tripId}/split-draft/budget-check`)
+}
+
+/** PUT replace one group's costed activities (US-045 manual entry / accepted AI suggestion). */
+export function saveActivities(tripId: string, body: SaveActivitiesRequest): Promise<SplitDraftDetail> {
+  return request<SplitDraftDetail>(`/${tripId}/split-draft/activities`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  })
+}
+
+/** POST ask the mock AI for a budget-fitting squad activity (US-045); nothing is persisted here. */
+export function recommendActivities(
+  tripId: string,
+  body: RecommendActivitiesRequest,
+): Promise<RouteActivity[]> {
+  return request<RouteActivity[]>(`/${tripId}/split-draft/activities:recommend`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  })
+}
+
+/** POST cancel a confirmed split before departure (US-051); organizer only. */
+export function cancelConfirmedSplit(tripId: string, draftVersion: number): Promise<SplitDraftDetail> {
+  return request<SplitDraftDetail>(`/${tripId}/split:cancel`, {
     method: "POST",
     body: JSON.stringify({ draftVersion }),
   })

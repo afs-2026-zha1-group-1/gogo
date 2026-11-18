@@ -8,8 +8,9 @@ import java.util.Map;
 /**
  * The split draft JSON document persisted in the {@code split_draft.document} column (design D5/D6). A record so
  * Jackson maps component names directly to the document fields. {@code routes} carries the per-group duration
- * breakdown only after generation (null before); boundary stop ids are null before selection. Pure domain model,
- * no HTTP/DB.
+ * breakdown only after generation (null before); boundary stop ids are null before selection. {@code activities}
+ * carries each group's costed activities (US-045) and is generated together with the routes; it is cleared when the
+ * boundaries change because the replaced shared activities no longer apply. Pure domain model, no HTTP/DB.
  */
 public record SplitDraftDocument(
         String initiatorMemberId,
@@ -20,6 +21,7 @@ public record SplitDraftDocument(
         String reunionStopId,
         Map<String, List<String>> groups,
         Map<String, RouteDurations> routes,
+        Map<String, List<RouteActivity>> activities,
         String createdAt,
         String updatedAt) {
 
@@ -39,7 +41,7 @@ public record SplitDraftDocument(
     public static SplitDraftDocument initial(
             String initiatorMemberId, int mainPlanVersion, Map<String, List<String>> groups, String now) {
         return new SplitDraftDocument(
-                initiatorMemberId, mainPlanVersion, 1, "active", null, null, groups, null, now, now);
+                initiatorMemberId, mainPlanVersion, 1, "active", null, null, groups, null, null, now, now);
     }
 
     /**
@@ -69,7 +71,7 @@ public record SplitDraftDocument(
         updated.computeIfAbsent(groupLabel, key -> new ArrayList<>()).add(memberId);
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion + 1, status,
-                departureStopId, reunionStopId, updated, routes, createdAt, now);
+                departureStopId, reunionStopId, updated, routes, activities, createdAt, now);
     }
 
     /**
@@ -80,17 +82,34 @@ public record SplitDraftDocument(
     public SplitDraftDocument withBoundaries(String departureStopId, String reunionStopId, String now) {
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion + 1, status,
-                departureStopId, reunionStopId, groups, null, createdAt, now);
+                departureStopId, reunionStopId, groups, null, null, createdAt, now);
     }
 
     /**
-     * Returns a new document with the generated per-group route durations and {@code draftVersion + 1} (design
-     * D6/D9). Boundaries, groups, initiator and createdAt are preserved; updatedAt advances.
+     * Returns a new document with the generated per-group route durations, the costed activities they imply
+     * (US-045) and {@code draftVersion + 1} (design D6/D9). Boundaries, groups, initiator and createdAt are
+     * preserved; updatedAt advances.
      */
-    public SplitDraftDocument withRoutes(Map<String, RouteDurations> routes, String now) {
+    public SplitDraftDocument withRoutes(Map<String, RouteDurations> routes,
+            Map<String, List<RouteActivity>> activities, String now) {
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion + 1, status,
-                departureStopId, reunionStopId, groups, routes, createdAt, now);
+                departureStopId, reunionStopId, groups, routes, activities, createdAt, now);
+    }
+
+    /**
+     * Replaces the costed activities of one group (US-045 manual entry / accepted AI recommendation) and bumps the
+     * version. Route durations, boundaries and groups are preserved: choosing different activities changes what the
+     * group pays, never the time window the pair already fits.
+     */
+    public SplitDraftDocument withActivities(String groupLabel, List<RouteActivity> updated, String now) {
+        Map<String, List<RouteActivity>> copy = activities == null
+                ? new LinkedHashMap<>()
+                : new LinkedHashMap<>(activities);
+        copy.put(groupLabel, List.copyOf(updated));
+        return new SplitDraftDocument(
+                initiatorMemberId, mainPlanVersion, draftVersion + 1, status,
+                departureStopId, reunionStopId, groups, routes, copy, createdAt, now);
     }
 
     /**
@@ -100,7 +119,7 @@ public record SplitDraftDocument(
     public SplitDraftDocument confirmed(String now) {
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion, "confirmed",
-                departureStopId, reunionStopId, groups, routes, createdAt, now);
+                departureStopId, reunionStopId, groups, routes, activities, createdAt, now);
     }
 
     /**
@@ -111,7 +130,7 @@ public record SplitDraftDocument(
     public SplitDraftDocument cancelled(String now) {
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion, "cancelled",
-                departureStopId, reunionStopId, groups, null, createdAt, now);
+                departureStopId, reunionStopId, groups, null, null, createdAt, now);
     }
 
     /**
@@ -121,6 +140,6 @@ public record SplitDraftDocument(
     public static SplitDraftDocument initialRebuilt(
             String initiatorMemberId, int mainPlanVersion, Map<String, List<String>> groups, String now) {
         return new SplitDraftDocument(
-                initiatorMemberId, mainPlanVersion, 1, "active", null, null, groups, null, now, now);
+                initiatorMemberId, mainPlanVersion, 1, "active", null, null, groups, null, null, now, now);
     }
 }

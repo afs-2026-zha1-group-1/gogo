@@ -107,3 +107,20 @@ export interface SubmissionResponse {
 export interface UserInterestsResponse {
   interests: string[]
 }
+
+/**
+ * One members-page row (backend MemberProfile): saved interest labels, budget and whether the caller may edit them
+ * (self, or the organizer editing anyone).
+ */
+export interface MemberProfile {
+  userId: number
+  displayName: string
+  organizer: boolean
+  interests: string[]
+  budget: Budget | null
+  editable: boolean
+}
+
+export interface MemberProfilesResponse {
+  members: MemberProfile[]
+}

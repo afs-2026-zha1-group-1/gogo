@@ -5,6 +5,7 @@ import Icon from '../Icons'
 import {
   ApiError,
   fetchBudgets,
+  fetchMemberProfiles,
   fetchMustDos,
   fetchPreferences,
   fetchReadiness,
@@ -27,6 +28,8 @@ import type {
 interface PreferencesPageProps {
   tripId: number
   backHref?: string
+  /** US-045 follow-up: open another member's preferences (organizer may edit, everyone else reads). */
+  memberId?: number
 }
 
 interface Rejection {
@@ -98,10 +101,13 @@ function submissionFailureOf(error: unknown): string {
   return messageOf(error)
 }
 
-export default function PreferencesPage({ tripId, backHref = `#/trips/${tripId}` }: PreferencesPageProps) {
+export default function PreferencesPage({ tripId, memberId, backHref = `#/trips/${tripId}` }: PreferencesPageProps) {
   // US-066: the session supplies identity, so the page no longer takes a userId prop.
   const { account } = useAuth()
-  const userId = account?.id ?? null
+  const viewerId = account?.id ?? null
+  // US-045 follow-up: `memberId` opens another member's preferences; the organizer may edit, others only view.
+  const isMemberView = memberId != null && memberId !== viewerId
+  const userId = memberId ?? viewerId
   const queryClient = useQueryClient()
   // MD11: two independent caches, so a must-do action never rewrites the interest section.
   const interestsKey = ['preferences', tripId, userId]
@@ -156,9 +162,26 @@ export default function PreferencesPage({ tripId, backHref = `#/trips/${tripId}`
   const budgetsKey = ['budgets', tripId, userId]
   const readinessKey = ['readiness', tripId, userId]
   const budgetsQuery = useQuery({ queryKey: budgetsKey, queryFn: () => fetchBudgets(tripId) })
-  const readinessQuery = useQuery({ queryKey: readinessKey, queryFn: () => fetchReadiness(tripId) })
+  // The readiness row is the viewer's own submission; another member's page never submits for them.
+  const readinessQuery = useQuery({
+    queryKey: readinessKey,
+    queryFn: () => fetchReadiness(tripId),
+    enabled: !isMemberView,
+  })
   // US-019: personal defaults, used only to pre-select when this member has no saved interests.
-  const userDefaultsQuery = useQuery({ queryKey: ['user-interests', userId], queryFn: fetchUserInterests })
+  const userDefaultsQuery = useQuery({
+    queryKey: ['user-interests', userId],
+    queryFn: fetchUserInterests,
+    enabled: !isMemberView,
+  })
+  // US-045 follow-up: the roster row carries the target's name and whether the organizer may edit it.
+  const profilesQuery = useQuery({
+    queryKey: ['member-profiles', tripId],
+    queryFn: () => fetchMemberProfiles(tripId),
+    enabled: isMemberView,
+  })
+  const targetProfile = profilesQuery.data?.members.find((member) => member.userId === userId) ?? null
+  const readOnlyMember = isMemberView && (targetProfile == null || !targetProfile.editable)
   const defaultsApplied = useRef(false)
 
   // Switching identity starts from an empty, clearly unloaded state; the fetches below seed it.
@@ -224,6 +247,7 @@ export default function PreferencesPage({ tripId, backHref = `#/trips/${tripId}`
   // US-019: pre-select the user's defaults (unsaved) when this member has no saved interests.
   useEffect(() => {
     if (defaultsApplied.current) return
+    if (isMemberView) return
     if (!query.data || !userDefaultsQuery.data) return
     const mine = query.data.members.find((member) => member.userId === userId)
     const saved = mine ? mine.interests : []
@@ -231,12 +255,12 @@ export default function PreferencesPage({ tripId, backHref = `#/trips/${tripId}`
       setSelected(userDefaultsQuery.data.interests)
     }
     defaultsApplied.current = true
-  }, [query.data, userDefaultsQuery.data, userId, noPreference])
+  }, [query.data, userDefaultsQuery.data, userId, noPreference, isMemberView])
 
   // Each confirmed must-do action is exactly one whole-list PUT, and the page adopts the
   // response so the id comes from the server (PAGE-6, PAGE-7, PAGE-9).
   const mustDoMutation = useMutation({
-    mutationFn: (next: MustDoItem[]) => saveMustDos(tripId, next),
+    mutationFn: (next: MustDoItem[]) => saveMustDos(tripId, next, isMemberView ? memberId : null),
     onSuccess: (response) => {
       setItems(response.items)
       setDraft(null)
@@ -288,10 +312,36 @@ export default function PreferencesPage({ tripId, backHref = `#/trips/${tripId}`
     onError: (error) => setSubmissionFailure(submissionFailureOf(error)),
   })
 
+  // Member view: the organizer saves the target's interests and budget only. Readiness/submission stays with the
+  // member themselves, so this path never calls the submission endpoint.
+  const memberSaveMutation = useMutation({
+    mutationFn: async () => {
+      const amount = budgetAmount === '' ? null : Number(budgetAmount)
+      const saved = await savePreferences(tripId, selected, memberId)
+      await saveBudget(tripId, amount, budgetCurrency, budgetLimitType, memberId)
+      return { interests: saved.interests, amount }
+    },
+    onSuccess: ({ interests, amount }) => {
+      setSelected(interests)
+      setAcknowledged(interests)
+      setSavedBudget(
+        amount === null ? null : { amount, currency: budgetCurrency, limitType: budgetLimitType },
+      )
+      setBudgetAmount(amount === null ? '' : String(amount))
+      setSubmissionFailure(null)
+      void queryClient.invalidateQueries({ queryKey: interestsKey })
+      void queryClient.invalidateQueries({ queryKey: budgetsKey })
+      void queryClient.invalidateQueries({ queryKey: ['member-profiles', tripId] })
+    },
+    onError: (error) => setSubmissionFailure(messageOf(error)),
+  })
+
   // PAGE-1: while either GET is pending both sections are inert.
-  const loading = query.isLoading || mustDosQuery.isLoading
-  const busy = loading || submitMutation.isPending || mustDoMutation.isPending
-  const mustDoBusy = loading || mustDoMutation.isPending
+  const loading = query.isLoading || mustDosQuery.isLoading || (isMemberView && profilesQuery.isLoading)
+  const busy =
+    loading || submitMutation.isPending || mustDoMutation.isPending || memberSaveMutation.isPending
+  const readOnlyControls = isMemberView && readOnlyMember
+  const mustDoBusy = loading || mustDoMutation.isPending || readOnlyControls
   const rejection = rejectionOf(query.error) ?? rejectionOf(mustDosQuery.error)
   const loadFailed = query.isError || mustDosQuery.isError
   // "Silence is not consent": with the switch off there must be something to submit.
@@ -346,15 +396,19 @@ export default function PreferencesPage({ tripId, backHref = `#/trips/${tripId}`
 
   const appbar = (
     <div className="appbar">
-      <a className="iconbtn" href={backHref} aria-label="返回行程">
+      <a className="iconbtn" href={backHref} aria-label={isMemberView ? '返回成员' : '返回行程'}>
         <Icon name="left" />
       </a>
       <div className="grow">
-        <div className="title">我的偏好</div>
-        <div className="sub">{account ? `${account.name} · US-019~027` : 'US-019~027'}</div>
+        <div className="title">
+          {isMemberView ? `${targetProfile?.displayName ?? '成员'} 的偏好` : '我的偏好'}
+        </div>
+        <div className="sub">
+          {isMemberView ? '成员偏好 · 组织者可代编辑' : account ? `${account.name} · US-019~027` : 'US-019~027'}
+        </div>
       </div>
       {/* US-026: the badge reports submission, not whether a section happens to be saved. */}
-      {!loadFailed && <span className={statusTone}>{statusLabel}</span>}
+      {!loadFailed && !isMemberView && <span className={statusTone}>{statusLabel}</span>}
     </div>
   )
 
@@ -434,26 +488,52 @@ export default function PreferencesPage({ tripId, backHref = `#/trips/${tripId}`
     <div className="screen">
       {appbar}
       <div className="body">
-        {/* US-027: the switch comes first because it decides whether anything below counts. */}
-        <div className="card pad" style={{ background: 'var(--surface-2)' }}>
-          <div className="switch-row">
-            <div className="txt">
-              <b>我没有特别偏好</b>
-              <p>显式选择后按默认参与规划（US-027）</p>
+        {isMemberView && (
+          <div className="card pad" style={{ background: 'var(--surface-2)' }}>
+            <div className="switch-row">
+              <div className="txt">
+                <b>
+                  {readOnlyControls
+                    ? `正在查看 ${targetProfile?.displayName ?? '成员'} 的偏好（只读）`
+                    : `正在查看 ${targetProfile?.displayName ?? '成员'} 的偏好`}
+                </b>
+                <p>
+                  {readOnlyControls
+                    ? '只有组织者可以编辑其他成员的兴趣、必做项与预算。'
+                    : '组织者可代该成员编辑兴趣、必做项与预算；保存后点底部「保存偏好与预算」生效。'}
+                </p>
+              </div>
             </div>
-            <button
-              type="button"
-              className={noPreference ? 'switch on' : 'switch'}
-              role="switch"
-              aria-checked={noPreference}
-              aria-label="我没有特别偏好"
-              disabled={busy}
-              onClick={toggleNoPreference}
-            />
+            {profilesQuery.isError && (
+              <div className="notice" role="alert" style={{ marginTop: 10 }}>
+                <strong>无法读取成员权限，当前为只读。</strong>
+              </div>
+            )}
           </div>
-        </div>
+        )}
 
-        {noPreference && (
+        {/* US-027: the switch comes first because it decides whether anything below counts. */}
+        {!isMemberView && (
+          <div className="card pad" style={{ background: 'var(--surface-2)' }}>
+            <div className="switch-row">
+              <div className="txt">
+                <b>我没有特别偏好</b>
+                <p>显式选择后按默认参与规划（US-027）</p>
+              </div>
+              <button
+                type="button"
+                className={noPreference ? 'switch on' : 'switch'}
+                role="switch"
+                aria-checked={noPreference}
+                aria-label="我没有特别偏好"
+                disabled={busy}
+                onClick={toggleNoPreference}
+              />
+            </div>
+          </div>
+        )}
+
+        {!isMemberView && noPreference && (
           <div
             className="card pad"
             style={{ borderColor: '#99f6e4', background: 'linear-gradient(135deg,#f0fdfa,#fff)' }}
@@ -476,7 +556,7 @@ export default function PreferencesPage({ tripId, backHref = `#/trips/${tripId}`
           </div>
         )}
 
-        {readinessInfo && (
+        {!isMemberView && readinessInfo && (
           <p className="hint" style={{ marginTop: 12 }}>
             就绪进度：{readinessInfo.readyCount}/{readinessInfo.memberCount}
             {readinessInfo.allReady ? ' · 全员已就绪' : ''}
@@ -500,7 +580,7 @@ export default function PreferencesPage({ tripId, backHref = `#/trips/${tripId}`
                   type="button"
                   className={on ? 'pick on' : 'pick'}
                   aria-pressed={on}
-                  disabled={busy || noPreference}
+                  disabled={busy || noPreference || readOnlyControls}
                   onClick={() => toggle(label)}
                 >
                   <span aria-hidden="true">{emoji}</span>
@@ -512,7 +592,9 @@ export default function PreferencesPage({ tripId, backHref = `#/trips/${tripId}`
         )}
 
         <p className="hint" style={{ marginTop: 10 }}>
-          选中你在这趟旅程中喜欢的主题；点底部的「提交并标记就绪」后，行程成员才能看到。
+          {isMemberView
+            ? '选中该成员在这趟旅程中喜欢的主题；点底部「保存偏好与预算」后生效。'
+            : '选中你在这趟旅程中喜欢的主题；点底部的「提交并标记就绪」后，行程成员才能看到。'}
         </p>
 
         <div className="sec-title" style={{ marginTop: 22 }}>
@@ -728,7 +810,7 @@ export default function PreferencesPage({ tripId, backHref = `#/trips/${tripId}`
                     inputMode="numeric"
                     placeholder="留空=不设预算"
                     value={visibleAmount}
-                    disabled={busy || noPreference}
+                    disabled={busy || noPreference || readOnlyControls}
                     onChange={(event) => {
                       setSubmissionFailure(null)
                       setBudgetAmount(event.target.value.replace(/[^0-9]/g, ''))
@@ -744,7 +826,7 @@ export default function PreferencesPage({ tripId, backHref = `#/trips/${tripId}`
                   id="budget-currency"
                   className="input"
                   value={budgetCurrency}
-                  disabled={busy || noPreference}
+                  disabled={busy || noPreference || readOnlyControls}
                   onChange={(event) => setBudgetCurrency(event.target.value)}
                 >
                   {BUDGET_CURRENCIES.map((code) => (
@@ -761,7 +843,7 @@ export default function PreferencesPage({ tripId, backHref = `#/trips/${tripId}`
                 type="button"
                 className={budgetLimitType === 'soft' ? 'on' : ''}
                 aria-pressed={budgetLimitType === 'soft'}
-                disabled={busy || noPreference}
+                disabled={busy || noPreference || readOnlyControls}
                 onClick={() => setBudgetLimitType('soft')}
               >
                 软上限·尽量不超
@@ -770,7 +852,7 @@ export default function PreferencesPage({ tripId, backHref = `#/trips/${tripId}`
                 type="button"
                 className={budgetLimitType === 'hard' ? 'on' : ''}
                 aria-pressed={budgetLimitType === 'hard'}
-                disabled={busy || noPreference}
+                disabled={busy || noPreference || readOnlyControls}
                 onClick={() => setBudgetLimitType('hard')}
               >
                 硬上限·绝不超
@@ -798,24 +880,36 @@ export default function PreferencesPage({ tripId, backHref = `#/trips/${tripId}`
       </div>
 
       <div className="actionbar">
-        {/* US-026: one click writes interests and budget, then marks the member ready. */}
-        <button
-          type="button"
-          className="btn btn-primary"
-          disabled={busy || !hasContent}
-          onClick={() => submitMutation.mutate()}
-        >
-          <Icon name="check" className="sm" />
-          {submitMutation.isPending
-            ? '正在提交…'
-            : noPreference
-              ? readyStatus === 'ready'
-                ? '重新确认无偏好并就绪'
-                : '确认无偏好并就绪'
-              : readyStatus === 'ready'
-                ? '重新提交并标记就绪'
-                : '提交并标记就绪'}
-        </button>
+        {isMemberView ? (
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={busy || readOnlyControls || !dirty}
+            onClick={() => memberSaveMutation.mutate()}
+          >
+            <Icon name="check" className="sm" />
+            {memberSaveMutation.isPending ? '正在保存…' : '保存偏好与预算'}
+          </button>
+        ) : (
+          /* US-026: one click writes interests and budget, then marks the member ready. */
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={busy || !hasContent}
+            onClick={() => submitMutation.mutate()}
+          >
+            <Icon name="check" className="sm" />
+            {submitMutation.isPending
+              ? '正在提交…'
+              : noPreference
+                ? readyStatus === 'ready'
+                  ? '重新确认无偏好并就绪'
+                  : '确认无偏好并就绪'
+                : readyStatus === 'ready'
+                  ? '重新提交并标记就绪'
+                  : '提交并标记就绪'}
+          </button>
+        )}
         {submissionFailure && (
           <div className="notice" role="alert" style={{ marginTop: 10 }}>
             <strong>{submissionFailure}</strong>
