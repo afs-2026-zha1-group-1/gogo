@@ -63,14 +63,14 @@
 
 The system SHALL expose `POST /api/trips/{tripId}/split-draft/routes:generate` with `draftVersion` for the initiator after boundaries are saved and while the draft is `active`. Before generating, it SHALL require a complete group partition: both `groups.A` and `groups.B` non-empty, every current trip member assigned exactly once; incomplete partitions SHALL be rejected with `409 SPLIT_DRAFT_INCOMPLETE` and `error.details.missing`. When complete, it SHALL atomically replace both group routes, preserve main-plan rows, increment the version on success, roll back on failure, and reject stale results without overwriting newer state.
 
-Group A SHALL keep the confirmed itinerary: its candidate SHALL be derived from the main-plan stops from the departure stop (inclusive) to the reunion stop (exclusive), exposing ordered `RouteStep` entries (`name` + scheduled stay minutes); `activityMinutes` = sum of stays, `travelLegsMinutes` = scheduled gaps between consecutive stops (last gap ends at the reunion start), `bufferMinutes` = 0, so the total equals the window exactly. Group B SHALL keep a destination-keyed synthetic activity with empty `steps`. Persisted route views and the draft document SHALL carry `steps` (nullable for old documents). A `confirmed` or `cancelled` draft SHALL be rejected with `SPLIT_DRAFT_NOT_ACTIVE`. After generation, any trip member SHALL be able to edit the pair through Split route pair edit; generation itself SHALL remain initiator-only.
+Group A SHALL keep the confirmed itinerary: its candidate SHALL be derived from the main-plan stops from the departure stop (inclusive) to the reunion stop (exclusive), exposing ordered `RouteStep` entries (`name` + scheduled stay minutes); `activityMinutes` = sum of stays, `travelLegsMinutes` = scheduled gaps between consecutive stops (last gap ends at the reunion start), `bufferMinutes` = 0, so the total equals the window exactly. Group A's `activityName` SHALL join the first and last step names with ` → ` (a single step keeps its name) and its `locationName` SHALL be the first stop's real location, so the editable fields prefill real values instead of a placeholder. Group B SHALL keep a destination-keyed synthetic activity with empty `steps` and its `locationName` SHALL be the trip destination. Persisted route views and the draft document SHALL carry `steps` (nullable for old documents). A `confirmed` or `cancelled` draft SHALL be rejected with `SPLIT_DRAFT_NOT_ACTIVE`. After generation, any trip member SHALL be able to edit the pair through Split route pair edit; generation itself SHALL remain initiator-only.
 
 #### Scenario: 成对生成（G1）
 
 - **GIVEN** 草稿含完整分组，边界 City Hall MRT 09:00 → Merlion Park 11:30，发起人携带当前 draftVersion 触发
 - **THEN** 响应 `200`，恰好两条路线成对保存，均起于 City Hall MRT、终于 Merlion Park
-- **AND** A 组为「沿主线方案」：steps = City Hall MRT(30) / National Gallery Singapore(30) / Gardens by the Bay(15)，activity = 75，legs = [30, 30, 15]，buffer = 0
-- **AND** B 组为夹具活动：Gardens by the Bay，activity = 60，legs = [20, 20]，buffer = 10
+- **AND** A 组活动名 = `City Hall MRT → Gardens by the Bay`、地点 = `City Hall MRT`：steps = City Hall MRT(30) / National Gallery Singapore(30) / Gardens by the Bay(15)，activity = 75，legs = [30, 30, 15]，buffer = 0
+- **AND** B 组为夹具活动：Gardens by the Bay，地点 = `Singapore`，activity = 60，legs = [20, 20]，buffer = 10
 - **AND** draftVersion 递增；candidates come from replaceable `BranchCandidateProvider`（无外部网络）
 - **AND** routes 使用既有 `plan_node` split-a/split-b 行；结构化时长 JSON 含 `activityMinutes`、`travelLegsMinutes[]`、`bufferMinutes` 与 `steps[]`
 - **AND** replacement deletes the old pair and inserts the new pair in one transaction, preserving main-plan rows
@@ -117,7 +117,7 @@ Group A SHALL keep the confirmed itinerary: its candidate SHALL be derived from 
 
 - **GIVEN** 草稿为 `active` 且已生成 A/B 两条路线
 - **WHEN** 任一成员打开分组路线屏幕
-- **THEN** A 组卡按 `steps` 逐站提供停留分钟与各段路程分钟编辑（站名只读，沿用主线）；B 组卡提供活动名、地点、活动/路程/缓冲分钟编辑
+- **THEN** A 组卡按 `steps` 逐站提供停留分钟与各段路程分钟编辑（站名只读，沿用主线）；路程按“去程 / 回程”标注，多站时中间段标注“段间 N”；B 组卡提供活动名、地点、活动/路程/缓冲分钟编辑（去程 / 回程）
 - **AND** 草稿为 `confirmed` 或 `cancelled` 时同样字段只读，且不出现「下一步」动作
 - **AND** 前端不自行判定路线合法性或时间可行性（判定归后端）
 
@@ -126,7 +126,7 @@ Group A SHALL keep the confirmed itinerary: its candidate SHALL be derived from 
 - **WHEN** 任一成员打开分组路线屏幕
 - **THEN** 页面呈现分组卡与成对路线卡；A 组卡按 `steps` 逐站显示（站名 + 分钟），B 组卡显示单一活动分解
 - **AND** 路线卡字段按 S1 可编辑；「下一步」在保存/校验进行中禁用重复点击
-- **AND** 每张路线卡显示「合计 X 分 / 窗口 Y 分」；超窗在表头标红并提示回边界页把会合站后移或下调站点/路程分钟
+- **AND** 每张路线卡显示「合计 X 分 / 窗口 Y 分」；路程逐段显示为“去程 / 段间 N / 回程”，不合并为单一总数；超窗在表头标红并提示回边界页把会合站后移或下调站点/路程分钟
 - **AND** 顶部显示时间窗与「由所选出发/会合站决定」的说明
 - **AND** 已生成路线在成员改组后仍原样呈现并提示需重新生成；终态路线只读；判定归后端
 
@@ -214,7 +214,7 @@ The system SHALL expose `POST /api/trips/{tripId}/split-draft/routes:check-timin
 - **GIVEN** 第 2 步校验通过
 - **WHEN** 成员进入 `/trips/{tripId}/split/preview`
 - **THEN** 页面标题为「队伍路线预览」、副标题为「校验通过 · 只读预览」，顶部显示 A 组 / B 组人数徽标
-- **AND** 复用队伍路线图展示主线、分头、A/B 分支、会合与暂停段；A 组节点按编辑后的 `steps` 展开，B 组显示活动·路程·缓冲；地点为空或等于活动名时不重复显示
+- **AND** 复用队伍路线图展示主线、分头、A/B 分支、会合与暂停段；A 组节点按编辑后的 `steps` 展开，B 组显示活动分解；每段路程单独成节点并标注“去程 / 段间 N / 回程”与各自分钟数，不合并展示；地点为空或等于活动名时不重复显示
 - **AND** 页面只读，底部「前往复核并确认」进入 `/split/confirm`，返回目标为第 2 步
 - **AND** loading / error / 无草稿 / 无路线对 / 终态只读态均可观察
 

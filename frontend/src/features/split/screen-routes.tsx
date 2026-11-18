@@ -14,6 +14,7 @@ import { useAuth } from "../auth/AuthProvider"
 import { SplitLayout } from "./split-layout"
 import { EmptyState, ErrorState, LoadingState } from "./states"
 import { RouteCard } from "./route-card"
+import { travelLabel } from "./graph-model"
 import type { GroupRoute, RouteEditInput, TimingResult } from "./types"
 import type { TripMember } from "../../types"
 import { Button } from "@/components/ui/button"
@@ -486,22 +487,25 @@ function EditableRouteCard({
           </div>
         )}
 
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-[12px] text-ink-2">路程（各段分钟）</span>
-          <div className="flex flex-wrap justify-end gap-1.5">
-            {form.travelLegsMinutes.map((minutes, index) => (
-              <input
-                key={`${form.groupLabel}-leg-${index}`}
-                aria-label={`${form.groupLabel} 组 路程 ${index + 1}`}
-                type="number"
-                min={0}
-                className={numberClass}
-                value={minutes}
-                disabled={!editable}
-                onChange={(event) => onLegChange(index, event.target.value)}
-              />
-            ))}
-          </div>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[10px] font-semibold text-ink-3">路程（分钟）</span>
+          {form.travelLegsMinutes.map((minutes, index) => {
+            const label = travelLabel(form.travelLegsMinutes.length, index)
+            return (
+              <div key={`${form.groupLabel}-leg-${index}`} className="flex items-center justify-between gap-2">
+                <span className="text-[12px] text-ink-2">{label}</span>
+                <input
+                  aria-label={`${form.groupLabel} 组 ${label}`}
+                  type="number"
+                  min={0}
+                  className={numberClass}
+                  value={minutes}
+                  disabled={!editable}
+                  onChange={(event) => onLegChange(index, event.target.value)}
+                />
+              </div>
+            )
+          })}
         </div>
 
         {form.steps.length === 0 ? (

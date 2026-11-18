@@ -771,7 +771,7 @@ Alice 的预期顺序（以 2026-11-16 为“今天”，2026-11-17 修订：**�
 
 | Fixture | 草稿状态 / 数据 | 覆盖场景 |
 |---|---|---|
-| F1 基准 | `active` v3；边界 City Hall 09:00 → Merlion 11:30（窗口 150）；A steps City Hall(30)/National Gallery(30)/Gardens(15)，legs 30/30/15，buffer 0，合计 150；B 活动 60，legs 20/20，buffer 10，合计 110；`plan_node` split-a/b 含 `title`/`location_name`（旧数据回填活动名） | S2/S2b/D1/S7/CF1 |
+| F1 基准 | `active` v3；边界 City Hall 09:00 → Merlion 11:30（窗口 150）；A 活动名 `City Hall MRT → Gardens by the Bay`、地点 `City Hall MRT`，steps City Hall(30)/National Gallery(30)/Gardens(15)，legs 30/30/15，buffer 0，合计 150；B 活动 60、地点 `Singapore`，legs 20/20，buffer 10，合计 110；`plan_node` split-a/b 含 `title`/`location_name`（旧数据回填活动名） | S2/S2b/D1/S7/CF1 |
 | F2 编辑后 | A 第二站 30→20（合计 140）；B 地点改为「Gardens by the Bay · 滨海湾」；A legs 保持 30/30/15 | S2/S2b 持久化 |
 | F3 A 超窗 | A 第三站 15→40（合计 175，窗口 150，超 25） | N3a `check-timing` 数值（feasible=false / overrun=25） |
 | F4 版本/缺失/终态 | 请求 v2；`routes=null`；`status=confirmed`；`status=cancelled` | S3/S4/S6 |

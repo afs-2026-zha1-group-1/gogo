@@ -1,4 +1,5 @@
 import type { GroupRoute } from "./types"
+import { travelLabel } from "./graph-model"
 import { Card } from "@/components/ui/card"
 import { IconFlag, IconNav } from "@/components/icons"
 import { cn } from "@/lib/utils"
@@ -73,7 +74,14 @@ export function RouteCard({
         {route.locationName && route.locationName !== route.activityName ? (
           <Row label="地点" value={route.locationName} />
         ) : null}
-        <Row label={`路程（${route.travelLegsMinutes.join(" + ")}）`} value={`${legsTotal} 分`} italic />
+        {route.travelLegsMinutes.map((minutes, index) => (
+          <Row
+            key={`${route.groupLabel}-leg-${index}`}
+            label={travelLabel(route.travelLegsMinutes.length, index)}
+            value={`${minutes} 分`}
+            italic
+          />
+        ))}
         <Row label="缓冲" value={`${route.bufferMinutes} 分`} />
         {total != null && (
           <Row label="合计" value={`${total} 分${windowMinutes != null ? ` / 窗口 ${windowMinutes} 分` : ""}`} />

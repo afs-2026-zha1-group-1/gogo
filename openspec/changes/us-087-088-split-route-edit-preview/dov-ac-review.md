@@ -74,6 +74,17 @@ delta: `specs/splits/spec.md`（1 ADDED + 4 MODIFIED / 46 场景）· evidence:
 - 用户裁决（SA）：A 按站点逐项编辑停留/路程，服务端派生合计，合计 SHALL ≤ 时间窗。
 - 状态：本修订已提交 PR #135，待 IO 复审确认；本轮 G1 Revision 见 `g1-decision.md`。
 
+## Revision review 2（2026-11-18，P4 产品反馈）
+
+| Item | Review | Result |
+|---|---|---|
+| A 组真实名称/地点 | A 活动名 = 首末站拼接，地点 = 首站真实 `location_name`；B 地点 = 行程目的地 | Pass（provider/API 断言 + E2E 预填值） |
+| 去程/回程标注 | 编辑卡与只读卡按去程/段间 N/回程逐段显示；预览图逐段成节点，不合并求和 | Pass（`team-route.test.ts` + 浏览器 E2E） |
+| 契约/场景保留 | `Group route generation`、`Reunion timing check` 文本更新但全部原场景标题保留；`validate --strict` valid（46 场景） | Pass |
+| 回归 | 后端 380/380、前端 46/46 + build、浏览器 85/85 | Pass |
+
+SA Leo 对 Revision 2 签 Pass；IO Emily 待复签（G1 Revision 2 记 Conditional，IO 复签后升 Pass）。
+
 ## Verdict
 
-**AC 4/4 Pass · DoV 5/5 Pass**（含 US-089 重基线修订）。无阻塞 Fail/Partial，可进入 G1 决策记录；本文件不是 Gate 决定，G1 须由具名 IO + SA 签署。
+**AC 4/4 Pass · DoV 5/5 Pass**（含 US-089 重基线与 P4 Revision 2）。无阻塞 Fail/Partial；G1 Revision 2 待 IO 具名复签。本文件不是 Gate 决定。

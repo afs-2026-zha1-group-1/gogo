@@ -116,6 +116,14 @@ export function routeLabelsFor(routes: RouteInput[]): Record<RouteKey, string> {
   return labels
 }
 
+/** Travel leg label: outbound and return for a pair; intermediate gaps only appear for multi-stop A routes. */
+export function travelLabel(total: number, index: number): string {
+  if (total <= 1) return "路程"
+  if (index === 0) return "去程"
+  if (index === total - 1) return "回程"
+  return `段间 ${index + 1}`
+}
+
 /** Appends the edited location only when it adds information beyond the activity name (US-087 D-2). */
 function locationSuffix(route: RouteInput): string {
   const location = route.locationName?.trim()
@@ -143,13 +151,14 @@ function branchRowsFor(route: RouteInput, key: RouteKey): BranchRow[] {
       }]
   if (route.travelLegsMinutes.length > 0) {
     const missing = route.travelLegsMinutes.some((minutes) => minutes == null)
-    const total = route.travelLegsMinutes.reduce<number>((sum, minutes) => sum + (minutes ?? 0), 0)
-    rows.push({
-      kind: "branch",
-      id: `${key}-travel`,
-      route: key,
-      title: "前往会合点",
-      meta: missing ? `路程 · ${PENDING_LABEL}` : `路程 · ${total} 分钟`,
+    route.travelLegsMinutes.forEach((minutes, index) => {
+      rows.push({
+        kind: "branch",
+        id: `${key}-travel-${index}`,
+        route: key,
+        title: travelLabel(route.travelLegsMinutes.length, index),
+        meta: missing ? `路程 · ${PENDING_LABEL}` : `路程 · ${formatMinutes(minutes)}`,
+      })
     })
   }
   if (route.bufferMinutes !== 0) {

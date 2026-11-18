@@ -62,7 +62,7 @@ class SplitRouteEditApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.data").doesNotExist())
                 .andExpect(jsonPath("$.error.code").value("STALE_DRAFT_VERSION"));
         assertThat(draftRoutes().get("A").get("activityMinutes").asInt()).isEqualTo(75);
-        assertThat(splitRouteRow("split-a").get("location_name")).isEqualTo("沿主线方案");
+        assertThat(splitRouteRow("split-a").get("location_name")).isEqualTo("City Hall MRT");
         assertThat(draftVersionColumn()).isEqualTo(version);
     }
 

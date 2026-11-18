@@ -1354,7 +1354,7 @@ AC 未声明保留期、SLA 或容量指标。列表是既有行的只读投影�
 | 概念 | 粒度 | 字段 | 状态迁移 | 来源 |
 |---|---|---|---|---|
 | 草稿路线时长 | 每草稿每组成员（`split_draft.document.routes`） | `RouteDurations{activityMinutes:int, travelLegsMinutes:int[], bufferMinutes:int, steps?:RouteStep[]}`；A 组合计由 `steps` + 路段派生 | generate 成对替换并 `draftVersion + 1`；**routes 保存整对覆盖并 `+1`**（A 的 steps/派生值一并写入）；分组变更保留；确认冻结；取消清空 | `SplitDraftDocument.routes`（US-089 已含 steps，无迁移） |
-| 路线节点（活动名/地点） | 每草稿每组一行（`plan_node`，`branch_id = split-a/split-b`） | `title`（活动名，必填非空）、`location_name`（地点，可空）、`start_at`/`end_at`（沿用草图边界）、`sort_order` | generate 成对删除+插入（`location_name` 当前回填活动名）；**routes 保存更新 `title`/`location_name`**；取消删除 split 行；主线行不动 | `plan_node`（V4/V5 既有列，无迁移） |
+| 路线节点（活动名/地点） | 每草稿每组一行（`plan_node`，`branch_id = split-a/split-b`） | `title`（活动名，必填非空）、`location_name`（地点，可空）、`start_at`/`end_at`（沿用草图边界）、`sort_order` | generate 成对删除+插入（A 活动名 = 首末站拼接、地点 = 首站真实地点；B 地点 = 目的地）；**routes 保存更新 `title`/`location_name`**；取消删除 split 行；主线行不动 | `plan_node`（V4/V5 既有列，无迁移） |
 | 路线编辑请求 | 每次调用一份（整对） | `draftVersion:int`；`routes[2]`：A 组 `{groupLabel:'A', activityName, locationName?, steps[{stayMinutes}], travelLegsMinutes[]}`（站名沿用主线，路段数=站点数）；B 组 `{groupLabel:'B', activityName, locationName?, activityMinutes≥0, travelLegsMinutes[]≥0（段数=既有）, bufferMinutes≥0}` | 仅 `active` 草稿可写；成功后 `draftVersion + 1`；A 合计由服务端派生 | 新 `SaveRoutesRequest` / `RouteEditInput` DTO |
 | 路线视图 | 每次读取一份 | `GroupRoute{groupLabel, activityName, locationName?, departureStopId, reunionStopId, activityMinutes, travelLegsMinutes[], bufferMinutes, steps?}` | 读取不写；`locationName` 为 additive；A 组返回编辑后的 steps | `GET split-draft`（`SplitDraftDetailResponse.routes`） |
 | 草稿版本 | 每草稿一个整数 | 文档 `draftVersion` + `split_draft.draft_version`（CAS 列） | 保存 `+1`；boundaries/generate/assignment 既有语义不变；confirm/cancel 不变 | `V4__splits.sql` + 文档字段 |
@@ -1418,13 +1418,13 @@ A 组 `activityMinutes`/`travelLegsMinutes` 由 `steps` 派生，客户端提交
 
 | 界面 | 触发 | 受众 | 内容 + 显示字段 | 通道 | 数量 |
 |---|---|---|---|---|---|
-| Screen 13 路线卡（编辑态） | 打开分组与路线屏，草稿 `active` 且有路线对 | 全部行程成员 | A 组按 `steps` 逐站编辑停留分钟与各段路段分钟（站名只读，沿用主线）；B 组编辑活动名、地点（可选，`locationName == activityName` 或空时不重复显示）、活动/路程/缓冲分钟；卡片显示「合计 X 分 / 窗口 Y 分」 | `GET split-draft`（含 `locationName`/`steps`） | 每次渲染 A/B 两张 |
+| Screen 13 路线卡（编辑态） | 打开分组与路线屏，草稿 `active` 且有路线对 | 全部行程成员 | A 组按 `steps` 逐站编辑停留分钟与各段路程分钟（站名只读，沿用主线；路程标注去程/段间 N/回程）；B 组编辑活动名、地点（可选，`locationName == activityName` 或空时不重复显示）、活动/路程/缓冲分钟；卡片显示「合计 X 分 / 窗口 Y 分」 | `GET split-draft`（含 `locationName`/`steps`） | 每次渲染 A/B 两张 |
 | Screen 13 路线卡（只读） | 草稿 `confirmed` / `cancelled` | 查看者 | 同上字段但不可编辑；无「下一步」动作 | 客户端状态渲染 | 每次渲染 A/B 两张 |
 | 「下一步」按钮 | 草稿 `active` 且有路线对、分组完整 | 操作者 | 文案「下一步」；保存/校验中显示进行态并禁用重复点击 | 保存 + 校验写入链 | 一 |
 | 保存/校验成功 | `PUT routes` 200 且 `check-timing` `feasible=true` | 操作者 | 导航到 `/split/preview`；无额外成功提示（进入预览即反馈） | 路由跳转 | 一 |
 | 时间窗失败弹窗 | `check-timing` 200 且 `feasible=false` | 操作者 | 新增 shadcn 风格 `components/ui/dialog.tsx`（受控 open、遮罩不可点外关闭）；标题「时间窗校验未通过」；结论；A/B 组各自「合计 X 分 / 时间窗 Y 分 / 超窗 Z 分」；缺失输入项列表；底部仅「关闭」；不自动跳转，关闭后焦点回列表 | 前端弹窗 | 一 |
 | 保存/校验请求错误 | `PUT routes` 或 `check-timing` 非 2xx / 网络失败 | 操作者 | 既有 `ErrorState` / 页内错误提示，带 `error.code` 中文映射；保留输入；不跳转 | 页内错误 | 一 |
-| Screen 预览（新第 3 步） | 校验通过后进入 | 全部行程成员 | 标题「队伍路线预览」；副标题「校验通过 · 只读预览」；顶部 A 组 / B 组人数徽标；`TeamRouteGraph` 图（主线/分头/会合/A-B 节点，活动·路程·缓冲时长，地点如非空且不等于活动名）；底部「前往复核并确认」；返回第 2 步 | `GET split-draft` | 一 |
+| Screen 预览（新第 3 步） | 校验通过后进入 | 全部行程成员 | 标题「队伍路线预览」；副标题「校验通过 · 只读预览」；顶部 A 组 / B 组人数徽标；`TeamRouteGraph` 图（主线/分头/会合/A-B 节点，活动·逐段路程（去程/段间 N/回程）·缓冲时长，地点如非空且不等于活动名）；底部「前往复核并确认」；返回第 2 步 | `GET split-draft` | 一 |
 | 预览空/错误态 | 无草稿、无路线对、读取失败 | 查看者 | 沿用 `states.tsx` 的 loading / empty / error；无路线对时提示返回第 2 步生成 | 客户端渲染 | 一 |
 | 旧 Screen 14 地址 | 直接访问 `/split/timing` | 任意 | 重定向到 `/split/preview`，不渲染可编辑校验表单 | 路由重定向 | 一 |
 | 终态复核（Screen 15） | `confirmed` / `cancelled` | 查看者 | 既有只读展示；返回指向预览页；无确认/取消可用动作 | 客户端渲染 | 一 |

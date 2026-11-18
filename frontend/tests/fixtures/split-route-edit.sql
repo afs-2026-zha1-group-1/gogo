@@ -25,8 +25,8 @@ INSERT INTO plan_node (id, trip_id, plan_version, parent_id, branch_id, node_typ
  ('main-9101-2', 9101, 1, NULL, 'main', 'stop', 'National Gallery Singapore', '2026-12-20T02:00:00Z', '2026-12-20T02:30:00Z', 'National Gallery Singapore', NULL, NULL, 2, '2026-12-20T00:00:00Z'),
  ('main-9101-3', 9101, 1, NULL, 'main', 'stop', 'Gardens by the Bay', '2026-12-20T03:00:00Z', '2026-12-20T03:15:00Z', 'Gardens by the Bay', NULL, NULL, 3, '2026-12-20T00:00:00Z'),
  ('main-9101-4', 9101, 1, NULL, 'main', 'stop', 'Merlion Park', '2026-12-20T03:30:00Z', '2026-12-20T04:00:00Z', 'Merlion Park', NULL, NULL, 4, '2026-12-20T00:00:00Z'),
- ('split-a-9101', 9101, 1, NULL, 'split-a', 'activity', '沿主线方案', '2026-12-20T01:00:00Z', '2026-12-20T03:30:00Z', '沿主线方案', NULL, NULL, 1, '2026-12-20T00:00:00Z'),
- ('split-b-9101', 9101, 1, NULL, 'split-b', 'activity', 'Gardens by the Bay', '2026-12-20T01:00:00Z', '2026-12-20T03:30:00Z', 'Gardens by the Bay', NULL, NULL, 2, '2026-12-20T00:00:00Z');
+ ('split-a-9101', 9101, 1, NULL, 'split-a', 'activity', 'City Hall MRT → Gardens by the Bay', '2026-12-20T01:00:00Z', '2026-12-20T03:30:00Z', 'City Hall MRT', NULL, NULL, 1, '2026-12-20T00:00:00Z'),
+ ('split-b-9101', 9101, 1, NULL, 'split-b', 'activity', 'Gardens by the Bay', '2026-12-20T01:00:00Z', '2026-12-20T03:30:00Z', 'Singapore', NULL, NULL, 2, '2026-12-20T00:00:00Z');
 
 INSERT INTO split_draft (id, trip_id, document, draft_version, created_at, updated_at)
 VALUES ('split-draft-9101', 9101,
@@ -49,8 +49,8 @@ INSERT INTO plan_node (id, trip_id, plan_version, parent_id, branch_id, node_typ
  ('main-9102-2', 9102, 1, NULL, 'main', 'stop', 'National Gallery Singapore', '2026-12-22T02:00:00Z', '2026-12-22T02:30:00Z', 'National Gallery Singapore', NULL, NULL, 2, '2026-12-22T00:00:00Z'),
  ('main-9102-3', 9102, 1, NULL, 'main', 'stop', 'Gardens by the Bay', '2026-12-22T03:00:00Z', '2026-12-22T03:15:00Z', 'Gardens by the Bay', NULL, NULL, 3, '2026-12-22T00:00:00Z'),
  ('main-9102-4', 9102, 1, NULL, 'main', 'stop', 'Merlion Park', '2026-12-22T03:30:00Z', '2026-12-22T04:00:00Z', 'Merlion Park', NULL, NULL, 4, '2026-12-22T00:00:00Z'),
- ('split-a-9102', 9102, 1, NULL, 'split-a', 'activity', '沿主线方案', '2026-12-22T01:00:00Z', '2026-12-22T03:30:00Z', '沿主线方案', NULL, NULL, 1, '2026-12-22T00:00:00Z'),
- ('split-b-9102', 9102, 1, NULL, 'split-b', 'activity', 'Gardens by the Bay', '2026-12-22T01:00:00Z', '2026-12-22T03:30:00Z', 'Gardens by the Bay', NULL, NULL, 2, '2026-12-22T00:00:00Z');
+ ('split-a-9102', 9102, 1, NULL, 'split-a', 'activity', 'City Hall MRT → Gardens by the Bay', '2026-12-22T01:00:00Z', '2026-12-22T03:30:00Z', 'City Hall MRT', NULL, NULL, 1, '2026-12-22T00:00:00Z'),
+ ('split-b-9102', 9102, 1, NULL, 'split-b', 'activity', 'Gardens by the Bay', '2026-12-22T01:00:00Z', '2026-12-22T03:30:00Z', 'Singapore', NULL, NULL, 2, '2026-12-22T00:00:00Z');
 
 INSERT INTO split_draft (id, trip_id, document, draft_version, created_at, updated_at)
 VALUES ('split-draft-9102', 9102,

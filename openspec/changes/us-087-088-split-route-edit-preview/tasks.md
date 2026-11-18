@@ -103,3 +103,11 @@
 | 风险/阻塞 | **Pass** | G1 Revision 已 Pass；无未决 blocking OQ；R10 已由 BQ-7/BQ-8 收敛 |
 
 自检结论：**Pass**。计划完成，下一步 `/sdd:quality-checklist stage=p3`，随后 P4 `/sdd:atdd-apply`。
+
+## 13. P4 产品反馈 Revision 2（2026-11-18）
+
+- [x] 13.1 A 组预填真实活动名（首末站拼接）与首站真实地点；B 地点预填行程目的地
+- [x] 13.2 路程标注去程 / 段间 N / 回程；编辑卡、只读卡与预览图逐段展示，不合并求和
+- [x] 13.3 后端 `PlanStop`/`RouteCandidate` 携带 `locationName`；`insertSplitRoute` 写真实地点
+- [x] 13.4 更新 delta/design/dov/G1 Revision 2；`validate --strict` 仍 valid（46 场景）
+- [x] 13.5 回归：后端 380/380、前端 46/46 + build、浏览器 85/85

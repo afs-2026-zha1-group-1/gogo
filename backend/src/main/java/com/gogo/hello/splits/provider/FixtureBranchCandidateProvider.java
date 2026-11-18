@@ -34,7 +34,8 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
             return mainLineCandidate(groupLabel, departure, reunion, mainPlanStops);
         }
         Branch branch = branchFor(cityOf(destination), groupLabel);
-        return new RouteCandidate(groupLabel, branch.activityName(), branch.activityMinutes(),
+        String location = destination == null || destination.isBlank() ? branch.activityName() : destination.trim();
+        return new RouteCandidate(groupLabel, branch.activityName(), location, branch.activityMinutes(),
                 branch.travelLegsMinutes(), branch.bufferMinutes(), List.of());
     }
 
@@ -58,7 +59,15 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
             PlanStop next = index + 1 < to ? mainPlanStops.get(index + 1) : reunion;
             legs.add(Math.max(0, minutes(stop.endAt(), next.startAt())));
         }
-        return new RouteCandidate(groupLabel, "沿主线方案", activityMinutes, legs, 0, steps);
+        String activityName = steps.get(0).name();
+        String lastStep = steps.get(steps.size() - 1).name();
+        if (!activityName.equals(lastStep)) {
+            activityName = activityName + " → " + lastStep;
+        }
+        String location = departure.locationName() == null || departure.locationName().isBlank()
+                ? departure.name()
+                : departure.locationName();
+        return new RouteCandidate(groupLabel, activityName, location, activityMinutes, legs, 0, steps);
     }
 
     private static int indexOf(List<PlanStop> stops, String id) {

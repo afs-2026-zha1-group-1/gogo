@@ -73,6 +73,20 @@ IO Emily 的 Revision Pass 由用户在本会话明确转达后记录（代记�
 
 Revision Decision: **Pass**。非阻塞承接同 N1–N4，新增：P3 design 需定义 A `steps` 编辑控件与派生合计算法，P4 E2E 补 S2b/N3a。
 
+## Revision 2（2026-11-18，P4 产品反馈）
+
+- Trigger: 用户 P4 验收反馈：① A 组不得显示占位「沿主线方案」，应预填真实活动名（首末站拼接）与首站地点；② 路程需明确标注「去程/回程」，预览逐段展示而非合并求和。
+- Delta: `Group route generation` 与 `Reunion timing check` 的展示/生成口径已更新（A 名称/地点、B 地点=目的地、路段标注与逐段预览）；场景标题全保留，`validate --strict` 仍 valid。
+- 实现: `FixtureBranchCandidateProvider` 预填真实名称/地点；`PlanStop`/`RouteCandidate` 携带 `locationName`；`insertSplitRoute` 写入真实地点；前端逐段路程标签与预览节点。
+- Verification: 后端 380/380、前端 46/46 单测 + build、浏览器 85/85（Revision 2 后复跑）。
+
+| Role | Name | Revision 2 decision | Date |
+|---|---|---|---|
+| SA | Leo | **Pass** | 2026-11-18 |
+| IO | Emily | **待复签** | — |
+
+Revision 2 Decision: **Conditional**（仅因 IO 具名复签缺失；SA 已 Pass，AC/DoV 无阻塞）。IO 复签后升 Pass。
+
 ## Next
 
-G1 Pass（含 Revision Pass）→ 进入 P3：`/sdd:atdd-design` → `/sdd:task-plan` → `/sdd:quality-checklist stage=p3`。本记录不是 G2/G3 决定。
+G1 Pass（含 Revision Pass；Revision 2 Conditional 待 IO 复签）→ P4 已完成，进入 `/sdd:local-verify-report` → G2。本记录不是 G2/G3 决定。

@@ -22,7 +22,11 @@ test('step-2 editing validates the window and hands off to the preview', async (
   const step2 = page.getByLabel('A 组 第 2 站停留分钟')
   await expect(step2).toBeEnabled()
   await expect(step2).toHaveValue('30')
-  await expect(page.getByLabel('B 组 地点')).toHaveValue('Gardens by the Bay')
+  await expect(page.getByLabel('A 组 活动名称')).toHaveValue('City Hall MRT → Gardens by the Bay')
+  await expect(page.getByLabel('A 组 地点')).toHaveValue('City Hall MRT')
+  await expect(page.getByLabel('A 组 去程')).toBeVisible()
+  await expect(page.getByLabel('A 组 回程')).toBeVisible()
+  await expect(page.getByLabel('B 组 地点')).toHaveValue('Singapore')
 
   await step2.fill('20')
   await expect(page.getByText('合计 140 分').first()).toBeVisible()
@@ -77,7 +81,7 @@ test('confirmed draft shows the preview and route cards read-only', async ({ pag
   await login(page)
   await page.goto('/trips/9102/split/routes')
   await expect(page.getByLabel('A 组 第 2 站停留分钟')).toHaveCount(0)
-  await expect(page.getByText('沿主线方案').first()).toBeVisible()
+  await expect(page.getByText('City Hall MRT → Gardens by the Bay').first()).toBeVisible()
   await expect(page.getByRole('button', { name: /下一步/ })).toHaveCount(0)
 
   await page.goto('/trips/9102/split/preview')

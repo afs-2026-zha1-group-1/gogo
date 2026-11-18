@@ -47,15 +47,16 @@ test('buildGraphRows: boundaries split the main line and interleave A/B branches
     'branch',
     'branch',
     'branch',
+    'branch',
     'join',
     'main',
   ])
   assert.equal(model.forkRow, 1)
-  assert.equal(model.joinRow, 8)
+  assert.equal(model.joinRow, 9)
   assert.equal(model.routeLabels.a, 'Route A · 潜水')
   assert.equal(model.routeLabels.b, 'Route B · 咖啡')
   const branchTitles = model.rows.filter((row) => row.kind === 'branch').map((row) => row.title)
-  assert.deepEqual(branchTitles, ['潜水', '咖啡', '前往会合点', '前往会合点', '缓冲', '缓冲'])
+  assert.deepEqual(branchTitles, ['潜水', '咖啡', '去程', '路程', '回程', '缓冲', '缓冲'])
 })
 
 test('branch nodes: missing durations render as pending instead of zero', () => {
@@ -100,6 +101,11 @@ test('branch nodes: A steps expand per stop while B keeps a single activity', ()
     ['活动 · 30 分钟', '活动 · 20 分钟', '活动 · 15 分钟'],
   )
   assert.equal(rows.find((row) => row.route === 'b' && row.meta.startsWith('活动'))?.meta, '活动 · 60 分钟 · 滨海湾')
+  assert.equal(rows.filter((row) => row.route === 'a' && row.title === '去程').length, 1)
+  assert.equal(rows.filter((row) => row.route === 'a' && row.title === '段间 2').length, 1)
+  assert.equal(rows.filter((row) => row.route === 'a' && row.title === '回程').length, 1)
+  assert.equal(rows.filter((row) => row.route === 'b' && row.title === '去程').length, 1)
+  assert.equal(rows.filter((row) => row.route === 'b' && row.title === '回程').length, 1)
 })
 
 test('time formatting keeps ISO and local sources separate', () => {

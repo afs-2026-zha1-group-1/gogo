@@ -251,7 +251,7 @@ public class SplitDraftService {
             RouteCandidate candidate = entry.getValue();
             durations.put(entry.getKey(), new RouteDurations(candidate.activityMinutes(),
                     candidate.travelLegsMinutes(), candidate.bufferMinutes(), candidate.steps()));
-            routeViews.add(new GroupRoute(entry.getKey(), candidate.activityName(), candidate.activityName(),
+            routeViews.add(new GroupRoute(entry.getKey(), candidate.activityName(), candidate.locationName(),
                     departure.id(), reunion.id(), candidate.activityMinutes(), candidate.travelLegsMinutes(),
                     candidate.bufferMinutes(), candidate.steps()));
         }
@@ -263,8 +263,8 @@ public class SplitDraftService {
             for (Map.Entry<String, RouteCandidate> entry : candidates.entrySet()) {
                 String branchId = "split-" + entry.getKey().toLowerCase(Locale.ROOT);
                 repository.insertSplitRoute(UUID.randomUUID().toString(), tripId, draft.mainPlanVersion(), branchId,
-                        entry.getValue().activityName(), departure.startAt().toString(), reunion.startAt().toString(),
-                        order++, now);
+                        entry.getValue().activityName(), entry.getValue().locationName(),
+                        departure.startAt().toString(), reunion.startAt().toString(), order++, now);
             }
             if (repository.updateDraftIfVersion(tripId, updatedJson, capturedVersion) == 0) {
                 throw new ApiException(ErrorCode.STALE_DRAFT_VERSION, "draft version is stale");

@@ -10,10 +10,10 @@
   {
     "draftVersion": 3,
     "routes": [
-      { "groupLabel": "A", "activityName": "沿主线方案", "locationName": "Singapore",
+      { "groupLabel": "A", "activityName": "City Hall MRT → Gardens by the Bay", "locationName": "City Hall MRT",
         "steps": [{ "minutes": 30 }, { "minutes": 20 }, { "minutes": 15 }],
         "travelLegsMinutes": [30, 30, 15] },
-      { "groupLabel": "B", "activityName": "Gardens by the Bay", "locationName": "滨海湾",
+      { "groupLabel": "B", "activityName": "Gardens by the Bay", "locationName": "Singapore",
         "activityMinutes": 60, "travelLegsMinutes": [20, 20], "bufferMinutes": 10 }
     ]
   }
@@ -62,8 +62,9 @@
 ## DD6 Screen 13 编辑态
 
 - `screen-routes.tsx` 维护 `draftForm` 本地状态（从 `detail.routes` 初始化，`draftVersion` 变化时重置）：
-  - A 组：`steps` 逐站分钟输入 + 路段分钟输入；站名只读文本；合计/窗口徽标；
-  - B 组：活动名、地点、活动/路段/缓冲输入；
+  - 生成预填（DD2/DD4）：A 活动名 = 首末站拼接（如 `City Hall MRT → Gardens by the Bay`）、地点 = 首站真实 `location_name`；B 地点 = 行程 `destination`。旧数据按 D-2 去重展示。
+  - A 组：`steps` 逐站分钟输入 + 路段分钟输入；路程按“去程 / 段间 N / 回程”逐段标注；站名只读；合计/窗口徽标；
+  - B 组：活动名、地点、活动/路段/缓冲输入，路程同样标注“去程 / 回程”；
   - `dirty` = 深比较当前表单与最后一次快照（数字字符串归一化）。
 - 终态（`confirmed`/`cancelled`）渲染只读卡片，不出现「下一步」。
 - 分组卡与「重新生成」保持不变；分组变更后提示旧路线（既有逻辑）。
@@ -87,7 +88,7 @@
 ## DD9 预览页与路由
 
 - 新增 `screen-preview.tsx`（`/trips/:tripId/split/preview`）：
-  - `useSplitDraft` 读详情；`buildGraphRows` 复用 A `steps`/B 活动；
+  - `useSplitDraft` 读详情；`buildGraphRows` 复用 A `steps`/B 活动；每段路程单独成节点（去程 / 段间 N / 回程），不合并求和；
   - `SplitLayout`：标题「队伍路线预览」、副标题「校验通过 · 只读预览」、step=3、返回 `/split/routes`；
   - 顶部 A/B 人数徽标；底部「前往复核并确认」→ `/split/confirm`；
   - loading / error / 无草稿 / 无路线对 / 终态只读。

@@ -84,13 +84,14 @@ public class SplitDraftRepository {
             return Optional.empty();
         }
         List<PlanStop> stops = jdbcTemplate.query(
-                "SELECT id, title, start_at, end_at FROM plan_node "
+                "SELECT id, title, start_at, end_at, location_name FROM plan_node "
                         + "WHERE trip_id = ? AND id = ? AND branch_id = 'main' AND plan_version = ?",
                 (rs, rowNum) -> new PlanStop(
                         rs.getString("id"),
                         rs.getString("title"),
                         parseInstant(rs.getString("start_at")),
-                        parseInstant(rs.getString("end_at"))),
+                        parseInstant(rs.getString("end_at")),
+                        rs.getString("location_name")),
                 tripId, stopId, planVersion);
         return stops.stream().findFirst();
     }
@@ -173,24 +174,25 @@ public class SplitDraftRepository {
      * document, not here.
      */
     public void insertSplitRoute(String id, String tripId, int planVersion, String branchId, String activityName,
-            String startAt, String endAt, int sortOrder, String createdAt) {
+            String locationName, String startAt, String endAt, int sortOrder, String createdAt) {
         jdbcTemplate.update(
                 "INSERT INTO plan_node (id, trip_id, plan_version, parent_id, branch_id, node_type, title, "
                         + "start_at, end_at, location_name, lat, lng, sort_order, created_at) "
                         + "VALUES (?, ?, ?, NULL, ?, 'activity', ?, ?, ?, ?, NULL, NULL, ?, ?)",
-                id, tripId, planVersion, branchId, activityName, startAt, endAt, activityName, sortOrder, createdAt);
+                id, tripId, planVersion, branchId, activityName, startAt, endAt, locationName, sortOrder, createdAt);
     }
 
     /** Loads all confirmed main-plan stops at a version (design D14), ordered by sort_order. */
     public List<PlanStop> findMainPlanStops(String tripId, int planVersion) {
         return jdbcTemplate.query(
-                "SELECT id, title, start_at, end_at FROM plan_node "
+                "SELECT id, title, start_at, end_at, location_name FROM plan_node "
                         + "WHERE trip_id = ? AND branch_id = 'main' AND plan_version = ? ORDER BY sort_order",
                 (rs, rowNum) -> new PlanStop(
                         rs.getString("id"),
                         rs.getString("title"),
                         parseInstant(rs.getString("start_at")),
-                        parseInstant(rs.getString("end_at"))),
+                        parseInstant(rs.getString("end_at")),
+                        rs.getString("location_name")),
                 tripId, planVersion);
     }
 

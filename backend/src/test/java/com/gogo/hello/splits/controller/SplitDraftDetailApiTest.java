@@ -71,8 +71,8 @@ class SplitDraftDetailApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.data.windowMinutes").value(150))
                 .andExpect(jsonPath("$.data.routes.length()").value(2))
                 .andExpect(jsonPath("$.data.routes[0].groupLabel").value("A"))
-                .andExpect(jsonPath("$.data.routes[0].activityName").value("沿主线方案"))
-                .andExpect(jsonPath("$.data.routes[0].locationName").value("沿主线方案"))
+                .andExpect(jsonPath("$.data.routes[0].activityName").value("City Hall MRT → Gardens by the Bay"))
+                .andExpect(jsonPath("$.data.routes[0].locationName").value("City Hall MRT"))
                 .andExpect(jsonPath("$.data.routes[0].steps[0].name").value("City Hall MRT"))
                 .andExpect(jsonPath("$.data.routes[0].steps[0].minutes").value(30))
                 .andExpect(jsonPath("$.data.routes[0].steps[2].minutes").value(15))
@@ -84,7 +84,7 @@ class SplitDraftDetailApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.data.routes[0].bufferMinutes").value(0))
                 .andExpect(jsonPath("$.data.routes[1].groupLabel").value("B"))
                 .andExpect(jsonPath("$.data.routes[1].activityName").value("Gardens by the Bay"))
-                .andExpect(jsonPath("$.data.routes[1].locationName").value("Gardens by the Bay"))
+                .andExpect(jsonPath("$.data.routes[1].locationName").value("Singapore"))
                 .andExpect(jsonPath("$.data.routes[1].travelLegsMinutes[0]").value(20))
                 .andExpect(jsonPath("$.data.routes[1].travelLegsMinutes[1]").value(20));
         JsonNode draft = objectMapper.readTree(draftJson());
@@ -192,7 +192,7 @@ class SplitDraftDetailApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.data.status").value("confirmed"))
                 .andExpect(jsonPath("$.data.draftVersion").value(version))
                 .andExpect(jsonPath("$.data.routes.length()").value(2))
-                .andExpect(jsonPath("$.data.routes[0].activityName").value("沿主线方案"));
+                .andExpect(jsonPath("$.data.routes[0].activityName").value("City Hall MRT → Gardens by the Bay"));
     }
 
     @Test
