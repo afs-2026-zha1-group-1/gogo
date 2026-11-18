@@ -98,6 +98,36 @@ class MainPlanStopEditApiTest {
     }
 
     @Test
+    void memberRenamesStopAndStoresNoteWithoutClearingLocation() throws Exception {
+        long stopId = stopId("City Hall MRT");
+        mockMvc.perform(edit(stopId, "08:20", "08:50", "Marina Bay Pier", version, "2"))
+                .andExpect(status().isOk());
+
+        // 「编辑站点」弹窗提交名称/时间/备注，不再携带地点：既有地点必须原样保留。
+        mockMvc.perform(editStop(stopId, "旧城早餐", "08:20", "08:50", "记得带现金", version, "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.stops[0].name").value("旧城早餐"))
+                .andExpect(jsonPath("$.stops[0].note").value("记得带现金"))
+                .andExpect(jsonPath("$.stops[0].locationName").value("Marina Bay Pier"));
+
+        Map<String, Object> saved = jdbc.queryForMap(
+                "SELECT name, note, location_name FROM main_plan_stop WHERE id = ?", stopId);
+        assertThat(saved.get("name")).isEqualTo("旧城早餐");
+        assertThat(saved.get("note")).isEqualTo("记得带现金");
+        assertThat(saved.get("location_name")).isEqualTo("Marina Bay Pier");
+        // 改名同步到主线投影，分队边界按新标题展示。
+        assertThat(jdbc.queryForObject("SELECT title FROM plan_node WHERE trip_id = ? AND branch_id = 'main' "
+                + "AND sort_order = 1", String.class, tripId)).isEqualTo("旧城早餐");
+
+        // 显式提交空串才清空备注；名称同样保留刚改的值。
+        mockMvc.perform(editStop(stopId, "旧城早餐", "08:20", "08:50", "", version, "2"))
+                .andExpect(status().isOk());
+        Map<String, Object> cleared = jdbc.queryForMap("SELECT name, note FROM main_plan_stop WHERE id = ?", stopId);
+        assertThat(cleared.get("name")).isEqualTo("旧城早餐");
+        assertThat(cleared.get("note")).isNull();
+    }
+
+    @Test
     void nonMemberCannotEdit() throws Exception {
         mockMvc.perform(edit(stopId("City Hall MRT"), "08:20", "08:50", "", version, "5"))
                 .andExpect(status().isForbidden())
@@ -311,6 +341,16 @@ class MainPlanStopEditApiTest {
             int planVersion, String userId) {
         String body = "{\"startTime\":\"" + start + "\",\"endTime\":\"" + end + "\",\"locationName\":\""
                 + location + "\",\"mainPlanVersion\":" + planVersion + "}";
+        return put("/api/trips/" + tripId + "/main-plan/stops/" + stopId)
+                .with(TestAuth.asUser(userId))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body);
+    }
+
+    private MockHttpServletRequestBuilder editStop(long stopId, String name, String start, String end, String note,
+            int planVersion, String userId) {
+        String body = "{\"name\":\"" + name + "\",\"startTime\":\"" + start + "\",\"endTime\":\"" + end
+                + "\",\"note\":\"" + note + "\",\"mainPlanVersion\":" + planVersion + "}";
         return put("/api/trips/" + tripId + "/main-plan/stops/" + stopId)
                 .with(TestAuth.asUser(userId))
                 .contentType(MediaType.APPLICATION_JSON)

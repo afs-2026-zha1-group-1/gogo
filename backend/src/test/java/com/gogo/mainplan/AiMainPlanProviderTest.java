@@ -41,6 +41,23 @@ class AiMainPlanProviderTest {
     }
 
     @Test
+    void stripsTheGeneratedMainlineMarkerFromStopNames() {
+        AiMainPlanProvider provider = provider(request -> """
+                {"stops":[
+                  {"seq":1,"name":"主线·旧城早餐","startTime":"09:00","endTime":"10:00",
+                   "travelMinutesToNext":15,"interests":["food"]},
+                  {"seq":2,"name":"主线：灯塔会合","startTime":"10:15","endTime":"11:15",
+                   "travelMinutesToNext":null,"interests":["nature"]}],
+                 "costPerPersonCents":4200}
+                """);
+
+        MainPlanResult result = provider.plan(trip, members);
+
+        assertEquals("旧城早餐", result.stops().get(0).name());
+        assertEquals("灯塔会合", result.stops().get(1).name());
+    }
+
+    @Test
     void sendsMemberTextAsDataOnly() {
         AtomicReference<String> system = new AtomicReference<>();
         AtomicReference<String> user = new AtomicReference<>();

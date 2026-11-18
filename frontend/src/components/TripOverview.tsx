@@ -5,6 +5,7 @@ import MyPlanTimeline from './MyPlanTimeline'
 import { Button } from './ui/button'
 import { Dialog } from './ui/dialog'
 import { api } from '../api'
+import { cleanStationName } from '../features/split/station-name'
 import { useCountdown } from '../hooks/useCountdown'
 import { localEndOfDay, localMidnight, type ScheduleItem } from '../lib/countdown'
 import { useAuth } from '../features/auth/AuthProvider'
@@ -49,18 +50,19 @@ export default function TripOverview({ state }: { state: ReadyState }) {
   )
 
   const [editing, setEditing] = useState<PlanStop | null>(null)
+  const [name, setName] = useState('')
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
-  const [location, setLocation] = useState('')
+  const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
-  const startRef = useRef<HTMLInputElement>(null)
+  const nameRef = useRef<HTMLInputElement>(null)
 
   const [adding, setAdding] = useState(false)
   const [newName, setNewName] = useState('')
   const [newStart, setNewStart] = useState('09:00')
   const [newEnd, setNewEnd] = useState('10:00')
-  const [newLocation, setNewLocation] = useState('')
+  const [newNote, setNewNote] = useState('')
   const [mutateError, setMutateError] = useState<string | null>(null)
   const addNameRef = useRef<HTMLInputElement>(null)
 
@@ -70,9 +72,11 @@ export default function TripOverview({ state }: { state: ReadyState }) {
     const stop = state.plan.stops.find((candidate) => candidate.id === item.stopId)
     if (!stop) return
     setEditing(stop)
+    // 存量的「主线·」标记只是展示噪声，编辑框里只给真实活动名（地图按名称导航）。
+    setName(cleanStationName(stop.name))
     setStart(stop.startTime)
     setEnd(stop.endTime)
-    setLocation(stop.locationName ?? '')
+    setNote(stop.note ?? '')
     setSaveError(null)
   }
 
@@ -83,7 +87,7 @@ export default function TripOverview({ state }: { state: ReadyState }) {
     try {
       const result = await api<MainPlan>(`/api/trips/${state.trip.id}/main-plan/stops/${editing.id}`, {
         method: 'PUT',
-        body: { startTime: start, endTime: end, locationName: location, mainPlanVersion: state.plan.version },
+        body: { name: name.trim(), startTime: start, endTime: end, note: note.trim(), mainPlanVersion: state.plan.version },
       })
       if (!result.ok) {
         const error = result.ok ? null : result.data
@@ -107,7 +111,7 @@ export default function TripOverview({ state }: { state: ReadyState }) {
     setNewName('')
     setNewStart(from)
     setNewEnd(nextHour(from))
-    setNewLocation('')
+    setNewNote('')
     setMutateError(null)
     setAdding(true)
   }
@@ -123,7 +127,7 @@ export default function TripOverview({ state }: { state: ReadyState }) {
           name: newName.trim(),
           startTime: newStart,
           endTime: newEnd,
-          locationName: newLocation,
+          note: newNote.trim(),
           mainPlanVersion: state.plan.version,
         },
       })
@@ -237,13 +241,17 @@ export default function TripOverview({ state }: { state: ReadyState }) {
         open={editing != null}
         title="编辑站点"
         onClose={() => setEditing(null)}
-        initialFocus={startRef}
+        initialFocus={nameRef}
         footer={
           <div className="flex gap-2">
             <Button variant="outline" className="flex-1" disabled={saving} onClick={() => setEditing(null)}>
               取消
             </Button>
-            <Button className="flex-1" disabled={saving || start === '' || end === ''} onClick={saveStop}>
+            <Button
+              className="flex-1"
+              disabled={saving || name.trim() === '' || start === '' || end === ''}
+              onClick={saveStop}
+            >
               {saving ? '保存中…' : '保存'}
             </Button>
           </div>
@@ -251,12 +259,22 @@ export default function TripOverview({ state }: { state: ReadyState }) {
       >
         <div className="flex flex-col gap-2.5">
           <p className="text-[11.5px] text-ink-3">
-            {editing?.name} · 第 {editing?.seq} 站（只改开始/结束时间与地点，不改站名、顺序与费用）
+            第 {editing?.seq} 站（可改名称、时间与备注；地图按名称导航，不改顺序与费用）
           </p>
+          <label className="flex flex-col gap-1 text-[11.5px] text-ink-2">
+            名称
+            <input
+              ref={nameRef}
+              type="text"
+              value={name}
+              placeholder="站点名称"
+              onChange={(event) => setName(event.target.value)}
+              className="rounded-control border border-line bg-surface px-2 py-1.5 text-[13px] text-ink"
+            />
+          </label>
           <label className="flex flex-col gap-1 text-[11.5px] text-ink-2">
             开始时间
             <input
-              ref={startRef}
               type="time"
               value={start}
               onChange={(event) => setStart(event.target.value)}
@@ -273,12 +291,12 @@ export default function TripOverview({ state }: { state: ReadyState }) {
             />
           </label>
           <label className="flex flex-col gap-1 text-[11.5px] text-ink-2">
-            地点
+            备注
             <input
               type="text"
-              value={location}
-              placeholder="这一站的地点"
-              onChange={(event) => setLocation(event.target.value)}
+              value={note}
+              placeholder="这一站的备注（选填）"
+              onChange={(event) => setNote(event.target.value)}
               className="rounded-control border border-line bg-surface px-2 py-1.5 text-[13px] text-ink"
             />
           </label>
@@ -338,12 +356,12 @@ export default function TripOverview({ state }: { state: ReadyState }) {
             />
           </label>
           <label className="flex flex-col gap-1 text-[11.5px] text-ink-2">
-            地点
+            备注
             <input
               type="text"
-              value={newLocation}
-              placeholder="这一站的地点"
-              onChange={(event) => setNewLocation(event.target.value)}
+              value={newNote}
+              placeholder="这一站的备注（选填）"
+              onChange={(event) => setNewNote(event.target.value)}
               className="rounded-control border border-line bg-surface px-2 py-1.5 text-[13px] text-ink"
             />
           </label>

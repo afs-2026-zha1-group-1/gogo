@@ -16,7 +16,7 @@ export function scheduleFromMainPlan(plan: MainPlan | null, startDate: string): 
     key: `stop-${stop.seq}`,
     stopId: stop.id,
     name: stop.name,
-    location: stop.locationName ?? null,
+    note: stop.note ?? null,
     start: localClock(startDate, stop.startTime),
     end: localClock(startDate, stop.endTime),
     groupLabel: null,
