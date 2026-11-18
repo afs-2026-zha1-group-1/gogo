@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { buildAmapDirUrl, buildAmapSearchUrl, stopMapHref } from '../src/lib/amap.ts'
+import { buildAmapDirUrl, buildAmapSearchUrl, defaultDirOrigin, geocodeKeyword, resolveDirEnd, stopMapHref } from '../src/lib/amap.ts'
+import { pickInDestination } from '../src/lib/amap-geocode.ts'
 
 // US-079：坐标路径已删除；导航=电脑版搜索页直链（不经 uri.amap.com 的 UA 跳转）。
 function queryOf(url: string): URLSearchParams {
@@ -101,10 +102,53 @@ test('路线直链带起点与终点坐标（上一站→本站，lnglat 经度�
   assert.equal(toLnglat[1], 22.2836)
 })
 
-test('首站只带终点：起点留空由用户手填', () => {
+test('buildAmapDirUrl：起点=null 时只带终点参数（产品路径起点必填，此为构建器契约）', () => {
   const url = buildAmapDirUrl(null, { name: '港珠澳大桥珠海公路口岸', lat: 22.2216, lon: 113.558 })
   const params = new URLSearchParams(url.slice('https://www.amap.com/dir?'.length))
   assert.equal(params.get('from[name]'), null)
   assert.equal(params.get('from[lnglat]'), null)
   assert.ok(params.get('to[lnglat]'))
+})
+
+// geocodeKeyword：AI 生成的站只有名字，用站名+城市查坐标；有地址优先地址。
+test('geocodeKeyword：无地址时用站名+目的地城市', () => {
+  assert.equal(geocodeKeyword({ name: '解放碑' }, '重庆'), '解放碑 重庆')
+  assert.equal(geocodeKeyword({ name: '洪崖洞', address: null }, '重庆'), '洪崖洞 重庆')
+})
+
+test('geocodeKeyword：落库地址优先，空白地址退回站名+城市', () => {
+  assert.equal(geocodeKeyword({ name: 'City Hall MRT', address: '1 Supreme Ct Ln' }, 'Singapore'), '1 Supreme Ct Ln')
+  assert.equal(geocodeKeyword({ name: '解放碑', address: '   ' }, '重庆'), '解放碑 重庆')
+})
+
+// resolveDirEnd / defaultDirOrigin：点击时现查坐标的端点解析基础。
+test('resolveDirEnd：落库坐标优先，其次地址簿，未收录返回 null', () => {
+  assert.deepEqual(resolveDirEnd({ name: '任意站', lat: 29.56, lon: 106.57 }), { name: '任意站', lat: 29.56, lon: 106.57 })
+  const book = resolveDirEnd({ name: 'Merlion Park' })
+  assert.ok(book != null && Number.isFinite(book.lat) && Number.isFinite(book.lon))
+  assert.equal(resolveDirEnd({ name: '不存在的站' }), null)
+})
+
+test('defaultDirOrigin：首站固定出发点珠海南方软件园带坐标（R1）', () => {
+  const origin = defaultDirOrigin()
+  assert.ok(origin != null)
+  assert.equal(origin.name, '珠海南方软件园')
+  assert.ok(Number.isFinite(origin.lat) && Number.isFinite(origin.lon))
+})
+
+// pickInDestination：一名多地不盲取第一个，只认目的地内的候选。
+test('pickInDestination：跳过外城候选，取目的地内第一个', () => {
+  const sz = { province: '广东省', city: '深圳市', formattedAddress: '深圳市南山区植物园路' }
+  const cq = { province: '重庆市', city: '', formattedAddress: '重庆市南岸区南山植物园路101号' }
+  assert.equal(pickInDestination([sz, cq], '重庆'), cq)
+})
+
+test('pickInDestination：全不匹配返回 null（宁缺勿错）', () => {
+  assert.equal(pickInDestination([{ province: '广东省', city: '深圳市' }], '重庆'), null)
+  assert.equal(pickInDestination([], '重庆'), null)
+})
+
+test('pickInDestination：行政后缀归一（重庆市 vs 重庆）', () => {
+  const cq = { city: '重庆市' }
+  assert.equal(pickInDestination([cq], '重庆'), cq)
 })

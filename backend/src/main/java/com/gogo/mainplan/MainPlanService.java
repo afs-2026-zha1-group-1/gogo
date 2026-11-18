@@ -144,8 +144,8 @@ public class MainPlanService {
                 result.costPerPersonCents(), revisions, completedStops);
     }
 
-    /** US-079 路线1：程序查坐标回写请求体（seq + WGS-84 坐标）。 */
-    public record StopLocation(int seq, double lat, double lng) {
+    /** US-079 路线1：程序查坐标回写请求体（seq + WGS-84 坐标 + 可选真实地址）。 */
+    public record StopLocation(int seq, double lat, double lng, String address) {
     }
 
     // 回写当前草稿站点坐标并沉淀进地址簿；门序同生成（trip→member→organizer→draft）。
@@ -168,8 +168,11 @@ public class MainPlanService {
                     .findFirst()
                     .orElseThrow(() -> new MainPlanApiException(422, "UNKNOWN_STOP",
                             "Stop seq is not part of the current draft"));
-            plans.updateStopLocation(draft.id(), location.seq(), location.lat(), location.lng());
-            plans.cacheUpsert(row.name(), city, row.address(), location.lat(), location.lng(), "geocode");
+            String address = location.address() == null || location.address().isBlank()
+                    ? null : location.address().trim();
+            plans.updateStopLocation(draft.id(), location.seq(), location.lat(), location.lng(), address);
+            plans.cacheUpsert(row.name(), city, address != null ? address : row.address(),
+                    location.lat(), location.lng(), "geocode");
         }
         return readPlan(tripId, caller);
     }

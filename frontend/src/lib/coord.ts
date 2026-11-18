@@ -36,9 +36,8 @@ function transformLon(x: number, y: number): number {
   return ret
 }
 
-/** 国内点纠偏为高德坐标；海外及港澳点原样返回。 */
-export function toGcj02(lat: number, lon: number): { lat: number; lon: number } {
-  if (outOfChina(lat, lon) || inHkMacau(lat, lon)) return { lat, lon }
+/** 纯偏移量计算（不做国内外/港澳判定）；供正纠偏与反解共用。 */
+function shift(lat: number, lon: number): { dLat: number; dLon: number } {
   let dLat = transformLat(lon - 105.0, lat - 35.0)
   let dLon = transformLon(lon - 105.0, lat - 35.0)
   const radLat = (lat / 180.0) * PI
@@ -47,5 +46,35 @@ export function toGcj02(lat: number, lon: number): { lat: number; lon: number } 
   const sqrtMagic = Math.sqrt(magic)
   dLat = (dLat * 180.0) / (((A * (1 - EE)) / (magic * sqrtMagic)) * PI)
   dLon = (dLon * 180.0) / ((A / sqrtMagic) * Math.cos(radLat) * PI)
+  return { dLat, dLon }
+}
+
+/** 国内点纠偏为高德坐标；海外及港澳点原样返回。 */
+export function toGcj02(lat: number, lon: number): { lat: number; lon: number } {
+  if (outOfChina(lat, lon) || inHkMacau(lat, lon)) return { lat, lon }
+  const { dLat, dLon } = shift(lat, lon)
   return { lat: lat + dLat, lon: lon + dLon }
+}
+
+/**
+ * GCJ-02 → WGS-84 反解（迭代逼近，收敛到厘米级）：高德 JS API 查到的坐标
+ * 是 GCJ-02，落库前必须反解回真实 WGS-84，否则拼网址时再纠偏会双重加偏。
+ * 港澳判定用粗估 WGS 位置：珠海等紧邻港澳的国内点加偏后会落进排除框，
+ * 按输入点判会误当港澳原样返回（实测珠海点因此反解失败）。海外点原样返回。
+ */
+export function fromGcj02(lat: number, lon: number): { lat: number; lon: number } {
+  if (outOfChina(lat, lon)) return { lat, lon }
+  const s0 = shift(lat, lon)
+  if (inHkMacau(lat - s0.dLat, lon - s0.dLon)) return { lat, lon }
+  let wLat = lat
+  let wLon = lon
+  for (let i = 0; i < 30; i++) {
+    const s = shift(wLat, wLon)
+    const dLat = wLat + s.dLat - lat
+    const dLon = wLon + s.dLon - lon
+    wLat -= dLat
+    wLon -= dLon
+    if (Math.abs(dLat) < 1e-9 && Math.abs(dLon) < 1e-9) break
+  }
+  return { lat: wLat, lon: wLon }
 }

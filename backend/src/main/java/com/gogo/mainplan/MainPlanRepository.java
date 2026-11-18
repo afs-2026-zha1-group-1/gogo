@@ -107,10 +107,11 @@ public class MainPlanRepository {
                 stop.travelMinutesToNext(), interestsJson, address, lat, lng, stop.costCents());
     }
 
-    /** US-079 路线1：程序查坐标回写当前草稿站点。 */
-    public void updateStopLocation(long draftId, int seq, double lat, double lng) {
-        jdbc.update("UPDATE main_plan_stop SET lat = ?, lng = ? WHERE draft_id = ? AND seq = ?",
-                lat, lng, draftId, seq);
+    /** US-079 路线1：程序查坐标回写当前草稿站点；地址可缺（null 保留原值）。 */
+    public void updateStopLocation(long draftId, int seq, double lat, double lng, String address) {
+        jdbc.update("UPDATE main_plan_stop SET lat = ?, lng = ?, address = COALESCE(?, address) "
+                + "WHERE draft_id = ? AND seq = ?",
+                lat, lng, address, draftId, seq);
     }
 
     public Optional<PlaceRow> cacheLookup(String name, String city) {

@@ -133,6 +133,32 @@ class StopLocationApiTest {
     }
 
     @Test
+    void writeBackPersistsRealAddressIntoStopAndCache() throws Exception {
+        generateOk();
+        MvcResult result = writeLocations("1",
+                "{\"stops\":[{\"seq\":1,\"lat\":1.3,\"lng\":103.86,\"address\":\" 150 North Bridge Rd, Singapore 179100 \"}]}");
+        assertEquals(200, result.getResponse().getStatus());
+        JsonNode plan = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertEquals("150 North Bridge Rd, Singapore 179100", plan.path("stops").get(0).path("address").asText());
+        String cached = jdbcTemplate.queryForObject(
+                "SELECT address FROM place_cache WHERE name = 'City Hall MRT' AND city = 'Singapore'",
+                String.class);
+        assertEquals("150 North Bridge Rd, Singapore 179100", cached);
+    }
+
+    @Test
+    void writeBackWithoutAddressKeepsExistingAddress() throws Exception {
+        generateOk();
+        MvcResult result = writeLocations("1", "{\"stops\":[{\"seq\":1,\"lat\":1.3,\"lng\":103.86}]}");
+        assertEquals(200, result.getResponse().getStatus());
+        String address = jdbcTemplate.queryForObject(
+                "SELECT address FROM main_plan_stop WHERE draft_id = "
+                        + "(SELECT id FROM main_plan_draft WHERE trip_id = ? AND status = 'current') AND seq = 1",
+                String.class, tripId);
+        assertEquals("150 North Bridge Rd, Singapore 179100", address);
+    }
+
+    @Test
     void unknownSeqIsRejected() throws Exception {
         generateOk();
         MvcResult result = writeLocations("1", "{\"stops\":[{\"seq\":99,\"lat\":1.3,\"lng\":103.86}]}");

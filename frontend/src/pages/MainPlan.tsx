@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../api'
 import { useAuth } from '../features/auth/AuthProvider'
 import Icon from '../Icons'
 import ConfirmDialog from '../components/ui/confirm-dialog'
+import StopMapButton from '../components/StopMapButton'
 import { AiGeneratingNotice } from '../components/AiGeneratingNotice'
+import { completeStopLocations } from '../lib/stop-locations'
 import type {
   BudgetOverrun,
   MainPlan,
@@ -70,6 +72,8 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
   const [stopBusy, setStopBusy] = useState(false)
   const [stopError, setStopError] = useState<string | null>(null)
   const [stalePrompt, setStalePrompt] = useState(false)
+  // US-079 路线1：每个草稿版本只尝试一次坐标补全，避免海外站查不到时反复重试。
+  const completionTried = useRef<string | null>(null)
 
   const load = useCallback(() => {
     let active = true
@@ -107,6 +111,22 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
   }, [tripId])
 
   useEffect(() => load(), [load])
+
+  // US-079 路线1：AI 生成的站只有名字没有坐标，进页/重新生成后异步查坐标回写，
+  // 成功后刷新方案让“高德”按钮带上起终点坐标开路线页。仅组织者草稿态可调。
+  useEffect(() => {
+    if (state.kind !== 'ready') return
+    const { trip, plan } = state
+    if (trip.organizerId !== account?.id || plan.confirmed) return
+    if (!plan.stops.some((stop) => stop.lat == null || stop.lng == null || !stop.address?.trim())) return
+    const key = `${tripId}:${plan.version}`
+    if (completionTried.current === key) return
+    completionTried.current = key
+    void completeStopLocations(tripId, plan.stops, trip.destination)
+      .then((updated) => { if (updated) return refreshPlan() })
+      .catch(() => undefined)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, account?.id, tripId])
 
   async function refreshPlan() {
     const { ok, data } = await api<MainPlan>(`/api/trips/${tripId}/main-plan`)
@@ -289,6 +309,13 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
 
   const { trip, plan } = state
   const isOrganizer = trip.organizerId === account?.id
+  // 导航端点映射：PlanStop 的 lng 对应 ScheduleItem/MapStop 的 lon。
+  const mapStop = (stop: PlanStop) => ({
+    name: stop.name,
+    address: stop.address ?? null,
+    lat: stop.lat ?? null,
+    lon: stop.lng ?? null,
+  })
 
   return (
     <div className="screen">
@@ -344,6 +371,12 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
                     <Icon name="nav" className="sm" /> 前往下一站 · {stop.travelMinutesToNext} 分钟
                   </div>
                 )}
+                <StopMapButton
+                  item={mapStop(stop)}
+                  destination={trip.destination}
+                  from={index > 0 ? mapStop(plan.stops[index - 1]) : null}
+                  showCopy={false}
+                />
                 {isOrganizer && !plan.confirmed && (
                   editingStopId === stop.id ? (
                     <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
