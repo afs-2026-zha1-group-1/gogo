@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GoGo - 多路线分支 mock</title>
+  <style>
+    :root{color-scheme:light;--bg:#f4f3ef;--surface:#fff;--surface2:#faf9f7;--ink:#1c1917;--ink2:#57534e;--ink3:#a8a29e;--line:#e9e7e2;--line2:#f0eee9;--brand:#0d9488;--brandInk:#0f766e;--brandSoft:#ccfbf1;--a:#2563eb;--aSoft:#e6efff;--b:#ea580c;--bSoft:#fff0e2;--c:#65a30d;--cSoft:#ecfccb;--b2:#f59e0b;--ok:#059669;--okSoft:#d7f5e6}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:"Aptos","Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+    .device{width:min(100%,440px);min-height:100vh;margin:0 auto;background:var(--surface2);box-shadow:0 0 40px rgba(28,25,23,.06);position:relative;overflow:hidden}
+    .appbar{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:11px;padding:18px 16px 13px;background:rgba(255,255,255,.94);border-bottom:1px solid var(--line2);backdrop-filter:blur(12px)}
+    .back{display:grid;place-items:center;width:35px;height:35px;flex:0 0 auto;border:1px solid var(--line);border-radius:11px;color:var(--ink2);font-size:20px;background:var(--surface)}
+    .head{min-width:0;flex:1}.title{font-size:16px;font-weight:750;line-height:1.25}.subtitle{margin-top:3px;color:var(--ink3);font-size:11px;font-weight:550}
+    .edit{flex:0 0 auto;padding:9px 13px;border:0;border-radius:10px;background:linear-gradient(110deg,var(--brand),#06b6d4);color:#fff;font-size:11px;font-weight:750;box-shadow:0 5px 12px rgba(13,148,136,.17)}
+    main{padding:13px 15px 86px}.status-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 2px 10px}.status{display:inline-flex;align-items:center;gap:6px;border:1px solid #a7f3d0;border-radius:999px;padding:5px 9px;background:var(--okSoft);color:#047857;font-size:10px;font-weight:750;white-space:nowrap}.status i{width:6px;height:6px;border-radius:50%;background:var(--ok)}.status-note{color:var(--ink3);font-size:10px;white-space:nowrap}
+    .mode{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px;padding:9px 10px;border:1px solid var(--line);border-radius:11px;background:#fff}.mode-label{color:var(--ink2);font-size:10px;font-weight:700}.seg{display:flex;padding:2px;border-radius:8px;background:#f3f2ef}.seg span{padding:5px 9px;border-radius:6px;color:var(--ink3);font-size:9px;font-weight:700}.seg .on{background:#fff;color:var(--brandInk);box-shadow:0 1px 3px #00000012}
+    .route-card{overflow:hidden;border:1px solid var(--line2);border-radius:15px;background:rgba(255,255,255,.82);box-shadow:0 6px 20px rgba(28,25,23,.025)}.legend{display:flex;flex-wrap:wrap;gap:8px 11px;padding:11px 9px 10px;border-bottom:1px dashed var(--line);color:var(--ink2);font-size:9px;font-weight:650}.legend-item{display:inline-flex;align-items:center;gap:5px}.dot{width:7px;height:7px;border-radius:50%}.summary{display:flex;align-items:center;gap:8px;margin:9px 9px;padding:9px 10px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink2);font-size:10px}.summary strong{color:var(--brandInk);font-weight:750;white-space:nowrap}.dash{flex:1;min-width:8px;border-top:1px dashed #9ee7db}.graph{display:block;width:100%;height:auto;padding:0 4px 8px}.graph text{font-family:"Aptos","Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+    .branch-action{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin-top:10px;padding:10px;border:1px dashed #8bd8cf;border-radius:10px;background:#f0fdfa;color:var(--brandInk);font-size:11px;font-weight:750}.rule{margin:9px 1px 0;padding:10px 11px;border:1px solid #cceee9;border-radius:10px;background:linear-gradient(100deg,#f0fdfa,#f7fcfb);color:var(--brandInk);font-size:10px;line-height:1.5}.tabbar{position:sticky;bottom:0;z-index:4;display:grid;grid-template-columns:repeat(4,1fr);padding:9px 10px calc(9px + env(safe-area-inset-bottom));border-top:1px solid var(--line2);background:rgba(255,255,255,.96);backdrop-filter:blur(14px)}.tab{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--ink3);font-size:9px;font-weight:600}.symbol{font-size:17px;line-height:1}.tab.active{color:var(--brandInk);font-weight:750}.caption{max-width:440px;margin:0 auto;padding:13px 16px 20px;color:#78716c;font-size:10px;text-align:center}
+    @media(min-width:600px){body{padding:18px 0 0}.device{border:7px solid #252321;border-radius:38px 38px 0 0}.device:before{content:"";position:absolute;z-index:5;left:50%;top:5px;width:102px;height:23px;transform:translateX(-50%);border-radius:20px;background:#111}.appbar{padding-top:34px}}
+  </style>
+</head>
+<body>
+  <div class="device">
+    <header class="appbar"><button class="back" aria-label="返回">‹</button><div class="head"><div class="title">队伍路线</div><div class="subtitle">多路线分支 · 分头后逐级会合</div></div><button class="edit">✎　编辑分队</button></header>
+    <main>
+      <div class="status-row"><span class="status"><i></i>分队草稿进行中</span><span class="status-note">Route B 可继续拆分</span></div>
+      <div class="mode"><span class="mode-label">初始分队路线数</span><div class="seg"><span>2 条路线</span><span class="on">3 条路线</span></div></div>
+      <section class="route-card" aria-label="三条初始路线及 Route B 子分支">
+        <div class="legend">
+          <span class="legend-item"><i class="dot" style="background:var(--brand)"></i>全员主线</span>
+          <span class="legend-item"><i class="dot" style="background:var(--a)"></i>Route A</span>
+          <span class="legend-item"><i class="dot" style="background:var(--b)"></i>Route B / B1</span>
+          <span class="legend-item"><i class="dot" style="background:var(--c)"></i>Route C</span>
+        </div>
+        <div class="summary"><strong>09:30 开始</strong><span class="dash"></span><strong>17:30 全员会合</strong><span style="color:var(--ink3);white-space:nowrap">A / B / C</span></div>
+        <svg class="graph" viewBox="0 0 430 500" role="img" aria-label="主线初始分为 Route A、B、C；Route B 再分为 B1、B2 后逐级会合">
+          <path d="M250 26 V92 M250 432 V474" fill="none" stroke="var(--brand)" stroke-width="3" stroke-linecap="round"/>
+          <path d="M250 92 V432" fill="none" stroke="#cfcac2" stroke-width="2" stroke-dasharray="4 6"/>
+          <path d="M250 92 C250 122 68 122 68 162 V350 C68 393 250 393 250 432" fill="none" stroke="var(--a)" stroke-width="3" stroke-linecap="round"/>
+          <path d="M250 92 C250 122 154 122 154 162 V224 M154 224 C154 250 112 250 112 284 V332 C112 353 154 353 154 376 M154 224 C154 250 198 250 198 284 V332 C198 353 154 353 154 376 M154 376 C154 397 250 397 250 432" fill="none" stroke="var(--b)" stroke-width="3" stroke-linecap="round"/>
+          <path d="M154 224 C154 250 112 250 112 284 V332 C112 353 154 353 154 376" fill="none" stroke="#c2410c" stroke-width="3" stroke-linecap="round"/>
+          <path d="M154 224 C154 250 198 250 198 284 V332 C198 353 154 353 154 376" fill="none" stroke="var(--b2)" stroke-width="3" stroke-linecap="round"/>
+          <path d="M250 92 C250 122 362 122 362 162 V350 C362 393 250 393 250 432" fill="none" stroke="var(--c)" stroke-width="3" stroke-linecap="round"/>
+          <g fill="#a8a29e" font-size="9" font-weight="700">
+            <text x="268" y="23">09:30 · 全员</text><text x="268" y="82">10:00 · 初始分队</text>
+            <text x="54" y="159" text-anchor="end">10:20 · A</text><text x="171" y="159">10:20 · Route B</text><text x="420" y="159" text-anchor="end">10:20 · C</text>
+            <text x="101" y="281" text-anchor="end">11:30 · Route B1</text><text x="209" y="281">11:30 · Route B2</text>
+            <text x="130" y="371" text-anchor="end">12:30 · B 重新汇合</text>
+            <text x="54" y="348" text-anchor="end">13:00 · A</text><text x="420" y="348" text-anchor="end">13:00 · C</text>
+            <text x="232" y="423" text-anchor="end">14:00 · 全员会合</text><text x="268" y="472">15:00 · 共同主线</text>
+          </g>
+          <g font-size="10.5" fill="#1c1917" font-weight="700">
+            <text x="268" y="40">酒店大厅集合</text><text x="268" y="99" fill="#0f766e">三路分头 · A / B / C</text>
+            <text x="54" y="177" text-anchor="end">海边栈道</text><text x="171" y="177">老街入口</text><text x="420" y="177" text-anchor="end">艺术街区</text>
+            <text x="154" y="241" text-anchor="middle" fill="#c2410c">Route B 再分路</text>
+            <text x="101" y="299" text-anchor="end">湖滨咖啡</text><text x="209" y="299">手作体验</text>
+            <text x="54" y="366" text-anchor="end">海洋馆</text><text x="420" y="366" text-anchor="end">城市展馆</text>
+            <text x="130" y="390" text-anchor="end" fill="#9a3412">回到 Route B</text>
+            <text x="232" y="441" text-anchor="end" fill="#047857">河畔广场 · 全员会合</text><text x="268" y="489">晚餐 · 全员主线</text>
+          </g>
+          <g>
+            <circle cx="250" cy="26" r="5.5" fill="var(--brand)" stroke="#fff" stroke-width="2"/>
+            <circle cx="250" cy="92" r="11" fill="var(--brandSoft)"/><circle cx="250" cy="92" r="6" fill="var(--brand)" stroke="#fff" stroke-width="2"/>
+            <circle cx="68" cy="162" r="6" fill="var(--a)" stroke="#fff" stroke-width="2"/><circle cx="154" cy="162" r="6" fill="var(--b)" stroke="#fff" stroke-width="2"/><circle cx="362" cy="162" r="6" fill="var(--c)" stroke="#fff" stroke-width="2"/>
+            <circle cx="154" cy="224" r="9" fill="#fff0e2"/><circle cx="154" cy="224" r="5.5" fill="var(--b)" stroke="#fff" stroke-width="2"/>
+            <circle cx="112" cy="284" r="5.5" fill="#c2410c" stroke="#fff" stroke-width="2"/><circle cx="198" cy="284" r="5.5" fill="var(--b2)" stroke="#fff" stroke-width="2"/>
+            <circle cx="154" cy="376" r="9" fill="#fff0e2"/><circle cx="154" cy="376" r="5.5" fill="var(--b)" stroke="#fff" stroke-width="2"/>
+            <circle cx="68" cy="350" r="5.5" fill="var(--a)" stroke="#fff" stroke-width="2"/><circle cx="362" cy="350" r="5.5" fill="var(--c)" stroke="#fff" stroke-width="2"/>
+            <circle cx="250" cy="432" r="11" fill="var(--okSoft)"/><circle cx="250" cy="432" r="6" fill="var(--ok)" stroke="#fff" stroke-width="2"/><circle cx="250" cy="474" r="5.5" fill="var(--brand)" stroke="#fff" stroke-width="2"/>
+          </g>
+        </svg>
+      </section>
+      <button class="branch-action">＋ 从 Route B 再拆分</button>
+      <div class="rule"><strong>逐级会合</strong>　B1 / B2 先回到 Route B；A / B / C 再于全员会合点汇合，继续共同主线。</div>
+    </main>
+    <nav class="tabbar" aria-label="主导航"><div class="tab"><span class="symbol">⌂</span><span>仪表盘</span></div><div class="tab"><span class="symbol">▤</span><span>行程</span></div><div class="tab active"><span class="symbol">⑂</span><span>分队</span></div><div class="tab"><span class="symbol">♙</span><span>成员</span></div></nav>
+  </div>
+  <p class="caption">US-093 多路线分支示意 · 初始生成 A/B/C，Route B 再分为 B1/B2</p>
+</body>
+</html>
