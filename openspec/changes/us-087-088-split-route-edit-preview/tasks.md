@@ -7,7 +7,7 @@
 ## 1. 基线与口径
 
 - [x] 1.1 确认 `origin/main` 已并入分支（含 US-089 `RouteStep`/`destination`），delta 仍 `validate --strict` valid
-- [x] 1.2 固定 A 组编辑口径：站名只读、逐站停留分钟 + 路段分钟；服务端派生合计（DD2）
+- [x] 1.2 固定站点列表口径：A/B 站名与停留分钟均可编辑；A 每站后一段路程、B legs=站点数+1；服务端派生合计（DD2，Revision 3）
 - [x] 1.3 固定保存端点契约与错误码（DD1/DD3）；`INVALID_ROUTE_INPUT` 列入 `ErrorCode`
 
 ## 2. 后端领域与契约（红先）
@@ -45,8 +45,8 @@
 ## 6. Screen 13 编辑态（DD6）
 
 - [x] 6.1 `screen-routes.tsx` 维护表单状态 + 从 detail 初始化 + `draftVersion` 变化重置
-- [x] 6.2 A 组：`steps` 逐站分钟输入（站名只读）+ 路段输入 + 合计/窗口徽标
-- [x] 6.3 B 组：活动名、地点、活动/路段/缓冲输入；地点与活动名相同时不重复显示
+- [x] 6.2 A/B 两组：站点列表（站名 + 停留分钟可编辑，可增删）+ 路程输入 + 合计/窗口徽标
+- [x] 6.3 B 组：生成初始一个站点；站点列表可增删，活动名/地点由首末站派生（Revision 3）
 - [x] 6.4 `dirty` 比较与归一化；终态（confirmed/cancelled）只读、无「下一步」
 - [x] 6.5 编辑控件在 430px shell 内不横向滚动、不遮挡状态标签
 
@@ -75,7 +75,7 @@
 - [x] 9.3 `playwright.config.ts` 加入第二个 SQL data location（与 `dashboard.sql` 并列）
 - [x] 9.4 新增 `frontend/tests/e2e/split-route-edit.spec.ts`（S1/N1–N10/Screen 13/13b/14/15）
 - [x] 9.5 扩展 `frontend/tests/team-route.test.ts`（A steps 节点映射）
-- [x] 9.6 反向验证：无费用字段、A 站名只读、无新迁移/依赖、CI 不改
+- [x] 9.6 反向验证：无费用字段、A/B 站名可编辑、无新迁移/依赖、CI 不改
 
 ## 10. 验证与门禁
 
@@ -107,7 +107,15 @@
 ## 13. P4 产品反馈 Revision 2（2026-11-18）
 
 - [x] 13.1 A 组预填真实活动名（首末站拼接）与首站真实地点；B 地点预填行程目的地
-- [x] 13.2 路程标注去程 / 段间 N / 回程；编辑卡、只读卡与预览图逐段展示，不合并求和
+- [x] 13.2（历史）Revision 2 曾标注去程/段间 N/回程；Revision 3 已改为统一「路程」，见 §14
 - [x] 13.3 后端 `PlanStop`/`RouteCandidate` 携带 `locationName`；`insertSplitRoute` 写真实地点
 - [x] 13.4 更新 delta/design/dov/G1 Revision 2；`validate --strict` 仍 valid（46 场景）
 - [x] 13.5 回归：后端 380/380、前端 46/46 + build、浏览器 85/85
+
+## 14. P4 第二轮反馈 Revision 3（2026-11-18）
+
+- [x] 14.1 A 组去掉活动名/地点输入，站名改为可编辑
+- [x] 14.2 B 组改为站点列表，可添加/删除站点
+- [x] 14.3 路程统一标注「路程」；A legs=站点数、B legs=站点数+1；预览按地点/路程交替
+- [x] 14.4 后端 `RouteStepInput` + 两组站点派生；B 初始单站点/buffer 0
+- [x] 14.5 回归：后端 380/380、前端 46/46 + build、浏览器 85/85

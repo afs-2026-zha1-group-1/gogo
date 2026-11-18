@@ -14,13 +14,12 @@ import { useAuth } from "../auth/AuthProvider"
 import { SplitLayout } from "./split-layout"
 import { EmptyState, ErrorState, LoadingState } from "./states"
 import { RouteCard } from "./route-card"
-import { travelLabel } from "./graph-model"
 import type { GroupRoute, RouteEditInput, TimingResult } from "./types"
 import type { TripMember } from "../../types"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Dialog } from "@/components/ui/dialog"
-import { IconAlert, IconArrowRight, IconBranch, IconFlag, IconNav, IconRoute, IconSparkle, IconUsers } from "@/components/icons"
+import { IconAlert, IconArrowRight, IconBranch, IconFlag, IconNav, IconRoute, IconSparkle, IconUsers, IconX } from "@/components/icons"
 import { formatClock, shortId } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
@@ -34,24 +33,20 @@ import { cn } from "@/lib/utils"
  */
 interface RouteForm {
   groupLabel: string
-  activityName: string
-  locationName: string
   steps: { name: string; minutes: string }[]
-  activityMinutes: string
   travelLegsMinutes: string[]
-  bufferMinutes: string
 }
 
 function toForm(route: GroupRoute): RouteForm {
-  const steps = route.steps ?? []
+  const steps = route.steps && route.steps.length > 0
+    ? route.steps
+    : route.activityName
+      ? [{ name: route.activityName, minutes: route.activityMinutes ?? 0 }]
+      : []
   return {
     groupLabel: route.groupLabel,
-    activityName: route.activityName ?? "",
-    locationName: route.locationName ?? "",
     steps: steps.map((step) => ({ name: step.name, minutes: String(step.minutes) })),
-    activityMinutes: route.activityMinutes != null ? String(route.activityMinutes) : "",
     travelLegsMinutes: (route.travelLegsMinutes ?? []).map((minutes) => (minutes != null ? String(minutes) : "")),
-    bufferMinutes: route.bufferMinutes != null ? String(route.bufferMinutes) : "",
   }
 }
 
@@ -63,38 +58,26 @@ function toNum(value: string): number | null {
 }
 
 function toApiRoute(form: RouteForm): RouteEditInput {
-  if (form.steps.length > 0) {
-    return {
-      groupLabel: "A",
-      activityName: form.activityName.trim(),
-      locationName: form.locationName.trim() || null,
-      stepMinutes: form.steps.map((step) => toNum(step.minutes)),
-      travelLegsMinutes: form.travelLegsMinutes.map(toNum),
-    }
-  }
   return {
     groupLabel: form.groupLabel === "B" ? "B" : "A",
-    activityName: form.activityName.trim(),
-    locationName: form.locationName.trim() || null,
-    activityMinutes: toNum(form.activityMinutes),
+    steps: form.steps.map((step) => ({ name: step.name.trim(), minutes: toNum(step.minutes) })),
     travelLegsMinutes: form.travelLegsMinutes.map(toNum),
-    bufferMinutes: toNum(form.bufferMinutes),
   }
 }
 
 function formTotal(form: RouteForm): number | null {
+  const stays = form.steps.map((step) => toNum(step.minutes))
   const legs = form.travelLegsMinutes.map(toNum)
-  if (legs.some((minutes) => minutes == null)) return null
-  const legsTotal = legs.reduce<number>((sum, minutes) => sum + (minutes ?? 0), 0)
-  if (form.steps.length > 0) {
-    const stays = form.steps.map((step) => toNum(step.minutes))
-    if (stays.some((minutes) => minutes == null)) return null
-    return stays.reduce<number>((sum, minutes) => sum + (minutes ?? 0), 0) + legsTotal
-  }
-  const activity = toNum(form.activityMinutes)
-  const buffer = toNum(form.bufferMinutes)
-  if (activity == null || buffer == null) return null
-  return activity + legsTotal + buffer
+  if (stays.some((minutes) => minutes == null) || legs.some((minutes) => minutes == null)) return null
+  return stays.reduce<number>((sum, minutes) => sum + (minutes ?? 0), 0)
+    + legs.reduce<number>((sum, minutes) => sum + (minutes ?? 0), 0)
+}
+
+function routeName(form: RouteForm): string {
+  const first = form.steps[0]?.name?.trim()
+  const last = form.steps[form.steps.length - 1]?.name?.trim()
+  if (!first) return "未命名路线"
+  return !last || first === last ? first : `${first} → ${last}`
 }
 
 export function ScreenRoutes() {
@@ -294,8 +277,14 @@ export function ScreenRoutes() {
                     reunionName={nameOf(route.reunionStopId)}
                     reunionClock={formatClock(detail.reunionAt, detail.destination)}
                     windowMinutes={detail.windowMinutes}
-                    onChange={(patch) => patchRoute(index, patch)}
-                    onStepChange={(stepIndex, minutes) =>
+                    onStepNameChange={(stepIndex, name) =>
+                      patchRoute(index, {
+                        steps: (form[index]?.steps ?? []).map((step, itemIndex) =>
+                          itemIndex === stepIndex ? { ...step, name } : step,
+                        ),
+                      })
+                    }
+                    onStepMinutesChange={(stepIndex, minutes) =>
                       patchRoute(index, {
                         steps: (form[index]?.steps ?? []).map((step, itemIndex) =>
                           itemIndex === stepIndex ? { ...step, minutes } : step,
@@ -309,6 +298,23 @@ export function ScreenRoutes() {
                         ),
                       })
                     }
+                    onAddStep={() => {
+                      const current = form[index]
+                      if (!current) return
+                      patchRoute(index, {
+                        steps: [...current.steps, { name: "新站点", minutes: "0" }],
+                        travelLegsMinutes: [...current.travelLegsMinutes, "0"],
+                      })
+                    }}
+                    onRemoveStep={(stepIndex) => {
+                      const current = form[index]
+                      if (!current || current.steps.length <= 1) return
+                      const legIndex = current.groupLabel === "B" ? stepIndex + 1 : stepIndex
+                      patchRoute(index, {
+                        steps: current.steps.filter((_, itemIndex) => itemIndex !== stepIndex),
+                        travelLegsMinutes: current.travelLegsMinutes.filter((_, itemIndex) => itemIndex !== legIndex),
+                      })
+                    }}
                   />
                 ) : (
                   <RouteCard
@@ -384,9 +390,11 @@ function EditableRouteCard({
   reunionName,
   reunionClock,
   windowMinutes,
-  onChange,
-  onStepChange,
+  onStepNameChange,
+  onStepMinutesChange,
   onLegChange,
+  onAddStep,
+  onRemoveStep,
 }: {
   form: RouteForm
   tone: "a" | "b"
@@ -395,9 +403,11 @@ function EditableRouteCard({
   reunionName: string
   reunionClock: string
   windowMinutes: number | null
-  onChange: (patch: Partial<RouteForm>) => void
-  onStepChange: (stepIndex: number, minutes: string) => void
+  onStepNameChange: (stepIndex: number, name: string) => void
+  onStepMinutesChange: (stepIndex: number, minutes: string) => void
   onLegChange: (legIndex: number, minutes: string) => void
+  onAddStep: () => void
+  onRemoveStep: (stepIndex: number) => void
 }) {
   const head = tone === "a" ? "from-a to-[#1e40af]" : "from-b to-[#9a3412]"
   const total = formTotal(form)
@@ -405,7 +415,7 @@ function EditableRouteCard({
   const inputClass =
     "w-full rounded-control border border-line bg-surface px-2 py-1.5 text-[12px] text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft disabled:bg-surface-3 disabled:text-ink-3"
   const numberClass =
-    "w-14 rounded-control border border-line bg-surface px-2 py-1 text-[12px] text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft disabled:bg-surface-3 disabled:text-ink-3"
+    "w-14 shrink-0 rounded-control border border-line bg-surface px-2 py-1 text-[12px] text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft disabled:bg-surface-3 disabled:text-ink-3"
 
   return (
     <Card className="overflow-hidden">
@@ -414,7 +424,7 @@ function EditableRouteCard({
           {form.groupLabel}
         </span>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[14px] font-bold">{form.activityName || "未命名活动"}</div>
+          <div className="truncate text-[14px] font-bold">{routeName(form)}</div>
           <div className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-white/85">
             <IconNav className="size-3" /> {departureName} → {reunionName}
           </div>
@@ -432,96 +442,62 @@ function EditableRouteCard({
       </div>
 
       <div className="flex flex-col gap-2.5 px-4 py-3">
-        <label className="flex flex-col gap-1">
-          <span className="text-[10px] font-semibold text-ink-3">活动名称</span>
-          <input
-            aria-label={`${form.groupLabel} 组 活动名称`}
-            className={inputClass}
-            value={form.activityName}
-            disabled={!editable}
-            onChange={(event) => onChange({ activityName: event.target.value })}
-          />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-[10px] font-semibold text-ink-3">地点（可选）</span>
-          <input
-            aria-label={`${form.groupLabel} 组 地点`}
-            className={inputClass}
-            placeholder="例如：滨海湾"
-            value={form.locationName}
-            disabled={!editable}
-            onChange={(event) => onChange({ locationName: event.target.value })}
-          />
-        </label>
-
-        {form.steps.length > 0 ? (
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-semibold text-ink-3">沿主线站点（站名只读，分钟可改）</span>
-            {form.steps.map((step, index) => (
-              <div key={`${step.name}-${index}`} className="flex items-center justify-between gap-2">
-                <span className="min-w-0 flex-1 truncate text-[12px] text-ink-2">{step.name}</span>
-                <input
-                  aria-label={`${form.groupLabel} 组 第 ${index + 1} 站停留分钟`}
-                  type="number"
-                  min={0}
-                  className={numberClass}
-                  value={step.minutes}
-                  disabled={!editable}
-                  onChange={(event) => onStepChange(index, event.target.value)}
-                />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[12px] text-ink-2">活动</span>
-            <input
-              aria-label={`${form.groupLabel} 组 活动分钟`}
-              type="number"
-              min={0}
-              className={numberClass}
-              value={form.activityMinutes}
-              disabled={!editable}
-              onChange={(event) => onChange({ activityMinutes: event.target.value })}
-            />
-          </div>
-        )}
-
-        <div className="flex flex-col gap-1.5">
-          <span className="text-[10px] font-semibold text-ink-3">路程（分钟）</span>
-          {form.travelLegsMinutes.map((minutes, index) => {
-            const label = travelLabel(form.travelLegsMinutes.length, index)
-            return (
-              <div key={`${form.groupLabel}-leg-${index}`} className="flex items-center justify-between gap-2">
-                <span className="text-[12px] text-ink-2">{label}</span>
-                <input
-                  aria-label={`${form.groupLabel} 组 ${label}`}
-                  type="number"
-                  min={0}
-                  className={numberClass}
-                  value={minutes}
-                  disabled={!editable}
-                  onChange={(event) => onLegChange(index, event.target.value)}
-                />
-              </div>
-            )
-          })}
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[10px] font-semibold text-ink-3">站点（站名与停留分钟可改）</span>
+          <Button size="sm" variant="outline" disabled={!editable} onClick={onAddStep}>
+            添加站点
+          </Button>
         </div>
 
-        {form.steps.length === 0 ? (
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[12px] text-ink-2">缓冲</span>
-            <input
-              aria-label={`${form.groupLabel} 组 缓冲分钟`}
-              type="number"
-              min={0}
-              className={numberClass}
-              value={form.bufferMinutes}
-              disabled={!editable}
-              onChange={(event) => onChange({ bufferMinutes: event.target.value })}
-            />
-          </div>
-        ) : null}
+        <div className="flex flex-col gap-1.5">
+          {form.steps.map((step, index) => (
+            <div key={`${form.groupLabel}-step-${index}`} className="flex items-center gap-2">
+              <input
+                aria-label={`${form.groupLabel} 组 第 ${index + 1} 站名称`}
+                className={inputClass}
+                value={step.name}
+                disabled={!editable}
+                onChange={(event) => onStepNameChange(index, event.target.value)}
+              />
+              <input
+                aria-label={`${form.groupLabel} 组 第 ${index + 1} 站停留分钟`}
+                type="number"
+                min={0}
+                className={numberClass}
+                value={step.minutes}
+                disabled={!editable}
+                onChange={(event) => onStepMinutesChange(index, event.target.value)}
+              />
+              {editable && form.steps.length > 1 ? (
+                <button
+                  type="button"
+                  aria-label={`${form.groupLabel} 组 删除第 ${index + 1} 站`}
+                  onClick={() => onRemoveStep(index)}
+                  className="grid size-7 shrink-0 place-items-center rounded-[8px] border border-line text-ink-3 transition-colors hover:bg-surface-3 hover:text-ink [&_svg]:size-3.5"
+                >
+                  <IconX />
+                </button>
+              ) : null}
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          {form.travelLegsMinutes.map((minutes, index) => (
+            <div key={`${form.groupLabel}-leg-${index}`} className="flex items-center justify-between gap-2">
+              <span className="text-[12px] text-ink-2">路程</span>
+              <input
+                aria-label={`${form.groupLabel} 组 路程 ${index + 1}`}
+                type="number"
+                min={0}
+                className={numberClass}
+                value={minutes}
+                disabled={!editable}
+                onChange={(event) => onLegChange(index, event.target.value)}
+              />
+            </div>
+          ))}
+        </div>
 
         <div className="flex items-center justify-between gap-2 border-t border-line-2 pt-2 text-[12px]">
           <span className="font-bold text-ink">合计 {total != null ? `${total} 分` : "—"}</span>

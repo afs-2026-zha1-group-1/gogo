@@ -56,7 +56,7 @@ test('buildGraphRows: boundaries split the main line and interleave A/B branches
   assert.equal(model.routeLabels.a, 'Route A · 潜水')
   assert.equal(model.routeLabels.b, 'Route B · 咖啡')
   const branchTitles = model.rows.filter((row) => row.kind === 'branch').map((row) => row.title)
-  assert.deepEqual(branchTitles, ['潜水', '咖啡', '去程', '路程', '回程', '缓冲', '缓冲'])
+  assert.deepEqual(branchTitles, ['潜水', '路程', '路程', '咖啡', '路程', '缓冲', '缓冲'])
 })
 
 test('branch nodes: missing durations render as pending instead of zero', () => {
@@ -88,7 +88,7 @@ test('branch nodes: A steps expand per stop while B keeps a single activity', ()
         { name: 'Gardens by the Bay', minutes: 15 },
       ],
     },
-    { groupLabel: 'B', activityName: 'Gardens by the Bay', locationName: '滨海湾', activityMinutes: 60, travelLegsMinutes: [20, 20], bufferMinutes: 10 },
+    { groupLabel: 'B', activityName: 'Gardens by the Bay', locationName: '滨海湾', activityMinutes: 60, travelLegsMinutes: [20, 20], bufferMinutes: 0, steps: [{ name: 'Gardens by the Bay', minutes: 60 }] },
   ])
   const titles = rows.map((row) => row.title)
   assert.ok(titles.includes('City Hall MRT'))
@@ -100,12 +100,9 @@ test('branch nodes: A steps expand per stop while B keeps a single activity', ()
     rows.filter((row) => row.route === 'a' && row.meta.startsWith('活动')).map((row) => row.meta),
     ['活动 · 30 分钟', '活动 · 20 分钟', '活动 · 15 分钟'],
   )
-  assert.equal(rows.find((row) => row.route === 'b' && row.meta.startsWith('活动'))?.meta, '活动 · 60 分钟 · 滨海湾')
-  assert.equal(rows.filter((row) => row.route === 'a' && row.title === '去程').length, 1)
-  assert.equal(rows.filter((row) => row.route === 'a' && row.title === '段间 2').length, 1)
-  assert.equal(rows.filter((row) => row.route === 'a' && row.title === '回程').length, 1)
-  assert.equal(rows.filter((row) => row.route === 'b' && row.title === '去程').length, 1)
-  assert.equal(rows.filter((row) => row.route === 'b' && row.title === '回程').length, 1)
+  assert.equal(rows.find((row) => row.route === 'b' && row.meta.startsWith('活动'))?.meta, '活动 · 60 分钟')
+  assert.equal(rows.filter((row) => row.route === 'a' && row.title === '路程').length, 3)
+  assert.equal(rows.filter((row) => row.route === 'b' && row.title === '路程').length, 2)
 })
 
 test('time formatting keeps ISO and local sources separate', () => {

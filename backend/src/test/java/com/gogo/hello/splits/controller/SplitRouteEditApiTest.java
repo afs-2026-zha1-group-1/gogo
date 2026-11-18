@@ -28,27 +28,29 @@ class SplitRouteEditApiTest extends AbstractSplitApiTest {
     @DisplayName("saveRoutes_nonInitiatorMember_returns200DerivedTotalsAndPersistsHeaders")
     void saveRoutes_nonInitiatorMember_returns200DerivedTotalsAndPersistsHeaders() throws Exception {
         int version = prepareConfirmableDraftAs("Alice");
-        putRoutes(memberId("Ben"), version, editedRoutes(20, 15, "Gardens by the Bay · 滨海湾"))
+        putRoutes(memberId("Ben"), version, editedRoutes(20, 15, "National Gallery (edited)"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.error").doesNotExist())
                 .andExpect(jsonPath("$.data.draftVersion").value(version + 1))
                 .andExpect(jsonPath("$.data.routes.length()").value(2))
                 .andExpect(jsonPath("$.data.routes[0].groupLabel").value("A"))
-                .andExpect(jsonPath("$.data.routes[0].activityName").value("沿主线方案"))
-                .andExpect(jsonPath("$.data.routes[0].locationName").value("Singapore"))
+                .andExpect(jsonPath("$.data.routes[0].activityName").value("City Hall MRT → Gardens by the Bay"))
+                .andExpect(jsonPath("$.data.routes[0].locationName").value("City Hall MRT"))
                 .andExpect(jsonPath("$.data.routes[0].activityMinutes").value(65))
                 .andExpect(jsonPath("$.data.routes[0].travelLegsMinutes[0]").value(30))
-                .andExpect(jsonPath("$.data.routes[0].steps[1].name").value("National Gallery Singapore"))
+                .andExpect(jsonPath("$.data.routes[0].steps[1].name").value("National Gallery (edited)"))
                 .andExpect(jsonPath("$.data.routes[0].steps[1].minutes").value(20))
                 .andExpect(jsonPath("$.data.routes[0].bufferMinutes").value(0))
                 .andExpect(jsonPath("$.data.routes[1].groupLabel").value("B"))
-                .andExpect(jsonPath("$.data.routes[1].locationName").value("Gardens by the Bay · 滨海湾"));
+                .andExpect(jsonPath("$.data.routes[1].activityName").value("Gardens by the Bay"))
+                .andExpect(jsonPath("$.data.routes[1].locationName").value("Gardens by the Bay"));
         Map<String, Object> rowA = splitRouteRow("split-a");
-        assertThat(rowA.get("title")).isEqualTo("沿主线方案");
-        assertThat(rowA.get("location_name")).isEqualTo("Singapore");
+        assertThat(rowA.get("title")).isEqualTo("City Hall MRT → Gardens by the Bay");
+        assertThat(rowA.get("location_name")).isEqualTo("City Hall MRT");
         Map<String, Object> rowB = splitRouteRow("split-b");
-        assertThat(rowB.get("location_name")).isEqualTo("Gardens by the Bay · 滨海湾");
+        assertThat(rowB.get("location_name")).isEqualTo("Gardens by the Bay");
         assertThat(draftRoutes().get("A").get("activityMinutes").asInt()).isEqualTo(65);
+        assertThat(draftRoutes().get("A").get("steps").get(1).get("name").asText()).isEqualTo("National Gallery (edited)");
         assertThat(draftRoutes().get("A").get("steps").get(1).get("minutes").asInt()).isEqualTo(20);
         assertThat(draftVersionColumn()).isEqualTo(version + 1);
     }
@@ -84,20 +86,20 @@ class SplitRouteEditApiTest extends AbstractSplitApiTest {
     void saveRoutes_illegalPayloads_return400ByErrorFamily() throws Exception {
         int version = prepareConfirmableDraftAs("Alice");
         Map<String, Object> badStep = groupA(List.of(30, -1, 15), List.of(30, 30, 15), "沿主线方案");
-        putRoutes(memberId("Alice"), version, List.of(badStep, groupB("Gardens by the Bay", 60, List.of(20, 20), 10)))
+        putRoutes(memberId("Alice"), version, List.of(badStep, groupB("Gardens by the Bay", 60, List.of(20, 20))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("INVALID_ROUTE_INPUT"));
         Map<String, Object> badLegs = groupA(List.of(30, 20, 15), List.of(30, 30), "沿主线方案");
-        putRoutes(memberId("Alice"), version, List.of(badLegs, groupB("Gardens by the Bay", 60, List.of(20, 20), 10)))
+        putRoutes(memberId("Alice"), version, List.of(badLegs, groupB("Gardens by the Bay", 60, List.of(20, 20))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("INVALID_ROUTE_INPUT"));
         putRoutes(memberId("Alice"), version, List.of(groupA(List.of(30, 20, 15), List.of(30, 30, 15), " "),
-                        groupB("Gardens by the Bay", 60, List.of(20, 20), 10)))
+                        groupB("Gardens by the Bay", 60, List.of(20, 20))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("INVALID_ROUTE_INPUT"));
         putRoutes(memberId("Alice"), version, List.of(
                         groupA(List.of(30, 20, 15), List.of(30, 30, 15), "沿主线方案"),
-                        groupB("Gardens by the Bay", 60, List.of(20, 20, 0), 10)))
+                        groupB("Gardens by the Bay", 60, List.of(20, 20, 0))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("INVALID_ROUTE_INPUT"));
         putRoutes(memberId("Alice"), version, List.of(
@@ -108,7 +110,7 @@ class SplitRouteEditApiTest extends AbstractSplitApiTest {
         Map<String, Object> labelC = groupA(List.of(30, 20, 15), List.of(30, 30, 15), "沿主线方案");
         labelC.put("groupLabel", "C");
         putRoutes(memberId("Alice"), version, List.of(labelC,
-                        groupB("Gardens by the Bay", 60, List.of(20, 20), 10)))
+                        groupB("Gardens by the Bay", 60, List.of(20, 20))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("INVALID_GROUP_LABEL"));
         assertThat(draftVersionColumn()).isEqualTo(version);
@@ -160,36 +162,36 @@ class SplitRouteEditApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.data.routes[0].overrunMinutes").value(25));
     }
 
-    private List<Map<String, Object>> editedRoutes(int secondStay, int thirdStay, String bLocation) {
+    private List<Map<String, Object>> editedRoutes(int secondStay, int thirdStay, String secondName) {
         return List.of(
-                groupA(List.of(30, secondStay, thirdStay), List.of(30, 30, 15), "沿主线方案"),
-                groupB("Gardens by the Bay", 60, List.of(20, 20), 10, bLocation));
+                groupA(List.of(30, secondStay, thirdStay), List.of(30, 30, 15), secondName),
+                groupB("Gardens by the Bay", 60, List.of(20, 20)));
     }
 
-    private Map<String, Object> groupA(List<Integer> stepMinutes, List<Integer> legs, String activityName) {
+    private Map<String, Object> groupA(List<Integer> stepMinutes, List<Integer> legs, String secondName) {
         Map<String, Object> route = new LinkedHashMap<>();
         route.put("groupLabel", "A");
-        route.put("activityName", activityName);
-        route.put("locationName", "Singapore");
-        route.put("stepMinutes", stepMinutes);
+        route.put("steps", List.of(
+                step("City Hall MRT", stepMinutes.get(0)),
+                step(secondName, stepMinutes.get(1)),
+                step("Gardens by the Bay", stepMinutes.get(2))));
         route.put("travelLegsMinutes", legs);
         return route;
     }
 
-    private Map<String, Object> groupB(String activityName, int activityMinutes, List<Integer> legs, int buffer) {
-        return groupB(activityName, activityMinutes, legs, buffer, "滨海湾");
-    }
-
-    private Map<String, Object> groupB(String activityName, int activityMinutes, List<Integer> legs, int buffer,
-            String locationName) {
+    private Map<String, Object> groupB(String station, int stayMinutes, List<Integer> legs) {
         Map<String, Object> route = new LinkedHashMap<>();
         route.put("groupLabel", "B");
-        route.put("activityName", activityName);
-        route.put("locationName", locationName);
-        route.put("activityMinutes", activityMinutes);
+        route.put("steps", List.of(step(station, stayMinutes)));
         route.put("travelLegsMinutes", legs);
-        route.put("bufferMinutes", buffer);
         return route;
+    }
+
+    private Map<String, Object> step(String name, Integer minutes) {
+        Map<String, Object> step = new LinkedHashMap<>();
+        step.put("name", name);
+        step.put("minutes", minutes);
+        return step;
     }
 
     private ResultActions putRoutes(String memberId, int draftVersion, List<Map<String, Object>> routes)

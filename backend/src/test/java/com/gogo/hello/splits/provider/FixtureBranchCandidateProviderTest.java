@@ -55,8 +55,9 @@ class FixtureBranchCandidateProviderTest {
         assertThat(candidate.locationName()).isEqualTo("Singapore");
         assertThat(candidate.activityMinutes()).isEqualTo(60);
         assertThat(candidate.travelLegsMinutes()).containsExactly(20, 20);
-        assertThat(candidate.bufferMinutes()).isEqualTo(10);
-        assertThat(candidate.steps()).isEmpty();
+        assertThat(candidate.bufferMinutes()).isZero();
+        assertThat(candidate.steps()).extracting("name").containsExactly("Gardens by the Bay");
+        assertThat(candidate.steps()).extracting("minutes").containsExactly(60);
     }
 
     @Test

@@ -69,7 +69,7 @@ class SplitConfirmApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.error.details.routes[0].overrunMinutes").value(65))
                 .andExpect(jsonPath("$.error.details.routes[0].missingInputs.length()").value(0))
                 .andExpect(jsonPath("$.error.details.routes[1].groupLabel").value("B"))
-                .andExpect(jsonPath("$.error.details.routes[1].totalMinutes").value(110))
+                .andExpect(jsonPath("$.error.details.routes[1].totalMinutes").value(100))
                 .andExpect(jsonPath("$.error.details.routes[1].overrunMinutes").value(0));
         assertThat(objectMapper.readTree(draftJson()).get("status").asText()).isEqualTo("active");
         assertThat(draftVersionColumn()).isEqualTo(version);
@@ -262,17 +262,15 @@ class SplitConfirmApiTest extends AbstractSplitApiTest {
     private int saveRoutesAs(String actor, int draftVersion, int secondStay, int thirdStay) throws Exception {
         Map<String, Object> routeA = new java.util.LinkedHashMap<>();
         routeA.put("groupLabel", "A");
-        routeA.put("activityName", "沿主线方案");
-        routeA.put("locationName", "Singapore");
-        routeA.put("stepMinutes", java.util.List.of(30, secondStay, thirdStay));
+        routeA.put("steps", java.util.List.of(
+                java.util.Map.of("name", "City Hall MRT", "minutes", 30),
+                java.util.Map.of("name", "National Gallery Singapore", "minutes", secondStay),
+                java.util.Map.of("name", "Gardens by the Bay", "minutes", thirdStay)));
         routeA.put("travelLegsMinutes", java.util.List.of(30, 30, 15));
         Map<String, Object> routeB = new java.util.LinkedHashMap<>();
         routeB.put("groupLabel", "B");
-        routeB.put("activityName", "Gardens by the Bay");
-        routeB.put("locationName", "滨海湾");
-        routeB.put("activityMinutes", 60);
+        routeB.put("steps", java.util.List.of(java.util.Map.of("name", "Gardens by the Bay", "minutes", 60)));
         routeB.put("travelLegsMinutes", java.util.List.of(20, 20));
-        routeB.put("bufferMinutes", 10);
         var result = mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
                         .put("/api/trips/{tripId}/split-draft/routes", sgfTripId())
                         .with(TestAuth.asUser(memberId(actor)))

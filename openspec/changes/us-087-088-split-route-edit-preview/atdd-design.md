@@ -30,7 +30,7 @@ browser acceptance，`frontend/tests/e2e/`）。**UT 延后**到 `/sdd:atdd-appl
 | 非目标反证 | 见 §5 | **API + E2E** | 断言「不做」而非只断言「做」 |
 
 **Deferred to `/sdd:atdd-apply`（unit-level TDD）**：
-- 后端 `deriveRouteDurations(steps, legs, buffer)`：A 合计派生与路段数校验；
+- 后端 `RoutePairEdit.derive(label, steps, legs)`：两组站点列表派生、A legs=站点数 / B legs=站点数+1；
 - 后端保存请求校验器（pair/labels/minutes/legs/steps 长度）；
 - 前端 `RouteDraftForm` 脏值比较与字段级错误映射（纯函数部分）；
 - `graph-model` 对 A `steps` 节点的映射（扩展 `team-route.test.ts`）。
@@ -71,8 +71,8 @@ acceptance 用同一脚本。截图只作辅助，不作为 Pass 依据。
 
 | Fixture | 内容 | 用途 |
 |---|---|---|
-| F1 基准草稿 v3 | 主线 City Hall(09:00–09:30) → National Gallery(10:00–10:30) → Gardens(11:00–11:15) → 会合 Merlion 11:30（窗口 150）；A steps 30/30/15，legs 30/30/15，buffer 0，合计 150；B 活动 60，legs 20/20，buffer 10，合计 110；`plan_node` split-a/b 已写入 | S2/S2b/D1/S7/CF1 基线 |
-| F2 编辑后 | A 第二站 30→20（合计 140）；B 地点改为「Gardens by the Bay · 滨海湾」 | S2/S2b 持久化断言 |
+| F1 基准草稿 v3 | 主线 City Hall(09:00–09:30) → National Gallery(10:00–10:30) → Gardens(11:00–11:15) → 会合 Merlion 11:30（窗口 150）；A steps 30/30/15，legs 30/30/15；B steps Gardens(60)，legs 20/20；buffer 均 0；A 合计 150、B 合计 100；`plan_node` split-a/b 已写入 | S2/S2b/D1/S7/CF1 基线 |
+| F2 编辑后 | A 第二站站名改为 National Gallery (edited)、30→20（合计 140）；B 可添加/删除站点与路程 | S2/S2b 持久化断言 |
 | F3 A 超窗 | A 第三站 15→40（合计 175，窗口 150，超 25） | N3a 的 check-timing 数值 |
 | F4 过期/缺失/终态 | v2 请求；`routes=null`；`status=confirmed/cancelled` | S3/S4/S6 |
 | F5 非法载荷 | 非两条 / 重复组别 / 负分钟 / A legs≠steps / B legs 变化 | S5 |

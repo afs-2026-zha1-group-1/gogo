@@ -116,14 +116,6 @@ export function routeLabelsFor(routes: RouteInput[]): Record<RouteKey, string> {
   return labels
 }
 
-/** Travel leg label: outbound and return for a pair; intermediate gaps only appear for multi-stop A routes. */
-export function travelLabel(total: number, index: number): string {
-  if (total <= 1) return "路程"
-  if (index === 0) return "去程"
-  if (index === total - 1) return "回程"
-  return `段间 ${index + 1}`
-}
-
 /** Appends the edited location only when it adds information beyond the activity name (US-087 D-2). */
 function locationSuffix(route: RouteInput): string {
   const location = route.locationName?.trim()
@@ -131,35 +123,47 @@ function locationSuffix(route: RouteInput): string {
   return location && location !== activity ? ` · ${location}` : ""
 }
 
-/** One route's branch nodes: activity steps -> travel (summed legs) -> buffer. Zero buffer is omitted. */
+/** One route's branch nodes in travel order: places and legs alternate; zero buffer is omitted. */
 function branchRowsFor(route: RouteInput, key: RouteKey): BranchRow[] {
   const steps = route.steps ?? []
-  const rows: BranchRow[] = steps.length > 0
-    ? steps.map((step, index) => ({
-        kind: "branch" as const,
+  const legs = route.travelLegsMinutes
+  const rows: BranchRow[] = []
+  const pushLeg = (legIndex: number) => {
+    if (legIndex < 0 || legIndex >= legs.length) return
+    const minutes = legs[legIndex]
+    rows.push({
+      kind: "branch",
+      id: `${key}-leg-${legIndex}`,
+      route: key,
+      title: "路程",
+      meta: minutes == null ? `路程 · ${PENDING_LABEL}` : `路程 · ${minutes} 分钟`,
+    })
+  }
+  if (steps.length > 0) {
+    // Group B starts with the outbound trip; group A starts at the departure stop itself.
+    if (key === "b") pushLeg(0)
+    steps.forEach((step, index) => {
+      rows.push({
+        kind: "branch",
         id: `${key}-step-${index}`,
         route: key,
         title: step.name,
         meta: `活动 · ${formatMinutes(step.minutes)}`,
-      }))
-    : [{
-        kind: "branch" as const,
-        id: `${key}-activity`,
-        route: key,
-        title: route.activityName?.trim() || "活动",
-        meta: `活动 · ${formatMinutes(route.activityMinutes)}${locationSuffix(route)}`,
-      }]
-  if (route.travelLegsMinutes.length > 0) {
-    const missing = route.travelLegsMinutes.some((minutes) => minutes == null)
-    route.travelLegsMinutes.forEach((minutes, index) => {
-      rows.push({
-        kind: "branch",
-        id: `${key}-travel-${index}`,
-        route: key,
-        title: travelLabel(route.travelLegsMinutes.length, index),
-        meta: missing ? `路程 · ${PENDING_LABEL}` : `路程 · ${formatMinutes(minutes)}`,
       })
+      pushLeg(key === "b" ? index + 1 : index)
     })
+  } else {
+    // Legacy single-activity documents (pre Revision 3): keep one activity row around its legs.
+    if (key === "b") pushLeg(0)
+    rows.push({
+      kind: "branch",
+      id: `${key}-activity`,
+      route: key,
+      title: route.activityName?.trim() || "活动",
+      meta: `活动 · ${formatMinutes(route.activityMinutes)}${locationSuffix(route)}`,
+    })
+    const start = key === "b" ? 1 : 0
+    for (let index = start; index < legs.length; index += 1) pushLeg(index)
   }
   if (route.bufferMinutes !== 0) {
     rows.push({

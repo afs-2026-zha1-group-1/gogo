@@ -19,16 +19,24 @@ test('step-2 editing validates the window and hands off to the preview', async (
   await login(page)
   await page.goto('/trips/9101/split/routes')
 
-  const step2 = page.getByLabel('A 组 第 2 站停留分钟')
+  const step2 = page.getByLabel('A 组 第 2 站名称')
   await expect(step2).toBeEnabled()
-  await expect(step2).toHaveValue('30')
-  await expect(page.getByLabel('A 组 活动名称')).toHaveValue('City Hall MRT → Gardens by the Bay')
-  await expect(page.getByLabel('A 组 地点')).toHaveValue('City Hall MRT')
-  await expect(page.getByLabel('A 组 去程')).toBeVisible()
-  await expect(page.getByLabel('A 组 回程')).toBeVisible()
-  await expect(page.getByLabel('B 组 地点')).toHaveValue('Singapore')
+  await expect(step2).toHaveValue('National Gallery Singapore')
+  await expect(page.getByLabel('A 组 第 2 站停留分钟')).toHaveValue('30')
+  await expect(page.getByLabel('B 组 第 1 站名称')).toHaveValue('Gardens by the Bay')
+  await expect(page.getByLabel('A 组 路程 1')).toBeVisible()
+  await expect(page.getByLabel('A 组 路程 3')).toBeVisible()
+  await expect(page.getByLabel('B 组 路程 1')).toBeVisible()
+  await expect(page.getByLabel('B 组 路程 2')).toBeVisible()
 
-  await step2.fill('20')
+  // Adding a station appends a stop and its leg; removing restores the original pair.
+  await page.getByRole('button', { name: '添加站点' }).last().click()
+  await expect(page.getByLabel('B 组 第 2 站名称')).toHaveValue('新站点')
+  await page.getByLabel('B 组 删除第 2 站').click()
+  await expect(page.getByLabel('B 组 第 2 站名称')).toHaveCount(0)
+
+  await step2.fill('National Gallery (edited)')
+  await page.getByLabel('A 组 第 2 站停留分钟').fill('20')
   await expect(page.getByText('合计 140 分').first()).toBeVisible()
 
   const step3 = page.getByLabel('A 组 第 3 站停留分钟')
@@ -80,7 +88,7 @@ test('step-2 editing validates the window and hands off to the preview', async (
 test('confirmed draft shows the preview and route cards read-only', async ({ page }) => {
   await login(page)
   await page.goto('/trips/9102/split/routes')
-  await expect(page.getByLabel('A 组 第 2 站停留分钟')).toHaveCount(0)
+  await expect(page.getByLabel('A 组 第 2 站名称')).toHaveCount(0)
   await expect(page.getByText('City Hall MRT → Gardens by the Bay').first()).toBeVisible()
   await expect(page.getByRole('button', { name: /下一步/ })).toHaveCount(0)
 

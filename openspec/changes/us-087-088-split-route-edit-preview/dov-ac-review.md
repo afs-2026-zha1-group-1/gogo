@@ -85,6 +85,18 @@ delta: `specs/splits/spec.md`（1 ADDED + 4 MODIFIED / 46 场景）· evidence:
 
 SA Leo 对 Revision 2 签 Pass；IO Emily 待复签（G1 Revision 2 记 Conditional，IO 复签后升 Pass）。
 
+## Revision review 3（2026-11-18，P4 第二轮反馈）
+
+| Item | Review | Result |
+|---|---|---|
+| A/B 站点列表 | 两组均以站点（站名 + 停留）编辑；A 去掉活动名/地点输入，站名可改；B 可添加/删除站点 | Pass（`SplitRouteEditApiTest` + E2E 增删站点） |
+| 路程规则 | A legs=站点数；B legs=站点数+1；统一标注「路程」 | Pass（API 非法输入 + 浏览器） |
+| 派生值 | 活动名=首末站拼接、地点=首站名、buffer=0；B 初始单站点 | Pass（provider/API 断言） |
+| 预览交替 | 地点与路程按顺序交替，A 首站无前置路程、B 首站前去程 | Pass（`team-route.test.ts` + E2E） |
+| 回归 | 后端 380/380、前端 46/46 + build、浏览器 85/85 | Pass |
+
+SA Leo 对 Revision 3 签 Pass；IO Emily 待复签（G1 Revision 3 记 Conditional）。
+
 ## Verdict
 
-**AC 4/4 Pass · DoV 5/5 Pass**（含 US-089 重基线与 P4 Revision 2）。无阻塞 Fail/Partial；G1 Revision 2 待 IO 具名复签。本文件不是 Gate 决定。
+**AC 4/4 Pass · DoV 5/5 Pass**（含 US-089 重基线、P4 Revision 2/3）。G1 Revision 2/3 待 IO 具名复签。本文件不是 Gate 决定。

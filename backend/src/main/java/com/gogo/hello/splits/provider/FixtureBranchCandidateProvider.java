@@ -35,8 +35,9 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
         }
         Branch branch = branchFor(cityOf(destination), groupLabel);
         String location = destination == null || destination.isBlank() ? branch.activityName() : destination.trim();
+        List<RouteStep> steps = List.of(new RouteStep(branch.activityName(), branch.activityMinutes()));
         return new RouteCandidate(groupLabel, branch.activityName(), location, branch.activityMinutes(),
-                branch.travelLegsMinutes(), branch.bufferMinutes(), List.of());
+                branch.travelLegsMinutes(), 0, steps);
     }
 
     // Group A follows the confirmed itinerary: every main-plan stop from the departure (inclusive) to the reunion

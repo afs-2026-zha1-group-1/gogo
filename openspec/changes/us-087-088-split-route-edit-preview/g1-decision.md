@@ -87,6 +87,20 @@ Revision Decision: **Pass**。非阻塞承接同 N1–N4，新增：P3 design �
 
 Revision 2 Decision: **Conditional**（仅因 IO 具名复签缺失；SA 已 Pass，AC/DoV 无阻塞）。IO 复签后升 Pass。
 
+## Revision 3（2026-11-18，P4 第二轮反馈）
+
+- Trigger: 用户要求 A/B 均改为站点列表：A 去掉活动名/地点输入但站名可编辑；B 可添加多个站点；路程统一标注「路程」，预览按地点/路程交替。
+- Delta: `Split route pair edit`、`Group route generation`、`Reunion timing check` 更新（两组站点列表、A legs=站点数、B legs=站点数+1、buffer=0、派生名称/地点、预览交替）；场景标题全保留，`validate --strict` 仍 valid。
+- 实现: `RouteStepInput` + `RoutePairEdit.derive`；`FixtureBranchCandidateProvider` B 初始单站点/buffer 0；前端两类卡片站点列表 + 增删站点 + 逐段「路程」。
+- Verification: 后端 380/380、前端 46/46 + build、浏览器 85/85（Revision 3 后复跑）。
+
+| Role | Name | Revision 3 decision | Date |
+|---|---|---|---|
+| SA | Leo | **Pass** | 2026-11-18 |
+| IO | Emily | **待复签** | — |
+
+Revision 3 Decision: **Conditional**（IO 具名复签缺失；SA Pass、AC/DoV 无阻塞）。
+
 ## Next
 
-G1 Pass（含 Revision Pass；Revision 2 Conditional 待 IO 复签）→ P4 已完成，进入 `/sdd:local-verify-report` → G2。本记录不是 G2/G3 决定。
+G1 Pass（含 Revision Pass；Revision 2/3 Conditional 待 IO 复签）→ P4 已完成，进入 `/sdd:local-verify-report` → G2。本记录不是 G2/G3 决定。

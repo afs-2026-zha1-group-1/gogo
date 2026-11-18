@@ -319,16 +319,17 @@ public class SplitDraftService {
             throw new ApiException(ErrorCode.INVALID_ROUTE_PAIR, "exactly the A and B routes are required");
         }
         Map<String, RouteDurations> updatedRoutes = new LinkedHashMap<>();
+        Map<String, String> derivedNames = new LinkedHashMap<>();
+        Map<String, String> derivedLocations = new LinkedHashMap<>();
         List<GroupRoute> routeViews = new ArrayList<>();
         for (String label : List.of("A", "B")) {
             RouteEditInput input = inputs.get(label);
-            RouteDurations base = existing.get(label);
-            String activityName = requireActivityName(input.activityName());
-            String locationName = normalizeLocation(input.locationName());
-            RouteDurations durations = "A".equals(label) && base.steps() != null && !base.steps().isEmpty()
-                    ? deriveGroupA(base, input)
-                    : manualDurations(base, input);
+            RouteDurations durations = deriveRoute(label, input);
+            String activityName = RoutePairEdit.deriveActivityName(durations.steps());
+            String locationName = durations.steps().get(0).name();
             updatedRoutes.put(label, durations);
+            derivedNames.put(label, activityName);
+            derivedLocations.put(label, locationName);
             routeViews.add(new GroupRoute(label, activityName, locationName, draft.departureStopId(),
                     draft.reunionStopId(), durations.activityMinutes(), durations.travelLegsMinutes(),
                     durations.bufferMinutes(), durations.steps()));
@@ -338,10 +339,9 @@ public class SplitDraftService {
         String updatedJson = toJson(updated);
         transactionTemplate.executeWithoutResult(status -> {
             for (String label : List.of("A", "B")) {
-                RouteEditInput input = inputs.get(label);
                 String branchId = "split-" + label.toLowerCase(Locale.ROOT);
                 if (repository.updateSplitRoute(tripId, draft.mainPlanVersion(), branchId,
-                        requireActivityName(input.activityName()), normalizeLocation(input.locationName())) == 0) {
+                        derivedNames.get(label), derivedLocations.get(label)) == 0) {
                     throw new ApiException(ErrorCode.SPLIT_DRAFT_INCOMPLETE, "the route pair is missing",
                             Map.of("missing", List.of("routes." + label)));
                 }
@@ -353,52 +353,13 @@ public class SplitDraftService {
         return new RouteGenerationResponse(updated.draftVersion(), routeViews);
     }
 
-    /** Group A keeps the existing stop names and derives activity/leg totals from the submitted minutes (DD2). */
-    private RouteDurations deriveGroupA(RouteDurations base, RouteEditInput input) {
+    /** Both groups share the station-list derivation; A has stops legs, B has stops + 1 (Revision 3). */
+    private RouteDurations deriveRoute(String label, RouteEditInput input) {
         try {
-            return RoutePairEdit.deriveForGroupA(base.steps(), input.stepMinutes(), input.travelLegsMinutes());
+            return RoutePairEdit.derive(label, input.steps(), input.travelLegsMinutes());
         } catch (IllegalArgumentException ex) {
             throw new ApiException(ErrorCode.INVALID_ROUTE_INPUT, ex.getMessage());
         }
-    }
-
-    /** Single-activity breakdown for group B (and legacy A rows without steps); legs must keep their count. */
-    private RouteDurations manualDurations(RouteDurations base, RouteEditInput input) {
-        int expectedLegs = base.travelLegsMinutes() == null ? 0 : base.travelLegsMinutes().size();
-        return new RouteDurations(
-                requireMinutes(input.activityMinutes(), "activityMinutes"),
-                requireLegs(input.travelLegsMinutes(), expectedLegs, "travelLegsMinutes"),
-                requireMinutes(input.bufferMinutes(), "bufferMinutes"),
-                base.steps());
-    }
-
-    private static String requireActivityName(String value) {
-        if (value == null || value.isBlank()) {
-            throw new ApiException(ErrorCode.INVALID_ROUTE_INPUT, "activityName is required");
-        }
-        return value.trim();
-    }
-
-    private static String normalizeLocation(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
-    }
-
-    private static int requireMinutes(Integer value, String field) {
-        if (value == null || value < 0) {
-            throw new ApiException(ErrorCode.INVALID_ROUTE_INPUT, field + " must be a non-negative integer");
-        }
-        return value;
-    }
-
-    private static List<Integer> requireLegs(List<Integer> legs, int expectedSize, String field) {
-        if (legs == null || legs.size() != expectedSize) {
-            throw new ApiException(ErrorCode.INVALID_ROUTE_INPUT, field + " must keep the saved leg count");
-        }
-        List<Integer> result = new ArrayList<>();
-        for (Integer leg : legs) {
-            result.add(requireMinutes(leg, field));
-        }
-        return result;
     }
 
     /**

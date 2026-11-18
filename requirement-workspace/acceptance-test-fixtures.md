@@ -771,8 +771,8 @@ Alice 的预期顺序（以 2026-11-16 为“今天”，2026-11-17 修订：**�
 
 | Fixture | 草稿状态 / 数据 | 覆盖场景 |
 |---|---|---|
-| F1 基准 | `active` v3；边界 City Hall 09:00 → Merlion 11:30（窗口 150）；A 活动名 `City Hall MRT → Gardens by the Bay`、地点 `City Hall MRT`，steps City Hall(30)/National Gallery(30)/Gardens(15)，legs 30/30/15，buffer 0，合计 150；B 活动 60、地点 `Singapore`，legs 20/20，buffer 10，合计 110；`plan_node` split-a/b 含 `title`/`location_name`（旧数据回填活动名） | S2/S2b/D1/S7/CF1 |
-| F2 编辑后 | A 第二站 30→20（合计 140）；B 地点改为「Gardens by the Bay · 滨海湾」；A legs 保持 30/30/15 | S2/S2b 持久化 |
+| F1 基准 | `active` v3；边界 City Hall 09:00 → Merlion 11:30（窗口 150）；A/B 均为站点列表：A = City Hall(30)/National Gallery(30)/Gardens(15)，legs 30/30/15；B = Gardens(60)，legs 20/20；buffer 均 0；A 合计 150、B 合计 100 | S2/S2b/D1/S7/CF1 |
+| F2 编辑后 | A 第二站站名改为 National Gallery (edited)、30→20（合计 140）；B 可添加/删除站点与路程 | S2/S2b 持久化 |
 | F3 A 超窗 | A 第三站 15→40（合计 175，窗口 150，超 25） | N3a `check-timing` 数值（feasible=false / overrun=25） |
 | F4 版本/缺失/终态 | 请求 v2；`routes=null`；`status=confirmed`；`status=cancelled` | S3/S4/S6 |
 | F5 非法载荷 | 非两条；组别重复/非 A/B；负分钟；A `legs.size ≠ steps.size`；B legs 由 2 段改 3 段；活动名全空格 | S5（`INVALID_ROUTE_PAIR`/`INVALID_GROUP_LABEL`/`INVALID_ROUTE_INPUT`） |
@@ -791,8 +791,8 @@ Alice 的预期顺序（以 2026-11-16 为“今天”，2026-11-17 修订：**�
 
 | 断言 | 层 |
 |---|---|
-| 路线卡无费用/必做标识字段 | E2E |
-| A 组站名为只读文本，仅分钟可编辑 | E2E |
+| 路线卡无活动名/地点/缓冲输入；A/B 均为站点列表可增删 | E2E |
+| A/B 站名与停留分钟均可编辑；可添加/删除站点 | E2E |
 | `GroupRoute` JSON 无 fee 字段 | API |
 | 无新增 `V*.sql`、无新依赖、`ci.yml` 不改 | 静态（git diff） |
 | 非发起人 `routes:generate` 仍 403；保存仍 200（BQ-6） | API |

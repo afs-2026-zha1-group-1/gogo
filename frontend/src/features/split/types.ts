@@ -178,17 +178,18 @@ export interface GenerateRoutesRequest {
   draftVersion: number
 }
 
-/** One editable group route in a PUT .../split-draft/routes request (spec US-087 S2). */
+/** One editable station (US-087 Revision 3): both groups own their stop names and stay minutes. */
+export interface RouteStepInput {
+  name: string
+  minutes: number | null
+}
+
+/** One editable group route in a PUT .../split-draft/routes request (spec US-087 Revision 3). */
 export interface RouteEditInput {
   groupLabel: "A" | "B"
-  activityName: string
-  locationName?: string | null
-  /** Group A only: ordered stay minutes; stop names stay read-only. */
-  stepMinutes?: (number | null)[] | null
-  travelLegsMinutes?: (number | null)[] | null
-  /** Group B only (legacy A rows without steps fall back to this breakdown). */
-  activityMinutes?: number | null
-  bufferMinutes?: number | null
+  steps: RouteStepInput[]
+  /** Group A: one leg after every stop; group B: outbound + return around the stops (stops + 1). */
+  travelLegsMinutes: (number | null)[]
 }
 
 /** PUT .../split-draft/routes body (backend SaveRoutesRequest). */

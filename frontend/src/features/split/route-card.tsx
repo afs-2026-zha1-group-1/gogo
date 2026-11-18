@@ -1,5 +1,4 @@
 import type { GroupRoute } from "./types"
-import { travelLabel } from "./graph-model"
 import { Card } from "@/components/ui/card"
 import { IconFlag, IconNav } from "@/components/icons"
 import { cn } from "@/lib/utils"
@@ -66,23 +65,20 @@ export function RouteCard({
       <div className="flex flex-col gap-1.5 px-4 py-3 text-[12px]">
         {route.steps && route.steps.length > 0 ? (
           route.steps.map((step, index) => (
-            <Row key={`${route.groupLabel}-${index}-${step.name}`} label={step.name} value={`${step.minutes} 分`} />
+            <Row key={`${route.groupLabel}-step-${index}`} label={step.name} value={`${step.minutes} 分`} />
           ))
         ) : (
           <Row label="活动" value={`${route.activityMinutes} 分`} />
         )}
-        {route.locationName && route.locationName !== route.activityName ? (
-          <Row label="地点" value={route.locationName} />
-        ) : null}
         {route.travelLegsMinutes.map((minutes, index) => (
           <Row
             key={`${route.groupLabel}-leg-${index}`}
-            label={travelLabel(route.travelLegsMinutes.length, index)}
+            label="路程"
             value={`${minutes} 分`}
             italic
           />
         ))}
-        <Row label="缓冲" value={`${route.bufferMinutes} 分`} />
+        {route.bufferMinutes ? <Row label="缓冲" value={`${route.bufferMinutes} 分`} /> : null}
         {total != null && (
           <Row label="合计" value={`${total} 分${windowMinutes != null ? ` / 窗口 ${windowMinutes} 分` : ""}`} />
         )}

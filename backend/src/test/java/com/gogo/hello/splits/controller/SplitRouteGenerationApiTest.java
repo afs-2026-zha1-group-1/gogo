@@ -76,7 +76,9 @@ class SplitRouteGenerationApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.data.routes[1].reunionStopId").value(merlion))
                 .andExpect(jsonPath("$.data.routes[1].travelLegsMinutes[0]").value(20))
                 .andExpect(jsonPath("$.data.routes[1].travelLegsMinutes[1]").value(20))
-                .andExpect(jsonPath("$.data.routes[1].bufferMinutes").value(10));
+                .andExpect(jsonPath("$.data.routes[1].bufferMinutes").value(0))
+                .andExpect(jsonPath("$.data.routes[1].steps[0].name").value("Gardens by the Bay"))
+                .andExpect(jsonPath("$.data.routes[1].steps[0].minutes").value(60));
         assertThat(splitRouteCount()).isEqualTo(2);
         assertThat(mainStopCount()).isEqualTo(4);
         JsonNode draft = objectMapper.readTree(draftJson());
