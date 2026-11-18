@@ -2,8 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "../../api"
 import type { Trip, TripMemberList } from "../../types"
 import type { MainPlan } from "../../types/mainPlan"
-import { SplitApiError, assignGroup, cancelConfirmedSplit, cancelSplitDraft, checkTiming, confirmSplitDraft, fetchBudgetCheck, fetchDraftDetail, generateRoutes, recommendActivities, saveActivities, saveBoundaries, saveRoutes, startDraft } from "./api"
-import type { AssignmentRequest, CheckTimingRequest, GenerateRoutesRequest, RecommendActivitiesRequest, SaveActivitiesRequest, SaveBoundariesRequest, SaveRoutesRequest } from "./types"
+import { SplitApiError, assignGroup, cancelConfirmedSplit, cancelSplitDraft, checkTiming, confirmSplitDraft, fetchBudgetCheck, fetchDraftDetail, generateRoutes, saveActivities, saveBoundaries, saveRoutes, startDraft } from "./api"
+import type { AssignmentRequest, CheckTimingRequest, GenerateRoutesRequest, SaveActivitiesRequest, SaveBoundariesRequest, SaveRoutesRequest } from "./types"
 
 /**
  * TanStack Query v5 data hooks. The member-only GET detail snapshot is polled so a concurrent
@@ -144,13 +144,6 @@ export function useSaveActivities(tripId: string) {
       void queryClient.invalidateQueries({ queryKey: [DETAIL_KEY, tripId] })
       void queryClient.invalidateQueries({ queryKey: [BUDGET_KEY, tripId] })
     },
-  })
-}
-
-/** Asks the mock AI for a budget-fitting activity suggestion (US-045); no write happens here. */
-export function useRecommendActivities(tripId: string) {
-  return useMutation({
-    mutationFn: (body: RecommendActivitiesRequest) => recommendActivities(tripId, body),
   })
 }
 

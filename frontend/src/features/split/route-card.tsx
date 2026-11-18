@@ -2,15 +2,17 @@ import type { GroupRoute } from "./types"
 import { cleanRouteName, cleanStationName } from "./station-name"
 import { Card } from "@/components/ui/card"
 import { IconFlag, IconNav } from "@/components/icons"
+import { formatCost } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
 /**
  * One generated group route (ui-design-reference Screen 13 `.route`): a dual-color header with the
  * group code, activity name and departure->reunion stops, a compact duration breakdown (activity /
- * each travel leg / buffer) and a green reunion footer. Pure display of backend-returned values; tone A=blue,
- * B=orange. {@code stale} marks a route whose group is now empty (the pair needs regenerating) with a soft
- * translucent pill in the header, matching the Screen 13 visual language. {@code windowMinutes} renders the
- * total against the saved window so an over-window pair is visible before confirmation.
+ * each travel leg / buffer) and a green reunion footer. Each stop row also shows the group's per-person
+ * cost, so read-only cards keep time and budget in one place. Pure display of backend-returned values;
+ * tone A=blue, B=orange. {@code stale} marks a route whose group is now empty (the pair needs regenerating)
+ * with a soft translucent pill in the header, matching the Screen 13 visual language. {@code windowMinutes}
+ * renders the total against the saved window so an over-window pair is visible before confirmation.
  */
 export function RouteCard({
   route,
@@ -18,6 +20,7 @@ export function RouteCard({
   departureName,
   reunionName,
   reunionClock,
+  destination = null,
   stale = false,
   windowMinutes,
 }: {
@@ -26,6 +29,7 @@ export function RouteCard({
   departureName: string
   reunionName: string
   reunionClock: string
+  destination?: string | null
   stale?: boolean
   windowMinutes?: number | null
 }) {
@@ -36,6 +40,18 @@ export function RouteCard({
     ? route.activityMinutes + legsTotal + route.bufferMinutes
     : null
   const overrun = total != null && windowMinutes != null ? Math.max(0, total - windowMinutes) : null
+  // Match each stop to its costed activity by name; leftovers stay visible as extra costs.
+  const activities = route.activities ?? []
+  const used = new Set<number>()
+  const stepCosts = (route.steps ?? []).map((step) => {
+    const index = activities.findIndex(
+      (activity, position) => !used.has(position) && cleanStationName(activity.name) === cleanStationName(step.name),
+    )
+    if (index >= 0) used.add(index)
+    return index >= 0 ? activities[index] : null
+  })
+  const extras = activities.filter((_, position) => !used.has(position))
+  const activitiesCost = activities.reduce((sum, activity) => sum + activity.costCents, 0)
 
   return (
     <Card className="overflow-hidden">
@@ -66,11 +82,29 @@ export function RouteCard({
       <div className="flex flex-col gap-1.5 px-4 py-3 text-[12px]">
         {route.steps && route.steps.length > 0 ? (
           route.steps.map((step, index) => (
-            <Row key={`${route.groupLabel}-step-${index}`} label={cleanStationName(step.name)} value={`${step.minutes} 分`} />
+            <Row
+              key={`${route.groupLabel}-step-${index}`}
+              label={cleanStationName(step.name)}
+              value={`${step.minutes} 分`}
+              meta={stepCosts[index] ? formatCost(stepCosts[index]!.costCents, destination) : undefined}
+            />
           ))
         ) : (
           <Row label="活动" value={`${route.activityMinutes} 分`} />
         )}
+        {extras.length > 0 ? (
+          <div className="flex flex-col gap-1.5 border-t border-line-2 pt-1.5">
+            <span className="text-[10px] font-semibold text-ink-3">其他费用（不占时间）</span>
+            {extras.map((extra, index) => (
+              <Row
+                key={`${route.groupLabel}-extra-${index}`}
+                label={cleanStationName(extra.name)}
+                value=""
+                meta={formatCost(extra.costCents, destination)}
+              />
+            ))}
+          </div>
+        ) : null}
         {route.travelLegsMinutes.map((minutes, index) => (
           <Row
             key={`${route.groupLabel}-leg-${index}`}
@@ -83,6 +117,7 @@ export function RouteCard({
         {total != null && (
           <Row label="合计" value={`${total} 分${windowMinutes != null ? ` / 窗口 ${windowMinutes} 分` : ""}`} />
         )}
+        {activitiesCost > 0 ? <Row label="人均" value={formatCost(activitiesCost, destination)} /> : null}
       </div>
 
       <div className="flex items-center gap-2 border-t border-line-2 bg-ok-soft px-4 py-2.5 text-[12px] font-semibold text-[#047857]">
@@ -92,11 +127,14 @@ export function RouteCard({
   )
 }
 
-function Row({ label, value, italic }: { label: string; value: string; italic?: boolean }) {
+function Row({ label, value, meta, italic }: { label: string; value: string; meta?: string; italic?: boolean }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <span className={cn("text-ink-2", italic && "italic")}>{label}</span>
-      <span className="shrink-0 font-bold text-ink">{value}</span>
+      <span className={cn("min-w-0 truncate text-ink-2", italic && "italic")}>{label}</span>
+      <span className="flex shrink-0 items-center gap-2">
+        {meta ? <span className="tabular-nums font-semibold text-ink">{meta}</span> : null}
+        {value ? <span className={cn("font-bold text-ink", meta && "text-ink-2")}>{value}</span> : null}
+      </span>
     </div>
   )
 }
