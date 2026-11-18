@@ -22,7 +22,13 @@ function SplitKeyed({ Screen }: { Screen: ComponentType }) {
 /** Old Screen 14 deep links land on the read-only preview (US-088 N8/D-1). */
 function SplitTimingRedirect() {
   const { tripId = "" } = useParams()
-  return <Navigate to={`/trips/${tripId}/split/preview`} replace />
+  return <Navigate to={`/trips/${tripId}/split/rounds/1/preview`} replace />
+}
+
+/** US-096: old round-less paths keep working by pointing at round 1. */
+function LegacyRoundRedirect({ suffix }: { suffix: string }) {
+  const { tripId = "" } = useParams()
+  return <Navigate to={`/trips/${tripId}/split/rounds/1/${suffix}`} replace />
 }
 
 /**
@@ -42,15 +48,15 @@ export const router = createBrowserRouter([
   },
   {
     path: "/trips/:tripId/split/boundaries",
-    element: <RequireAuth><SplitKeyed Screen={ScreenBoundary} /></RequireAuth>,
+    element: <RequireAuth><LegacyRoundRedirect suffix="boundaries" /></RequireAuth>,
   },
   {
     path: "/trips/:tripId/split/routes",
-    element: <RequireAuth><SplitKeyed Screen={ScreenRoutes} /></RequireAuth>,
+    element: <RequireAuth><LegacyRoundRedirect suffix="routes" /></RequireAuth>,
   },
   {
     path: "/trips/:tripId/split/preview",
-    element: <RequireAuth><SplitKeyed Screen={ScreenPreview} /></RequireAuth>,
+    element: <RequireAuth><LegacyRoundRedirect suffix="preview" /></RequireAuth>,
   },
   {
     path: "/trips/:tripId/split/timing",
@@ -58,6 +64,22 @@ export const router = createBrowserRouter([
   },
   {
     path: "/trips/:tripId/split/confirm",
+    element: <RequireAuth><LegacyRoundRedirect suffix="confirm" /></RequireAuth>,
+  },
+  {
+    path: "/trips/:tripId/split/rounds/:roundIndex/boundaries",
+    element: <RequireAuth><SplitKeyed Screen={ScreenBoundary} /></RequireAuth>,
+  },
+  {
+    path: "/trips/:tripId/split/rounds/:roundIndex/routes",
+    element: <RequireAuth><SplitKeyed Screen={ScreenRoutes} /></RequireAuth>,
+  },
+  {
+    path: "/trips/:tripId/split/rounds/:roundIndex/preview",
+    element: <RequireAuth><SplitKeyed Screen={ScreenPreview} /></RequireAuth>,
+  },
+  {
+    path: "/trips/:tripId/split/rounds/:roundIndex/confirm",
     element: <RequireAuth><SplitKeyed Screen={ScreenConfirm} /></RequireAuth>,
   },
   { path: "*", element: <Navigate to="/" replace /> },

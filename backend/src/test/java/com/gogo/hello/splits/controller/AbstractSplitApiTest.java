@@ -54,7 +54,7 @@ abstract class AbstractSplitApiTest {
     @BeforeEach
     void resetToSeed() {
         jdbc.update("DELETE FROM split_draft");
-        jdbc.update("DELETE FROM plan_node WHERE branch_id IN ('split-a', 'split-b')");
+        jdbc.update("DELETE FROM plan_node WHERE branch_id LIKE 'split-r%' OR branch_id IN ('split-a', 'split-b')");
         jdbc.update("UPDATE trip SET main_plan_confirmed = 1");
         seedConfirmedMainPlan(1);
     }
@@ -192,7 +192,7 @@ abstract class AbstractSplitApiTest {
 
     protected int splitRouteCount() {
         Integer count = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM plan_node WHERE trip_id = ? AND branch_id IN ('split-a', 'split-b')",
+                "SELECT COUNT(*) FROM plan_node WHERE trip_id = ? AND (branch_id LIKE 'split-r%' OR branch_id IN ('split-a', 'split-b'))",
                 Integer.class, sgfTripId());
         return count == null ? 0 : count;
     }

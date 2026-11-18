@@ -17,6 +17,8 @@ import com.gogo.hello.splits.dto.SaveActivitiesRequest;
 import com.gogo.hello.splits.dto.SaveBoundariesRequest;
 import com.gogo.hello.splits.dto.SaveRoutesRequest;
 import com.gogo.hello.splits.dto.SplitDraftDetailResponse;
+import com.gogo.hello.splits.dto.SplitRoundCreatedResponse;
+import com.gogo.hello.splits.dto.SplitRoundsResponse;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -165,6 +167,131 @@ public class SplitDraftController {
         SplitDraftDetailResponse detail =
                 service.cancelConfirmedSplit(tripId, caller(authentication), request.draftVersion());
         return ResponseEntity.ok(ApiResponse.ok(detail));
+    }
+
+    // ---- US-096 round-scoped endpoints ----
+
+    @GetMapping("/split-draft/rounds")
+    public ResponseEntity<ApiResponse<SplitRoundsResponse>> getRounds(
+            @PathVariable String tripId,
+            Authentication authentication) {
+        return ResponseEntity.ok(ApiResponse.ok(service.getRounds(tripId, caller(authentication))));
+    }
+
+    @PostMapping("/split-draft/rounds")
+    public ResponseEntity<ApiResponse<SplitRoundCreatedResponse>> startNextRound(
+            @PathVariable String tripId,
+            Authentication authentication) {
+        SplitRoundCreatedResponse response = service.startNextRound(tripId, caller(authentication));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(response));
+    }
+
+    @GetMapping("/split-draft/rounds/{roundIndex}")
+    public ResponseEntity<ApiResponse<SplitDraftDetailResponse>> getRoundDetail(
+            @PathVariable String tripId,
+            @PathVariable int roundIndex,
+            Authentication authentication) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                service.getRoundDetail(tripId, roundIndex, caller(authentication))));
+    }
+
+    @PutMapping("/split-draft/rounds/{roundIndex}/boundaries")
+    public ResponseEntity<ApiResponse<BoundaryResponse>> saveRoundBoundaries(
+            @PathVariable String tripId,
+            @PathVariable int roundIndex,
+            Authentication authentication,
+            @RequestBody SaveBoundariesRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                service.saveBoundaries(tripId, roundIndex, caller(authentication), request)));
+    }
+
+    @PutMapping("/split-draft/rounds/{roundIndex}/assignment")
+    public ResponseEntity<ApiResponse<SplitDraftDetailResponse>> assignRoundGroup(
+            @PathVariable String tripId,
+            @PathVariable int roundIndex,
+            Authentication authentication,
+            @RequestBody AssignmentRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                service.assign(tripId, roundIndex, caller(authentication), request)));
+    }
+
+    @PostMapping("/split-draft/rounds/{roundIndex}/routes:generate")
+    public ResponseEntity<ApiResponse<RouteGenerationResponse>> generateRoundRoutes(
+            @PathVariable String tripId,
+            @PathVariable int roundIndex,
+            Authentication authentication,
+            @RequestBody GenerateRoutesRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                service.generateRoutes(tripId, roundIndex, caller(authentication), request)));
+    }
+
+    @PutMapping("/split-draft/rounds/{roundIndex}/routes")
+    public ResponseEntity<ApiResponse<RouteGenerationResponse>> saveRoundRoutes(
+            @PathVariable String tripId,
+            @PathVariable int roundIndex,
+            Authentication authentication,
+            @RequestBody SaveRoutesRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                service.saveRoutes(tripId, roundIndex, caller(authentication), request)));
+    }
+
+    @GetMapping("/split-draft/rounds/{roundIndex}/budget-check")
+    public ResponseEntity<ApiResponse<BudgetCheckResponse>> roundBudgetCheck(
+            @PathVariable String tripId,
+            @PathVariable int roundIndex,
+            Authentication authentication) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                service.budgetCheck(tripId, roundIndex, caller(authentication))));
+    }
+
+    @PutMapping("/split-draft/rounds/{roundIndex}/activities")
+    public ResponseEntity<ApiResponse<SplitDraftDetailResponse>> saveRoundActivities(
+            @PathVariable String tripId,
+            @PathVariable int roundIndex,
+            Authentication authentication,
+            @RequestBody SaveActivitiesRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                service.saveActivities(tripId, roundIndex, caller(authentication), request)));
+    }
+
+    @PostMapping("/split-draft/rounds/{roundIndex}/activities:recommend")
+    public ResponseEntity<ApiResponse<List<RouteActivity>>> recommendRoundActivities(
+            @PathVariable String tripId,
+            @PathVariable int roundIndex,
+            Authentication authentication,
+            @RequestBody RecommendActivitiesRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                service.recommendActivities(tripId, roundIndex, caller(authentication), request)));
+    }
+
+    @PostMapping("/split-draft/rounds/{roundIndex}:confirm")
+    public ResponseEntity<ApiResponse<SplitDraftDetailResponse>> confirmRound(
+            @PathVariable String tripId,
+            @PathVariable int roundIndex,
+            Authentication authentication,
+            @RequestBody DraftVersionRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                service.confirmDraft(tripId, roundIndex, caller(authentication), request.draftVersion())));
+    }
+
+    @PostMapping("/split-draft/rounds/{roundIndex}:cancel")
+    public ResponseEntity<ApiResponse<SplitDraftDetailResponse>> cancelRound(
+            @PathVariable String tripId,
+            @PathVariable int roundIndex,
+            Authentication authentication,
+            @RequestBody DraftVersionRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                service.cancelDraft(tripId, roundIndex, caller(authentication), request.draftVersion())));
+    }
+
+    @PostMapping("/split-draft/rounds/{roundIndex}:cancel-confirmed")
+    public ResponseEntity<ApiResponse<SplitDraftDetailResponse>> cancelConfirmedRound(
+            @PathVariable String tripId,
+            @PathVariable int roundIndex,
+            Authentication authentication,
+            @RequestBody DraftVersionRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                service.cancelConfirmedSplit(tripId, roundIndex, caller(authentication), request.draftVersion())));
     }
 
     private String caller(Authentication authentication) {

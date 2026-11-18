@@ -1,4 +1,9 @@
-import { truncateLabel, type GraphModel, type GraphRow } from "./graph-model"
+import {
+  truncateLabel,
+  type GraphModel,
+  type GraphRow,
+  type RoundSpan,
+} from "./graph-model"
 
 /**
  * Team-route graph (US-086, ui-design-reference Screen 11). Three lanes: Route B on the left, the
@@ -24,15 +29,43 @@ function labelAnchor(row: GraphRow): { x: number; anchor: "start" | "end" } {
     return row.route === "a" ? { x: LANE.a + 12, anchor: "start" } : { x: LANE.b - 12, anchor: "end" }
   }
   if (row.kind === "fork") return { x: LANE.m + 16, anchor: "start" }
-  if (row.kind === "join") return { x: LANE.m - 16, anchor: "end" }
+  if (row.kind === "join" || row.kind === "join-fork") return { x: LANE.m - 16, anchor: "end" }
   return row.side === "right" ? { x: LANE.m + 16, anchor: "start" } : { x: LANE.m - 16, anchor: "end" }
 }
 
 function nodeFill(row: GraphRow): string {
-  if (row.kind === "fork") return "#0d9488"
+  if (row.kind === "fork" || row.kind === "join-fork") return "#0d9488"
   if (row.kind === "join") return "#059669"
   if (row.kind === "branch") return row.route === "a" ? "#2563eb" : "#ea580c"
   return "#0d9488"
+}
+
+function isJunctionRow(row: GraphRow): boolean {
+  return row.kind === "fork" || row.kind === "join" || row.kind === "join-fork"
+}
+
+function spansFor(model: GraphModel): RoundSpan[] {
+  if (model.rounds.length > 0) return model.rounds
+  if (model.forkRow != null && model.joinRow != null) {
+    return [{ roundIndex: 1, forkRow: model.forkRow, joinRow: model.joinRow }]
+  }
+  return []
+}
+
+function spanBranchBounds(rows: GraphRow[], span: RoundSpan) {
+  const first = span.forkRow == null ? -1 : span.forkRow + 1
+  let lastA = first
+  let lastB = first
+  if (span.joinRow != null) {
+    for (let index = first; index <= span.joinRow; index += 1) {
+      const row = rows[index]
+      if (row?.kind !== "branch") continue
+      if (row.route === "a") lastA = index
+      else lastB = index
+    }
+  }
+  const has = span.forkRow != null && span.joinRow != null && lastA > span.forkRow && lastB > span.forkRow
+  return { first, lastA, lastB, has }
 }
 
 export function TeamRouteGraph({
@@ -42,24 +75,25 @@ export function TeamRouteGraph({
   model: GraphModel
   onNodeClick?: (row: GraphRow) => void
 }) {
-  const { rows, forkRow, joinRow, routeLabels } = model
+  const { rows, routeLabels } = model
+  const spans = spansFor(model)
   const showRoutes = rows.some((row) => row.kind === "branch")
   const height = PAD * 2 + ROW * rows.length
   const last = rows.length - 1
   const y = (index: number) => rowCenter(index)
 
-  const mainPaths: string[] = []
-  if (forkRow != null && joinRow != null) {
-    mainPaths.push(`M${LANE.m} ${y(0)} V${y(forkRow)}`)
-    mainPaths.push(`M${LANE.m} ${y(joinRow)} V${y(last)}`)
+  // The main line is continuous except across each fork→join span, where it is dashed.
+  const mainSegments: Array<[number, number]> = []
+  if (spans.length === 0) {
+    mainSegments.push([0, last])
   } else {
-    mainPaths.push(`M${LANE.m} ${y(0)} V${y(last)}`)
+    let start = 0
+    for (const span of spans) {
+      if (span.forkRow != null && span.forkRow > start) mainSegments.push([start, span.forkRow])
+      if (span.joinRow != null) start = span.joinRow
+    }
+    if (start < last) mainSegments.push([start, last])
   }
-
-  const firstBranch = forkRow == null ? -1 : forkRow + 1
-  const lastA = rows.reduce((acc, row, index) => (row.kind === "branch" && row.route === "a" ? index : acc), firstBranch)
-  const lastB = rows.reduce((acc, row, index) => (row.kind === "branch" && row.route === "b" ? index : acc), firstBranch)
-  const hasBranches = forkRow != null && joinRow != null && lastA > forkRow && lastB > forkRow
 
   return (
     <div className="relative isolate -mx-1 px-2 pb-1">
@@ -90,6 +124,11 @@ export function TeamRouteGraph({
             </span>
           </>
         ) : null}
+        {spans.length > 1 ? (
+          <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-line bg-surface px-2 py-0.5 text-[9.5px] text-ink-3">
+            {spans.length} 次分头 · {spans.length} 次会合
+          </span>
+        ) : null}
       </div>
 
       <svg
@@ -98,47 +137,67 @@ export function TeamRouteGraph({
         role="img"
         aria-label="队伍路线图：主线、分头、两条分队路线与会合"
       >
-        {mainPaths.map((path) => (
-          <path key={path} d={path} stroke="#0d9488" strokeWidth={3} fill="none" strokeLinecap="round" />
-        ))}
-        {forkRow != null && joinRow != null ? (
+        {mainSegments.map(([from, to]) => (
           <path
-            d={`M${LANE.m} ${y(forkRow)} V${y(joinRow)}`}
-            stroke="#cfccc6"
-            strokeWidth={2}
-            strokeDasharray="4 6"
+            key={`main-${from}-${to}`}
+            d={`M${LANE.m} ${y(from)} V${y(to)}`}
+            stroke="#0d9488"
+            strokeWidth={3}
             fill="none"
             strokeLinecap="round"
           />
-        ) : null}
-        {hasBranches && forkRow != null && joinRow != null ? (
-          <>
+        ))}
+
+        {spans.map((span) =>
+          span.forkRow != null && span.joinRow != null && span.joinRow > span.forkRow ? (
             <path
-              d={`M${LANE.m} ${y(forkRow)} C${LANE.m} ${y(forkRow) + 28} ${LANE.a} ${y(firstBranch) - 28} ${LANE.a} ${y(firstBranch)} V${y(lastA)} C${LANE.a} ${y(joinRow) - 28} ${LANE.m} ${y(joinRow) - 28} ${LANE.m} ${y(joinRow)}`}
-              stroke="#2563eb"
-              strokeWidth={3}
+              key={`dash-${span.roundIndex}`}
+              d={`M${LANE.m} ${y(span.forkRow)} V${y(span.joinRow)}`}
+              stroke="#cfccc6"
+              strokeWidth={2}
+              strokeDasharray="4 6"
               fill="none"
               strokeLinecap="round"
             />
-            <path
-              d={`M${LANE.m} ${y(forkRow)} C${LANE.m} ${y(forkRow) + 28} ${LANE.b} ${y(firstBranch) - 28} ${LANE.b} ${y(firstBranch)} V${y(lastB)} C${LANE.b} ${y(joinRow) - 28} ${LANE.m} ${y(joinRow) - 28} ${LANE.m} ${y(joinRow)}`}
-              stroke="#ea580c"
-              strokeWidth={3}
-              fill="none"
-              strokeLinecap="round"
-            />
-          </>
-        ) : null}
+          ) : null,
+        )}
+
+        {spans.map((span) => {
+          if (span.forkRow == null || span.joinRow == null) return null
+          const bounds = spanBranchBounds(rows, span)
+          if (!bounds.has) return null
+          const { first, lastA, lastB } = bounds
+          return (
+            <g key={`branches-${span.roundIndex}`}>
+              <path
+                d={`M${LANE.m} ${y(span.forkRow)} C${LANE.m} ${y(span.forkRow) + 28} ${LANE.a} ${y(first) - 28} ${LANE.a} ${y(first)} V${y(lastA)} C${LANE.a} ${y(span.joinRow) - 28} ${LANE.m} ${y(span.joinRow) - 28} ${LANE.m} ${y(span.joinRow)}`}
+                stroke="#2563eb"
+                strokeWidth={3}
+                fill="none"
+                strokeLinecap="round"
+              />
+              <path
+                d={`M${LANE.m} ${y(span.forkRow)} C${LANE.m} ${y(span.forkRow) + 28} ${LANE.b} ${y(first) - 28} ${LANE.b} ${y(first)} V${y(lastB)} C${LANE.b} ${y(span.joinRow) - 28} ${LANE.m} ${y(span.joinRow) - 28} ${LANE.m} ${y(span.joinRow)}`}
+                stroke="#ea580c"
+                strokeWidth={3}
+                fill="none"
+                strokeLinecap="round"
+              />
+            </g>
+          )
+        })}
 
         {rows.map((row, index) => {
           const cy = y(index)
           const cx = laneX(row)
           const label = labelAnchor(row)
-          const isJunction = row.kind === "fork" || row.kind === "join"
+          const isJunction = isJunctionRow(row)
           const isBranch = row.kind === "branch"
+          const isJoinFork = row.kind === "join-fork"
           const titleSize = isJunction ? 13 : isBranch ? 11.5 : 12.5
           const titleWeight = isJunction ? 750 : isBranch ? 620 : 650
           const title = truncateLabel(row.title, isBranch ? 9 : isJunction ? 10 : 11)
+          const meta = truncateLabel(row.meta, isBranch ? 14 : isJoinFork ? 18 : 16)
           return (
             <g
               key={row.id}
@@ -158,7 +217,7 @@ export function TeamRouteGraph({
               aria-label={`${row.meta} ${row.title}`}
               className={onNodeClick ? "cursor-pointer outline-none" : undefined}
             >
-              <title>{row.title}</title>
+              <title>{`${row.meta} · ${row.title}`}</title>
               {onNodeClick ? (
                 <rect
                   x={2}
@@ -170,7 +229,17 @@ export function TeamRouteGraph({
                   className="hover:fill-black/5"
                 />
               ) : null}
-              {isJunction ? <circle cx={cx} cy={cy} r={13} fill={row.kind === "fork" ? "#ccfbf1" : "#d7f5e6"} /> : null}
+              {isJunction ? (
+                <circle
+                  cx={cx}
+                  cy={cy}
+                  r={13}
+                  fill={row.kind === "fork" ? "#ccfbf1" : row.kind === "join" ? "#d7f5e6" : "#ccfbf1"}
+                />
+              ) : null}
+              {isJoinFork ? (
+                <circle cx={cx} cy={cy} r={16} fill="none" stroke="#5eead4" strokeWidth={1.5} />
+              ) : null}
               <circle
                 cx={cx}
                 cy={cy}
@@ -187,7 +256,7 @@ export function TeamRouteGraph({
                 fontWeight={700}
                 fill="#a8a29e"
               >
-                {row.meta}
+                {meta}
               </text>
               <text
                 x={label.x}
@@ -195,7 +264,7 @@ export function TeamRouteGraph({
                 textAnchor={label.anchor}
                 fontSize={titleSize}
                 fontWeight={titleWeight}
-                fill={row.kind === "fork" ? "#0f766e" : row.kind === "join" ? "#047857" : "#1c1917"}
+                fill={row.kind === "fork" || row.kind === "join-fork" ? "#0f766e" : row.kind === "join" ? "#047857" : "#1c1917"}
               >
                 {title}
               </text>

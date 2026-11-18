@@ -8,6 +8,7 @@ import {
   formatTime,
   routeLabelsFor,
   type StopInput,
+  type GraphRow,
 } from '../src/features/split/graph-model.ts'
 import { cleanRouteName, cleanStationName } from '../src/features/split/station-name.ts'
 
@@ -171,4 +172,128 @@ test('status action branches: start, continue, confirm, blocked', () => {
   assert.deepEqual(actionForStatus('active', true), { kind: 'boundaries', label: '继续分队' })
   assert.deepEqual(actionForStatus('confirmed', true), { kind: 'confirm', label: '查看已确认分队' })
   assert.deepEqual(actionForStatus(null, false), { kind: 'blocked', label: '发起分队' })
+})
+
+test('buildGraphRows: two rounds merge the shared join/fork and keep A/B stages aligned', () => {
+  const fiveStops: StopInput[] = [
+    ...stops,
+    { id: 's5', name: 'Clarke Quay', startLabel: '14:30', endLabel: '15:30' },
+  ]
+  const model = buildGraphRows({
+    stops: fiveStops,
+    rounds: [
+      {
+        roundIndex: 1,
+        departureStopId: 's1',
+        reunionStopId: 's2',
+        routes: [
+          { groupLabel: 'A', activityName: 'City Hall MRT', activityMinutes: 30, travelLegsMinutes: [60], bufferMinutes: 0, steps: [{ name: 'City Hall MRT', minutes: 30 }] },
+          { groupLabel: 'B', activityName: 'Gallery', activityMinutes: 60, travelLegsMinutes: [15, 15], bufferMinutes: 0, steps: [{ name: 'Gallery', minutes: 60 }] },
+        ],
+      },
+      {
+        roundIndex: 2,
+        departureStopId: 's2',
+        reunionStopId: 's4',
+        routes: [
+          { groupLabel: 'A', activityName: 'Merlion Park → Gardens by the Bay', activityMinutes: 90, travelLegsMinutes: [30, 30], bufferMinutes: 0, steps: [{ name: 'Merlion Park', minutes: 30 }, { name: 'Gardens by the Bay', minutes: 60 }] },
+          { groupLabel: 'B', activityName: 'Wings', activityMinutes: 90, travelLegsMinutes: [30, 30], bufferMinutes: 0, steps: [{ name: 'Wings', minutes: 90 }] },
+        ],
+      },
+    ],
+  })
+  assert.equal(model.rounds.length, 2)
+  const merged = model.rows.find((row) => row.kind === 'join-fork')
+  if (merged?.kind !== 'join-fork') throw new Error('missing join-fork')
+  assert.equal(merged.title, 'Merlion Park')
+  assert.equal(merged.nextRound, 2)
+  assert.equal(model.rounds[0].joinRow, model.rounds[1].forkRow)
+  assert.equal(
+    model.rows.filter((row) => row.kind === 'branch' && row.roundIndex === 2 && row.route === 'a' && row.title === 'Merlion Park').length,
+    0,
+  )
+  const stageRows = model.rows.filter(
+    (row): row is Extract<GraphRow, { kind: 'branch' }> => row.kind === 'branch' && row.roundIndex === 2,
+  )
+  assert.ok(stageRows.some((row) => row.route === 'a'))
+  assert.ok(stageRows.some((row) => row.route === 'b'))
+})
+
+test('US-095 FROM_START: both lanes open on their own first place', () => {
+  const model = buildGraphRows({
+    stops,
+    splitMode: 'FROM_START',
+    departureStopId: null,
+    reunionStopId: 's3',
+    routes: [
+      {
+        groupLabel: 'A',
+        activityName: '主线',
+        activityMinutes: 60,
+        travelLegsMinutes: [20, 20],
+        bufferMinutes: 0,
+        steps: [
+          { name: 'City Hall MRT', minutes: 30 },
+          { name: 'Merlion Park', minutes: 30 },
+        ],
+      },
+      {
+        groupLabel: 'B',
+        activityName: '咖啡',
+        activityMinutes: 45,
+        travelLegsMinutes: [20],
+        bufferMinutes: 0,
+        steps: [{ name: '咖啡', minutes: 45 }],
+      },
+    ],
+  })
+  assert.equal(model.hasBoundaries, true)
+  assert.equal(model.fromStart, true)
+  assert.equal(model.forkRow, 0)
+
+  const fork = model.rows[0]
+  assert.equal(fork.kind, 'fork')
+  assert.equal(fork.kind === 'fork' ? fork.title : null, 'City Hall MRT')
+  assert.match(fork.kind === 'fork' ? fork.meta : '', /行程起点 · 分头/)
+  assert.equal(
+    model.rows.filter((row) => row.kind === 'branch' && row.route === 'a' && row.title === 'City Hall MRT').length,
+    0,
+  )
+  assert.ok(model.rows.some((row) => row.kind === 'branch' && row.route === 'b' && row.title === '咖啡'))
+  assert.equal(model.rows[model.joinRow ?? -1].kind, 'join')
+  assert.equal(model.rows[model.rows.length - 1].kind, 'main')
+})
+
+test('US-095 MIDDLE: the fork absorbs A first activity instead of repeating it', () => {
+  const model = buildGraphRows({
+    stops,
+    departureStopId: 's2',
+    reunionStopId: 's3',
+    routes: [
+      {
+        groupLabel: 'A',
+        activityName: '主线',
+        activityMinutes: 30,
+        travelLegsMinutes: [15],
+        bufferMinutes: 0,
+        steps: [{ name: 'Merlion Park', minutes: 30 }],
+      },
+      {
+        groupLabel: 'B',
+        activityName: '咖啡',
+        activityMinutes: 45,
+        travelLegsMinutes: [10, 20],
+        bufferMinutes: 0,
+        steps: [{ name: '咖啡', minutes: 45 }],
+      },
+    ],
+  })
+  const fork = model.rows[model.forkRow ?? -1]
+  assert.equal(fork.kind, 'fork')
+  assert.equal(fork.kind === 'fork' ? fork.title : null, 'Merlion Park')
+  assert.equal(fork.kind === 'fork' ? fork.meta : null, '10:00 · 分头 · A 组活动 · 30 分钟')
+  const repeated = model.rows.filter(
+    (row) => row.kind === 'branch' && row.route === 'a' && row.title === 'Merlion Park',
+  )
+  assert.equal(repeated.length, 0)
 })

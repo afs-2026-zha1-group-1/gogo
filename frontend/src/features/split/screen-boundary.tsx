@@ -1,81 +1,112 @@
 import { useEffect, useState } from "react"
 import { useParams } from "react-router-dom"
 import { useSplitNavigate } from "./split-navigation"
-import { useSaveBoundaries, useSplitDraft } from "./hooks"
+import { useRoundIndex, useSaveBoundaries, useSplitDraft, useSplitRounds } from "./hooks"
 import { SplitLayout } from "./split-layout"
 import { EmptyState, ErrorState, LoadingState } from "./states"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Chip } from "@/components/ui/chip"
-import { IconAlert, IconArrowRight, IconBranch, IconClock, IconFlag, IconNav } from "@/components/icons"
+import { IconArrowRight, IconBranch, IconClock, IconFlag, IconNav } from "@/components/icons"
 import { formatClock, formatWindow } from "@/lib/format"
 
 /**
- * Screen 12 — boundary selection (spec US-090 第 4 段). Pickers offer only the confirmed main-plan stops, in main
- * order: a reunion stop never precedes the departure stop, so the chips that would break the order are disabled
- * (and aria-disabled) instead of being silently rejected later. The window card previews the picked pair
- * immediately; the preview is display-only and the saved value still comes from the backend. A single "下一步"
- * persists a changed pair first and then moves on, so a changed selection can never be silently dropped.
+ * Screen 12 — boundary selection (spec REQ-005, US-095). Pickers offer the confirmed main-plan stops plus two
+ * edge choices: "trip start" (split from the first stop) and "no reunion" (both groups keep going to the last
+ * stop's end). Stop→stop keeps the original shape; both edge choices cannot be combined. The window card reflects
+ * the backend-saved values (never a client computation). Save wires PUT boundaries; the backend validates order,
+ * positivity and mode shape. Next saves a changed selection first, so stale boundaries never win.
  */
 export function ScreenBoundary() {
   const { tripId = "" } = useParams()
+  const roundIndex = useRoundIndex()
   const navigate = useSplitNavigate()
-  const draft = useSplitDraft(tripId)
-  const save = useSaveBoundaries(tripId)
+  const rounds = useSplitRounds(tripId)
+  const draft = useSplitDraft(tripId, roundIndex)
+  const save = useSaveBoundaries(tripId, roundIndex)
   const detail = draft.data
+  const previousRound = rounds.data?.rounds.find((round) => round.roundIndex === roundIndex - 1) ?? null
+  const previousReunionId = roundIndex > 1 ? previousRound?.reunionStopId ?? null : null
 
-  const [departure, setDeparture] = useState<string | null>(null)
-  const [reunion, setReunion] = useState<string | null>(null)
+  const [departureStop, setDepartureStop] = useState<string | null>(null)
+  const [fromStart, setFromStart] = useState(false)
+  const [reunionStop, setReunionStop] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
 
   // Seed the selection once from the saved snapshot; polling must not clobber an unsaved choice.
   useEffect(() => {
-    if (detail && !ready) {
-      setDeparture(detail.departureStopId)
-      setReunion(detail.reunionStopId)
+    const canSeed = roundIndex === 1 || rounds.data != null
+    if (detail && canSeed && !ready) {
+      const savedFromStart = roundIndex === 1 && detail.splitMode === "FROM_START"
+      setFromStart(savedFromStart)
+      setDepartureStop(roundIndex > 1
+        ? (detail.departureStopId ?? previousReunionId)
+        : (savedFromStart ? null : detail.departureStopId))
+      setReunionStop(detail.reunionStopId)
       setReady(true)
     }
-  }, [detail, ready])
+  }, [detail, previousReunionId, ready, roundIndex, rounds.data])
 
   const stops = detail?.mainPlanStops ?? []
-  const departureIndex = stops.findIndex((stop) => stop.id === departure)
-  const reunionIndex = stops.findIndex((stop) => stop.id === reunion)
-  const departureStop = departureIndex >= 0 ? stops[departureIndex] : null
-  const reunionStop = reunionIndex >= 0 ? stops[reunionIndex] : null
-  // Both picks must still resolve to a main-line stop in the right order; a boundary stop removed from the plan
-  // leaves a stale id, which must block "下一步" instead of bouncing to the route page.
-  const picked = departureIndex >= 0 && reunionIndex > departureIndex
-  const danglingBoundary =
-    (departure != null && departureIndex < 0) || (reunion != null && reunionIndex < 0)
-  const dirty = detail != null && (departure !== detail.departureStopId || reunion !== detail.reunionStopId)
-  const canProceed = picked && !save.isPending
+  const departureIndex = stops.findIndex((stop) => stop.id === departureStop)
+  const reunionIndex = stops.findIndex((stop) => stop.id === reunionStop)
+  const previousReunionIndex = previousReunionId
+    ? stops.findIndex((stop) => stop.id === previousReunionId)
+    : -1
+  const departureChosen = fromStart || departureStop != null
+  const canSave = departureChosen && reunionStop != null && !save.isPending
 
-  // "下一步" saves a changed pair first, so a changed selection can never be ignored in favour of the old one.
+  const savedFromStart = roundIndex === 1 && detail?.splitMode === "FROM_START"
+  const savedDepartureStop = roundIndex > 1
+    ? (detail?.departureStopId ?? previousReunionId)
+    : savedFromStart ? null : (detail?.departureStopId ?? null)
+  const dirty = detail != null && (
+    fromStart !== savedFromStart
+    || departureStop !== savedDepartureStop
+    || reunionStop !== (detail.reunionStopId ?? null)
+  )
+
+  function payload() {
+    return {
+      departureStopId: fromStart ? null : departureStop,
+      reunionStopId: reunionStop,
+      draftVersion: detail?.draftVersion ?? 0,
+    }
+  }
+
+  // "下一步" saves the current pick first, so a changed shape can never be silently ignored in favour of
+  // the previously saved boundaries.
   async function next() {
-    if (!detail || departure == null || reunion == null) return
+    if (!detail) return
     if (!dirty) {
-      navigate(`/trips/${tripId}/split/routes`)
+      navigate(`/trips/${tripId}/split/rounds/${roundIndex}/routes`)
       return
     }
+    if (!canSave) return
     try {
-      await save.mutateAsync({ departureStopId: departure, reunionStopId: reunion, draftVersion: detail.draftVersion })
-      navigate(`/trips/${tripId}/split/routes`)
+      await save.mutateAsync(payload())
+      navigate(`/trips/${tripId}/split/rounds/${roundIndex}/routes`)
     } catch {
-      // save.error renders below; stay on this screen with the picked values intact.
+      // save.error renders below; stay on this screen.
     }
   }
 
   const action = (
-    <Button className="flex-1" disabled={!canProceed} onClick={next}>
-      {save.isPending ? "保存中…" : "下一步"} <IconArrowRight />
-    </Button>
+    <>
+      <Button variant="outline" className="flex-1" disabled={!canSave} onClick={() => detail && save.mutate(payload())}>
+        {save.isPending ? "保存中…" : "保存边界"}
+      </Button>
+      <Button className="flex-1" disabled={!canSave} onClick={next}>
+        {save.isPending ? "保存中…" : dirty ? "保存并下一步" : "下一步"} <IconArrowRight />
+      </Button>
+    </>
   )
 
   return (
     <SplitLayout
-      title="分头与会合边界"
-      subtitle="出发 / 会合 · 仅主线节点"
+      title={roundIndex > 1 ? `第 ${roundIndex} 次分队 · 边界` : "分头与会合边界"}
+      subtitle={roundIndex > 1 ? "只能从上一轮会合站或之后分头" : "起点 / 分头 / 会合 · 仅主线节点"}
       step={1}
       backTo={`/trips/${tripId}/split`}
       action={action}
@@ -98,44 +129,49 @@ export function ScreenBoundary() {
       ) : (
         <div className="flex flex-col gap-3">
           <p className="text-[11.5px] leading-relaxed text-ink-3">
-            出发时刻取所选站点的开始时间（即在该站开始分头），会合时刻取所选站点的开始时间。会合站必须排在出发站之后；
-            窗口 = 会合开始 − 出发开始，合法性以服务端校验为准。
+            {roundIndex > 1
+              ? `第 ${roundIndex - 1} 次会合后再次分头：分头站必须不早于上一轮会合站，允许选同一站（会合后立即再分头）。`
+              : "分头可选「行程起点」（第一站就直接分开）或某一站；会合必须选择一个主线站点。会合站必须排在分头之后；窗口 = 会合站开始 − 分头时刻，由后端校验为正。"}
           </p>
-
-          {danglingBoundary ? (
-            <Card className="flex items-start gap-2.5 border-[#fde68a] bg-warn-soft p-3.5">
-              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-warn/15 text-warn [&_svg]:size-4">
-                <IconAlert />
-              </span>
-              <div className="min-w-0">
-                <div className="text-[13px] font-bold text-[#b45309]">原边界站已从主线删除</div>
-                <p className="mt-0.5 text-[11.5px] leading-relaxed text-ink-2">
-                  原来的出发或会合站已不在主线方案里，请重新选择边界后再点「下一步」。
-                </p>
-              </div>
-            </Card>
-          ) : null}
 
           <Card className="p-4">
             <div className="mb-2 flex items-center gap-1.5 text-[13px] font-bold text-ink">
               <IconNav className="text-a" /> 分头节点（出发）
             </div>
             <div className="flex flex-wrap gap-2">
-              {stops.map((stop, index) => {
-                const blocked = departure !== stop.id && reunionIndex >= 0 && index >= reunionIndex
-                return (
-                  <Chip
-                    key={stop.id}
-                    tone="a"
-                    selected={departure === stop.id}
-                    disabled={blocked}
-                    aria-disabled={blocked || undefined}
-                    onClick={() => setDeparture(departure === stop.id ? null : stop.id)}
-                  >
-                    {formatClock(stop.startAt, detail.destination)} · {stop.name}
-                  </Chip>
-                )
-              })}
+              {roundIndex === 1 ? (
+                <Chip
+                  tone="a"
+                  selected={fromStart}
+                  onClick={() => {
+                    const next = !fromStart
+                    setFromStart(next)
+                    if (next) {
+                      setDepartureStop(null)
+                      if (reunionStop != null && reunionStop === stops[0]?.id) setReunionStop(null)
+                    }
+                  }}
+                >
+                  行程起点 · 一开始就分开
+                </Chip>
+              ) : null}
+              {stops.map((stop, index) => (
+                <Chip
+                  key={stop.id}
+                  tone="a"
+                  selected={departureStop === stop.id}
+                  disabled={
+                    (previousReunionIndex >= 0 && index < previousReunionIndex)
+                    || (departureStop !== stop.id && reunionStop != null && index >= reunionIndex)
+                  }
+                  onClick={() => {
+                    setFromStart(false)
+                    setDepartureStop(departureStop === stop.id ? null : stop.id)
+                  }}
+                >
+                  {formatClock(stop.startAt, detail.destination)} · {stop.name}
+                </Chip>
+              ))}
             </div>
           </Card>
 
@@ -144,39 +180,38 @@ export function ScreenBoundary() {
               <IconFlag className="text-ok" /> 会合节点（截止）
             </div>
             <div className="flex flex-wrap gap-2">
-              {stops.map((stop, index) => {
-                const blocked = reunion !== stop.id && departureIndex >= 0 && index <= departureIndex
-                return (
-                  <Chip
-                    key={stop.id}
-                    tone="b"
-                    selected={reunion === stop.id}
-                    disabled={blocked}
-                    aria-disabled={blocked || undefined}
-                    onClick={() => setReunion(reunion === stop.id ? null : stop.id)}
-                  >
-                    {formatClock(stop.startAt, detail.destination)} · {stop.name}
-                  </Chip>
-                )
-              })}
+              {stops.map((stop, index) => (
+                <Chip
+                  key={stop.id}
+                  tone="b"
+                  selected={reunionStop === stop.id}
+                  disabled={
+                    reunionStop !== stop.id
+                    && ((fromStart && index === 0) || (departureStop != null && index <= departureIndex))
+                  }
+                  onClick={() => setReunionStop(reunionStop === stop.id ? null : stop.id)}
+                >
+                  {formatClock(stop.startAt, detail.destination)} · {stop.name}
+                </Chip>
+              ))}
             </div>
           </Card>
 
           <WindowCard
-            departureAt={departureStop?.startAt ?? null}
-            reunionAt={reunionStop?.startAt ?? null}
-            savedWindowMinutes={detail.windowMinutes}
+            departureAt={detail.departureAt}
+            reunionAt={detail.reunionAt}
+            windowMinutes={detail.windowMinutes}
             destination={detail.destination}
           />
 
-          {dirty && picked ? (
+          {dirty && canSave && (
             <p className="text-[11px] leading-relaxed text-ink-3">
-              边界已修改但尚未保存：点击「下一步」会先保存，之前生成的分队路线将作废，需要重新生成。
+              边界已修改但尚未保存：点“保存并下一步”会先保存，之前生成的分队路线将作废，需要重新生成。
             </p>
-          ) : null}
+          )}
 
           <p className="text-[11px] leading-relaxed text-ink-3">
-            上方时长为前端即时预览；落库、窗口为正与超窗判定都以服务端结果为准，保存失败会停留在本页并保留已选值。
+            会合截止为硬性时间：两组须在会合节点开始时刻前集合。窗口合法性由后端判定，前端不自行落库。
           </p>
 
           {save.error ? <ErrorState error={save.error} /> : null}
@@ -189,24 +224,20 @@ export function ScreenBoundary() {
 function WindowCard({
   departureAt,
   reunionAt,
-  savedWindowMinutes,
+  windowMinutes,
   destination,
 }: {
   departureAt: string | null
   reunionAt: string | null
-  savedWindowMinutes: number | null
+  windowMinutes: number | null
   destination?: string | null
 }) {
-  const previewMinutes = windowMinutes(departureAt, reunionAt)
-  const both = departureAt != null && reunionAt != null
   return (
     <Card className="border-brand-soft bg-gradient-to-br from-brand-soft/50 to-surface p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="text-center">
-          <div className="text-[10.5px] font-semibold tracking-wide text-ink-3 uppercase">出发</div>
-          <div className="mt-0.5 text-[19px] font-extrabold text-ink">
-            {departureAt != null ? formatClock(departureAt, destination) : "待选择"}
-          </div>
+          <div className="text-[10.5px] font-semibold tracking-wide text-ink-3 uppercase">分头</div>
+          <div className="mt-0.5 text-[19px] font-extrabold text-ink">{formatClock(departureAt, destination)}</div>
         </div>
         <div className="flex flex-1 flex-col items-center gap-1">
           <span className="text-[10.5px] font-semibold text-brand-ink">分头行动</span>
@@ -214,35 +245,18 @@ function WindowCard({
         </div>
         <div className="text-center">
           <div className="text-[10.5px] font-semibold tracking-wide text-ink-3 uppercase">会合</div>
-          <div className="mt-0.5 text-[19px] font-extrabold text-ink">
-            {reunionAt != null ? formatClock(reunionAt, destination) : "待选择"}
-          </div>
+          <div className="mt-0.5 text-[19px] font-extrabold text-ink">{formatClock(reunionAt, destination)}</div>
         </div>
       </div>
-      <div className="mt-3 flex flex-col items-center gap-1">
-        {previewMinutes != null ? (
+      <div className="mt-3 flex justify-center">
+        {windowMinutes != null ? (
           <Badge variant="ok">
-            <IconClock /> 窗口 {formatWindow(previewMinutes)}
+            <IconClock /> 窗口 {formatWindow(windowMinutes)}
           </Badge>
         ) : (
-          <Badge variant="neutral">
-            {both ? "区间无效：会合须晚于出发" : "选择出发与会合后显示时间窗"}
-          </Badge>
+          <Badge variant="neutral">保存后显示时间窗</Badge>
         )}
-        {savedWindowMinutes != null ? (
-          <span className="text-[10.5px] text-ink-3">已保存窗口 {formatWindow(savedWindowMinutes)}</span>
-        ) : null}
       </div>
     </Card>
   )
-}
-
-/** Preview only: elapsed minutes between two ISO instants; null unless the pair is a usable positive window. */
-function windowMinutes(departureAt: string | null, reunionAt: string | null): number | null {
-  if (departureAt == null || reunionAt == null) return null
-  const start = Date.parse(departureAt)
-  const end = Date.parse(reunionAt)
-  if (Number.isNaN(start) || Number.isNaN(end)) return null
-  const minutes = Math.round((end - start) / 60_000)
-  return minutes > 0 ? minutes : null
 }

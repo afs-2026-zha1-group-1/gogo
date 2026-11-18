@@ -179,7 +179,7 @@ class MainPlanStopEditApiTest {
                 .andExpect(status().isOk());
 
         Integer routes = jdbc.queryForObject("SELECT COUNT(*) FROM plan_node WHERE trip_id = ? "
-                + "AND branch_id IN ('split-a', 'split-b')", Integer.class, tripId);
+                + "AND branch_id IN ('split-r1-a', 'split-r1-b')", Integer.class, tripId);
         assertThat(routes).isZero();
         Map<String, Object> draft = jdbc.queryForMap(
                 "SELECT document, draft_version FROM split_draft WHERE trip_id = ?", tripId);
@@ -259,7 +259,7 @@ class MainPlanStopEditApiTest {
                 .andExpect(status().isOk());
 
         Integer routes = jdbc.queryForObject("SELECT COUNT(*) FROM plan_node WHERE trip_id = ? "
-                + "AND branch_id IN ('split-a', 'split-b')", Integer.class, tripId);
+                + "AND branch_id IN ('split-r1-a', 'split-r1-b')", Integer.class, tripId);
         assertThat(routes).isZero();
         JsonNode document = objectMapper.readTree(String.valueOf(jdbc.queryForMap(
                 "SELECT document FROM split_draft WHERE trip_id = ?", tripId).get("document")));
@@ -379,8 +379,8 @@ class MainPlanStopEditApiTest {
         jdbc.update("INSERT INTO split_draft (id, trip_id, document, draft_version, created_at, updated_at) "
                 + "VALUES ('split-under-test', ?, ?, 3, '2026-12-05T00:00:00Z', '2026-12-05T00:00:00Z')",
                 tripId, document);
-        insertRouteRow("route-a", "split-a", 1);
-        insertRouteRow("route-b", "split-b", 2);
+        insertRouteRow("route-a", "split-r1-a", 1);
+        insertRouteRow("route-b", "split-r1-b", 2);
     }
 
     private void insertRouteRow(String id, String branchId, int order) {

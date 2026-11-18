@@ -10,7 +10,9 @@ import java.util.Map;
  * Jackson maps component names directly to the document fields. {@code routes} carries the per-group duration
  * breakdown only after generation (null before); boundary stop ids are null before selection. {@code activities}
  * carries each group's costed activities (US-045) and is generated together with the routes; it is cleared when the
- * boundaries change because the replaced shared activities no longer apply. Pure domain model, no HTTP/DB.
+ * boundaries change because the replaced shared activities no longer apply. {@code splitMode} records which window
+ * shape was saved (US-095): null before selection, with legacy saved pairs treated as MIDDLE when absent.
+ * Pure domain model, no HTTP/DB.
  */
 public record SplitDraftDocument(
         String initiatorMemberId,
@@ -19,6 +21,7 @@ public record SplitDraftDocument(
         String status,
         String departureStopId,
         String reunionStopId,
+        String splitMode,
         Map<String, List<String>> groups,
         Map<String, RouteDurations> routes,
         Map<String, List<RouteActivity>> activities,
@@ -41,7 +44,7 @@ public record SplitDraftDocument(
     public static SplitDraftDocument initial(
             String initiatorMemberId, int mainPlanVersion, Map<String, List<String>> groups, String now) {
         return new SplitDraftDocument(
-                initiatorMemberId, mainPlanVersion, 1, "active", null, null, groups, null, null, now, now);
+                initiatorMemberId, mainPlanVersion, 1, "active", null, null, null, groups, null, null, now, now);
     }
 
     /**
@@ -71,7 +74,7 @@ public record SplitDraftDocument(
         updated.computeIfAbsent(groupLabel, key -> new ArrayList<>()).add(memberId);
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion + 1, status,
-                departureStopId, reunionStopId, updated, routes, activities, createdAt, now);
+                departureStopId, reunionStopId, splitMode, updated, routes, activities, createdAt, now);
     }
 
     /**
@@ -79,10 +82,11 @@ public record SplitDraftDocument(
      * draft change bumps the version. Route durations are cleared because they were computed against the
      * previous window; the pair must be regenerated for the new boundaries.
      */
-    public SplitDraftDocument withBoundaries(String departureStopId, String reunionStopId, String now) {
+    public SplitDraftDocument withBoundaries(String splitMode, String departureStopId, String reunionStopId,
+            String now) {
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion + 1, status,
-                departureStopId, reunionStopId, groups, null, null, createdAt, now);
+                departureStopId, reunionStopId, splitMode, groups, null, null, createdAt, now);
     }
 
     /**
@@ -94,7 +98,7 @@ public record SplitDraftDocument(
             Map<String, List<RouteActivity>> activities, String now) {
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion + 1, status,
-                departureStopId, reunionStopId, groups, routes, activities, createdAt, now);
+                departureStopId, reunionStopId, splitMode, groups, routes, activities, createdAt, now);
     }
 
     /**
@@ -109,7 +113,7 @@ public record SplitDraftDocument(
         copy.put(groupLabel, List.copyOf(updated));
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion + 1, status,
-                departureStopId, reunionStopId, groups, routes, copy, createdAt, now);
+                departureStopId, reunionStopId, splitMode, groups, routes, copy, createdAt, now);
     }
 
     /**
@@ -120,7 +124,7 @@ public record SplitDraftDocument(
     public SplitDraftDocument withClearedRoutes(String now) {
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion + 1, status,
-                departureStopId, reunionStopId, groups, null, null, createdAt, now);
+                departureStopId, reunionStopId, splitMode, groups, null, null, createdAt, now);
     }
 
     /**
@@ -131,7 +135,7 @@ public record SplitDraftDocument(
     public SplitDraftDocument withClearedBoundariesAndRoutes(String now) {
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion + 1, status,
-                null, null, groups, null, null, createdAt, now);
+                null, null, null, groups, null, null, createdAt, now);
     }
 
     /**
@@ -141,7 +145,7 @@ public record SplitDraftDocument(
     public SplitDraftDocument confirmed(String now) {
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion, "confirmed",
-                departureStopId, reunionStopId, groups, routes, activities, createdAt, now);
+                departureStopId, reunionStopId, splitMode, groups, routes, activities, createdAt, now);
     }
 
     /**
@@ -152,7 +156,7 @@ public record SplitDraftDocument(
     public SplitDraftDocument cancelled(String now) {
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion, "cancelled",
-                departureStopId, reunionStopId, groups, null, null, createdAt, now);
+                departureStopId, reunionStopId, splitMode, groups, null, null, createdAt, now);
     }
 
     /**
@@ -162,6 +166,6 @@ public record SplitDraftDocument(
     public static SplitDraftDocument initialRebuilt(
             String initiatorMemberId, int mainPlanVersion, Map<String, List<String>> groups, String now) {
         return new SplitDraftDocument(
-                initiatorMemberId, mainPlanVersion, 1, "active", null, null, groups, null, null, now, now);
+                initiatorMemberId, mainPlanVersion, 1, "active", null, null, null, groups, null, null, now, now);
     }
 }

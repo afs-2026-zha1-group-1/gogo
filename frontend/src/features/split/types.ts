@@ -43,6 +43,9 @@ export interface ApiErrorPayload {
 /** Draft lifecycle status (US-049/050): only `active` accepts edits/confirm/cancel. */
 export type SplitDraftStatus = "active" | "confirmed" | "cancelled"
 
+/** Saved boundary shape (US-095): stop→stop, or trip start→stop. */
+export type SplitBoundaryMode = "MIDDLE" | "FROM_START"
+
 /** Unified {data,error} envelope (backend ApiResponse<T>). */
 export interface Envelope<T> {
   data: T | null
@@ -117,10 +120,14 @@ export interface SplitDraftDocument {
 
 /** Member-only consistent snapshot returned by GET detail (backend SplitDraftDetailResponse). */
 export interface SplitDraftDetail {
+  /** US-096: 1-based round index. */
+  roundIndex: number
   initiatorMemberId: string
   mainPlanVersion: number
   draftVersion: number
   status: SplitDraftStatus
+  /** Saved boundary shape; null before boundaries are selected (US-095). */
+  splitMode: SplitBoundaryMode | null
   groups: Record<string, string[]>
   createdAt: string
   updatedAt: string
@@ -135,10 +142,35 @@ export interface SplitDraftDetail {
   destination: string | null
 }
 
+/** Reason the next-round entry is disabled (backend SplitRoundsResponse). */
+export type SplitRoundBlockReason =
+  | "PREVIOUS_ROUND_NOT_CONFIRMED"
+  | "ROUND_ALREADY_ACTIVE"
+  | "ROUND_LIMIT_REACHED"
+  | "MAIN_PLAN_NOT_CONFIRMED"
+  | "MEMBERS_INSUFFICIENT"
+
+/** Round overview returned by GET /split-draft/rounds (US-096). */
+export interface SplitRoundsResponse {
+  aggregateStatus: "absent" | "active" | "confirmed" | "cancelled"
+  maxRounds: number
+  canStartNextRound: boolean
+  nextRoundBlockedReason: SplitRoundBlockReason | null
+  rounds: SplitDraftDetail[]
+}
+
+/** POST /split-draft/rounds response (US-096). */
+export interface SplitRoundCreatedResult {
+  roundIndex: number
+  draft: SplitDraftDetail
+}
+
 /** Boundary save response (backend BoundaryResponse). */
 export interface BoundaryResult {
-  departureStopId: string
-  reunionStopId: string
+  roundIndex: number
+  splitMode: SplitBoundaryMode
+  departureStopId: string | null
+  reunionStopId: string | null
   departureAt: string
   reunionAt: string
   windowMinutes: number
@@ -147,6 +179,7 @@ export interface BoundaryResult {
 
 /** Paired generation response (backend RouteGenerationResponse). */
 export interface RouteGenerationResult {
+  roundIndex: number
   draftVersion: number
   routes: GroupRoute[]
 }
@@ -232,6 +265,13 @@ export interface GroupBudget {
   members: BudgetMemberVerdict[]
 }
 
+/** One round's group activity cost inside the budget check (backend BudgetCheckResponse.RoundCost, US-096). */
+export interface BudgetRoundCost {
+  roundIndex: number
+  groupLabel: string
+  squadCostCents: number
+}
+
 /** GET .../split-draft/budget-check (backend BudgetCheckResponse, US-045). */
 export interface BudgetCheck {
   draftVersion: number
@@ -241,6 +281,8 @@ export interface BudgetCheck {
   blocked: boolean
   softReminder: boolean
   groups: GroupBudget[]
+  /** US-096: per-round activity costs; absent for older backends. */
+  rounds?: BudgetRoundCost[]
 }
 
 /** PUT .../split-draft/activities body (backend SaveActivitiesRequest, US-045). */

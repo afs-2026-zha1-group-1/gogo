@@ -41,15 +41,16 @@ function toMs(iso: string | null): number | null {
   return Number.isNaN(value) ? null : value
 }
 
-function sharedItem(stop: SplitPlanStop, plan: MainPlan | null): ScheduleItem {
+function sharedItem(stop: SplitPlanStop, plan: MainPlan | null, roundIndex?: number): ScheduleItem {
   // The split snapshot carries no interests; enrich from the main plan by name when available.
   const interests = plan?.stops.find((candidate) => candidate.name === stop.name)?.interests ?? []
   return {
-    key: stop.id,
+    key: roundIndex == null ? stop.id : `r${roundIndex}-${stop.id}`,
     name: stop.name,
     start: toMs(stop.startAt),
     end: toMs(stop.endAt),
     groupLabel: null,
+    roundIndex,
     interests,
     address: null,
     lat: null,
@@ -76,7 +77,10 @@ export function derivePersonalRoute(
   if (!myRoute) return null
 
   const stops = detail.mainPlanStops
-  const departureIndex = stops.findIndex((stop) => stop.id === detail.departureStopId)
+  // US-095: FROM_START has no shared first stop.
+  const departureIndex = detail.splitMode === "FROM_START"
+    ? 0
+    : stops.findIndex((stop) => stop.id === detail.departureStopId)
   const reunionIndex = stops.findIndex((stop) => stop.id === detail.reunionStopId)
   // departureAt/reunionAt are the two stops' start times (backend BoundaryResponse). Group A keeps the confirmed
   // plan and walks its scheduled stops inside the window; group B is away from them. Whether a group already had
@@ -91,9 +95,11 @@ export function derivePersonalRoute(
         groupLabel: myGroupLabel,
       }))
     : null
-  const before = departureIndex >= 0
-    ? stops.slice(0, keepsMainLine ? departureIndex : departureIndex + 1)
-    : stops
+  const before = detail.splitMode === "FROM_START"
+    ? []
+    : departureIndex >= 0
+      ? stops.slice(0, keepsMainLine ? departureIndex : departureIndex + 1)
+      : stops
   const after = reunionIndex >= 0 ? stops.slice(reunionIndex) : []
 
   const departureMs = toMs(detail.departureAt)
@@ -177,6 +183,128 @@ export function derivePersonalRoute(
   return items.sort((a, b) => (a.start ?? Number.MAX_SAFE_INTEGER) - (b.start ?? Number.MAX_SAFE_INTEGER))
 }
 
+function branchItemsForRound(
+  round: SplitDraftDetail,
+  groupLabel: string,
+  route: SplitDraftDetail['routes'][number],
+  plan: MainPlan | null,
+): ScheduleItem[] {
+  const steps = route.steps ?? []
+  const legs = route.travelLegsMinutes ?? []
+  const departureMs = toMs(round.departureAt)
+  const reunionMs = toMs(round.reunionAt)
+  const valid = (value: number | null | undefined): value is number =>
+    value != null && Number.isSafeInteger(value) && value >= 0
+  const validTiming = departureMs != null && reunionMs != null && reunionMs > departureMs
+    && legs.length === steps.length + 1 && legs.every(valid)
+    && steps.every((step) => valid(step.minutes)) && valid(route.bufferMinutes)
+  let cursor = validTiming ? departureMs! + (legs[0] ?? 0) * 60_000 : null
+  return steps.map((step, index) => {
+    const start = cursor
+    const end = start == null ? null : start + step.minutes * 60_000
+    const nextLeg = legs[index + 1]
+    cursor = end == null || !valid(nextLeg) ? null : end + nextLeg * 60_000
+    const name = cleanStationName(step.name)
+    return {
+      key: `r${round.roundIndex}-group-${groupLabel}-step-${index}`,
+      name,
+      start,
+      end,
+      groupLabel,
+      roundIndex: round.roundIndex,
+      interests: plan?.stops.find((candidate) => candidate.name === name)?.interests ?? [],
+      address: null,
+      lat: null,
+      lon: null,
+      travelMinutesToNext: valid(nextLeg) ? nextLeg : null,
+    }
+  })
+}
+
+/**
+ * US-096: derive the member's personal timeline across every confirmed round. Shared stops are emitted once;
+ * a join station that is also the next round's departure is not duplicated, and members who changed groups are
+ * labelled with the group of the round each entry belongs to.
+ */
+export function derivePersonalRouteFromRounds(
+  rounds: SplitDraftDetail[],
+  accountId: string,
+  plan: MainPlan | null,
+): ScheduleItem[] | null {
+  const confirmed = rounds
+    .filter((round) => round.status === 'confirmed')
+    .sort((left, right) => left.roundIndex - right.roundIndex)
+  if (confirmed.length === 0) return null
+  const stops = confirmed[0].mainPlanStops
+  const items: ScheduleItem[] = []
+  let cursor = 0
+
+  for (const round of confirmed) {
+    const groupLabel = Object.entries(round.groups)
+      .find(([, members]) => members.includes(accountId))?.[0]
+    if (groupLabel == null) return null
+    const departureIndex = round.departureStopId
+      ? stops.findIndex((stop) => stop.id === round.departureStopId)
+      : 0
+    const reunionIndex = round.reunionStopId
+      ? stops.findIndex((stop) => stop.id === round.reunionStopId)
+      : -1
+    if (departureIndex < 0 || reunionIndex <= departureIndex) continue
+
+    for (let index = cursor; index < departureIndex; index += 1) {
+      items.push(sharedItem(stops[index], plan, round.roundIndex))
+    }
+    const start = Math.max(departureIndex, cursor)
+    const route = round.routes.find((candidate) => candidate.groupLabel === groupLabel)
+    if (route == null) {
+      for (let index = start; index < reunionIndex; index += 1) {
+        items.push(sharedItem(stops[index], plan, round.roundIndex))
+      }
+    } else if (groupLabel === 'A' && (route.steps?.length ?? 0) > 0) {
+      for (let index = start; index < reunionIndex; index += 1) {
+        items.push({ ...sharedItem(stops[index], plan, round.roundIndex), groupLabel })
+      }
+    } else if ((route.steps?.length ?? 0) > 0) {
+      items.push(...branchItemsForRound(round, groupLabel, route, plan))
+    } else {
+      const departureMs = toMs(round.departureAt)
+      const reunionMs = toMs(round.reunionAt)
+      let activityStart: number | null = null
+      let activityEnd: number | null = null
+      if (departureMs != null && reunionMs != null && route.activityMinutes != null) {
+        const windowMs = reunionMs - departureMs
+        const activityMs = route.activityMinutes * 60_000
+        if (activityMs > 0 && activityMs <= windowMs) {
+          const center = departureMs + windowMs / 2
+          activityStart = center - activityMs / 2
+          activityEnd = center + activityMs / 2
+        }
+      }
+      items.push({
+        key: `r${round.roundIndex}-group-${groupLabel}`,
+        name: route.activityName ?? '小组活动',
+        start: activityStart,
+        end: activityEnd,
+        groupLabel,
+        roundIndex: round.roundIndex,
+        interests: plan?.stops.find((candidate) => candidate.name === route.activityName)?.interests ?? [],
+        address: null,
+        lat: null,
+        lon: null,
+        travelMinutesToNext: null,
+      })
+    }
+
+    items.push(sharedItem(stops[reunionIndex], plan, round.roundIndex))
+    cursor = reunionIndex + 1
+  }
+
+  for (let index = cursor; index < stops.length; index += 1) {
+    items.push(sharedItem(stops[index], plan))
+  }
+  return items
+}
+
 /** R6 priority: confirmed personal route > main-plan stops > empty (no-plan state). */
 export function selectSchedule(
   split: SplitDraftDetail | null,
@@ -186,6 +314,20 @@ export function selectSchedule(
 ): ScheduleItem[] {
   if (split && accountId) {
     const personal = derivePersonalRoute(split, accountId, plan)
+    if (personal) return personal
+  }
+  return scheduleFromMainPlan(plan, startDate)
+}
+
+/** US-096 equivalent for the trip overview; same fallback priority as `selectSchedule`. */
+export function selectScheduleFromRounds(
+  rounds: SplitDraftDetail[] | null,
+  accountId: string | null,
+  plan: MainPlan | null,
+  startDate: string,
+): ScheduleItem[] {
+  if (rounds && accountId) {
+    const personal = derivePersonalRouteFromRounds(rounds, accountId, plan)
     if (personal) return personal
   }
   return scheduleFromMainPlan(plan, startDate)

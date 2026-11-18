@@ -23,6 +23,9 @@ public enum ErrorCode {
     INVALID_ROUTE_PAIR(HttpStatus.BAD_REQUEST),
     INVALID_ROUTE_INPUT(HttpStatus.BAD_REQUEST),
     INVALID_GROUP_LABEL(HttpStatus.BAD_REQUEST),
+    // US-096: round-specific boundary mode/order violations.
+    INVALID_ROUND_MODE(HttpStatus.BAD_REQUEST),
+    BOUNDARY_BEFORE_PREVIOUS_REUNION(HttpStatus.BAD_REQUEST),
     MAIN_PLAN_NOT_CONFIRMED(HttpStatus.CONFLICT),
     SPLIT_MEMBERS_INSUFFICIENT(HttpStatus.CONFLICT),
     SPLIT_DRAFT_CONFLICT(HttpStatus.CONFLICT),
@@ -31,6 +34,11 @@ public enum ErrorCode {
     SPLIT_BOUNDARIES_REQUIRED(HttpStatus.CONFLICT),
     SPLIT_DRAFT_INCOMPLETE(HttpStatus.CONFLICT),
     SPLIT_TIMING_INFEASIBLE(HttpStatus.CONFLICT),
+    // US-096: round lifecycle conflicts.
+    SPLIT_ROUND_LIMIT_REACHED(HttpStatus.CONFLICT),
+    SPLIT_PREVIOUS_ROUND_NOT_CONFIRMED(HttpStatus.CONFLICT),
+    SPLIT_LATER_ROUNDS_EXIST(HttpStatus.CONFLICT),
+    SPLIT_ROUND_NOT_FOUND(HttpStatus.NOT_FOUND),
     // US-045: the draft fits the clock but a member's hard budget would be exceeded; error.details
     // carries overruns[] with the exceeded amount so the screen can offer budget/activity fixes.
     SPLIT_BUDGET_HARD_OVERRUN(HttpStatus.CONFLICT),

@@ -55,7 +55,7 @@ class SplitSchemaMigrationTest {
     @DisplayName("migrate_v4_splitDraftHasUniqueTripId")
     void migrate_v4_splitDraftHasUniqueTripId() {
         assertThat(columnNames("split_draft")).containsExactlyInAnyOrder(
-                "id", "trip_id", "document", "draft_version", "created_at", "updated_at");
+                "id", "trip_id", "round_index", "document", "draft_version", "created_at", "updated_at");
     }
 
     @Test

@@ -1,7 +1,9 @@
 package com.gogo.hello.splits;
 
 import com.gogo.hello.splits.domain.PlanStop;
+import com.gogo.hello.splits.domain.SplitBranchId;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,16 +63,25 @@ public class SplitDraftRepository {
      * caller returns 409 SPLIT_DRAFT_CONFLICT.
      */
     public int createDraftIfAbsent(String tripId, String draftJson) {
+        return createDraftIfAbsent(tripId, 1, draftJson);
+    }
+
+    /**
+     * Inserts one round (US-096). The {@code (trip_id, round_index)} UNIQUE constraint makes this atomic: a
+     * duplicate insert (that round already exists) raises a key violation, mapped to 0 so the caller returns
+     * 409 SPLIT_DRAFT_CONFLICT.
+     */
+    public int createDraftIfAbsent(String tripId, int roundIndex, String draftJson) {
         String now = Instant.now().toString();
         try {
             jdbcTemplate.update(
-                    "INSERT INTO split_draft (id, trip_id, document, draft_version, created_at, updated_at) "
-                            + "VALUES (?, ?, ?, 1, ?, ?)",
-                    UUID.randomUUID().toString(), tripId, draftJson, now, now);
+                    "INSERT INTO split_draft (id, trip_id, round_index, document, draft_version, created_at, updated_at) "
+                            + "VALUES (?, ?, ?, ?, 1, ?, ?)",
+                    UUID.randomUUID().toString(), tripId, roundIndex, draftJson, now, now);
             return 1;
         } catch (DataAccessException ex) {
-            // SQLite UNIQUE(trip_id) violation (error 19) is not auto-translated; any failure here means an
-            // active draft already exists → map to 0 so the caller returns 409 SPLIT_DRAFT_CONFLICT.
+            // SQLite UNIQUE(trip_id, round_index) violation (error 19) is not auto-translated; any failure
+            // here means that round already exists → map to 0 so the caller returns 409 SPLIT_DRAFT_CONFLICT.
             return 0;
         }
     }
@@ -97,11 +108,49 @@ public class SplitDraftRepository {
         return stops.stream().findFirst();
     }
 
-    /** Reads the raw draft JSON document from split_draft; no row (no active draft) maps to {@code null}. */
+    /** Reads the raw round-1 draft JSON document; no row maps to {@code null}. */
     public String findDraftJson(String tripId) {
+        return findDraftJson(tripId, 1);
+    }
+
+    /** Reads one round's raw draft JSON document; no row maps to {@code null}. */
+    public String findDraftJson(String tripId, int roundIndex) {
         List<String> docs = jdbcTemplate.queryForList(
-                "SELECT document FROM split_draft WHERE trip_id = ?", String.class, tripId);
+                "SELECT document FROM split_draft WHERE trip_id = ? AND round_index = ?",
+                String.class, tripId, roundIndex);
         return docs.isEmpty() ? null : docs.get(0);
+    }
+
+    /** Round indexes present for a trip, ascending. */
+    public List<Integer> findRoundIndexes(String tripId) {
+        return jdbcTemplate.queryForList(
+                "SELECT round_index FROM split_draft WHERE trip_id = ? ORDER BY round_index",
+                Integer.class, tripId);
+    }
+
+    /** Highest round index present for a trip; empty when the trip has no round. */
+    public Optional<Integer> findMaxRoundIndex(String tripId) {
+        Integer value = jdbcTemplate.queryForObject(
+                "SELECT MAX(round_index) FROM split_draft WHERE trip_id = ?", Integer.class, tripId);
+        return Optional.ofNullable(value);
+    }
+
+    /** All rounds' raw documents, ascending, for read-only projections and aggregate status. */
+    public List<RoundRow> findRoundRows(String tripId) {
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT round_index, document FROM split_draft WHERE trip_id = ? ORDER BY round_index",
+                tripId);
+        List<RoundRow> result = new ArrayList<>();
+        for (Map<String, Object> row : rows) {
+            Object index = row.get("round_index");
+            result.add(new RoundRow(index == null ? 1 : ((Number) index).intValue(),
+                    (String) row.get("document")));
+        }
+        return result;
+    }
+
+    /** One persisted round (US-096). */
+    public record RoundRow(int roundIndex, String document) {
     }
 
     /**
@@ -110,16 +159,34 @@ public class SplitDraftRepository {
      * change advanced the version (caller maps to 409 STALE_DRAFT_VERSION). pool=1 serializes writers.
      */
     public int updateDraftIfVersion(String tripId, String draftJson, int expectedVersion) {
-        return jdbcTemplate.update(
-                "UPDATE split_draft SET document = ?, draft_version = draft_version + 1, updated_at = ? "
-                        + "WHERE trip_id = ? AND draft_version = ?",
-                draftJson, Instant.now().toString(), tripId, expectedVersion);
+        return updateDraftIfVersion(tripId, 1, draftJson, expectedVersion);
     }
 
-    /** Deletes the existing split route pair (design D10); main-plan rows are never touched. */
-    public int deleteSplitRoutes(String tripId) {
+    /** Conditional update for one round; version +1 only for content edits. */
+    public int updateDraftIfVersion(String tripId, int roundIndex, String draftJson, int expectedVersion) {
         return jdbcTemplate.update(
-                "DELETE FROM plan_node WHERE trip_id = ? AND branch_id IN ('split-a', 'split-b')", tripId);
+                "UPDATE split_draft SET document = ?, draft_version = draft_version + 1, updated_at = ? "
+                        + "WHERE trip_id = ? AND round_index = ? AND draft_version = ?",
+                draftJson, Instant.now().toString(), tripId, roundIndex, expectedVersion);
+    }
+
+    /** Deletes round 1's split route pair; main-plan rows are never touched. */
+    public int deleteSplitRoutes(String tripId) {
+        return deleteSplitRoutes(tripId, 1);
+    }
+
+    /** Deletes one round's split route pair; main-plan and other-round rows are never touched. */
+    public int deleteSplitRoutes(String tripId, int roundIndex) {
+        String[] ids = SplitBranchId.forRound(roundIndex);
+        return jdbcTemplate.update(
+                "DELETE FROM plan_node WHERE trip_id = ? AND branch_id IN (?, ?)", tripId, ids[0], ids[1]);
+    }
+
+    /** Deletes every split route node for a trip, including legacy round-1 ids. */
+    public int deleteAllSplitRoutes(String tripId) {
+        return jdbcTemplate.update(
+                "DELETE FROM plan_node WHERE trip_id = ? AND (branch_id LIKE 'split-r%' "
+                        + "OR branch_id IN ('split-a', 'split-b'))", tripId);
     }
 
     /** Trip organizer id as the identity string used by {@code X-User-Id} (app_user.id); empty when missing. */
@@ -142,40 +209,61 @@ public class SplitDraftRepository {
      * column version deliberately stays unchanged because confirmation is not a draft content edit.
      */
     public int confirmDraftIfActive(String tripId, int expectedVersion, String draftJson, String now) {
-        return jdbcTemplate.update(
-                "UPDATE split_draft SET document = ?, updated_at = ? "
-                        + "WHERE trip_id = ? AND draft_version = ? "
-                        + "AND json_extract(document, '$.status') = 'active'",
-                draftJson, now, tripId, expectedVersion);
+        return confirmDraftIfActive(tripId, 1, expectedVersion, draftJson, now);
     }
 
-    /** Conditional cancellation (design D4/D6/D11): same active + version predicate as confirmation. */
+    /** Conditional confirmation for one round; the stored version deliberately stays unchanged. */
+    public int confirmDraftIfActive(String tripId, int roundIndex, int expectedVersion, String draftJson,
+            String now) {
+        return jdbcTemplate.update(
+                "UPDATE split_draft SET document = ?, updated_at = ? "
+                        + "WHERE trip_id = ? AND round_index = ? AND draft_version = ? "
+                        + "AND json_extract(document, '$.status') = 'active'",
+                draftJson, now, tripId, roundIndex, expectedVersion);
+    }
+
+    /** Conditional cancellation for round 1. */
     public int cancelDraftIfActive(String tripId, int expectedVersion, String draftJson, String now) {
+        return cancelDraftIfActive(tripId, 1, expectedVersion, draftJson, now);
+    }
+
+    /** Conditional cancellation for one round; same active + version predicate as confirmation. */
+    public int cancelDraftIfActive(String tripId, int roundIndex, int expectedVersion, String draftJson,
+            String now) {
         return jdbcTemplate.update(
                 "UPDATE split_draft SET document = ?, updated_at = ? "
-                        + "WHERE trip_id = ? AND draft_version = ? "
+                        + "WHERE trip_id = ? AND round_index = ? AND draft_version = ? "
                         + "AND json_extract(document, '$.status') = 'active'",
-                draftJson, now, tripId, expectedVersion);
+                draftJson, now, tripId, roundIndex, expectedVersion);
     }
 
-    /** US-051: conditional cancellation of a confirmed split at the expected version. */
+    /** US-051: conditional cancellation of round 1's confirmed split at the expected version. */
     public int cancelConfirmedIfConfirmed(String tripId, int expectedVersion, String draftJson, String now) {
+        return cancelConfirmedIfConfirmed(tripId, 1, expectedVersion, draftJson, now);
+    }
+
+    /** Conditional cancellation of one confirmed round; the version stays unchanged. */
+    public int cancelConfirmedIfConfirmed(String tripId, int roundIndex, int expectedVersion, String draftJson,
+            String now) {
         return jdbcTemplate.update(
                 "UPDATE split_draft SET document = ?, updated_at = ? "
-                        + "WHERE trip_id = ? AND draft_version = ? "
+                        + "WHERE trip_id = ? AND round_index = ? AND draft_version = ? "
                         + "AND json_extract(document, '$.status') = 'confirmed'",
-                draftJson, now, tripId, expectedVersion);
+                draftJson, now, tripId, roundIndex, expectedVersion);
     }
 
-    /**
-     * Rebuilds a cancelled draft in place (design D7/D11): the replacement document and the reset column version both
-     * land only while the stored status is still cancelled, so concurrent rebuilds collapse to a single winner.
-     */
+    /** Rebuilds round 1's cancelled draft in place. */
     public int rebuildIfCancelled(String tripId, String draftJson, String now) {
+        return rebuildIfCancelled(tripId, 1, draftJson, now);
+    }
+
+    /** Rebuilds one cancelled round in place; the reset column version lands with the document. */
+    public int rebuildIfCancelled(String tripId, int roundIndex, String draftJson, String now) {
         return jdbcTemplate.update(
                 "UPDATE split_draft SET document = ?, draft_version = 1, updated_at = ? "
-                        + "WHERE trip_id = ? AND json_extract(document, '$.status') = 'cancelled'",
-                draftJson, now, tripId);
+                        + "WHERE trip_id = ? AND round_index = ? "
+                        + "AND json_extract(document, '$.status') = 'cancelled'",
+                draftJson, now, tripId, roundIndex);
     }
 
     /**
@@ -245,12 +333,18 @@ public class SplitDraftRepository {
                 activityName, locationName, tripId, planVersion, branchId);
     }
 
-    /** Reads the split route pair's editable header keyed by branch id (design D6/D14/US-087 DD4). */
+    /** Reads round 1's route pair editable header keyed by branch id. */
     public Map<String, SplitRouteActivity> findSplitRouteActivities(String tripId) {
+        return findSplitRouteActivities(tripId, 1);
+    }
+
+    /** Reads one round's route pair editable header keyed by branch id. */
+    public Map<String, SplitRouteActivity> findSplitRouteActivities(String tripId, int roundIndex) {
+        String[] ids = SplitBranchId.forRound(roundIndex);
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
                 "SELECT branch_id, title, location_name FROM plan_node "
-                        + "WHERE trip_id = ? AND branch_id IN ('split-a', 'split-b') ORDER BY sort_order",
-                tripId);
+                        + "WHERE trip_id = ? AND branch_id IN (?, ?) ORDER BY sort_order",
+                tripId, ids[0], ids[1]);
         Map<String, SplitRouteActivity> activities = new LinkedHashMap<>();
         for (Map<String, Object> row : rows) {
             activities.put((String) row.get("branch_id"),

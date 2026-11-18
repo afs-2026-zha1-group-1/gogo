@@ -41,6 +41,7 @@ public class AiBranchCandidateProvider implements BranchCandidateProvider {
               windowMinutes.
             - The main-plan segment lists the stops that group A already visits. Group B must choose DIFFERENT places
               near the destination and must NOT repeat any main-plan segment stop.
+            - excludeActivityNames lists places already used by earlier split rounds. Do not repeat any of them.
             - Use real places near the destination; do not invent opening hours you cannot know. Name the place
               exactly, no extra prefixes. Prefer places that make group B's route visibly different from group A's.
             - All step names must be written in Chinese. Use the commonly used Chinese name of each place (for
@@ -65,19 +66,30 @@ public class AiBranchCandidateProvider implements BranchCandidateProvider {
     @Override
     public RouteCandidate candidateFor(String groupLabel, PlanStop departure, PlanStop reunion, String destination,
             List<PlanStop> mainPlanStops) {
+        return candidateFor(groupLabel, departure, reunion, destination, mainPlanStops,
+                BranchCandidateContext.empty());
+    }
+
+    @Override
+    public RouteCandidate candidateFor(String groupLabel, PlanStop departure, PlanStop reunion, String destination,
+            List<PlanStop> mainPlanStops, BranchCandidateContext context) {
         if ("A".equals(groupLabel)) {
-            return fixture.candidateFor("A", departure, reunion, destination, mainPlanStops);
+            return fixture.candidateFor("A", departure, reunion, destination, mainPlanStops, context);
+        }
+        if (mainPlanStops.isEmpty()) {
+            return fixture.candidateFor("B", departure, reunion, destination, mainPlanStops, context);
         }
         try {
-            long windowMinutes = windowMinutes(departure, reunion);
+            PlanStop aiDeparture = departure == null ? mainPlanStops.get(0) : departure;
+            long windowMinutes = windowMinutes(aiDeparture, reunion);
             String content = client.complete(SYSTEM_PROMPT,
-                    userJson(departure, reunion, destination, windowMinutes, mainPlanStops));
+                    userJson(aiDeparture, reunion, destination, windowMinutes, mainPlanStops, context));
             AiBranchValidator.BranchRoute route = validator.validate(content, windowMinutes, objectMapper);
             return toCandidate(route, destination);
         } catch (PlanAiException cause) {
             log.warn("AI split-branch generation degraded to the fixture (reason={}, cause={})",
                     cause.reason(), rootCause(cause));
-            return fixture.candidateFor("B", departure, reunion, destination, mainPlanStops);
+            return fixture.candidateFor("B", departure, reunion, destination, mainPlanStops, context);
         }
     }
 
@@ -109,13 +121,14 @@ public class AiBranchCandidateProvider implements BranchCandidateProvider {
     }
 
     private String userJson(PlanStop departure, PlanStop reunion, String destination, long windowMinutes,
-            List<PlanStop> mainPlanStops) {
+            List<PlanStop> mainPlanStops, BranchCandidateContext context) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("destination", destination == null ? "" : destination);
         payload.put("departure", stopLine(departure));
         payload.put("reunion", stopLine(reunion));
         payload.put("windowMinutes", windowMinutes);
         payload.put("mainPlanSegment", mainPlanSegment(mainPlanStops, departure.id(), reunion.id()));
+        payload.put("excludeActivityNames", context == null ? List.of() : context.excludeActivityNames());
         try {
             return objectMapper.writeValueAsString(payload);
         } catch (JsonProcessingException cause) {

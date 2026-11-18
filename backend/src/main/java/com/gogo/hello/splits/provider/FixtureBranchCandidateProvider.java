@@ -33,24 +33,37 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
     @Override
     public RouteCandidate candidateFor(String groupLabel, PlanStop departure, PlanStop reunion, String destination,
             List<PlanStop> mainPlanStops) {
+        return candidateFor(groupLabel, departure, reunion, destination, mainPlanStops,
+                BranchCandidateContext.empty());
+    }
+
+    @Override
+    public RouteCandidate candidateFor(String groupLabel, PlanStop departure, PlanStop reunion, String destination,
+            List<PlanStop> mainPlanStops, BranchCandidateContext context) {
         if ("A".equals(groupLabel)) {
             return mainLineCandidate(groupLabel, departure, reunion, mainPlanStops);
         }
-        Branch branch = branchFor(cityOf(destination), groupLabel);
+        Branch branch = branchFor(cityOf(destination), groupLabel,
+                context == null ? List.of() : context.excludeActivityNames());
         String activityName = RoutePairEdit.cleanStationName(branch.activityName());
         String location = destination == null || destination.isBlank() ? activityName : destination.trim();
         List<RouteStep> steps = List.of(new RouteStep(activityName, branch.activityMinutes()));
         List<RouteActivity> activities = List.of(new RouteActivity(activityName, location,
                 branch.costCents(), RouteActivity.SOURCE_AI));
-        return new RouteCandidate(groupLabel, activityName, location, branch.activityMinutes(),
-                branch.travelLegsMinutes(), 0, steps, activities);
+        // US-095 FROM_START: group B starts at its own activity, so there is no outbound leg.
+        List<Integer> legs = departure == null
+                ? branch.travelLegsMinutes().subList(1, branch.travelLegsMinutes().size())
+                : branch.travelLegsMinutes();
+        return new RouteCandidate(groupLabel, activityName, location, branch.activityMinutes(), legs, 0, steps,
+                activities);
     }
 
     // Group A follows the confirmed itinerary: every main-plan stop from the departure (inclusive) to the reunion
-    // (exclusive), with the scheduled gaps as legs. The totals therefore equal the window exactly.
+    // (exclusive), with the scheduled gaps as legs. A null departure starts at the first stop (US-095 FROM_START).
+    // The totals equal the window exactly in every mode.
     private static RouteCandidate mainLineCandidate(String groupLabel, PlanStop departure, PlanStop reunion,
             List<PlanStop> mainPlanStops) {
-        int from = indexOf(mainPlanStops, departure.id());
+        int from = departure == null ? 0 : indexOf(mainPlanStops, departure.id());
         int to = indexOf(mainPlanStops, reunion.id());
         if (from < 0 || to <= from) {
             throw new IllegalArgumentException("boundaries are not an ordered main-plan pair");
@@ -71,9 +84,10 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
         if (!activityName.equals(lastStep)) {
             activityName = activityName + " → " + lastStep;
         }
-        String location = departure.locationName() == null || departure.locationName().isBlank()
-                ? departure.name()
-                : departure.locationName();
+        PlanStop anchor = departure == null ? mainPlanStops.get(from) : departure;
+        String location = anchor.locationName() == null || anchor.locationName().isBlank()
+                ? anchor.name()
+                : anchor.locationName();
         location = RoutePairEdit.cleanStationName(location);
         List<RouteActivity> activities = new ArrayList<>();
         for (int index = from; index < to; index++) {
@@ -101,33 +115,32 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
         return (int) Duration.between(from, to).toMinutes();
     }
 
-    private static Branch branchFor(String city, String groupLabel) {
-        if (HONG_KONG.equals(city)) {
-            return switch (groupLabel) {
-                case "A" -> new Branch("PMQ 元创方（手作市集）", 50, List.of(15, 20), 10, 6000);
-                case "B" -> new Branch("香港故宫文化博物馆", 50, List.of(20, 10), 10, 12000);
-                default -> throw new IllegalArgumentException("unknown group label: " + groupLabel);
-            };
-        }
-        if (LONDON.equals(city)) {
-            return switch (groupLabel) {
-                case "A" -> new Branch("泰特现代美术馆", 50, List.of(15, 15), 10, 0);
-                case "B" -> new Branch("博罗市场美食探索", 50, List.of(20, 20), 10, 3000);
-                default -> throw new IllegalArgumentException("unknown group label: " + groupLabel);
-            };
-        }
-        if (HEFEI.equals(city)) {
-            return switch (groupLabel) {
-                case "A" -> new Branch("天鹅湖漫步", 50, List.of(15, 15), 10, 0);
-                case "B" -> new Branch("合柴 1972 文创园", 50, List.of(20, 20), 10, 4000);
-                default -> throw new IllegalArgumentException("unknown group label: " + groupLabel);
-            };
-        }
-        return switch (groupLabel) {
-            case "A" -> new Branch("National Gallery Singapore", 60, List.of(15, 20), 10, 1500);
-            case "B" -> new Branch("Gardens by the Bay", 60, List.of(20, 20), 10, 2500);
-            default -> throw new IllegalArgumentException("unknown group label: " + groupLabel);
+    private static Branch branchFor(String city, String groupLabel, List<String> excludeActivityNames) {
+        List<Branch> candidates = switch (city) {
+            case HONG_KONG -> List.of(
+                    new Branch("香港故宫文化博物馆", 50, List.of(20, 10), 10, 12000),
+                    new Branch("香港艺术馆", 50, List.of(20, 10), 10, 10000));
+            case LONDON -> List.of(
+                    new Branch("博罗市场美食探索", 50, List.of(20, 20), 10, 3000),
+                    new Branch("格林威治市场", 50, List.of(20, 20), 10, 2500));
+            case HEFEI -> List.of(
+                    new Branch("合柴 1972 文创园", 50, List.of(20, 20), 10, 4000),
+                    new Branch("安徽博物院", 50, List.of(20, 20), 10, 3000));
+            default -> List.of(
+                    new Branch("Gardens by the Bay", 60, List.of(20, 20), 10, 2500),
+                    new Branch("新加坡国家博物馆", 60, List.of(20, 20), 10, 2000));
         };
+        if (!"B".equals(groupLabel)) {
+            throw new IllegalArgumentException("unknown group label: " + groupLabel);
+        }
+        for (Branch candidate : candidates) {
+            String cleaned = RoutePairEdit.cleanStationName(candidate.activityName());
+            if (!excludeActivityNames.contains(candidate.activityName())
+                    && !excludeActivityNames.contains(cleaned)) {
+                return candidate;
+            }
+        }
+        return candidates.get(0);
     }
 
     private static String cityOf(String destination) {

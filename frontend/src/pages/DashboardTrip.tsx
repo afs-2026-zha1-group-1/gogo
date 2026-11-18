@@ -60,14 +60,6 @@ function nonemptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0
 }
 
-function nullableString(value: unknown): boolean {
-  return value === null || nonemptyString(value)
-}
-
-function nullableInteger(value: unknown): boolean {
-  return value === null || nonnegativeInteger(value)
-}
-
 function parseTrip(value: unknown, tripId: number): TripSummary {
   if (!isRecord(value) || value.id !== tripId || !nonemptyString(value.name)
     || !nonemptyString(value.destination) || !dashboardDateString(value.startDate) || !dashboardDateString(value.endDate)
@@ -135,32 +127,12 @@ function parseSplit(value: unknown): SplitStatus | null {
   if (!isRecord(value) || value.error !== null || !('data' in value)) {
     throw new Error('分队数据无效')
   }
-  if (value.data === null) return null
-  const draft = value.data
-  if (!isRecord(draft) || !nonemptyString(draft.initiatorMemberId)
-    || !positiveInteger(draft.mainPlanVersion) || !positiveInteger(draft.draftVersion)
-    || !['active', 'confirmed', 'cancelled'].includes(String(draft.status))
-    || !isRecord(draft.groups) || !Object.values(draft.groups).every((group) =>
-      Array.isArray(group) && group.every(nonemptyString))
-    || !Array.isArray(draft.mainPlanStops)
-    || !Array.isArray(draft.routes) || !nonemptyString(draft.createdAt)
-    || !nonemptyString(draft.updatedAt) || !nullableString(draft.departureStopId)
-    || !nullableString(draft.reunionStopId) || !nullableString(draft.departureAt)
-    || !nullableString(draft.reunionAt) || !nullableInteger(draft.windowMinutes)
-    || !draft.mainPlanStops.every((stop: unknown) => isRecord(stop) && nonemptyString(stop.id)
-      && nonemptyString(stop.name) && nonemptyString(stop.startAt) && nonemptyString(stop.endAt))
-    || !draft.routes.every((route: unknown) => isRecord(route) && nonemptyString(route.groupLabel)
-      && nullableString(route.activityName) && nullableString(route.departureStopId)
-      && nullableString(route.reunionStopId) && nullableInteger(route.activityMinutes)
-      && (route.travelLegsMinutes === null || (Array.isArray(route.travelLegsMinutes)
-        && route.travelLegsMinutes.every(nullableInteger)))
-      && nullableInteger(route.bufferMinutes))) {
+  const data = value.data
+  if (data === null) return null
+  if (!isRecord(data) || !['absent', 'active', 'confirmed', 'cancelled'].includes(String(data.aggregateStatus))) {
     throw new Error('分队数据无效')
   }
-  if (draft.status === 'active' || draft.status === 'confirmed' || draft.status === 'cancelled') {
-    return draft.status
-  }
-  throw new Error('分队状态无效')
+  return data.aggregateStatus === 'absent' ? null : data.aggregateStatus as SplitStatus
 }
 
 export default function DashboardTrip({ tripId, onTripReady }: {
@@ -178,7 +150,7 @@ export default function DashboardTrip({ tripId, onTripReady }: {
       api<unknown>(`/api/trips/${tripId}`),
       api<unknown>(`/api/trips/${tripId}/main-plan/inputs`),
       api<unknown>(`/api/trips/${tripId}/main-plan`),
-      api<unknown>(`/api/trips/${tripId}/split-draft`),
+      api<unknown>(`/api/trips/${tripId}/split-draft/rounds`),
     ]).then(([tripResult, inputsResult, planResult, splitResult]) => {
       if (!tripResult.ok) {
         if (tripResult.status === 403) throw new Error('无权查看此行程')

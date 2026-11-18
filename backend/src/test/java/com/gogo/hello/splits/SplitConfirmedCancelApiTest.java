@@ -46,7 +46,7 @@ class SplitConfirmedCancelApiTest {
         tripId = jdbcTemplate.queryForObject("SELECT MIN(id) FROM trip", Long.class);
         jdbcTemplate.update("UPDATE trip SET main_plan_confirmed = 1, joining_closed = 1 WHERE id = ?", tripId);
         jdbcTemplate.update("DELETE FROM split_draft WHERE trip_id = ?", tripId);
-        jdbcTemplate.update("DELETE FROM plan_node WHERE trip_id = ? AND branch_id IN ('split-a', 'split-b')",
+        jdbcTemplate.update("DELETE FROM plan_node WHERE trip_id = ? AND (branch_id LIKE 'split-r%' OR branch_id IN ('split-r1-a', 'split-r1-b'))",
                 tripId);
         jdbcTemplate.update("DELETE FROM plan_node WHERE trip_id = ? AND id IN (?, ?, ?, ?)",
                 tripId, FUTURE_STOP, PAST_STOP, NO_TIME_STOP, REUNION_STOP);
@@ -75,9 +75,9 @@ class SplitConfirmedCancelApiTest {
                 tripId, document, draftVersion);
         jdbcTemplate.update("INSERT INTO plan_node (id, trip_id, plan_version, parent_id, branch_id, node_type, "
                         + "title, start_at, end_at, location_name, lat, lng, sort_order, created_at) "
-                        + "VALUES ('split-a-node', ?, 1, NULL, 'split-a', 'activity', 'Zoo', "
+                        + "VALUES ('split-a-node', ?, 1, NULL, 'split-r1-a', 'activity', 'Zoo', "
                         + "'2030-01-01T01:30:00Z', '2030-01-01T04:00:00Z', 'Zoo', NULL, NULL, 1, "
-                        + "'2026-11-17T00:00:00Z'), ('split-b-node', ?, 1, NULL, 'split-b', 'activity', 'Museum', "
+                        + "'2026-11-17T00:00:00Z'), ('split-b-node', ?, 1, NULL, 'split-r1-b', 'activity', 'Museum', "
                         + "'2030-01-01T01:30:00Z', '2030-01-01T04:00:00Z', 'Museum', NULL, NULL, 2, "
                         + "'2026-11-17T00:00:00Z')", tripId, tripId);
     }
@@ -104,7 +104,7 @@ class SplitConfirmedCancelApiTest {
 
     private long splitNodeCount() {
         return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM plan_node "
-                + "WHERE trip_id = ? AND branch_id IN ('split-a', 'split-b')", Long.class, tripId);
+                + "WHERE trip_id = ? AND (branch_id LIKE 'split-r%' OR branch_id IN ('split-r1-a', 'split-r1-b'))", Long.class, tripId);
     }
 
     private long mainNodeCount() {

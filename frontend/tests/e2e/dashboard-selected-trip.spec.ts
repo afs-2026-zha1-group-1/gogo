@@ -136,5 +136,5 @@ test('dashboard colors milestones from saved progress and arranges quick entries
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
   await next.getByRole('link', { name: '查看分队规划' }).click()
   await expect(page).toHaveURL(/\/trips\/9002\/split\?from=dashboard$/)
-  await expect(page.getByText('分队草稿进行中')).toBeVisible()
+  await expect(page.getByText('分队进行中')).toBeVisible()
 })

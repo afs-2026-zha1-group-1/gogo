@@ -19,6 +19,8 @@ export interface ScheduleItem {
   end: number | null
   /** null = shared activity for every member. */
   groupLabel: string | null
+  /** US-096: split round this entry belongs to; absent for shared/main entries. */
+  roundIndex?: number
   interests: string[]
   address: string | null
   /** US-079 路线1：落库坐标（WGS-84）；null = 未补全，导航退回地址簿/搜索页。 */
