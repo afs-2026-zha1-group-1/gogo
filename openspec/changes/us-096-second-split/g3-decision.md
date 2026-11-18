@@ -14,7 +14,7 @@
 
 - G1 and G2 decision records present.
 - Change package, story docs (`US-095.md`, `US-096.md`) and registry rows included.
-- PR: https://github.com/afs-2026-zha1-group-1/gogo/pull/170; CI backend/frontend/browser all green. The user explicitly authorized the push and merge on 2026-11-18.
+- PR: https://github.com/afs-2026-zha1-group-1/gogo/pull/170; CI backend/frontend/browser all green; merged to `main` as `a9e5d7e`. The user explicitly authorized the push and merge on 2026-11-18.
 
 ## Notes
 
