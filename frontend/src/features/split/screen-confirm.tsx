@@ -1,5 +1,7 @@
-import { useNavigate, useParams } from "react-router-dom"
-import { useCancelDraft, useConfirmDraft, useSplitDraft } from "./hooks"
+import { useEffect } from "react"
+import { useLocation, useParams } from "react-router-dom"
+import { useSplitNavigate } from "./split-navigation"
+import { useCancelDraft, useConfirmDraft, useSplitDraft, useTripMembers } from "./hooks"
 import { useAuth } from "../auth/AuthProvider"
 import { SplitLayout } from "./split-layout"
 import { EmptyState, ErrorState, LoadingState } from "./states"
@@ -21,15 +23,33 @@ import { cn } from "@/lib/utils"
  */
 export function ScreenConfirm() {
   const { tripId = "" } = useParams()
-  const navigate = useNavigate()
+  const navigate = useSplitNavigate()
+  const { search } = useLocation()
+  const dashboardOrigin = new URLSearchParams(search).get("from") === "dashboard"
   const draft = useSplitDraft(tripId)
   const confirm = useConfirmDraft(tripId)
   const cancel = useCancelDraft(tripId)
   const { accountId } = useAuth()
+  const membersQuery = useTripMembers(tripId)
   const detail = draft.data
+  const nameOf = (id: string) =>
+    membersQuery.data?.find((member) => String(member.userId) === id)?.displayName ?? shortId(id)
+  const groupText = (ids: string[] | undefined) =>
+    ids && ids.length > 0 ? ids.map(nameOf).join(" / ") : "暂无成员"
   const status: SplitDraftStatus | undefined = detail?.status
   const isInitiator = detail != null && accountId != null && detail.initiatorMemberId === accountId
   const busy = confirm.isPending || cancel.isPending
+
+  // US-084 AC1: a successful confirmation returns to the same trip's detail page,
+  // where the confirmed personal route is derived. Cross-router-space navigation
+  // uses a full page load and preserves the dashboard origin.
+  useEffect(() => {
+    if (confirm.isSuccess) {
+      window.location.href = dashboardOrigin
+        ? `/#/dashboard/trips/${tripId}`
+        : `/#/trips/${tripId}`
+    }
+  }, [confirm.isSuccess, dashboardOrigin, tripId])
 
   const onCancel = () => {
     if (!detail) return
@@ -88,7 +108,7 @@ export function ScreenConfirm() {
           <Card className="p-3.5">
             <div className="flex items-center justify-between gap-2">
               <div className="text-[13px] font-bold text-ink">
-                时间窗 {formatClock(detail.departureAt)} → {formatClock(detail.reunionAt)}
+                时间窗 {formatClock(detail.departureAt, detail.destination)} → {formatClock(detail.reunionAt, detail.destination)}
               </div>
               <Badge variant="brand">
                 <IconClock /> {detail.windowMinutes != null ? `共 ${detail.windowMinutes} 分钟` : "窗口未知"}
@@ -98,8 +118,8 @@ export function ScreenConfirm() {
               <Row label="发起人" value={shortId(detail.initiatorMemberId)} />
               <Row label="草稿版本" value={`v${detail.draftVersion}`} />
               <Row label="状态" value={detail.status} />
-              <Row label="A 组" value={(detail.groups.A ?? []).join(" / ")} />
-              <Row label="B 组" value={(detail.groups.B ?? []).join(" / ")} />
+              <Row label="A 组" value={groupText(detail.groups.A)} />
+              <Row label="B 组" value={groupText(detail.groups.B)} />
             </dl>
           </Card>
 
@@ -107,8 +127,20 @@ export function ScreenConfirm() {
             <EmptyState
               icon={<IconRoute />}
               title="尚无路线对"
-              hint="确认前需先保存边界并生成两条路线。"
-              action={<Button size="sm" onClick={() => navigate(`/trips/${tripId}/split/routes`)}>去生成路线</Button>}
+              hint={
+                status === "active"
+                  ? "确认前需先保存边界并生成两条路线。"
+                  : "草稿已结束，无法再生成路线；请发起替换草稿后重新规划。"
+              }
+              action={
+                status === "active" ? (
+                  <Button size="sm" onClick={() => navigate(`/trips/${tripId}/split/routes`)}>去生成路线</Button>
+                ) : (
+                  <Button size="sm" variant="outline" onClick={() => navigate(`/trips/${tripId}/split`)}>
+                    返回分队首页
+                  </Button>
+                )
+              }
             />
           ) : (
             <div className="flex flex-col gap-2.5">
@@ -148,6 +180,12 @@ export function ScreenConfirm() {
 
           {confirm.error ? <ErrorState error={confirm.error} /> : null}
           {cancel.error ? <ErrorState error={cancel.error} /> : null}
+
+          {detail.routes.length > 0 ? (
+            <p className="text-[10.5px] leading-relaxed text-ink-3">
+              路线为上次生成的版本；若分组已调整，请返回分组页由发起人重新生成。
+            </p>
+          ) : null}
 
           <p className="text-[10.5px] leading-relaxed text-ink-3">
             确认由服务端从草稿复算时间窗，客户端声明不参与判定；失败时下方明细来自 error.details。

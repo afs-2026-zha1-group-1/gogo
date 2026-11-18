@@ -210,6 +210,178 @@ body {
   padding: 16px;
 }
 
+.dashboard-trip-card {
+  display: block;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.dashboard-trip-card h2 {
+  font-size: 16px;
+  margin: 0 0 6px;
+}
+
+.dashboard-trip-card p {
+  color: var(--ink-2);
+  font-size: 12px;
+  margin: 4px 0 0;
+}
+
+.dashboard-progress {
+  margin-top: 18px;
+}
+
+.dashboard-progress h2,
+.dashboard-next h2 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+
+.dashboard-progress h2 {
+  color: var(--ink-3);
+}
+
+.dashboard-next h2 {
+  color: var(--brand-ink);
+}
+
+.dashboard-progress ol {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dashboard-progress.member ol {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.dashboard-progress li {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--ink-3);
+  font-size: 10px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-progress li strong {
+  color: var(--ink-2);
+  font-size: 11px;
+}
+
+.dashboard-progress-icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-3);
+}
+
+.dashboard-progress [data-state="done"] .dashboard-progress-icon {
+  border-color: var(--ok);
+  background: var(--ok);
+  color: #fff;
+}
+
+.dashboard-progress [data-state="active"] .dashboard-progress-icon {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: #fff;
+  box-shadow: 0 0 0 4px var(--brand-soft);
+}
+
+.dashboard-progress [data-state="active"] strong {
+  color: var(--brand-ink);
+}
+
+.dashboard-quick {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.dashboard-quick .qcard,
+.dashboard-quick .qcard + .qcard {
+  min-width: 0;
+  margin: 0;
+}
+
+.dashboard-quick .qcard > span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-next {
+  margin-top: 14px;
+  border-color: #99f6e4;
+  background: linear-gradient(135deg, #f0fdfa, #fff);
+}
+
+.dashboard-next p {
+  margin: 0 0 12px;
+  color: var(--ink-2);
+  font-size: 12px;
+}
+
+.dashboard-next .btn {
+  width: 100%;
+}
+
+.dashboard-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px;
+  margin-top: 14px;
+}
+
+.dashboard-stat {
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+}
+
+.dashboard-stat-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.dashboard-stat-value {
+  margin-top: 6px;
+  font-size: 22px;
+  font-weight: 780;
+  line-height: 1;
+}
+
+.dashboard-stat-value small {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.dashboard-stat-status {
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
 .card + .card,
 .card + .sec-title,
 .sec-title + .card,
@@ -1426,29 +1598,48 @@ body {
  * camera-less desktops. No new color or spacing tokens are introduced. */
 
 .scanner .body {
-  gap: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
+/* --- Viewfinder stage (always dark) --- */
 .scanner-stage {
   position: relative;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1 / 1;
   display: grid;
   place-items: center;
   overflow: hidden;
   border-radius: var(--r-lg);
-  background: radial-gradient(120% 120% at 50% 0%, #f0fdfa 0%, var(--surface) 62%);
-  border: 1px solid var(--line);
-  box-shadow: var(--sh-2);
+  background: #1a2e28;
+  border: none;
   isolation: isolate;
 }
 
 .scanner-stage.live {
-  background: linear-gradient(160deg, #1c1917, #292524);
-  border-color: transparent;
-  outline: 2px solid var(--brand);
-  outline-offset: -2px;
+  background: #0f1a16;
 }
 
+/* --- Teal outlined scan-target frame --- */
+.scanner-frame {
+  position: relative;
+  z-index: 1;
+  width: 55%;
+  aspect-ratio: 1 / 1;
+  border: 2.5px solid var(--brand);
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.scanner-frame-icon {
+  width: 48px;
+  height: 48px;
+  color: rgb(255 255 255 / 0.45);
+}
+
+/* --- Video / sim feed --- */
 .scanner-video {
   position: absolute;
   inset: 0;
@@ -1472,57 +1663,26 @@ body {
   100% { background-position: 0% 50%; }
 }
 
-.scanner-brackets {
-  position: absolute;
-  inset: 16%;
-  pointer-events: none;
-}
-
-.scanner-brackets .corner {
-  position: absolute;
-  width: 26px;
-  height: 26px;
-  border: 3px solid var(--brand-2);
-}
-
-.scanner-brackets .corner.tl {
-  top: 0; left: 0;
-  border-right: 0; border-bottom: 0;
-  border-top-left-radius: 8px;
-}
-.scanner-brackets .corner.tr {
-  top: 0; right: 0;
-  border-left: 0; border-bottom: 0;
-  border-top-right-radius: 8px;
-}
-.scanner-brackets .corner.bl {
-  bottom: 0; left: 0;
-  border-right: 0; border-top: 0;
-  border-bottom-left-radius: 8px;
-}
-.scanner-brackets .corner.br {
-  bottom: 0; right: 0;
-  border-left: 0; border-top: 0;
-  border-bottom-right-radius: 8px;
-}
-
+/* --- Scan line (busy only) --- */
 .scanner-scanline {
   position: absolute;
-  left: 16%;
-  right: 16%;
+  left: 22%;
+  right: 22%;
   height: 2px;
   border-radius: 2px;
   background: linear-gradient(90deg, transparent, var(--brand-2), transparent);
   box-shadow: 0 0 12px 2px rgb(6 182 212 / 0.55);
   animation: scanner-sweep 1.8s ease-in-out infinite;
+  z-index: 2;
 }
 
 @keyframes scanner-sweep {
-  0% { top: 18%; }
-  50% { top: 80%; }
-  100% { top: 18%; }
+  0% { top: 22%; }
+  50% { top: 76%; }
+  100% { top: 22%; }
 }
 
+/* --- Sim status pill --- */
 .scanner-sim-status {
   position: absolute;
   bottom: 14px;
@@ -1535,158 +1695,44 @@ body {
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
+  z-index: 2;
 }
 
-.scanner-ready {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 24px 22px;
+/* --- Caption below viewfinder --- */
+.scanner-caption {
+  font-size: 13px;
+  color: var(--ink-3);
   text-align: center;
+  margin: 0;
 }
 
-.scanner-ready-badge {
-  width: 62px;
-  height: 62px;
-  border-radius: 18px;
-  display: grid;
-  place-items: center;
-  color: #fff;
-  background: linear-gradient(135deg, var(--brand), #0891b2);
-  box-shadow: 0 8px 20px rgb(13 148 136 / 0.28);
+/* --- Buttons row --- */
+.scanner-btns {
+  display: flex;
+  gap: 12px;
 }
 
-.scanner-ready-badge .icon {
-  width: 32px;
-  height: 32px;
-}
-
-.scanner-ready-title {
-  font-size: 16px;
-  font-weight: 760;
-  color: var(--ink);
-}
-
-.scanner-ready-sub {
-  font-size: 12.5px;
-  color: var(--ink-2);
-  max-width: 268px;
-  line-height: 1.5;
-}
-
-.scanner-scanbtn {
-  width: 100%;
+.scanner-btns .btn {
+  flex: 1;
   justify-content: center;
 }
 
-.scanner-opts {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.scanner-opt {
-  appearance: none;
-  cursor: pointer;
-  font: inherit;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 14px 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  background: var(--surface);
-  color: var(--ink);
-  box-shadow: var(--sh-1);
-  transition: border-color .15s, box-shadow .15s, transform .05s;
-}
-
-.scanner-opt:hover:not(:disabled) {
-  border-color: var(--brand);
-  box-shadow: var(--sh-2);
-}
-
-.scanner-opt:active:not(:disabled) {
-  transform: translateY(1px);
-}
-
-.scanner-opt:disabled {
-  opacity: .5;
-  cursor: not-allowed;
-}
-
-.scanner-opt-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  color: var(--brand-ink);
-  background: var(--brand-soft);
-}
-
-.scanner-opt-icon .icon {
-  width: 22px;
-  height: 22px;
-}
-
-.scanner-opt-label {
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.scanner-opt-sub {
-  font-size: 11.5px;
-  color: var(--ink-3);
-  text-align: center;
-}
-
-.scanner-link {
+/* --- Link section --- */
+.scanner-link-section {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.scanner-link-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--ink-2);
-}
-
-.scanner-link-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 8px;
-  display: grid;
-  place-items: center;
-  color: var(--brand-ink);
-  background: var(--brand-soft);
-}
-
-.scanner-link-icon .icon {
-  width: 14px;
-  height: 14px;
-}
-
-.scanner-link-head .label {
+.scanner-link-section .label {
   font-size: 13px;
-  font-weight: 650;
+  font-weight: 700;
+  color: var(--ink);
 }
 
-.scanner-link-row {
-  display: flex;
-  gap: 8px;
-}
-
-.scanner-link-row input {
-  flex: 1;
-  min-width: 0;
-  padding: 9px 12px;
+.scanner-link-section input {
+  width: 100%;
+  padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
   font: inherit;
@@ -1694,10 +1740,16 @@ body {
   color: var(--ink);
 }
 
-.scanner-link-row .btn {
-  white-space: nowrap;
+.scanner-link-section input::placeholder {
+  color: var(--ink-3);
 }
 
+.scanner-preview-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+/* --- Chip (error feedback) --- */
 .scanner-chip {
   align-self: flex-start;
   display: inline-flex;
@@ -1711,6 +1763,7 @@ body {
   font-weight: 650;
 }
 
+/* --- Error panel inside stage --- */
 .scanner-error {
   position: relative;
   z-index: 1;
@@ -1720,7 +1773,7 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  color: var(--ink-2);
+  color: #d6d3d1;
 }
 
 .scanner-error-icon {
@@ -1736,11 +1789,13 @@ body {
 .scanner-error-title {
   font-size: 15px;
   font-weight: 700;
-  color: var(--ink);
+  color: #fafaf9;
 }
 
 .scanner-error .hint {
-  color: var(--ink-2);
+  color: #d6d3d1;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .scanner-error-actions {
@@ -1845,6 +1900,18 @@ body {
   border-color: var(--ink-3);
 }
 
+.qcard:disabled {
+  cursor: not-allowed;
+  opacity: .6;
+  transform: none;
+  box-shadow: var(--sh-1);
+}
+
+.qcard .qt,
+.qcard .qd {
+  display: block;
+}
+
 .qcard + .qcard {
   margin-top: 10px;
 }
@@ -1910,3 +1977,116 @@ body {
   color: var(--ink-3);
 }
 
+/* US-083-085 trip detail overview: countdown card, member avatar stack and
+   embedded activity cards (design DD-6; layout authority = kanban US-083 screenshots). */
+.countdown {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.countdown-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--ink-2);
+}
+
+.countdown-value {
+  font-size: 22px;
+  font-weight: 780;
+  letter-spacing: 0.2px;
+  color: var(--brand-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.countdown-text {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.members-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.members-summary .ms-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.members-summary .ms-title {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.members-summary .ms-sub {
+  margin-top: 1px;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+.avstack {
+  display: flex;
+  flex: none;
+}
+
+.avstack .member-avatar {
+  width: 34px;
+  height: 34px;
+  margin-left: -10px;
+  border: 2px solid var(--surface);
+  font-size: 13px;
+}
+
+.avstack .member-avatar:first-child {
+  margin-left: 0;
+}
+
+.day-tag {
+  color: var(--brand-ink);
+}
+
+.act-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+}
+
+.act-ic {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+}
+
+.act-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.act-name {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.act-sub {
+  margin-top: 1px;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}

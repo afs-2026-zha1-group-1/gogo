@@ -6,8 +6,10 @@ import { cn } from "@/lib/utils"
 /**
  * One generated group route (ui-design-reference Screen 13 `.route`): a dual-color header with the
  * group code, activity name and departure->reunion stops, a compact duration breakdown (activity /
- * each travel leg / buffer) and a green reunion footer. Pure display of backend-returned values;
- * tone A=blue, B=orange. No group-movement controls (out of scope this slice, spec Screen 13).
+ * each travel leg / buffer) and a green reunion footer. Pure display of backend-returned values; tone A=blue,
+ * B=orange. {@code stale} marks a route whose group is now empty (the pair needs regenerating) with a soft
+ * translucent pill in the header, matching the Screen 13 visual language. {@code windowMinutes} renders the
+ * total against the saved window so an over-window pair is visible before confirmation.
  */
 export function RouteCard({
   route,
@@ -15,15 +17,24 @@ export function RouteCard({
   departureName,
   reunionName,
   reunionClock,
+  stale = false,
+  windowMinutes,
 }: {
   route: GroupRoute
   tone: "a" | "b"
   departureName: string
   reunionName: string
   reunionClock: string
+  stale?: boolean
+  windowMinutes?: number | null
 }) {
   const head = tone === "a" ? "from-a to-[#1e40af]" : "from-b to-[#9a3412]"
   const legsTotal = route.travelLegsMinutes.reduce((sum, minutes) => sum + minutes, 0)
+  const legsKnown = route.travelLegsMinutes.every((minutes) => minutes != null)
+  const total = route.activityMinutes != null && route.bufferMinutes != null && legsKnown
+    ? route.activityMinutes + legsTotal + route.bufferMinutes
+    : null
+  const overrun = total != null && windowMinutes != null ? Math.max(0, total - windowMinutes) : null
 
   return (
     <Card className="overflow-hidden">
@@ -37,12 +48,33 @@ export function RouteCard({
             <IconNav className="size-3" /> {departureName} → {reunionName}
           </div>
         </div>
+        {stale ? (
+          <span className="shrink-0 rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white/90">
+            待重新生成
+          </span>
+        ) : overrun != null ? (
+          <span className={cn(
+            "shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-bold",
+            overrun > 0 ? "bg-white text-[#b91c1c]" : "bg-white/20 text-white",
+          )}>
+            {overrun > 0 ? `超窗 ${overrun} 分` : `合计 ${total} 分`}
+          </span>
+        ) : null}
       </div>
 
       <div className="flex flex-col gap-1.5 px-4 py-3 text-[12px]">
-        <Row label="活动" value={`${route.activityMinutes} 分`} />
+        {route.steps && route.steps.length > 0 ? (
+          route.steps.map((step, index) => (
+            <Row key={`${route.groupLabel}-${index}-${step.name}`} label={step.name} value={`${step.minutes} 分`} />
+          ))
+        ) : (
+          <Row label="活动" value={`${route.activityMinutes} 分`} />
+        )}
         <Row label={`路程（${route.travelLegsMinutes.join(" + ")}）`} value={`${legsTotal} 分`} italic />
         <Row label="缓冲" value={`${route.bufferMinutes} 分`} />
+        {total != null && (
+          <Row label="合计" value={`${total} 分${windowMinutes != null ? ` / 窗口 ${windowMinutes} 分` : ""}`} />
+        )}
       </div>
 
       <div className="flex items-center gap-2 border-t border-line-2 bg-ok-soft px-4 py-2.5 text-[12px] font-semibold text-[#047857]">

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
-import { useNavigate, useParams } from "react-router-dom"
+import { useParams } from "react-router-dom"
+import { useSplitNavigate } from "./split-navigation"
 import { useCheckTiming, useSplitDraft } from "./hooks"
 import { SplitLayout } from "./split-layout"
 import { EmptyState, ErrorState, LoadingState } from "./states"
@@ -29,7 +30,7 @@ interface RouteInput {
 
 export function ScreenTiming() {
   const { tripId = "" } = useParams()
-  const navigate = useNavigate()
+  const navigate = useSplitNavigate()
   const draft = useSplitDraft(tripId)
   const check = useCheckTiming(tripId)
   const detail = draft.data
@@ -67,11 +68,12 @@ export function ScreenTiming() {
     check.mutate(body)
   }
 
-  const action = (
-    <Button className="flex-1" disabled={!hasPair || windowMinutes == null || check.isPending} onClick={runCheck}>
-      {check.isPending ? "校验中…" : result ? "重新校验" : "校验时间窗"} <IconCheck />
-    </Button>
-  )
+  const action =
+    detail && hasPair && detail.status === "active" ? (
+      <Button className="flex-1" onClick={() => navigate(`/trips/${tripId}/split/confirm`)}>
+        前往复核并确认 <IconArrowRight />
+      </Button>
+    ) : null
 
   return (
     <SplitLayout
@@ -111,7 +113,7 @@ export function ScreenTiming() {
           <Card className="border-brand-soft bg-gradient-to-br from-brand-soft/50 to-surface p-4">
             <div className="flex items-center justify-between gap-2">
               <div className="text-[13px] font-bold text-ink">
-                时间窗 {formatClock(detail.departureAt)} → {formatClock(detail.reunionAt)}
+                时间窗 {formatClock(detail.departureAt, detail.destination)} → {formatClock(detail.reunionAt, detail.destination)}
               </div>
               <Badge variant="brand">
                 <IconClock /> 共 {windowMinutes} 分钟
@@ -139,6 +141,12 @@ export function ScreenTiming() {
             输入预填自保存快照，可调整以观察超窗 / 缺输入态；清空某项即模拟缺输入。可行性由后端判定，前端不自行宣布。
           </p>
 
+          {detail.status === "active" ? (
+            <Button className="w-full" variant="outline" disabled={check.isPending} onClick={runCheck}>
+              {check.isPending ? "校验中…" : result ? "重新校验时间窗" : "校验时间窗"} <IconCheck />
+            </Button>
+          ) : null}
+
           {check.error ? <ErrorState error={check.error} /> : null}
 
           {result ? (
@@ -153,7 +161,7 @@ export function ScreenTiming() {
                     input={input}
                     tone={res.groupLabel === "B" ? "b" : "a"}
                     windowMinutes={result.windowMinutes}
-                    reunionClock={formatClock(detail.reunionAt)}
+                    reunionClock={formatClock(detail.reunionAt, detail.destination)}
                   />
                 )
               })}
@@ -187,11 +195,7 @@ export function ScreenTiming() {
                 </Button>
               </div>
             </Card>
-          ) : (
-            <Button className="w-full" variant="outline" onClick={() => navigate(`/trips/${tripId}/split/confirm`)}>
-              前往复核并确认 <IconArrowRight />
-            </Button>
-          )}
+          ) : null}
         </div>
       )}
     </SplitLayout>

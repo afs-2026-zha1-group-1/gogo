@@ -242,35 +242,36 @@ main-plan value exposed.
 
 ### Requirement: Trip detail main-plan navigation entry
 
-The trip detail page at `#/trips/<id>` SHALL display a navigation entry to the
-trip's main-plan view, positioned after the invitation section and before the
-split-planning section. The entry SHALL be visible to every authenticated trip
-member regardless of whether a main plan exists or has been confirmed. Activating
-the entry SHALL navigate to `#/trips/<id>/main-plan` without triggering any
-server-side mutation (no POST, PUT or DELETE). The main-plan page itself SHALL
-handle all six states (loading, ready, empty, denied, missing, failed) unchanged;
-this requirement adds no new state, API endpoint or permission rule.
+When a main plan exists, the trip detail page at `#/trips/<id>` SHALL present
+it as an embedded timeline inside the 我的方案 section instead of a
+"查看主线方案" navigation link, visible to every authenticated trip member.
+When no main plan exists the legacy detail page SHALL keep its existing
+"查看主线方案" link (R9). Rendering SHALL NOT trigger any server-side
+mutation. The main-plan page SHALL remain reachable through the existing
+generation/confirmation flow with all six states unchanged; confirmation
+continues to follow US-081. No new state, API endpoint or permission rule is
+added.
 
 #### Scenario: Member sees the entry on trip detail
 
 - **WHEN** an authenticated member opens `#/trips/1` for a trip they belong to
-- **THEN** the page renders a section titled "主线方案" between the "邀请朋友"
-  section and the "分队规划" section
-- **AND** the section contains a visible "查看主线方案" navigation control
+  and a main plan exists
+- **THEN** the 我的方案 section renders the plan's activities and times inline
+- **AND** no "查看主线方案" link control is present on the detail page
 
 #### Scenario: Member activates the entry and reaches the plan
 
-- **WHEN** a member activates "查看主线方案" on the trip detail page for trip 1
-- **THEN** the route changes to `#/trips/1/main-plan` without a full page reload
-- **AND** the main-plan page loads and displays its current state (ready with
-  timeline, empty with guidance, or error) using existing logic
-- **AND** no POST, PUT or DELETE request is issued by the navigation itself
+- **WHEN** a member views the embedded plan on the trip detail page for trip 1
+- **THEN** the plan's activities and times are displayed directly without a
+  navigation click
+- **AND** no POST, PUT or DELETE request is issued by rendering the plan
 
 #### Scenario: Entry visible when no plan exists
 
 - **WHEN** a member opens trip detail for a trip that has no main-plan draft
-- **THEN** the "查看主线方案" entry is still visible and clickable
-- **AND** activating it shows the existing empty state on the main-plan page
+- **THEN** the legacy detail page keeps the "查看主线方案" link to the
+  main-plan page
+- **AND** no other trip's route is displayed
 
 #### Scenario: Non-member or unsigned-in user cannot reach the plan
 
@@ -282,11 +283,14 @@ this requirement adds no new state, API endpoint or permission rule.
 
 #### Scenario: Return to trip detail after viewing
 
-- **WHEN** a member arrives at the main-plan page from trip detail and then
-  activates the trip-detail info button in the main-plan appbar
+- **WHEN** a member arrives at the main-plan page through the existing
+  generation/confirmation flow and then activates the trip-detail info button
+  in the main-plan appbar
 - **THEN** the route returns to `#/trips/1` (the same trip's detail page)
-- **AND** the trip detail page re-renders in its ready state with the main-plan
-  entry still visible
+- **AND** the trip detail page re-renders in its ready state with the embedded
+  plan still visible
+- **AND** the main-plan page handles loading, ready, empty, denied, missing and
+  failed states exactly as before this change
 
 ### Requirement: Trip list read
 
@@ -400,3 +404,152 @@ Each account SHALL have at most one current trip, stored server-side. `GET /api/
 - **WHEN** the stored trip is no longer one the caller belongs to (test-only membership removal)
 - **THEN** the read returns `{"tripId":null}`
 - **AND** no trip data of the removed membership is exposed
+
+### Requirement: Trip detail overview layout
+
+The trip detail page at `#/trips/<id>` SHALL present the compact overview
+(trip summary, countdown card, fellow-members section, embedded "我的方案")
+only when a main plan exists; without a main plan the legacy detail page
+(trip-info list, preference entry, invitation panel, main-plan link) SHALL be
+kept (R9). In the overview the summary SHALL show the trip name on one line
+and the date range plus destination on a second line, without a repeated
+trip-info list block, travel-preference entry, embedded invitation panel,
+split-planning section or main-plan confirmation button. All data SHALL come
+from existing read endpoints; no endpoint, migration or permission rule is
+added.
+
+#### Scenario: Compact summary without duplicated info block
+
+- **WHEN** an authenticated member opens `#/trips/1`
+- **THEN** the trip name renders on one line and the date range plus destination
+  on a second line
+- **AND** no separate "行程信息" list block repeating the hero data is present
+
+#### Scenario: Sections render in the contracted order
+
+- **WHEN** an authenticated member opens the trip detail page for a trip that
+  has a main plan
+- **THEN** the visible sections appear in order: trip summary, countdown,
+  fellow members, 我的方案
+- **AND** no travel-preference card, embedded invitation panel, split-planning
+  section or "审阅并确认主线" button is present
+
+#### Scenario: Existing plan renders inline
+
+- **WHEN** a member opens trip detail for a trip that has a main plan
+- **THEN** the 我的方案 section displays that trip's activities and their times
+  directly, without requiring a "查看主线方案" navigation click
+
+#### Scenario: No plan keeps the legacy detail page
+
+- **WHEN** a member opens trip detail for a trip with no main plan
+- **THEN** the legacy detail page renders with its trip-info list, preference
+  entry, invitation panel and main-plan link
+- **AND** no countdown card or overview 我的方案 section is present
+- **AND** no other trip's route is displayed
+
+#### Scenario: Fellow members are visible with a roster entry
+
+- **WHEN** a member opens the trip detail page
+- **THEN** the fellow-members section shows the trip's member avatars
+- **AND** a view control navigates to the member roster without mutating data
+
+### Requirement: Personal route after split confirmation
+
+When the trip's split draft is confirmed and the current member is assigned to a group, the 我的方案 section SHALL display that member's group route together with the shared main-plan activities strictly before the departure stop and from the reunion stop onward, using the confirmed snapshot's timestamps. For the group whose route carries `steps` (the group that keeps the confirmed plan), the departure→reunion segment SHALL be filled by those main-plan stops with their scheduled times and the member's group label; no synthetic "group activity" block SHALL be inserted. The other group SHALL show its generated activity between the boundaries. Each member SHALL see only their own group's route. An unconfirmed or cancelled draft SHALL NOT be presented as a confirmed personal plan.
+
+#### Scenario: Assigned member sees their own route with shared activities
+
+- **WHEN** the split draft is confirmed and Alice is assigned to group A (route keeps the confirmed plan)
+- **THEN** Alice's 我的方案 lists the main-plan stops from the departure stop (inclusive) to the reunion stop (exclusive) with their scheduled start/end times, each labelled with group A
+- **AND** the shared main-plan activities before the departure stop and from the reunion stop onward are retained
+- **AND** no synthetic "沿主线方案" block appears
+
+#### Scenario: Different members see different routes
+
+- **WHEN** Alice is assigned to group A and Eve to group B in the same confirmed split
+- **THEN** Alice's detail follows the main-plan stops inside the window
+- **AND** Eve's detail shows group B's generated activity with its times
+- **AND** neither member sees the other group's route as their own plan
+
+#### Scenario: Unassigned member does not see another group's route
+
+- **WHEN** the split is confirmed but the member is not present in any group
+- **THEN** their 我的方案 does not display any group's route as their personal plan
+
+#### Scenario: Unconfirmed or cancelled draft is not a personal plan
+
+- **WHEN** the split draft is active (unconfirmed) or cancelled
+- **THEN** the 我的方案 section falls back to the main plan when one exists, or the legacy detail page otherwise (R9)
+- **AND** no unconfirmed route is labelled or presented as confirmed
+
+#### Scenario: Confirmation returns to the same trip detail
+
+- **WHEN** the organizer completes a successful split confirmation
+- **THEN** the app returns to the same trip's detail page
+- **AND** the detail page shows the confirmed personal route for that organizer
+
+### Requirement: Activity countdown and next stop
+
+The trip detail countdown card SHALL appear only in the overview state (a
+main plan exists, R9), SHALL update every second and SHALL never show a
+negative value. Before the trip starts it SHALL count down to the trip
+departure (start date at local midnight) as `N 天 HH:MM:SS`. During an activity
+it SHALL show the remaining time until that activity ends plus the member's
+next stop; between activities it SHALL count down to the next activity's start.
+With a confirmed personal route, countdown and next stop SHALL use that
+member's group route and the shared activities. Times SHALL use the
+device-local timezone (MVP assumption D-2); pre-split main-plan `HH:mm` stops
+SHALL be combined with the trip start date.
+
+#### Scenario: Pre-trip countdown to departure
+
+- **WHEN** the current time is before the trip start date
+- **THEN** the countdown card shows the remaining `N 天 HH:MM:SS` until the
+  start date at local midnight
+- **AND** the value updates every second
+
+#### Scenario: During an activity shows remaining time and next stop
+
+- **WHEN** the current time falls inside an activity of the member's plan
+- **THEN** the card shows the remaining time until that activity ends and the
+  member's next stop
+- **AND** the countdown keeps updating
+
+#### Scenario: Between activities counts down to the next start
+
+- **WHEN** the current time falls between two activities of the member's plan
+- **THEN** the card counts down to the next activity's start and shows that
+  next stop
+
+#### Scenario: Confirmed split uses the member's own route
+
+- **WHEN** the split is confirmed and the member has a personal route
+- **THEN** countdown and next stop derive from that member's group route and
+  the shared activities
+- **AND** no other group's route is used
+
+#### Scenario: Boundary switch without negative values
+
+- **WHEN** the countdown reaches an activity end or start boundary
+- **THEN** the card switches to the next activity or the corresponding state
+  according to the current time
+- **AND** no negative countdown value is displayed at any moment
+
+#### Scenario: No schedule or no next stop states
+
+- **WHEN** the day has no activities for the member, or no activity follows the
+  current one
+- **THEN** the card shows the no-schedule or no-next-stop state respectively
+- **AND** no activities of other dates or trips are displayed
+
+#### Scenario: Next-stop detail with missing information
+
+- **WHEN** a next stop exists but its address or travel time is unknown
+- **THEN** the missing fields render as pending confirmation
+- **AND** no suggested departure time is fabricated from unknown travel time
+
+#### Scenario: No following activity
+
+- **WHEN** the current activity is the last one of the member's day
+- **THEN** the next-stop area renders "没有更多活动"

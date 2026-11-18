@@ -59,14 +59,14 @@ class SplitConfirmApiTest extends AbstractSplitApiTest {
     @DisplayName("confirmDraft_routeOverWindow_returns409TimingInfeasibleWithPerRouteDetails")
     void confirmDraft_routeOverWindow_returns409TimingInfeasibleWithPerRouteDetails() throws Exception {
         int version = prepareConfirmableDraftAs("Ben");
-        setRouteLastTravelLeg("A", 40);
+        setRouteLastTravelLeg("A", 80);
         confirm(memberId("Alice"), version)
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("SPLIT_TIMING_INFEASIBLE"))
                 .andExpect(jsonPath("$.error.details.routes.length()").value(2))
                 .andExpect(jsonPath("$.error.details.routes[0].groupLabel").value("A"))
-                .andExpect(jsonPath("$.error.details.routes[0].totalMinutes").value(125))
-                .andExpect(jsonPath("$.error.details.routes[0].overrunMinutes").value(5))
+                .andExpect(jsonPath("$.error.details.routes[0].totalMinutes").value(215))
+                .andExpect(jsonPath("$.error.details.routes[0].overrunMinutes").value(65))
                 .andExpect(jsonPath("$.error.details.routes[0].missingInputs.length()").value(0))
                 .andExpect(jsonPath("$.error.details.routes[1].groupLabel").value("B"))
                 .andExpect(jsonPath("$.error.details.routes[1].totalMinutes").value(110))
@@ -186,6 +186,38 @@ class SplitConfirmApiTest extends AbstractSplitApiTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error.code").value("NOT_A_MEMBER"));
         assertThat(activeDraftCount()).isZero();
+    }
+
+    @Test
+    @DisplayName("confirmDraft_emptyGroup_returns409IncompleteWithGroupsB")
+    void confirmDraft_emptyGroup_returns409IncompleteWithGroupsB() throws Exception {
+        int version = prepareConfirmableDraftAs("Ben");
+        Map<String, java.util.List<String>> groups = new java.util.LinkedHashMap<>();
+        groups.put("A", java.util.List.of(memberId("Alice"), memberId("Ben"), memberId("Chloe"), memberId("Daniel")));
+        groups.put("B", java.util.List.of());
+        updateGroups(groups);
+        confirm(memberId("Alice"), version)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.data").doesNotExist())
+                .andExpect(jsonPath("$.error.code").value("SPLIT_DRAFT_INCOMPLETE"))
+                .andExpect(jsonPath("$.error.details.missing[0]").value("groups.B"));
+        assertThat(objectMapper.readTree(draftJson()).get("status").asText()).isEqualTo("active");
+    }
+
+    @Test
+    @DisplayName("confirmDraft_unassignedAndDuplicateGroups_reportGroupProblems")
+    void confirmDraft_unassignedAndDuplicateGroups_reportGroupProblems() throws Exception {
+        int version = prepareConfirmableDraftAs("Ben");
+        Map<String, java.util.List<String>> groups = new java.util.LinkedHashMap<>();
+        groups.put("A", java.util.List.of(memberId("Alice"), memberId("Ben"), memberId("Chloe")));
+        groups.put("B", java.util.List.of(memberId("Chloe")));
+        updateGroups(groups);
+        confirm(memberId("Alice"), version)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("SPLIT_DRAFT_INCOMPLETE"))
+                .andExpect(jsonPath("$.error.details.missing[0]").value("groups.unassigned"))
+                .andExpect(jsonPath("$.error.details.missing[1]").value("groups.duplicate"));
+        assertThat(objectMapper.readTree(draftJson()).get("status").asText()).isEqualTo("active");
     }
 
     @Test

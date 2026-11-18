@@ -47,6 +47,9 @@ export interface InvitationPreview {
   startDate: string
   endDate: string
   mainPlanConfirmed: boolean
+  organizerId: number
+  tripId: number
+  viewerMember: boolean
 }
 
 export interface AcceptResult {
@@ -94,6 +97,8 @@ export type TabId = 'dashboard' | 'trips' | 'split' | 'members' | 'account'
 
 export type Route =
   | { page: 'home' }
+  | { page: 'dashboard-trip'; tripId: number | null }
+  | { page: 'dashboard-trip-guard' }
   | { page: 'login' }
   | { page: 'register' }
   | { page: 'account' }
@@ -102,18 +107,19 @@ export type Route =
   | { page: 'create' }
   | { page: 'members' }
   | { page: 'details'; tripId: number }
+  | { page: 'invitation'; tripId: number; dashboardOrigin?: boolean }
   | { page: 'join'; token: string }
-  | { page: 'main-plan'; tripId: number }
-  | { page: 'main-plan-inputs'; tripId: number }
-  | { page: 'scan'; from: string | null }
-  | { page: 'preferences'; tripId: number }
+  | { page: 'main-plan'; tripId: number; dashboardOrigin?: boolean }
+  | { page: 'main-plan-inputs'; tripId: number; dashboardOrigin?: boolean; backToDashboard?: boolean }
+  | { page: 'scan' }
+  | { page: 'preferences'; tripId: number; dashboardOrigin?: boolean }
   | { page: 'my-preferences' }
 
-// login, registration, join, main-plan, preference and scan screens are
-// full-page flows without the bottom TabBar. 'scan' additionally owns its own
+// login, registration, join, main-plan, preference, scan and invitation screens
+// are full-page flows without the bottom TabBar. 'scan' additionally owns its own
 // app-bar close control, so it must not appear in TAB_FOR_PAGE
 // (Record<InAppPage, TabId>).
 export type InAppPage = Exclude<
   Route['page'],
-  'join' | 'login' | 'register' | 'main-plan' | 'main-plan-inputs' | 'scan' | 'preferences' | 'my-preferences'
+  'join' | 'login' | 'register' | 'main-plan' | 'main-plan-inputs' | 'scan' | 'preferences' | 'invitation' | 'my-preferences'
 >

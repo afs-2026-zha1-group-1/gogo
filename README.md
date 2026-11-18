@@ -36,7 +36,8 @@ Bash (for example Git Bash on Windows); their use depends on the selected skill.
 
 CI runs on GitHub Actions (`.github/workflows/ci.yml`) for pushes and pull
 requests to `main`: a backend job runs `mvn -B test` on Java 21, and a frontend
-job runs `npm ci && npm run typecheck && npm run build` on Node 24. The four
+job runs `npm ci && npm run typecheck && npm run build` on Node 24. A browser
+acceptance job installs Playwright Chromium and runs `npm run test:e2e`. The four
 original harness scripts are intentional placeholders and exit with a message
 until the project supplies an implementation, so CI does not invoke them.
 
@@ -56,6 +57,28 @@ identity was the header-select scaffold (`X-User-Id`, seeded users 1–5, sample
 trip readable by users 1–4); US-066 replaces it with verified login (see below).
 Trip creation requires a name, destination and an end date not before the start
 date; both locations are optional.
+
+The dashboard reads the signed-in member's current trip from
+`GET /api/trips/current` and shows its overview directly. The `#/my-trips`
+picker uses `GET /api/trips` to list member trips and persists the current
+selection. If no trip is selected, the dashboard links to the picker and trip
+creation. The dashboard's trip tab also accepts a trip number and opens the
+existing member-protected `#/trips/<id>` details page; opening an organizer's
+details page generates an invitation as described below. Dashboard quick
+entries link to existing invitation, preference and main-plan pages; reunion
+navigation and trip completion do not have dashboard entries.
+The invitation entry opens `#/dashboard/trips/<id>/invite`, which reuses the
+trip invitation panel and returns to that trip's dashboard. Only the organizer
+can generate an invitation; other members see the existing access notice.
+The preference milestone reflects the viewer's readiness and also shows the
+group's ready count. Main-plan guidance distinguishes preparing while members
+are pending from generating once everyone is ready, and only the organizer can
+generate. Milestone colors reflect saved readiness, plan confirmation and split status;
+reunion and completion stay unknown until their data is available. The next
+step links to personal preferences, member preference inputs, the main plan or
+split planning according to those saved states. An organizer who has completed
+their preferences and has no other members is prompted to invite friends;
+invited members start at preferences rather than creation or invitation.
 
 REQ-004 adds the invitation flow. On `#/trips/<id>` the organizer sees a panel
 with the invitation link, a copy action and a QR encoding the same absolute URL
@@ -217,6 +240,18 @@ Run the backend tests with `cd backend && mvn test` (`AuthApiTest`,
 `SessionExpiryApiTest`, `GreetingApiTest`, `TripApiTest`, `InvitationApiTest`,
 `PreferenceApiTest`, `MainPlanApiTest`, the split API suites and the unit
 suites); they use the same SQLite engine and migrations as production.
+
+For browser acceptance, install frontend dependencies and Chromium with
+`npm ci` and `npx playwright install chromium` from `frontend`, then run
+`npm run test:e2e`. Java 21 and Maven must be available. The runner starts
+separate servers on ports 18080 and 15173 and uses a temporary file-backed
+SQLite database with migrated synthetic accounts and dashboard fixtures; it
+does not use the development database. The test wrapper removes the isolated
+database after the servers stop. File backing lets acceptance tests compare
+persisted state before and after navigation.
+If Chromium cannot be downloaded, an already installed Microsoft Edge can be
+selected explicitly with `GOGO_E2E_BROWSER_CHANNEL=msedge` (PowerShell:
+`$env:GOGO_E2E_BROWSER_CHANNEL = 'msedge'; npm run test:e2e`).
 
 Inspect the stored row without stopping the app (Python 3 ships `sqlite3`; no
 separate CLI is needed):

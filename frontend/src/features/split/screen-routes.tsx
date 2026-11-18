@@ -1,45 +1,67 @@
-import { useNavigate, useParams } from "react-router-dom"
-import { useGenerateRoutes, useSplitDraft } from "./hooks"
+import { useState } from "react"
+import { useLocation, useParams } from "react-router-dom"
+import { useSplitNavigate } from "./split-navigation"
+import { useAssignGroup, useGenerateRoutes, useSplitDraft, useTripMembers } from "./hooks"
+import { useAuth } from "../auth/AuthProvider"
 import { SplitLayout } from "./split-layout"
 import { EmptyState, ErrorState, LoadingState } from "./states"
 import { RouteCard } from "./route-card"
-import { Card } from "@/components/ui/card"
+import type { TripMember } from "../../types"
 import { Button } from "@/components/ui/button"
 import { IconArrowRight, IconBranch, IconRoute, IconSparkle, IconUsers } from "@/components/icons"
-import { formatClock } from "@/lib/format"
+import { formatClock, shortId } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
 /**
- * Screen 13 — group routes (spec REQ-006). Groups come from the fixture partition and are shown as
- * label + headcount only (no members endpoint, so no names are guessed); group-movement controls are
- * intentionally not implemented this slice. Generate wires POST routes:generate (paired atomic);
- * failure / stale / boundaries-required / non-initiator rejections surface from the backend. The
- * paired route cards display backend-returned activity / travel legs / buffer and the reunion clock.
+ * Screen 13 — group routes (spec US-040 + US-042). The group card lists each group's members as avatar chips by
+ * display name (roster from GET /api/trips/{id}/members); clicking a member moves that member into the other group
+ * (any trip member may adjust the split, user ruling 2026-11-17 — the prototype's avatar-click interaction). Group
+ * changes bump the draft version and never touch the saved route pair, so the stale-route notice stays visible until
+ * the initiator regenerates. Generate wires POST routes:generate (paired atomic); incomplete groups are rejected with
+ * SPLIT_DRAFT_INCOMPLETE and its groups.* details.
  */
 export function ScreenRoutes() {
   const { tripId = "" } = useParams()
-  const navigate = useNavigate()
+  const navigate = useSplitNavigate()
+  const { search } = useLocation()
+  const dashboardOrigin = new URLSearchParams(search).get("from") === "dashboard"
   const draft = useSplitDraft(tripId)
   const generate = useGenerateRoutes(tripId)
+  const assign = useAssignGroup(tripId)
+  const membersQuery = useTripMembers(tripId)
+  const { accountId } = useAuth()
+  const [notice, setNotice] = useState<string | null>(null)
   const detail = draft.data
+  const myId = accountId == null ? null : String(accountId)
+  const tooFewMembers = membersQuery.data != null && membersQuery.data.length < 2
 
   const stopNames = new Map((detail?.mainPlanStops ?? []).map((stop) => [stop.id, stop.name]))
   const nameOf = (id: string | null) => (id ? (stopNames.get(id) ?? "未知节点") : "—")
   const routes = detail?.routes ?? []
   const hasPair = routes.length === 2
   const boundariesSaved = detail?.windowMinutes != null
+  // Generation and confirmation both require a complete partition (design DD8/DD9/DD10); disable the
+  // CTAs instead of letting the user hit a 409 SPLIT_DRAFT_INCOMPLETE.
+  const groupsComplete =
+    (detail?.groups.A?.length ?? 0) > 0 && (detail?.groups.B?.length ?? 0) > 0
+  // A confirmed/cancelled draft is locked server-side (SPLIT_DRAFT_NOT_ACTIVE); mirror that in the CTAs.
+  const draftActive = detail?.status === "active"
 
-  const action = (
+  const action = tooFewMembers ? null : (
     <>
       <Button
         variant="outline"
         className="flex-1"
-        disabled={!boundariesSaved || generate.isPending}
+        disabled={!boundariesSaved || !groupsComplete || !draftActive || generate.isPending}
         onClick={() => detail && generate.mutate({ draftVersion: detail.draftVersion })}
       >
         {generate.isPending ? "生成中…" : hasPair ? "重新生成" : "生成两条路线"} <IconSparkle />
       </Button>
-      <Button className="flex-1" disabled={!hasPair} onClick={() => navigate(`/trips/${tripId}/split/timing`)}>
+      <Button
+        className="flex-1"
+        disabled={!hasPair || !groupsComplete || !draftActive}
+        onClick={() => navigate(`/trips/${tripId}/split/timing`)}
+      >
         下一步 <IconArrowRight />
       </Button>
     </>
@@ -48,7 +70,7 @@ export function ScreenRoutes() {
   return (
     <SplitLayout
       title="分组与路线"
-      subtitle="成对生成 · 分组移动本期不开放"
+      subtitle="成对生成 · 成员可调整分组"
       step={2}
       backTo={`/trips/${tripId}/split/boundaries`}
       action={action}
@@ -57,6 +79,25 @@ export function ScreenRoutes() {
         <LoadingState label="加载分组与路线…" />
       ) : draft.error ? (
         <ErrorState error={draft.error} onRetry={() => draft.refetch()} />
+      ) : tooFewMembers ? (
+        <EmptyState
+          icon={<IconUsers />}
+          title="无法分队：成员不足"
+          hint={`当前行程只有 ${membersQuery.data?.length ?? 0} 名成员。分队需要 A/B 两组各至少一人，至少两名成员才能继续。`}
+          action={
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                window.location.href = dashboardOrigin
+                  ? `/#/dashboard/trips/${tripId}`
+                  : `/#/trips/${tripId}`
+              }}
+            >
+              返回行程详情
+            </Button>
+          }
+        />
       ) : !detail ? (
         <EmptyState
           icon={<IconBranch />}
@@ -81,27 +122,29 @@ export function ScreenRoutes() {
         />
       ) : (
         <div className="flex flex-col gap-3">
-          <Card className="p-4">
-            <div className="mb-2 flex items-center gap-1.5 text-[13px] font-bold text-ink">
-              <IconUsers className="text-brand" /> 自动分组
-            </div>
-            <div className="grid grid-cols-2 gap-2.5">
-              {Object.entries(detail.groups).map(([label, members]) => {
-                const box =
-                  label === "A" ? "border-a-line bg-a-soft" : label === "B" ? "border-b-line bg-b-soft" : "border-line bg-surface-3"
-                const ink = label === "A" ? "text-a" : label === "B" ? "text-b" : "text-ink"
-                return (
-                  <div key={label} className={cn("rounded-card border p-3", box)}>
-                    <div className={cn("text-[13px] font-extrabold", ink)}>{label} 组</div>
-                    <div className="mt-1 text-[11.5px] text-ink-2">{members.length} 人</div>
-                  </div>
-                )
-              })}
-            </div>
-            <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
-              分组由夹具按偏好齐全分区；本期不开放成员移动控件（后端分组变更 → 版本递增语义仍成立）。
+          <GroupCard
+            groups={detail.groups}
+            members={membersQuery.data}
+            myId={myId}
+            assignable={detail.status === "active"}
+            hasRoutes={hasPair}
+            assigning={assign.isPending}
+            notice={notice}
+            onAssign={(memberId, label) => {
+              setNotice(null)
+              assign.mutate(
+                { memberId, groupLabel: label, draftVersion: detail.draftVersion },
+                { onSuccess: () => setNotice(hasPair ? "分组已更新，路线仍为上次生成的版本，可点击重新生成。" : "分组已更新。") },
+              )
+            }}
+          />
+
+          {detail.windowMinutes != null && (
+            <p className="text-[11.5px] leading-relaxed text-ink-3">
+              时间窗 {formatClock(detail.departureAt, detail.destination)} → {formatClock(detail.reunionAt, detail.destination)}
+              （共 {detail.windowMinutes} 分钟），由你在上一步选的出发/会合站决定；两条路线的合计都需不超过它。
             </p>
-          </Card>
+          )}
 
           {hasPair ? (
             <div className="flex flex-col gap-3">
@@ -112,7 +155,9 @@ export function ScreenRoutes() {
                   tone={route.groupLabel === "B" ? "b" : "a"}
                   departureName={nameOf(route.departureStopId)}
                   reunionName={nameOf(route.reunionStopId)}
-                  reunionClock={formatClock(detail.reunionAt)}
+                  reunionClock={formatClock(detail.reunionAt, detail.destination)}
+                  stale={(detail.groups[route.groupLabel] ?? []).length === 0}
+                  windowMinutes={detail.windowMinutes}
                 />
               ))}
             </div>
@@ -124,9 +169,135 @@ export function ScreenRoutes() {
             />
           )}
 
+          {hasPair && detail.windowMinutes != null && routes.some((route) => {
+            const legs = route.travelLegsMinutes
+            if (route.activityMinutes == null || route.bufferMinutes == null || legs.some((minutes) => minutes == null)) return false
+            return route.activityMinutes + legs.reduce((sum, minutes) => sum + (minutes ?? 0), 0) + route.bufferMinutes > detail.windowMinutes!
+          }) ? (
+            <p className="text-[11px] leading-relaxed text-ink-3">
+              有路线超出当前窗口：回上一步把「会合站」往后选，窗口会按新站点重新计算。
+            </p>
+          ) : null}
+
           {generate.error ? <ErrorState error={generate.error} /> : null}
+          {assign.error ? <ErrorState error={assign.error} /> : null}
         </div>
       )}
     </SplitLayout>
+  )
+}
+
+/**
+ * Group cards (US-040 DD13/DD14 + revision 2026-11-17), styled after the prototype Screen 13 `.route` block:
+ * a colored A/B header (code badge + group name + headcount) above a chips body. Clicking a member chip moves that
+ * member into the other group (any trip member may adjust the split). The stale-route marker lives on the route
+ * cards, never inside an empty group.
+ */
+function GroupCard({
+  groups,
+  members,
+  myId,
+  assignable,
+  hasRoutes,
+  assigning,
+  notice,
+  onAssign,
+}: {
+  groups: Record<string, string[]>
+  members: TripMember[] | undefined
+  myId: string | null
+  assignable: boolean
+  hasRoutes: boolean
+  assigning: boolean
+  notice: string | null
+  onAssign: (memberId: string, label: "A" | "B") => void
+}) {
+  const nameOf = (id: string) =>
+    members?.find((member) => String(member.userId) === id)?.displayName ?? shortId(id)
+  const initialOf = (id: string) => nameOf(id).slice(0, 1).toUpperCase()
+  const emptyGroups = Object.entries(groups)
+    .filter(([, ids]) => ids.length === 0)
+    .map(([label]) => `${label} 组`)
+
+  return (
+    <div>
+      <div className="mb-2 flex items-center gap-1.5 text-[13px] font-bold text-ink">
+        <IconUsers className="text-brand" /> 分组
+      </div>
+      <div className="grid grid-cols-2 gap-2.5">
+        {Object.entries(groups).map(([label, ids]) => {
+          const isA = label === "A"
+          const head = isA ? "from-a to-[#1e40af]" : label === "B" ? "from-b to-[#9a3412]" : "from-ink-3 to-ink-3"
+          const border = isA ? "border-a-line" : label === "B" ? "border-b-line" : "border-line"
+          const chipOn = isA ? "border-a bg-a" : label === "B" ? "border-b bg-b" : "border-ink bg-ink"
+          const target: "A" | "B" = label === "B" ? "A" : "B"
+          return (
+            <div
+              key={label}
+              className={cn(
+                "overflow-hidden rounded-card border bg-surface shadow-[0_1px_3px_rgba(28,25,23,0.06)]",
+                border,
+              )}
+            >
+              <div className={cn("flex items-center gap-2 bg-gradient-to-br px-3 py-2.5 text-white", head)}>
+                <span className="grid size-6 shrink-0 place-items-center rounded-[7px] bg-white/25 text-[12px] font-extrabold">
+                  {label}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-[13px] font-bold">{label} 组</span>
+                <span className="shrink-0 text-[11px] font-medium text-white/85">{ids.length} 人</span>
+              </div>
+              <div className="flex min-h-[58px] flex-wrap content-start gap-2 p-3">
+                {ids.length === 0 ? (
+                  <span className="text-[11.5px] leading-relaxed text-ink-3">暂无成员</span>
+                ) : (
+                  ids.map((id) => {
+                    const isMe = id === myId
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        disabled={!assignable || assigning}
+                        onClick={() => onAssign(id, target)}
+                        title={assignable ? `点击移到 ${target} 组` : undefined}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[12px] font-semibold text-white transition",
+                          chipOn,
+                          assignable && "hover:brightness-105 active:scale-[0.98]",
+                          !assignable && "cursor-default opacity-90",
+                        )}
+                      >
+                        <span className="grid size-[18px] shrink-0 place-items-center rounded-full bg-white/25 text-[10px] font-bold">
+                          {initialOf(id)}
+                        </span>
+                        <span className="max-w-[64px] truncate">{nameOf(id)}</span>
+                        {isMe ? <span className="text-[9.5px] font-bold text-white/85">我</span> : null}
+                      </button>
+                    )
+                  })
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      {assignable ? (
+        <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
+          点击成员头像可把他移到另一组；所有行程成员都可以调整分组。
+        </p>
+      ) : null}
+      {emptyGroups.length > 0 ? (
+        <p className="mt-1.5 text-[11px] leading-relaxed text-ink-3">
+          {emptyGroups.join("、")}暂无成员：两组都有成员后才能生成路线与确认，点上方成员头像可换组。
+        </p>
+      ) : null}
+      {notice ? <p className="mt-1.5 text-[11px] font-semibold text-ok">{notice}</p> : null}
+      {hasRoutes ? (
+        <p className="mt-1.5 text-[11px] leading-relaxed text-ink-3">
+          {assignable
+            ? "路线为上次生成的版本，可点击「重新生成」按当前分组重做。"
+            : "草稿已结束，以下为最终确认的路线与分组。"}
+        </p>
+      ) : null}
+    </div>
   )
 }

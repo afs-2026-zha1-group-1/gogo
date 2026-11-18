@@ -21,8 +21,11 @@ const ERROR_LABELS: Record<string, string> = {
   OUT_OF_DAY: '超出一日时间窗',
 }
 
-function sgd(cents: number) {
-  return `S$${cents / 100}`
+// Per-person cost is stored in the destination's currency (cents); the symbol follows the trip.
+function money(cents: number, destination?: string | null) {
+  const value = destination ?? ''
+  const symbol = /香港|hong\s*kong/i.test(value) ? 'HK$' : /伦敦|london/i.test(value) ? '£' : 'S$'
+  return `${symbol}${cents / 100}`
 }
 
 function errorMessage(cause: unknown) {
@@ -44,9 +47,10 @@ interface BlockedConfirm {
 
 interface MainPlanProps {
   tripId: number
+  dashboardOrigin?: boolean
 }
 
-export default function MainPlan({ tripId }: MainPlanProps) {
+export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanProps) {
   const { account } = useAuth()
   const [state, setState] = useState<PlanState>({ kind: 'loading' })
   const [busy, setBusy] = useState<'regen' | 'confirm' | null>(null)
@@ -149,7 +153,7 @@ export default function MainPlan({ tripId }: MainPlanProps) {
   const inTrip = state.kind === 'ready' || state.kind === 'empty'
   const appbar = (
     <header className="appbar">
-      <a className="iconbtn" href={`#/trips/${tripId}`} aria-label="Back"><Icon name="left" /></a>
+      <a className="iconbtn" href={dashboardOrigin ? `#/dashboard/trips/${tripId}` : `#/trips/${tripId}`} aria-label="Back"><Icon name="left" /></a>
       <div className="grow">
         <div className="title">主线方案</div>
         <div className="sub">US-037 · 校验通过后方可确认</div>
@@ -159,9 +163,10 @@ export default function MainPlan({ tripId }: MainPlanProps) {
           {state.plan.confirmed ? '已确认' : '草稿'} v{state.plan.version}
         </span>
       )}
-      {inTrip && (
+      {inTrip && !dashboardOrigin && (
         <a className="iconbtn" href={`#/trips/${tripId}`} aria-label="行程详情"><Icon name="info" /></a>
       )}
+      {inTrip && dashboardOrigin && <span className="hint">行程详情即将推出</span>}
     </header>
   )
 
@@ -191,7 +196,9 @@ export default function MainPlan({ tripId }: MainPlanProps) {
               </p>
             </div>
             {isOrganizer && (
-              <a className="btn btn-primary" href={`#/trips/${tripId}/main-plan/inputs`}>
+              <a className="btn btn-primary" href={dashboardOrigin
+                ? `#/dashboard/trips/${tripId}/main-plan/inputs`
+                : `#/trips/${tripId}/main-plan/inputs`}>
                 <Icon name="sparkle" className="sm" /> 去生成主线方案
               </a>
             )}
@@ -296,7 +303,7 @@ export default function MainPlan({ tripId }: MainPlanProps) {
           <div className="valid-item" style={{ borderBottom: 0 }}>
             <span className="valid-ic"><Icon name="shield" className="sm" /></span>
             <div>
-              <div className="vt">人均费用 {sgd(plan.costPerPersonCents)}</div>
+              <div className="vt">人均费用 {money(plan.costPerPersonCents, trip.destination)}</div>
               <div className="vd">版本 v{plan.version} · {plan.confirmed ? '已确认，全员共享' : '草稿，待组织者确认'}</div>
             </div>
           </div>
@@ -330,7 +337,7 @@ export default function MainPlan({ tripId }: MainPlanProps) {
                     <div>
                       <div className="vt">{overrun.displayName} 超出硬预算</div>
                       <div className="vd">
-                        硬预算 {sgd(overrun.hardBudgetCents)} · 人均费用 {sgd(plan.costPerPersonCents)} · 超出 {sgd(overrun.overrunCents)}
+                        硬预算 {money(overrun.hardBudgetCents, trip.destination)} · 人均费用 {money(plan.costPerPersonCents, trip.destination)} · 超出 {money(overrun.overrunCents, trip.destination)}
                       </div>
                     </div>
                   </div>
@@ -355,7 +362,7 @@ export default function MainPlan({ tripId }: MainPlanProps) {
             <button
               className="btn btn-primary"
               type="button"
-              onClick={() => { window.location.href = `/trips/${tripId}/split` }}
+              onClick={() => { window.location.href = `/trips/${tripId}/split${dashboardOrigin ? '?from=dashboard' : ''}` }}
             >
               <Icon name="fork" className="sm" /> 进入智能分队
             </button>

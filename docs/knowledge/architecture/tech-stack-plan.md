@@ -356,6 +356,15 @@ US-013 在 US-066 会话认证基线上新增成员名册读取；不新增迁�
 > at G3 will fold it into §7 (关键实现约定) and the §3 stack table once the
 > change lands on `main`.
 
+> **2026-11-17 revision (user rulings, pre-archive):** scanner × always returns
+> to `#/` (restore-origin D2/S-5 superseded, `from` plumbing removed); the
+> scan→join hand-off lands signed-in existing members directly on an
+> already-in-team notice (organizer wording variant), backed by additive
+> preview fields `tripId`/`viewerMember` (viewer-only membership; guests
+> unchanged). Backend 364/364 incl. `memberPreviewReportsViewerMember`;
+> membership probe must run after the preview query releases the SQLite
+> single connection. See us-067 design D11 / tasks group 11.
+
 **Scanner capability (US-067), as shipped:**
 
 - **Frontend stack alignment with the shell's shipped conventions.** US-067
@@ -512,3 +521,74 @@ US-086（PR #119，merge `f5b6297`）已归档。单 change：`splits` 1 MODIFIE
 - Chrome：SplitLayout 去掉身份条；confirmed 复核页无左上返回；confirmed 队伍路线页无重复提示卡。
 - 后端/数据：无变更（零端点、零迁移、零新依赖）；节点详情弹层/任务/费用/地点不在范围。
 - 验证：前端 node:test 12/12、tsc/build 绿、后端 296/296、CI 双绿；E2E E1–E13。
+
+## 23. Landed reconciliation — US-083-085 行程详情三合一（archived 2026-11-17）
+
+US-083/084/085（PR #127，merge `d2708f3`）已归档。单 change：`trips` +3 ADDED / 1 MODIFIED、`invitations` +1 ADDED、`app-shell` 1 MODIFIED。
+
+- 前端详情页三分结构（R9 分流）：`TripDetails.tsx` 入口（useTripOverview 五读并发 + 四态统一渲染）；plan==null → `TripDetailsLegacy.tsx`（main 旧版逐字保留）；有 plan → `components/TripOverview.tsx`（hero 两行/CountdownCard/同行成员/MyPlanTimeline + 右上邀请图标）。
+- 新增纯函数与 hook：`lib/countdown.ts`（resolveCountdown 状态机、半开区间、clamp≥0）、`lib/personal-route.ts`（selectSchedule/derivePersonalRoute，组活动 interests 按名补全）、`hooks/useCountdown.ts`（每秒 tick）、`hooks/useTripOverview.ts`；组件 CountdownCard/MyPlanTimeline/NextStopDetail。
+- 邀请全屏页 `InvitationPage.tsx`（`#/trips/{id}/invitation`，App.tsx 提前 return 无 tabbar）；InvitationPanel 加 showTitle/onReadyChange 可选 prop；screen-confirm 确认成功整页返回 `/#/trips/{id}`。
+- 后端/数据：本 change 零变更（零端点、零迁移、零新依赖）；合并 main 带入 V9（偏好默认兴趣，属 REQ-026）。
+- 验证：前端 37/37（C1–C11/P1–P11 + 日期 helper + team-route）、tsc/build 绿、后端 337/337、CI run 44051875289 双绿；浏览器七轮 + R9 分流轮全 PASS。
+- 残留：D-2 时区=设备本地、组活动段居中派生、「免费」固定文案、current trip 上下文不一致（范围外跟踪）。
+
+## 24. Landed reconciliation — US-040 成员分组（待合并 2026-11-17）
+
+US-040（issue #84；PR #117）G2 Pass（VL Leo），待 G1 Revision C8（IO）与 G3 后归档。单 change：`splits` 1 ADDED（Member group assignment）+ 3 MODIFIED（Split draft start / Group route generation / Split confirmation）。
+
+- 后端：新增 `PUT /api/trips/{tripId}/split-draft/assignment`（body `{memberId?, groupLabel, draftVersion}`，返回 draft detail 投影）；**任意行程成员可移动任意行程成员**（2026-11-17 用户修订，对齐原型头像切组），目标非本行程 → `403 NOT_A_MEMBER`；仅 `active` 可写，同组提交幂等不递增版本，变更后 `draftVersion + 1` 且**保留 boundaries/routes**。
+- 完整性门禁：`SplitDraftService.groupProblems` 固定顺序 `groups.A → groups.B → groups.unassigned → groups.duplicate`，`routes:generate` 与 `:confirm` 共用；`SPLIT_DRAFT_INCOMPLETE.details.missing` 新增 `groups.*` 项。
+- 初始分组：`partitionGroups` 删除，改为 `initialGroups`（全员 A、B 空）；发起/重建新增成员数 ≥ 2 前置，否则 `409 SPLIT_MEMBERS_INSUFFICIENT`（新码）。另新增 `INVALID_GROUP_LABEL`（400）。
+- 前端：Screen 13 分组卡按原型 `.route` 重绘（彩色 A/B 头 + 成员胶囊，点击切组）；分组不完整或终态时禁用生成/下一步；Screen 15 成员名 + 陈旧路线提示；`states.tsx` 的 `details.missing` 中文化。
+- 后端/数据：**零迁移、零新依赖，未改 `SecurityConfig`**（splits 维持 `permitAll` + `MemberGuard`）。
+- 验证：后端 356/356（合并 main 后）、前端 typecheck/build 绿、E2E 12 行 Pass、E1 run 44046339433 双绿。
+- 残留：TS-1 陈旧路线提示为常驻（未记录路线生成版本）；存量单人 active 草稿仍不可生成/确认。
+
+## 25. Landed reconciliation — US-061 trip dashboard (archived 2026-11-17)
+
+US-061 shipped in PR #118, merge `2c67247`. The living specifications add
+`trip-dashboard` and update `app-shell`.
+
+- **Frontend:** `#/` displays the signed-in member's current-trip overview or
+  an empty/error state; `#/dashboard/trips/<id>` opens a selected-trip overview
+  without persisting that selection. The dashboard composes existing reads for
+  role-specific planning milestones, recommendations and destination links.
+  Reunion and completion remain unknown.
+- **API and data:** no production backend endpoint or migration was added.
+  The dashboard reuses `GET /api/trips/current`, `GET /api/trips/{id}`,
+  `GET /api/trips/{id}/main-plan/inputs`, `GET /api/trips/{id}/main-plan`
+  and `GET /api/trips/{id}/split-draft`; it stores no dashboard progress.
+  Organizer navigation to invitation or trip-details pages can invoke the
+  existing `POST /api/trips/{id}/invitation`, so destination navigation is not
+  necessarily read-only.
+- **Testing tooling:** Playwright was added as a development dependency, with
+  an isolated browser-test runner. Earlier local and CI evidence does not
+  establish final-revision verification; see the archived change summary.
+- **Decision status:** the revised-scope G1 and G2 decisions remain pending.
+  The user confirmed merge readiness and requested that incomplete tasks not
+  block archival; this does not represent gate approval.
+
+## 26. Landed reconciliation — US-089 split window + A follows the main plan (archived 2026-11-17)
+
+US-089 shipped in PR #138, merge `3fcfbfc`. The living specifications modify
+4 `splits` requirements and 1 `trips` requirement.
+
+- **Splits backend:** the split window is `reunion.start_at - departure.start_at`;
+  saving boundaries clears the previous route pair (document `routes = null` and
+  the `split-a/split-b` `plan_node` rows) in the same transaction. Group A is
+  derived from the confirmed main-plan stops inside the boundaries and carried as
+  ordered `RouteStep` entries (stay minutes plus scheduled gaps); group B keeps a
+  destination-keyed synthetic activity. Route views and the draft document expose
+  an additive, nullable `steps` array; the detail read also returns `destination`.
+  No new endpoint, no migration, no dependency, `SecurityConfig` unchanged.
+- **Trips / frontend:** the personal timeline expands the main-line group into
+  its scheduled stops instead of a synthetic block; boundary chips show start
+  times and disable invalid pairs; route cards show total vs window; display
+  zone (Hong Kong/London/Singapore) and currency follow the destination.
+- **Demo data:** `scripts/demo-seed.py` is schema-adaptive and can create the two
+  demo trips (Ben + Eve, ready) on an empty database.
+- **Verification:** backend 371/371, frontend typecheck + 45 unit tests + build,
+  CI runs 44112482366 / 44112533101 green (Backend tests, Frontend build, Browser
+  acceptance). G1 Pass (SA Johnson + IO Johnson), G2 Pass (VL Leo), G3 Pass.
+

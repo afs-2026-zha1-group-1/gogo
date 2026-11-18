@@ -1,50 +1,14 @@
-import { useEffect, useState } from 'react'
-import { api, errorMessage } from '../api'
 import Icon from '../Icons'
-import InvitationPanel from './InvitationPanel'
-import type { Trip } from '../types'
-import { useAuth } from '../features/auth/AuthProvider'
+import TripOverview from '../components/TripOverview'
+import TripDetailsLegacy from './TripDetailsLegacy'
+import { useTripOverview } from '../hooks/useTripOverview'
 
 interface TripDetailsProps {
   tripId: number
 }
 
-type TripState =
-  | { kind: 'loading' }
-  | { kind: 'ready'; trip: Trip }
-  | { kind: 'denied'; message?: string }
-  | { kind: 'missing'; message?: string }
-  | { kind: 'failed'; message: string | undefined }
-
 export default function TripDetails({ tripId }: TripDetailsProps) {
-  const { account } = useAuth()
-  const organizerName = (organizerId: number) => organizerId === account?.id ? account.name : '组织者'
-  const [state, setState] = useState<TripState>({ kind: 'loading' })
-
-  useEffect(() => {
-    let active = true
-    setState({ kind: 'loading' })
-    api<Trip>(`/api/trips/${tripId}`)
-      .then((result) => {
-        if (!active) return
-        if (result.ok && result.data) {
-          setState({ kind: 'ready', trip: result.data })
-        } else if (!result.ok && result.status === 403) {
-          setState({ kind: 'denied', message: result.data?.message })
-        } else if (!result.ok && result.status === 404) {
-          setState({ kind: 'missing', message: result.data?.message })
-        } else {
-          const message = result.ok ? undefined : result.data?.message
-          setState({ kind: 'failed', message: message ?? `HTTP ${result.status}` })
-        }
-      })
-      .catch((cause: unknown) => {
-        if (active) setState({ kind: 'failed', message: errorMessage(cause) })
-      })
-    return () => {
-      active = false
-    }
-  }, [tripId])
+  const state = useTripOverview(tripId)
 
   const appbar = (
     <header className="appbar">
@@ -91,89 +55,9 @@ export default function TripDetails({ tripId }: TripDetailsProps) {
     )
   }
 
-  const trip = state.trip
-  const isOrganizer = trip.organizerId === account?.id
+  if (state.plan == null) {
+    return <TripDetailsLegacy tripId={tripId} />
+  }
 
-  return (
-    <div className="screen">
-      {appbar}
-      <div className="body">
-        <section className="hero">
-          <div className="htop">
-            <Icon name="cal" className="sm" />
-            {trip.startDate} – {trip.endDate}
-          </div>
-          <h1>{trip.name}</h1>
-          <div className="hdest">
-            <Icon name="pin" className="sm" />
-            {trip.destination}
-          </div>
-          <div className="hmeta">
-            <div>出发地<b>{trip.startLocation ?? '未设置'}</b></div>
-            <div>返程地<b>{trip.endLocation ?? '未设置'}</b></div>
-            <div>组织者<b>{organizerName(trip.organizerId)}</b></div>
-          </div>
-        </section>
-
-        <div className="sec-title"><Icon name="info" className="sm" /> 行程信息</div>
-        <section className="card pad">
-          <div className="valid">
-            <div className="valid-item">
-              <span className="valid-ic"><Icon name="cal" /></span>
-              <div>
-                <div className="vt">日期</div>
-                <div className="vd">{trip.startDate} → {trip.endDate}</div>
-              </div>
-            </div>
-            <div className="valid-item">
-              <span className="valid-ic"><Icon name="nav" /></span>
-              <div>
-                <div className="vt">出发地</div>
-                <div className="vd">{trip.startLocation ?? '尚未设置，可由后续主线生成补全'}</div>
-              </div>
-            </div>
-            <div className="valid-item">
-              <span className="valid-ic"><Icon name="flag" /></span>
-              <div>
-                <div className="vt">返程地</div>
-                <div className="vd">{trip.endLocation ?? '尚未设置，可由后续主线生成补全'}</div>
-              </div>
-            </div>
-            <div className="valid-item">
-              <span className="valid-ic brand"><Icon name="user" /></span>
-              <div>
-                <div className="vt">组织者</div>
-                <div className="vd">{organizerName(trip.organizerId)}</div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <div className="sec-title"><Icon name="sparkle" className="sm" /> 旅行偏好</div>
-        <section className="card pad">
-          <p className="hint" style={{ marginTop: 0 }}>
-            选择你在这趟旅程中喜欢的主题，保存后所有成员都能看到。
-          </p>
-          <a className="btn btn-primary" href={`#/trips/${trip.id}/preferences`}>
-            设置我的兴趣
-          </a>
-        </section>
-
-        <InvitationPanel
-          tripId={trip.id}
-          isOrganizer={isOrganizer}
-        />
-
-        <div className="sec-title" style={{ marginTop: 18 }}><Icon name="sparkle" className="sm" /> 主线方案</div>
-        <section className="card pad">
-          <p className="hint" style={{ marginBottom: 12 }}>
-            查看大家共享的主线行程和方案状态。
-          </p>
-          <a className="btn btn-primary" href={`#/trips/${trip.id}/main-plan`}>
-            查看主线方案
-          </a>
-        </section>
-      </div>
-    </div>
-  )
+  return <TripOverview state={state} />
 }

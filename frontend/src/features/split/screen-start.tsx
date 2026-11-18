@@ -1,6 +1,7 @@
 import { useState } from "react"
-import { useNavigate, useParams } from "react-router-dom"
-import { useMainPlan, useSplitDraft, useStartDraft } from "./hooks"
+import { useLocation, useParams } from "react-router-dom"
+import { useSplitNavigate } from "./split-navigation"
+import { useMainPlan, useSplitDraft, useStartDraft, useTripMembers } from "./hooks"
 import { SplitLayout } from "./split-layout"
 import { ErrorState, LoadingState } from "./states"
 import { TeamRouteGraph } from "./team-route-graph"
@@ -10,7 +11,7 @@ import { actionForStatus, buildGraphRows, formatTime, type GraphRow, type StopIn
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
-import { IconArrowRight, IconBranch, IconClock } from "@/components/icons"
+import { IconArrowRight, IconBranch, IconClock, IconInfo } from "@/components/icons"
 import type { SplitDraftStatus } from "./types"
 
 /**
@@ -21,13 +22,17 @@ import type { SplitDraftStatus } from "./types"
  */
 export function ScreenStart() {
   const { tripId = "" } = useParams()
-  const navigate = useNavigate()
+  const navigate = useSplitNavigate()
+  const { search } = useLocation()
+  const dashboardOrigin = new URLSearchParams(search).get("from") === "dashboard"
   const draftQuery = useSplitDraft(tripId)
   const detail = draftQuery.data ?? null
   const status: SplitDraftStatus | null = detail?.status ?? null
   const noDraft = !draftQuery.isPending && !draftQuery.error && (detail == null || status === "cancelled")
   const mainPlanQuery = useMainPlan(tripId, noDraft)
   const start = useStartDraft(tripId)
+  const membersQuery = useTripMembers(tripId)
+  const tooFewMembers = membersQuery.data != null && membersQuery.data.length < 2
   const [selectedNode, setSelectedNode] = useState<GraphRow | null>(null)
 
   const loading = draftQuery.isPending || (noDraft && mainPlanQuery.isPending)
@@ -41,8 +46,8 @@ export function ScreenStart() {
       ? detail.mainPlanStops.map((stop) => ({
           id: stop.id,
           name: stop.name,
-          startLabel: formatTime(stop.startAt, "iso"),
-          endLabel: formatTime(stop.endAt, "iso"),
+          startLabel: formatTime(stop.startAt, "iso", detail?.destination),
+          endLabel: formatTime(stop.endAt, "iso", detail?.destination),
         }))
       : (mainPlanQuery.data?.stops ?? []).map((stop) => ({
           id: String(stop.seq),
@@ -70,7 +75,10 @@ export function ScreenStart() {
   const awaitingBoundaries = status === "active" && !hasBoundaries
   const awaitingRoutes = status === "active" && hasBoundaries && routes.length === 0
 
-  const action = actionForStatus(status, hasConfirmedMainPlan)
+  // A split needs two groups with at least one member each (US-040 S10-N); block the entry instead of
+  // letting the user start a draft that can never be confirmed.
+  const baseAction = actionForStatus(status, hasConfirmedMainPlan)
+  const action = tooFewMembers ? { kind: "blocked" as const, label: "成员不足" } : baseAction
   const blocked = action.kind === "blocked"
 
   async function handleAction() {
@@ -97,6 +105,7 @@ export function ScreenStart() {
       title="队伍路线"
       subtitle="本次行程仅一次分队"
       showTabBar
+      backTo={dashboardOrigin ? `/#/dashboard/trips/${tripId}` : `/#/trips/${tripId}`}
       right={
         <Button
           size="sm"
@@ -132,11 +141,37 @@ export function ScreenStart() {
                     : "尚未发起分队"}
             </Badge>
             <span className="text-[10.5px] text-ink-3">
-              {blocked
-                ? "先确认主线方案"
-                : `点击右上角${action.kind === "confirm" ? "查看" : "进入"}分队`}
+              {tooFewMembers
+                ? "成员不足两名，暂不能分队"
+                : blocked
+                  ? "先确认主线方案"
+                  : `点击右上角${action.kind === "confirm" ? "查看" : "进入"}分队`}
             </span>
           </div>
+
+          {tooFewMembers ? (
+            <Card className="flex items-start gap-2.5 border-[#fde68a] bg-warn-soft p-3.5">
+              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-warn/15 text-warn [&_svg]:size-4">
+                <IconInfo />
+              </span>
+              <div className="min-w-0">
+                <div className="text-[13px] font-bold text-[#b45309]">无法分队：成员不足</div>
+                <p className="mt-0.5 text-[11.5px] leading-relaxed text-ink-2">
+                  当前行程只有 {membersQuery.data?.length ?? 0} 名成员。分队需要 A/B 两组各至少一人，请先在「成员」页邀请至少一名其他成员。
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-2"
+                  onClick={() => {
+                    window.location.href = `/#/trips/${tripId}`
+                  }}
+                >
+                  返回行程详情
+                </Button>
+              </div>
+            </Card>
+          ) : null}
 
           {!hasConfirmedMainPlan ? (
             <Card className="border-brand-soft bg-brand-soft/40 p-4">
@@ -151,7 +186,7 @@ export function ScreenStart() {
                   </p>
                   <a
                     className="mt-2 inline-flex items-center gap-1 text-[11.5px] font-semibold text-brand-ink underline-offset-2 hover:underline"
-                    href={`/#/trips/${tripId}/main-plan`}
+                    href={dashboardOrigin ? `/#/dashboard/trips/${tripId}/main-plan` : `/#/trips/${tripId}/main-plan`}
                   >
                     去主线方案 <IconArrowRight className="size-3.5" />
                   </a>
@@ -165,9 +200,9 @@ export function ScreenStart() {
               {hasBoundaries && detail ? (
                 <div className="flex items-center gap-2 px-1 text-[10.5px] font-semibold text-ink-2">
                   <IconClock className="size-3.5 shrink-0 text-brand" />
-                  <span className="shrink-0">{formatTime(detail.departureAt, "iso")} 分头</span>
+                  <span className="shrink-0">{formatTime(detail.departureAt, "iso", detail.destination)} 分头</span>
                   <span className="min-w-4 flex-1 border-t border-dashed border-a-line" />
-                  <span className="shrink-0">{formatTime(detail.reunionAt, "iso")} 会合</span>
+                  <span className="shrink-0">{formatTime(detail.reunionAt, "iso", detail.destination)} 会合</span>
                   {detail.windowMinutes != null ? (
                     <span className="shrink-0 text-ink-3">{formatWindow(detail.windowMinutes)}</span>
                   ) : null}

@@ -34,9 +34,22 @@ when no in-app history exists.
 - **GIVEN** a traveler scanning with an active camera
 - **WHEN** a QR code encoding a URL that carries the complete `#/join/<token>`
   form is recognized
-- **THEN** the token is extracted and the existing invitation preview and
-  explicit accept flow (`#/join/<token>`) opens
+- **THEN** the token is extracted and the Join page (`#/join/<token>`) opens
+- **AND** a signed-in viewer who is not yet a member sees the preview and
+  explicit accept flow
 - **AND** no membership is created from scanning alone
+
+#### Scenario: Existing member scanning lands on the already-in-team notice
+
+- **GIVEN** a signed-in traveler who is already a member of the invited trip
+- **WHEN** a valid invitation QR or link opens the Join page
+- **THEN** the page lands directly on the already-in-team notice (enter-trip /
+  back-to-scan actions) without the preview/accept surface
+- **AND** the organizer sees the organizer wording (creator of the trip, no
+  need to join) instead of the member wording
+- **AND** guests and non-members keep the public preview unchanged; the
+  preview carries `tripId` and `viewerMember` for signed-in viewers only as
+  far as membership of the viewer themselves is concerned (2026-11-17 revision)
 
 #### Scenario: Invalid, revoked, or closed invitation follows existing rules
 

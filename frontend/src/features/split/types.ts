@@ -49,6 +49,12 @@ export interface RouteDurations {
   bufferMinutes: number | null
 }
 
+/** One visible step of a branch route (backend RouteStep); group A follows the main-plan stops. */
+export interface RouteStep {
+  name: string
+  minutes: number
+}
+
 /** One group's route view (backend GroupRoute), shared by generation response and detail snapshot. */
 export interface GroupRoute {
   groupLabel: string
@@ -58,6 +64,7 @@ export interface GroupRoute {
   activityMinutes: number | null
   travelLegsMinutes: number[]
   bufferMinutes: number | null
+  steps?: RouteStep[] | null
 }
 
 /** Draft document returned by POST start (backend SplitDraftDocument). */
@@ -90,6 +97,8 @@ export interface SplitDraftDetail {
   reunionAt: string | null
   windowMinutes: number | null
   routes: GroupRoute[]
+  /** Trip destination; the screens use it to render instants in the trip's own zone. */
+  destination: string | null
 }
 
 /** Boundary save response (backend BoundaryResponse). */
@@ -136,6 +145,16 @@ export interface TimingResult {
   windowMinutes: number
   feasible: boolean
   routes: RouteTimingResult[]
+}
+
+/**
+ * PUT .../split-draft/assignment body (US-040 A1-A3 + revision 2026-11-17, design DD16).
+ * memberId names the member being moved (any trip member may move any member); omitted = the caller.
+ */
+export interface AssignmentRequest {
+  memberId?: string
+  groupLabel: "A" | "B"
+  draftVersion: number
 }
 
 /** POST :confirm / :cancel body (backend DraftVersionRequest). */

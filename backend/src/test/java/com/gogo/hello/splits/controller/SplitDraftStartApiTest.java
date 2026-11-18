@@ -43,6 +43,38 @@ class SplitDraftStartApiTest extends AbstractSplitApiTest {
     }
 
     @Test
+    @DisplayName("startDraft_mainPlanVersionTwo_pinsTheRealVersionAndKeepsThoseStops")
+    void startDraft_mainPlanVersionTwo_pinsTheRealVersionAndKeepsThoseStops() throws Exception {
+        seedConfirmedMainPlan(2);
+        mockMvc.perform(post("/api/trips/{tripId}/split-draft", sgfTripId())
+                        .with(TestAuth.asUser(memberId("Ben"))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.mainPlanVersion").value(2))
+                .andExpect(jsonPath("$.data.draftVersion").value(1));
+        Integer projectedAtVersion = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM plan_node WHERE trip_id = ? AND branch_id = 'main' AND plan_version = 2",
+                Integer.class, sgfTripId());
+        assertThat(projectedAtVersion).isEqualTo(4);
+        assertThat(mainStopCount()).isEqualTo(4);
+    }
+
+    @Test
+    @DisplayName("startDraft_confirmedFlagWithoutConfirmedDraft_returns409AndWritesNoStops")
+    void startDraft_confirmedFlagWithoutConfirmedDraft_returns409AndWritesNoStops() throws Exception {
+        jdbc.update("DELETE FROM main_plan_stop WHERE draft_id IN "
+                + "(SELECT id FROM main_plan_draft WHERE trip_id = ?)", sgfTripId());
+        jdbc.update("DELETE FROM main_plan_draft WHERE trip_id = ?", sgfTripId());
+        mockMvc.perform(post("/api/trips/{tripId}/split-draft", sgfTripId())
+                        .with(TestAuth.asUser(memberId("Ben"))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.data").doesNotExist())
+                .andExpect(jsonPath("$.error.code").value("MAIN_PLAN_NOT_CONFIRMED"));
+        assertThat(activeDraftCount()).isZero();
+        // The previously projected rows stay untouched; nothing new is invented for a missing plan.
+        assertThat(mainStopCount()).isEqualTo(4);
+    }
+
+    @Test
     @DisplayName("startDraft_concurrentAliceAndBen_atMostOneActiveDraft")
     void startDraft_concurrentAliceAndBen_atMostOneActiveDraft() throws Exception {
         String alice = memberId("Alice");
@@ -217,5 +249,36 @@ class SplitDraftStartApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.error.code").value("SPLIT_DRAFT_CONFLICT"));
         assertThat(draftJson()).isEqualTo(confirmed);
         assertThat(activeDraftCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("startDraft_initialGroups_allMembersInAEmptyB")
+    void startDraft_initialGroups_allMembersInAEmptyB() throws Exception {
+        String alice = memberId("Alice");
+        mockMvc.perform(post("/api/trips/{tripId}/split-draft", sgfTripId())
+                        .with(TestAuth.asUser(memberId("Ben"))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.groups.A.length()").value(4))
+                .andExpect(jsonPath("$.data.groups.A[0]").value(alice))
+                .andExpect(jsonPath("$.data.groups.B.length()").value(0));
+    }
+
+    @Test
+    @DisplayName("startDraft_singleMemberTrip_returns409SplitMembersInsufficient")
+    void startDraft_singleMemberTrip_returns409SplitMembersInsufficient() throws Exception {
+        String alice = memberId("Alice");
+        jdbc.update("INSERT INTO trip (name, destination, start_date, end_date, start_location, end_location, organizer_id) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                "Solo Trip", "Singapore", "2026-12-05", "2026-12-05", "Home", "Zoo", alice);
+        Integer soloTripId = jdbc.queryForObject("SELECT id FROM trip WHERE name = 'Solo Trip'", Integer.class);
+        jdbc.update("UPDATE trip SET main_plan_confirmed = 1 WHERE id = ?", soloTripId);
+        jdbc.update("INSERT INTO trip_member (trip_id, user_id) VALUES (?, ?)", soloTripId, alice);
+
+        mockMvc.perform(post("/api/trips/{tripId}/split-draft", String.valueOf(soloTripId))
+                        .with(TestAuth.asUser(alice)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.data").doesNotExist())
+                .andExpect(jsonPath("$.error.code").value("SPLIT_MEMBERS_INSUFFICIENT"));
+        assertThat(activeDraftCount()).isZero();
     }
 }

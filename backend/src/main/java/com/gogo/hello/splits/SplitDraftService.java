@@ -13,6 +13,7 @@ import com.gogo.hello.splits.domain.RouteTimingInput;
 import com.gogo.hello.splits.domain.RouteTimingResult;
 import com.gogo.hello.splits.domain.SplitWindow;
 import com.gogo.hello.splits.domain.TimingResult;
+import com.gogo.hello.splits.dto.AssignmentRequest;
 import com.gogo.hello.splits.dto.BoundaryResponse;
 import com.gogo.hello.splits.dto.CheckTimingRequest;
 import com.gogo.hello.splits.dto.GenerateRoutesRequest;
@@ -21,8 +22,10 @@ import com.gogo.hello.splits.dto.RouteGenerationResponse;
 import com.gogo.hello.splits.dto.SaveBoundariesRequest;
 import com.gogo.hello.splits.dto.SplitDraftDetailResponse;
 import com.gogo.hello.splits.provider.BranchCandidateProvider;
+import com.gogo.mainplan.MainPlanProjection;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -44,51 +47,69 @@ public class SplitDraftService {
     private final SplitDraftRepository repository;
     private final ObjectMapper objectMapper;
     private final BranchCandidateProvider provider;
+    private final MainPlanProjection mainPlanProjection;
     private final TransactionTemplate transactionTemplate;
     private final ReunionTimingCalculator calculator = new ReunionTimingCalculator();
 
     public SplitDraftService(MemberGuard guard, SplitDraftRepository repository, ObjectMapper objectMapper,
-            BranchCandidateProvider provider, PlatformTransactionManager transactionManager) {
+            BranchCandidateProvider provider, MainPlanProjection mainPlanProjection,
+            PlatformTransactionManager transactionManager) {
         this.guard = guard;
         this.repository = repository;
         this.objectMapper = objectMapper;
         this.provider = provider;
+        this.mainPlanProjection = mainPlanProjection;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
     /**
      * Starts the trip's unique active draft (spec REQ-004, design D8/D9/D16). Guards identity/trip/membership,
-     * requires a confirmed main plan, then conditionally inserts the draft only while {@code split_draft IS NULL};
-     * a lost race maps to 409 SPLIT_DRAFT_CONFLICT.
+     * requires a confirmed main plan, projects that plan into the main-line nodes, then conditionally inserts the
+     * draft only while {@code split_draft IS NULL}; a lost race maps to 409 SPLIT_DRAFT_CONFLICT. The draft pins the
+     * confirmed plan's real version, so its boundaries come from the same stops the members approved.
      */
     public SplitDraftDocument startDraft(String tripId, String memberId) {
         guard.requireMember(memberId, tripId);
         if (!repository.isMainPlanConfirmed(tripId)) {
             throw new ApiException(ErrorCode.MAIN_PLAN_NOT_CONFIRMED, "the main plan must be confirmed");
         }
-        repository.ensureMainPlanStops(tripId);
-        Map<String, List<String>> groups =
-                SplitDraftDocument.partitionGroups(repository.findMemberIdsOrdered(tripId));
+        List<String> memberIds = repository.findMemberIdsOrdered(tripId);
         String now = Instant.now().toString();
 
         String existingJson = repository.findDraftJson(tripId);
+        SplitDraftDocument existing = null;
         if (existingJson != null) {
-            SplitDraftDocument existing = fromJson(existingJson);
+            existing = fromJson(existingJson);
             if (!"cancelled".equals(existing.status())) {
                 throw new ApiException(ErrorCode.SPLIT_DRAFT_CONFLICT, "an active split draft already exists");
             }
-            SplitDraftDocument rebuilt = SplitDraftDocument.initialRebuilt(memberId, 1, groups, now);
-            if (repository.rebuildIfCancelled(tripId, toJson(rebuilt), now) == 0) {
-                throw new ApiException(ErrorCode.SPLIT_DRAFT_CONFLICT, "a concurrent request replaced the draft");
+        }
+        requireSplittableMembers(memberIds);
+        int mainPlanVersion = confirmedMainPlanVersion(tripId);
+        if (existing == null) {
+            SplitDraftDocument draft = SplitDraftDocument.initial(
+                    memberId, mainPlanVersion, SplitDraftDocument.initialGroups(memberIds), now);
+            if (repository.createDraftIfAbsent(tripId, toJson(draft)) == 0) {
+                throw new ApiException(ErrorCode.SPLIT_DRAFT_CONFLICT, "an active split draft already exists");
             }
-            return rebuilt;
+            return draft;
         }
+        SplitDraftDocument rebuilt = SplitDraftDocument.initialRebuilt(
+                memberId, mainPlanVersion, SplitDraftDocument.initialGroups(memberIds), now);
+        if (repository.rebuildIfCancelled(tripId, toJson(rebuilt), now) == 0) {
+            throw new ApiException(ErrorCode.SPLIT_DRAFT_CONFLICT, "a concurrent request replaced the draft");
+        }
+        return rebuilt;
+    }
 
-        SplitDraftDocument draft = SplitDraftDocument.initial(memberId, 1, groups, now);
-        if (repository.createDraftIfAbsent(tripId, toJson(draft)) == 0) {
-            throw new ApiException(ErrorCode.SPLIT_DRAFT_CONFLICT, "an active split draft already exists");
-        }
-        return draft;
+    /**
+     * Projects the confirmed main plan into plan_node and returns its version. A confirmation flag without a
+     * confirmed draft cannot provide boundary stops, so it is rejected instead of falling back to synthetic nodes.
+     */
+    private int confirmedMainPlanVersion(String tripId) {
+        return mainPlanProjection.projectConfirmed(Long.parseLong(tripId))
+                .orElseThrow(() -> new ApiException(
+                        ErrorCode.MAIN_PLAN_NOT_CONFIRMED, "the main plan must be confirmed"));
     }
 
     /**
@@ -118,17 +139,55 @@ public class SplitDraftService {
         PlanStop reunion = repository.findMainPlanStop(tripId, request.reunionStopId(), draft.mainPlanVersion())
                 .orElseThrow(() -> new ApiException(
                         ErrorCode.BOUNDARY_NOT_IN_MAIN_PLAN, "reunion stop is not in the confirmed main plan"));
-        SplitWindow window = SplitWindow.between(departure.endAt(), reunion.startAt());
+        SplitWindow window = SplitWindow.between(departure.startAt(), reunion.startAt());
         if (!window.isPositive()) {
             throw new ApiException(ErrorCode.NONPOSITIVE_SPLIT_WINDOW, "split window must be positive");
         }
         SplitDraftDocument updated = draft.withBoundaries(departure.id(), reunion.id(), Instant.now().toString());
+        transactionTemplate.executeWithoutResult(status -> {
+            if (repository.updateDraftIfVersion(tripId, toJson(updated), draft.draftVersion()) == 0) {
+                throw new ApiException(ErrorCode.STALE_DRAFT_VERSION, "draft version is stale");
+            }
+            repository.deleteSplitRoutes(tripId);
+        });
+        return new BoundaryResponse(
+                departure.id(), reunion.id(), departure.startAt(), reunion.startAt(),
+                window.minutes(), updated.draftVersion());
+    }
+
+    /**
+     * Moves a trip member into the target group (US-040 A1-A9, design DD2/DD4/DD7). After the shared guard it requires
+     * an active draft, the current version and an A/B label. Any trip member may move any trip member (user ruling
+     * 2026-11-17, prototype avatar click); the optional {@code memberId} names the moved member and defaults to the
+     * caller, while a target outside the trip is rejected with NOT_A_MEMBER. Moving a member into the group it already
+     * belongs to is idempotent: 200 with no write and no version bump (design DD4). Otherwise the conditional update
+     * bumps draftVersion and leaves the saved boundaries and generated routes untouched.
+     */
+    public SplitDraftDetailResponse assign(String tripId, String memberId, AssignmentRequest request) {
+        guard.requireMember(memberId, tripId);
+        SplitDraftDocument draft = requireActiveDraft(tripId);
+        if (request == null || request.draftVersion() != draft.draftVersion()) {
+            throw new ApiException(ErrorCode.STALE_DRAFT_VERSION, "draft version is stale");
+        }
+        String groupLabel = request.groupLabel();
+        if (!"A".equals(groupLabel) && !"B".equals(groupLabel)) {
+            throw new ApiException(ErrorCode.INVALID_GROUP_LABEL, "group label must be A or B");
+        }
+        String target = request.memberId() == null || request.memberId().isBlank()
+                ? memberId
+                : request.memberId();
+        if (!target.equals(memberId) && !repository.findMemberIdsOrdered(tripId).contains(target)) {
+            throw new ApiException(ErrorCode.NOT_A_MEMBER, "the target member does not belong to this trip");
+        }
+        if (draft.groups() != null
+                && draft.groups().getOrDefault(groupLabel, List.of()).contains(target)) {
+            return getDraftDetail(tripId, memberId);
+        }
+        SplitDraftDocument updated = draft.withAssignment(groupLabel, target, Instant.now().toString());
         if (repository.updateDraftIfVersion(tripId, toJson(updated), draft.draftVersion()) == 0) {
             throw new ApiException(ErrorCode.STALE_DRAFT_VERSION, "draft version is stale");
         }
-        return new BoundaryResponse(
-                departure.id(), reunion.id(), departure.endAt(), reunion.startAt(),
-                window.minutes(), updated.draftVersion());
+        return getDraftDetail(tripId, memberId);
     }
 
     /**
@@ -159,6 +218,11 @@ public class SplitDraftService {
         if (request.draftVersion() != draft.draftVersion()) {
             throw new ApiException(ErrorCode.STALE_DRAFT_VERSION, "draft version is stale");
         }
+        List<String> groupProblems = groupProblems(draft, repository.findMemberIdsOrdered(tripId));
+        if (!groupProblems.isEmpty()) {
+            throw new ApiException(ErrorCode.SPLIT_DRAFT_INCOMPLETE, "the draft is not complete",
+                    Map.of("missing", groupProblems));
+        }
         PlanStop departure = repository.findMainPlanStop(tripId, draft.departureStopId(), draft.mainPlanVersion())
                 .orElseThrow(() -> new ApiException(
                         ErrorCode.BOUNDARY_NOT_IN_MAIN_PLAN, "departure stop is not in the confirmed main plan"));
@@ -166,10 +230,12 @@ public class SplitDraftService {
                 .orElseThrow(() -> new ApiException(
                         ErrorCode.BOUNDARY_NOT_IN_MAIN_PLAN, "reunion stop is not in the confirmed main plan"));
         int capturedVersion = draft.draftVersion();
+        List<PlanStop> mainPlanStops = repository.findMainPlanStops(tripId, draft.mainPlanVersion());
         Map<String, RouteCandidate> candidates = new LinkedHashMap<>();
         try {
             for (String groupLabel : draft.groups().keySet()) {
-                candidates.put(groupLabel, provider.candidateFor(groupLabel, departure, reunion));
+                candidates.put(groupLabel, provider.candidateFor(groupLabel, departure, reunion,
+                        repository.findDestination(tripId).orElse(null), mainPlanStops));
             }
         } catch (RuntimeException ex) {
             throw new ApiException(ErrorCode.ROUTE_GENERATION_FAILED, "route generation failed for a group");
@@ -179,10 +245,11 @@ public class SplitDraftService {
         List<GroupRoute> routeViews = new ArrayList<>();
         for (Map.Entry<String, RouteCandidate> entry : candidates.entrySet()) {
             RouteCandidate candidate = entry.getValue();
-            durations.put(entry.getKey(), new RouteDurations(
-                    candidate.activityMinutes(), candidate.travelLegsMinutes(), candidate.bufferMinutes()));
+            durations.put(entry.getKey(), new RouteDurations(candidate.activityMinutes(),
+                    candidate.travelLegsMinutes(), candidate.bufferMinutes(), candidate.steps()));
             routeViews.add(new GroupRoute(entry.getKey(), candidate.activityName(), departure.id(), reunion.id(),
-                    candidate.activityMinutes(), candidate.travelLegsMinutes(), candidate.bufferMinutes()));
+                    candidate.activityMinutes(), candidate.travelLegsMinutes(), candidate.bufferMinutes(),
+                    candidate.steps()));
         }
         SplitDraftDocument updated = draft.withRoutes(durations, now);
         String updatedJson = toJson(updated);
@@ -192,7 +259,7 @@ public class SplitDraftService {
             for (Map.Entry<String, RouteCandidate> entry : candidates.entrySet()) {
                 String branchId = "split-" + entry.getKey().toLowerCase(Locale.ROOT);
                 repository.insertSplitRoute(UUID.randomUUID().toString(), tripId, draft.mainPlanVersion(), branchId,
-                        entry.getValue().activityName(), departure.endAt().toString(), reunion.startAt().toString(),
+                        entry.getValue().activityName(), departure.startAt().toString(), reunion.startAt().toString(),
                         order++, now);
             }
             if (repository.updateDraftIfVersion(tripId, updatedJson, capturedVersion) == 0) {
@@ -240,7 +307,7 @@ public class SplitDraftService {
             PlanStop departure = stopById(mainPlanStops, departureStopId);
             PlanStop reunion = stopById(mainPlanStops, reunionStopId);
             if (departure != null && reunion != null) {
-                departureAt = departure.endAt();
+                departureAt = departure.startAt();
                 reunionAt = reunion.startAt();
                 windowMinutes = SplitWindow.between(departureAt, reunionAt).minutes();
             }
@@ -253,13 +320,15 @@ public class SplitDraftService {
                 RouteDurations durations = entry.getValue();
                 String activityName = activities.get("split-" + label.toLowerCase(Locale.ROOT));
                 routes.add(new GroupRoute(label, activityName, departureStopId, reunionStopId,
-                        durations.activityMinutes(), durations.travelLegsMinutes(), durations.bufferMinutes()));
+                        durations.activityMinutes(), durations.travelLegsMinutes(), durations.bufferMinutes(),
+                        durations.steps()));
             }
         }
         return new SplitDraftDetailResponse(
                 draft.initiatorMemberId(), draft.mainPlanVersion(), draft.draftVersion(), draft.status(),
                 draft.groups(), draft.createdAt(), draft.updatedAt(), mainPlanStops,
-                departureStopId, reunionStopId, departureAt, reunionAt, windowMinutes, routes);
+                departureStopId, reunionStopId, departureAt, reunionAt, windowMinutes, routes,
+                repository.findDestination(tripId).orElse(null));
     }
 
     /**
@@ -275,7 +344,7 @@ public class SplitDraftService {
         if (draft.draftVersion() != draftVersion) {
             throw new ApiException(ErrorCode.STALE_DRAFT_VERSION, "draft version is stale");
         }
-        List<String> missing = missingDraftParts(draft);
+        List<String> missing = missingDraftParts(draft, repository.findMemberIdsOrdered(tripId));
         if (!missing.isEmpty()) {
             throw new ApiException(ErrorCode.SPLIT_DRAFT_INCOMPLETE, "the draft is not complete",
                     Map.of("missing", missing));
@@ -341,7 +410,7 @@ public class SplitDraftService {
         return json == null ? null : fromJson(json);
     }
 
-    private List<String> missingDraftParts(SplitDraftDocument draft) {
+    private List<String> missingDraftParts(SplitDraftDocument draft, List<String> memberIds) {
         List<String> missing = new ArrayList<>();
         if (draft.departureStopId() == null || draft.reunionStopId() == null) {
             missing.add("boundaries");
@@ -357,7 +426,61 @@ public class SplitDraftService {
                 missing.add("routes.B");
             }
         }
+        missing.addAll(groupProblems(draft, memberIds));
         return missing;
+    }
+
+    /**
+     * US-040 group completeness projection (design DD8): both groups non-empty and every current trip member assigned
+     * exactly once. Items are appended in a fixed order so {@code error.details.missing} stays assertable.
+     */
+    private List<String> groupProblems(SplitDraftDocument draft, List<String> memberIds) {
+        List<String> problems = new ArrayList<>();
+        Map<String, List<String>> groups = draft.groups();
+        List<String> groupA = groups == null ? null : groups.get("A");
+        List<String> groupB = groups == null ? null : groups.get("B");
+        if (groupA == null || groupA.isEmpty()) {
+            problems.add("groups.A");
+        }
+        if (groupB == null || groupB.isEmpty()) {
+            problems.add("groups.B");
+        }
+        if (groups == null) {
+            problems.add("groups.unassigned");
+            return problems;
+        }
+        List<String> assigned = new ArrayList<>();
+        if (groupA != null) {
+            assigned.addAll(groupA);
+        }
+        if (groupB != null) {
+            assigned.addAll(groupB);
+        }
+        if (memberIds.stream().anyMatch(id -> !assigned.contains(id))) {
+            problems.add("groups.unassigned");
+        }
+        boolean duplicate = false;
+        for (String label : List.of("A", "B")) {
+            List<String> members = groups.get(label);
+            if (members != null && new HashSet<>(members).size() != members.size()) {
+                duplicate = true;
+            }
+        }
+        if (!duplicate && groupA != null && groupB != null) {
+            duplicate = groupA.stream().anyMatch(groupB::contains);
+        }
+        if (duplicate) {
+            problems.add("groups.duplicate");
+        }
+        return problems;
+    }
+
+    /** A split needs two groups with at least one member each (US-040 S10-N, design DD5). */
+    private void requireSplittableMembers(List<String> memberIds) {
+        if (memberIds.size() < 2) {
+            throw new ApiException(ErrorCode.SPLIT_MEMBERS_INSUFFICIENT,
+                    "a split needs at least two trip members (one per group)");
+        }
     }
 
     /** Window length derived from the confirmed main-plan boundary stops (design D5). */
@@ -368,7 +491,7 @@ public class SplitDraftService {
         PlanStop reunion = repository.findMainPlanStop(tripId, draft.reunionStopId(), draft.mainPlanVersion())
                 .orElseThrow(() -> new ApiException(ErrorCode.BOUNDARY_NOT_IN_MAIN_PLAN,
                         "reunion stop is not in the confirmed main plan"));
-        return SplitWindow.between(departure.endAt(), reunion.startAt()).minutes();
+        return SplitWindow.between(departure.startAt(), reunion.startAt()).minutes();
     }
 
     /** Maps the saved A/B duration breakdown to the calculator's nullable inputs (design D8). */

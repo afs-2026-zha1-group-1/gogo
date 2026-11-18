@@ -26,5 +26,6 @@ public record SplitDraftDetailResponse(
         Instant departureAt,
         Instant reunionAt,
         Long windowMinutes,
-        List<GroupRoute> routes) {
+        List<GroupRoute> routes,
+        String destination) {
 }

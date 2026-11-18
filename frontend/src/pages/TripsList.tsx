@@ -3,6 +3,7 @@ import { api, errorMessage } from '../api'
 import Icon from '../Icons'
 import type { CurrentTripResponse, TripListItem, TripListResponse } from '../types'
 import { isEnded, todayIso } from '../lib/trip-date'
+import { isCurrentTripResponse } from '../lib/current-trip'
 
 type ListState =
   | { kind: 'loading' }
@@ -14,17 +15,24 @@ interface TripsListProps {
   subtitle?: string
   /** Picker mode: tapping a row stores it as the current trip and tags the card; no navigation. */
   selectable?: boolean
+  selectionInFlight?: boolean
+  onSelectionStart?: () => number
+  onSelectionFinish?: (selectionId: number | undefined, succeeded: boolean) => void
 }
 
 export default function TripsList({
   title = '我的行程',
   subtitle,
   selectable = false,
+  selectionInFlight = false,
+  onSelectionStart,
+  onSelectionFinish,
 }: TripsListProps) {
   const [state, setState] = useState<ListState>({ kind: 'loading' })
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [selectError, setSelectError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
+  const [selecting, setSelecting] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -50,29 +58,47 @@ export default function TripsList({
   }, [reloadKey])
 
   useEffect(() => {
-    if (!selectable) return
+    if (!selectable || selectionInFlight) return
     let active = true
-    api<CurrentTripResponse>('/api/trips/current')
+    api<unknown>('/api/trips/current')
       .then((result) => {
-        if (active && result.ok && result.data) setSelectedId(result.data.tripId)
+        if (!active) return
+        if (result.ok && isCurrentTripResponse(result.data)) setSelectedId(result.data.tripId)
+        else setSelectError('无法读取当前行程')
       })
-      .catch(() => {})
+      .catch((cause: unknown) => {
+        if (active) setSelectError(`无法读取当前行程：${errorMessage(cause)}`)
+      })
     return () => {
       active = false
     }
-  }, [selectable, reloadKey])
+  }, [selectable, reloadKey, selectionInFlight])
 
   async function pick(trip: TripListItem) {
     setSelectError('')
-    const result = await api<CurrentTripResponse>('/api/trips/current', {
-      method: 'PUT',
-      body: { tripId: trip.id },
-    })
-    if (result.ok && result.data?.tripId != null) {
-      setSelectedId(result.data.tripId)
-      return
+    setSelecting(true)
+    const selectionId = onSelectionStart?.()
+    let succeeded = false
+    try {
+      const result = await api<CurrentTripResponse>('/api/trips/current', {
+        method: 'PUT',
+        body: { tripId: trip.id },
+      })
+      if (result.ok && result.data?.tripId === trip.id) {
+        setSelectedId(result.data.tripId)
+        succeeded = true
+        return
+      }
+      const message = result.ok ? '设置当前行程失败' : result.data?.message ?? `请求失败（HTTP ${result.status}）`
+      console.error('Unable to select the current trip', message)
+      setSelectError(message)
+    } catch (cause: unknown) {
+      console.error('Unable to select the current trip', cause)
+      setSelectError(`无法连接服务器：${errorMessage(cause)}`)
+    } finally {
+      setSelecting(false)
+      onSelectionFinish?.(selectionId, succeeded)
     }
-    setSelectError(result.ok ? '设置当前行程失败' : result.data?.message ?? `请求失败（HTTP ${result.status}）`)
   }
 
   const count = state.kind === 'ready' ? state.trips.length : 0
@@ -162,6 +188,7 @@ export default function TripsList({
               type="button"
               className={`qcard${selected ? ' selected' : ''}`}
               aria-pressed={selected}
+              disabled={selecting || selectionInFlight}
               onClick={() => pick(trip)}
             >
               {body}

@@ -1,0 +1,87 @@
+/**
+ * US-085: pure countdown state machine for the trip detail card (design DD-2/DD-4).
+ * Times are epoch ms in the device-local timezone (MVP assumption D-2); `now` is
+ * injectable so node:test can exercise boundaries without timers.
+ */
+
+/** One timeline entry shared by the countdown and the 我的方案 section (design DD-2). */
+export interface ScheduleItem {
+  key: string
+  name: string
+  /** epoch ms; null = time pending confirmation (never fabricated). */
+  start: number | null
+  end: number | null
+  /** null = shared activity for every member. */
+  groupLabel: string | null
+  interests: string[]
+  address: string | null
+  travelMinutesToNext: number | null
+}
+
+export type CountdownState =
+  | { kind: 'pre-trip'; target: number; remainingMs: number }
+  | { kind: 'during'; item: ScheduleItem; remainingMs: number }
+  | { kind: 'between'; next: ScheduleItem; remainingMs: number }
+  | { kind: 'finished' }
+  | { kind: 'no-schedule' }
+
+/** Local midnight of a `YYYY-MM-DD` trip date (departure instant, R7). */
+export function localMidnight(dateStr: string): number {
+  const [year, month, day] = dateStr.split('-').map(Number)
+  return new Date(year, month - 1, day, 0, 0, 0, 0).getTime()
+}
+
+/** Last instant of a `YYYY-MM-DD` trip date (trip-end boundary). */
+export function localEndOfDay(dateStr: string): number {
+  const [year, month, day] = dateStr.split('-').map(Number)
+  return new Date(year, month - 1, day, 23, 59, 59, 999).getTime()
+}
+
+/**
+ * Resolve the countdown state for `now` (R7). Activities use half-open intervals
+ * [start, end) so hitting an end boundary switches state instead of going negative;
+ * items with unknown times never participate in during/between decisions.
+ */
+export function resolveCountdown(
+  now: number,
+  departureMs: number,
+  schedule: ScheduleItem[],
+  tripEndMs: number,
+): CountdownState {
+  if (now < departureMs) return { kind: 'pre-trip', target: departureMs, remainingMs: departureMs - now }
+
+  const timed = schedule
+    .filter((item): item is ScheduleItem & { start: number; end: number } =>
+      item.start != null && item.end != null)
+    .sort((a, b) => a.start - b.start)
+
+  for (const item of timed) {
+    if (now >= item.start && now < item.end) {
+      return { kind: 'during', item, remainingMs: item.end - now }
+    }
+  }
+  const next = timed.find((item) => item.start > now)
+  if (next) return { kind: 'between', next, remainingMs: next.start - now }
+  if (timed.length > 0) return { kind: 'finished' }
+  return now > tripEndMs ? { kind: 'finished' } : { kind: 'no-schedule' }
+}
+
+/** Split a non-negative duration into `N 天 HH:MM:SS` parts; negatives clamp to zero. */
+export function formatCountdown(ms: number): { days: number; hh: string; mm: string; ss: string } {
+  const total = Math.max(0, Math.floor(ms / 1000))
+  const days = Math.floor(total / 86400)
+  const pad = (value: number) => String(value).padStart(2, '0')
+  return {
+    days,
+    hh: pad(Math.floor((total % 86400) / 3600)),
+    mm: pad(Math.floor((total % 3600) / 60)),
+    ss: pad(total % 60),
+  }
+}
+
+/** Local `HH:mm` clock label for an epoch-ms instant (timeline / next-stop display). */
+export function formatClock(ms: number): string {
+  const date = new Date(ms)
+  const pad = (value: number) => String(value).padStart(2, '0')
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
