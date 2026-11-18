@@ -4,11 +4,14 @@
 
 The shell SHALL show a bottom dock with exactly five tabs in the order
 仪表盘 / 行程 / 分队 / 成员 / 我的, each with an icon and text label. The active tab
-SHALL identify the current area, including dashboard views. Activating an
-hash-routed tab SHALL update the hash without a full reload; the split tab may
-use its existing path route. Navigation SHALL retain the authenticated
-account and preserve browser back/forward behavior. Every tab SHALL have a
-unique visible heading or state.
+SHALL identify the current area, including dashboard views. Activating a
+hash-routed tab SHALL update the hash without a full reload when its target
+differs from the current route; the split tab may use its existing path route.
+When the split fallback targets the current Trips route, the hash remains
+unchanged and the Trips tab remains active. Navigation SHALL retain the authenticated
+account and preserve browser back/forward behavior. Tabs SHALL have distinct
+visible headings or states, except that the split tab MAY reuse the trip
+selection guidance when no trip is available.
 
 #### Scenario: The dock shows five ordered tabs with an active highlight
 
@@ -20,8 +23,9 @@ unique visible heading or state.
 #### Scenario: Tab switching updates the hash without reload and keeps identity
 
 - **WHEN** a traveler authenticated as Alice activates a hash-routed dock tab
-- **THEN** the hash route changes without a full page reload
-- **AND** Alice remains authenticated and the newly active tab is highlighted
+- **THEN** the hash route changes without a full page reload when the target differs from the current route
+- **AND** Alice remains authenticated and the tab owning the resulting route is highlighted
+- **AND** if the split fallback targets the current Trips route, the hash remains unchanged and Trips stays highlighted
 
 #### Scenario: Create belongs to the 行程 tab
 
@@ -32,7 +36,7 @@ unique visible heading or state.
 #### Scenario: Text-only forward and reverse walk identifies every page
 
 - **WHEN** the traveler activates the tabs in order 仪表盘 → 行程 → 分队 → 成员 → 我的 and then in reverse
-- **THEN** every activation yields a unique visible heading or state
+- **THEN** each activation yields a distinct visible heading or state, except that the split tab may reuse trip selection guidance when no trip is available
 - **AND** no demo data is required
 
 #### Scenario: Browser back/forward follows tab history
