@@ -1355,7 +1355,7 @@ AC 未声明保留期、SLA 或容量指标。列表是既有行的只读投影�
 |---|---|---|---|---|
 | 草稿路线时长 | 每草稿每组成员（`split_draft.document.routes`） | `RouteDurations{activityMinutes:int, travelLegsMinutes:int[], bufferMinutes:int, steps?:RouteStep[]}`；A 组合计由 `steps` + 路段派生 | generate 成对替换并 `draftVersion + 1`；**routes 保存整对覆盖并 `+1`**（A 的 steps/派生值一并写入）；分组变更保留；确认冻结；取消清空 | `SplitDraftDocument.routes`（US-089 已含 steps，无迁移） |
 | 路线节点（活动名/地点） | 每草稿每组一行（`plan_node`，`branch_id = split-a/split-b`） | `title`（活动名，必填非空）、`location_name`（地点，可空）、`start_at`/`end_at`（沿用草图边界）、`sort_order` | generate 成对删除+插入（`location_name` 当前回填活动名）；**routes 保存更新 `title`/`location_name`**；取消删除 split 行；主线行不动 | `plan_node`（V4/V5 既有列，无迁移） |
-| 路线编辑请求 | 每次调用一份（整对） | `draftVersion:int`；`routes[2]`：A 组 `{groupLabel:'A', activityName, locationName?, steps[{name, stayMinutes}], travelLegsMinutes[]}`（路段数=站点数）；B 组 `{groupLabel:'B', activityName, locationName?, activityMinutes≥0, travelLegsMinutes[]≥0（段数=既有）, bufferMinutes≥0}` | 仅 `active` 草稿可写；成功后 `draftVersion + 1`；A 合计由服务端派生 | 新 `SaveRoutesRequest` / `RouteEditInput` DTO |
+| 路线编辑请求 | 每次调用一份（整对） | `draftVersion:int`；`routes[2]`：A 组 `{groupLabel:'A', activityName, locationName?, steps[{stayMinutes}], travelLegsMinutes[]}`（站名沿用主线，路段数=站点数）；B 组 `{groupLabel:'B', activityName, locationName?, activityMinutes≥0, travelLegsMinutes[]≥0（段数=既有）, bufferMinutes≥0}` | 仅 `active` 草稿可写；成功后 `draftVersion + 1`；A 合计由服务端派生 | 新 `SaveRoutesRequest` / `RouteEditInput` DTO |
 | 路线视图 | 每次读取一份 | `GroupRoute{groupLabel, activityName, locationName?, departureStopId, reunionStopId, activityMinutes, travelLegsMinutes[], bufferMinutes, steps?}` | 读取不写；`locationName` 为 additive；A 组返回编辑后的 steps | `GET split-draft`（`SplitDraftDetailResponse.routes`） |
 | 草稿版本 | 每草稿一个整数 | 文档 `draftVersion` + `split_draft.draft_version`（CAS 列） | 保存 `+1`；boundaries/generate/assignment 既有语义不变；confirm/cancel 不变 | `V4__splits.sql` + 文档字段 |
 | 时间窗校验快照 | 每次校验一份 | `windowMinutes:int`；`routes[2]{groupLabel, activityMinutes, travelLegsMinutes[], bufferMinutes}`；结果 `TimingResult{feasible, routes[{totalMinutes, overrunMinutes, missingInputs}]}` | 只读、零写库；不落库 | 既有 `CheckTimingRequest` / `ReunionTimingCalculator` |
@@ -1418,7 +1418,7 @@ A 组 `activityMinutes`/`travelLegsMinutes` 由 `steps` 派生，客户端提交
 
 | 界面 | 触发 | 受众 | 内容 + 显示字段 | 通道 | 数量 |
 |---|---|---|---|---|---|
-| Screen 13 路线卡（编辑态） | 打开分组与路线屏，草稿 `active` 且有路线对 | 全部行程成员 | A 组按 `steps` 逐站编辑站名/停留分钟与各段路段分钟；B 组编辑活动名、地点（可选，`locationName == activityName` 或空时不重复显示）、活动/路程/缓冲分钟；卡片显示「合计 X 分 / 窗口 Y 分」 | `GET split-draft`（含 `locationName`/`steps`） | 每次渲染 A/B 两张 |
+| Screen 13 路线卡（编辑态） | 打开分组与路线屏，草稿 `active` 且有路线对 | 全部行程成员 | A 组按 `steps` 逐站编辑停留分钟与各段路段分钟（站名只读，沿用主线）；B 组编辑活动名、地点（可选，`locationName == activityName` 或空时不重复显示）、活动/路程/缓冲分钟；卡片显示「合计 X 分 / 窗口 Y 分」 | `GET split-draft`（含 `locationName`/`steps`） | 每次渲染 A/B 两张 |
 | Screen 13 路线卡（只读） | 草稿 `confirmed` / `cancelled` | 查看者 | 同上字段但不可编辑；无「下一步」动作 | 客户端状态渲染 | 每次渲染 A/B 两张 |
 | 「下一步」按钮 | 草稿 `active` 且有路线对、分组完整 | 操作者 | 文案「下一步」；保存/校验中显示进行态并禁用重复点击 | 保存 + 校验写入链 | 一 |
 | 保存/校验成功 | `PUT routes` 200 且 `check-timing` `feasible=true` | 操作者 | 导航到 `/split/preview`；无额外成功提示（进入预览即反馈） | 路由跳转 | 一 |

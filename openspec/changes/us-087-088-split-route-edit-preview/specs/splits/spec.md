@@ -4,14 +4,14 @@
 
 ### Requirement: Split route pair edit
 
-系统 SHALL 提供 `PUT /api/trips/{tripId}/split-draft/routes` 整对保存路线：仅 `active` 草稿、任意成员可写。A 组提交有序 `steps`（站名 + 停留分钟）与各段路程分钟，B 组提交单一活动分解；服务端按 A 的 `steps` 派生活动/路程合计并写入文档 `routes.steps`。SHALL 单事务更新 split-a/split-b 的 `plan_node.title`/`location_name` 与文档 `routes` 并 `draftVersion+1`，失败回滚。错误码：`SPLIT_DRAFT_INCOMPLETE`（无路线）、`STALE_DRAFT_VERSION`、`SPLIT_DRAFT_NOT_ACTIVE`、`INVALID_ROUTE_PAIR`、`INVALID_GROUP_LABEL`、`INVALID_ROUTE_INPUT`。成功返回 200 `{draftVersion,routes[]}`；不改 groups/边界/main，生成仍仅发起人。
+系统 SHALL 提供 `PUT /api/trips/{tripId}/split-draft/routes` 整对保存路线：仅 `active` 草稿、任意成员可写。A 组提交有序停留分钟（站名沿用主线，只读）与各段路程分钟，B 组提交单一活动分解；服务端按 A 的 `steps` 派生活动/路程合计并写入文档 `routes.steps`。SHALL 单事务更新 split-a/split-b 的 `plan_node.title`/`location_name` 与文档 `routes` 并 `draftVersion+1`，失败回滚。错误码：`SPLIT_DRAFT_INCOMPLETE`（无路线）、`STALE_DRAFT_VERSION`、`SPLIT_DRAFT_NOT_ACTIVE`、`INVALID_ROUTE_PAIR`、`INVALID_GROUP_LABEL`、`INVALID_ROUTE_INPUT`。成功返回 200 `{draftVersion,routes[]}`；不改 groups/边界/main，生成仍仅发起人。
 
 #### Scenario: 任意成员保存整对路线（S2）
 
 - **GIVEN** 活跃草稿已生成 A/B 两条路线，成员 Ben（非发起人）打开第 2 步
-- **WHEN** Ben 提交 `draftVersion`、A 组 `steps`（站名与停留分钟）与各段路程、B 组活动名/地点/三项分钟
+- **WHEN** Ben 提交 `draftVersion`、A 组各站停留分钟与各段路程、B 组活动名/地点/三项分钟
 - **THEN** 响应 `200`，`data.draftVersion` 比提交值大 1，`data.routes` 返回更新后的两条 `GroupRoute`
-- **AND** A 组的 `activityMinutes`/`travelLegsMinutes` 由 `steps` 与路段派生，`steps` 原样落库
+- **AND** A 组的站名沿用主线顺序，`activityMinutes`/`travelLegsMinutes` 由停留分钟与路段派生，`steps` 原样落库
 - **AND** `GET /api/trips/{tripId}/split-draft` 返回新的活动名、`locationName`、`steps` 与时长
 - **AND** `plan_node` 的 split-a/split-b `title`、`location_name` 与文档 `routes`、`updated_at` 在同一事务内更新
 - **AND** `groups`、边界、main 节点与 `status` 不变
@@ -40,7 +40,7 @@
 
 #### Scenario: 非法输入拒绝（S5）
 
-- **WHEN** 请求路线数不为 2、组别重复或非 A/B、活动名或站名为空、分钟为负或非整数、A 组路段数与站点数不一致、或 B 组路程段数与既有不一致
+- **WHEN** 请求路线数不为 2、组别重复或非 A/B、活动名为空、分钟为负或非整数、A 组路段数与站点数不一致、或 B 组路程段数与既有不一致
 - **THEN** 响应 `400`，按事实返回 `INVALID_ROUTE_PAIR`、`INVALID_GROUP_LABEL` 或 `INVALID_ROUTE_INPUT`
 - **AND** `plan_node` 与文档 `routes` 均无写入
 
@@ -117,7 +117,7 @@ Group A SHALL keep the confirmed itinerary: its candidate SHALL be derived from 
 
 - **GIVEN** 草稿为 `active` 且已生成 A/B 两条路线
 - **WHEN** 任一成员打开分组路线屏幕
-- **THEN** A 组卡按 `steps` 逐站提供站名与停留分钟编辑，并提供各段路程分钟编辑；B 组卡提供活动名、地点、活动/路程/缓冲分钟编辑
+- **THEN** A 组卡按 `steps` 逐站提供停留分钟与各段路程分钟编辑（站名只读，沿用主线）；B 组卡提供活动名、地点、活动/路程/缓冲分钟编辑
 - **AND** 草稿为 `confirmed` 或 `cancelled` 时同样字段只读，且不出现「下一步」动作
 - **AND** 前端不自行判定路线合法性或时间可行性（判定归后端）
 
