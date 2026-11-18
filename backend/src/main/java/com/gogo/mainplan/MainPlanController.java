@@ -2,6 +2,7 @@ package com.gogo.mainplan;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -49,16 +50,6 @@ public class MainPlanController {
         return service.confirmShortcut(id, principal.id());
     }
 
-    /** US-003 D10: organizer edits one stop's name/times on the current unconfirmed draft. */
-    @PutMapping("/api/trips/{id}/main-plan/stops/{seq}")
-    public PlanResponse editStop(
-            @AuthenticationPrincipal AccountPrincipal principal,
-            @PathVariable long id,
-            @PathVariable int seq,
-            @RequestBody(required = false) StopEditRequest request) {
-        return service.editStop(id, principal.id(), seq, request);
-    }
-
     @GetMapping("/api/trips/{id}/main-plan")
     public PlanResponse read(
             @AuthenticationPrincipal AccountPrincipal principal,
@@ -73,6 +64,32 @@ public class MainPlanController {
         return service.readInputs(id, principal.id());
     }
 
+    @PutMapping("/api/trips/{id}/main-plan/stops/{stopId}")
+    public PlanResponse updateStop(
+            @AuthenticationPrincipal AccountPrincipal principal,
+            @PathVariable long id,
+            @PathVariable long stopId,
+            @RequestBody UpdateStopRequest request) {
+        return service.updateStop(id, principal.id(), stopId, request);
+    }
+
+    @PostMapping("/api/trips/{id}/main-plan/stops")
+    public PlanResponse addStop(
+            @AuthenticationPrincipal AccountPrincipal principal,
+            @PathVariable long id,
+            @RequestBody AddStopRequest request) {
+        return service.addStop(id, principal.id(), request);
+    }
+
+    @DeleteMapping("/api/trips/{id}/main-plan/stops/{stopId}")
+    public PlanResponse deleteStop(
+            @AuthenticationPrincipal AccountPrincipal principal,
+            @PathVariable long id,
+            @PathVariable long stopId) {
+        return service.deleteStop(id, principal.id(), stopId);
+    }
+
+    /** US-079 路线1：前端 JS API 查坐标后的回写请求体。 */
     @PostMapping("/api/trips/{id}/main-plan/stop-locations")
     public PlanResponse stopLocations(
             @AuthenticationPrincipal AccountPrincipal principal,

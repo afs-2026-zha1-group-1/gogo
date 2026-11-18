@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api, errorMessage as apiErrorMessage } from '../api'
 import Icon from '../Icons'
+import { isCurrentTripResponse } from '../lib/current-trip'
 import type { TripMemberList } from '../types'
 import type { MemberProfile } from '../types/preferences'
 
@@ -48,33 +49,41 @@ export default function Members({ tripId, tripsHref, tripHref }: MembersProps) {
   )
 
   const load = useCallback(() => {
-    if (tripId == null) {
-      setState({ kind: 'no-trip' })
-      return
-    }
     let active = true
     setState({ kind: 'loading' })
-    // Roster + each member's preference summary (US-045 follow-up); one retry reloads both.
-    Promise.all([
-      api<TripMemberList>(`/api/trips/${tripId}/members`),
-      api<{ members: MemberProfile[] }>(`/api/trips/${tripId}/preferences/members`),
-    ])
-      .then(([roster, profiles]) => {
-        if (!active) return
-        if (roster.ok && roster.data && profiles.ok && profiles.data) {
-          setState({ kind: 'ready', members: roster.data.members, profiles: profiles.data.members })
-        } else if (roster.status === 401 || roster.status === 403) {
-          setState({ kind: 'denied', message: apiErrorMessage(roster.data) })
-        } else if (roster.status === 404) {
-          setState({ kind: 'missing', message: apiErrorMessage(roster.data) })
-        } else {
-          const failure = !roster.ok ? roster : profiles
-          setState({ kind: 'failed', message: apiErrorMessage(failure.data) ?? `HTTP ${failure.status}` })
-        }
-      })
-      .catch((cause: unknown) => {
-        if (active) setState({ kind: 'failed', message: causeMessage(cause) })
-      })
+    // With no explicit trip the roster follows the account's current trip, so the 成员 tab keeps working after
+    // leaving the trip list (US-071/US-090 navigation).
+    const run = async () => {
+      let id = tripId
+      if (id == null) {
+        const current = await api<unknown>('/api/trips/current')
+        id = current.ok && isCurrentTripResponse(current.data) ? current.data.tripId : null
+      }
+      if (!active) return
+      if (id == null) {
+        setState({ kind: 'no-trip' })
+        return
+      }
+      // Roster + each member's preference summary (US-045 follow-up); one retry reloads both.
+      const [roster, profiles] = await Promise.all([
+        api<TripMemberList>(`/api/trips/${id}/members`),
+        api<{ members: MemberProfile[] }>(`/api/trips/${id}/preferences/members`),
+      ])
+      if (!active) return
+      if (roster.ok && roster.data && profiles.ok && profiles.data) {
+        setState({ kind: 'ready', members: roster.data.members, profiles: profiles.data.members })
+      } else if (roster.status === 401 || roster.status === 403) {
+        setState({ kind: 'denied', message: apiErrorMessage(roster.data) })
+      } else if (roster.status === 404) {
+        setState({ kind: 'missing', message: apiErrorMessage(roster.data) })
+      } else {
+        const failure = !roster.ok ? roster : profiles
+        setState({ kind: 'failed', message: apiErrorMessage(failure.data) ?? `HTTP ${failure.status}` })
+      }
+    }
+    run().catch((cause: unknown) => {
+      if (active) setState({ kind: 'failed', message: causeMessage(cause) })
+    })
     return () => {
       active = false
     }

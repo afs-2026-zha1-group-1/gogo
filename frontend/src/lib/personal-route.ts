@@ -14,7 +14,9 @@ export function scheduleFromMainPlan(plan: MainPlan | null, startDate: string): 
   if (!plan || plan.stops.length === 0) return []
   return plan.stops.map((stop) => ({
     key: `stop-${stop.seq}`,
+    stopId: stop.id,
     name: stop.name,
+    location: stop.locationName ?? null,
     start: localClock(startDate, stop.startTime),
     end: localClock(startDate, stop.endTime),
     groupLabel: null,

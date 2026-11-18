@@ -1221,6 +1221,61 @@ body {
   padding-bottom: 16px;
 }
 
+/* US-090: per-stop edit entry in 我的方案 (main-plan stops only). */
+.tl-edit {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: 0.16s;
+}
+
+.tl-edit:hover {
+  color: var(--ink);
+  border-color: var(--ink-3);
+}
+
+.tl-edit .icon {
+  width: 15px;
+  height: 15px;
+}
+
+.tl-edit-danger:hover {
+  color: var(--err);
+  border-color: var(--err);
+}
+
+/* US-090: append a main-plan stop at the end of 我的方案. */
+.tl-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 4px;
+  padding: 10px;
+  border: 1px dashed var(--line);
+  border-radius: var(--r);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 12.5px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: 0.16s;
+}
+
+.tl-add:hover {
+  border-color: var(--brand);
+  color: var(--brand-ink);
+  background: var(--brand-soft);
+}
+
 .tl-time {
   font-size: 12px;
   font-weight: 700;

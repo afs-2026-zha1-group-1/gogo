@@ -22,6 +22,7 @@ import LoginPage from './features/auth/LoginPage'
 import RegisterPage from './features/auth/RegisterPage'
 import AccountPage from './features/auth/AccountPage'
 import { useAuth } from './features/auth/AuthProvider'
+import SessionNotice from './components/SessionNotice'
 
 function parseRoute(hash: string): Route {
   const path = hash.replace(/^#/, '') || '/'
@@ -114,7 +115,7 @@ const TAB_FOR_PAGE: Record<InAppPage, TabId> = {
   home: 'dashboard',
   'dashboard-trip': 'dashboard',
   'dashboard-trip-guard': 'trips',
-  'my-trips': 'account',
+  'my-trips': 'trips',
   'trips-current': 'trips',
   details: 'trips',
   'trip-edit': 'trips',
@@ -246,9 +247,9 @@ export default function App() {
     }
   }, [status, account?.id, route.page, dashboardSelectionAttempted, pickerReadBlocked])
 
-  // US-071: the bottom "行程" tab always opens the caller's trip list; trip-scoped
-  // pages (roster back, main plan) still use their own `#/trips/<id>` links.
-  const tripsHref = dashboardContext ? '#/dashboard/trip-entry' : '#/trips'
+  // US-071: the bottom "行程" tab opens the caller's trip list in both shells; the dashboard's old
+  // trip-number entry page is kept only as a deep link for existing bookmarks.
+  const tripsHref = dashboardContext ? '#/my-trips' : '#/trips'
   const tripHref = lastTripId != null
     ? dashboardContext ? `#/dashboard/trips/${lastTripId}` : `#/trips/${lastTripId}`
     : tripsHref
@@ -332,6 +333,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <SessionNotice />
       <div className="shell-content">
         {route.page === 'home' && (
           <Home key={`${account.id}-current`} onTripReady={handleDashboardReady} selectionInFlight={pickerWritePending} />

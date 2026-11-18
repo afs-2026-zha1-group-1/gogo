@@ -4,7 +4,7 @@
  * states); the other four reads degrade gracefully so one failure never blanks the
  * page. All derivation is pure (lib/personal-route, lib/countdown).
  */
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { api, errorMessage } from '../api'
 import { fetchDraftDetail } from '../features/split/api'
 import type { SplitDraftDetail } from '../features/split/types'
@@ -33,15 +33,21 @@ export type TripOverviewState =
       split: SplitDraftDetail | null
       schedule: ScheduleItem[]
       myGroupLabel: string | null
+      /** Re-runs the five reads (US-090 keeps 我的方案 in step after a stop edit). */
+      reload: () => void
     }
 
 export function useTripOverview(tripId: number): TripOverviewState {
   const { accountId } = useAuth()
   const [state, setState] = useState<TripOverviewState>({ kind: 'loading' })
+  const [reloadKey, setReloadKey] = useState(0)
+  const reload = useCallback(() => setReloadKey((key) => key + 1), [])
 
   useEffect(() => {
     let active = true
-    setState({ kind: 'loading' })
+    // Keep the rendered overview during a reload of the same trip, so editing a stop does not unmount the page
+    // (dialog, scroll position and focus survive); only a first load or a different trip shows the skeleton.
+    setState((prev) => (prev.kind === 'ready' && prev.trip.id === tripId ? prev : { kind: 'loading' }))
     Promise.allSettled([
       api<Trip>(`/api/trips/${tripId}`),
       api<MainPlan>(`/api/trips/${tripId}/main-plan`),
@@ -86,12 +92,13 @@ export function useTripOverview(tripId: number): TripOverviewState {
         split,
         schedule,
         myGroupLabel,
+        reload,
       })
     })
     return () => {
       active = false
     }
-  }, [tripId, accountId])
+  }, [tripId, accountId, reloadKey, reload])
 
   return state
 }

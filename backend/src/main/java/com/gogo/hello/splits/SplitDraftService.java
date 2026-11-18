@@ -130,6 +130,39 @@ public class SplitDraftService {
     }
 
     /**
+     * US-090: a 「我的方案」stop edit changes the times a generated pair was computed against, so the pair is dropped
+     * while the draft stays active for regeneration. Boundaries and groups survive because the main-plan stop ids
+     * are stable across the re-projection. Reached from the mainplan module through an event so that mainplan never
+     * depends on splits.
+     */
+    public void invalidateRoutesAfterMainPlanChange(String tripId) {
+        String json = repository.findDraftJson(tripId);
+        if (json == null) {
+            return;
+        }
+        SplitDraftDocument draft = fromJson(json);
+        if (!"active".equals(draft.status())) {
+            return;
+        }
+        // A boundary stop deleted from the main plan must clear the boundary ids too, otherwise the boundary page
+        // reports "saved, unchanged" while the route page reports "no saved boundary".
+        boolean dangling = draft.departureStopId() != null
+                && repository.findMainPlanStop(tripId, draft.departureStopId(), draft.mainPlanVersion()).isEmpty()
+                || draft.reunionStopId() != null
+                && repository.findMainPlanStop(tripId, draft.reunionStopId(), draft.mainPlanVersion()).isEmpty();
+        boolean hasRoutes = draft.routes() != null && !draft.routes().isEmpty();
+        if (!dangling && !hasRoutes) {
+            return;
+        }
+        String now = Instant.now().toString();
+        SplitDraftDocument updated = dangling ? draft.withClearedBoundariesAndRoutes(now) : draft.withClearedRoutes(now);
+        if (repository.updateDraftIfVersion(tripId, toJson(updated), draft.draftVersion()) == 0) {
+            throw new ApiException(ErrorCode.STALE_DRAFT_VERSION, "draft version is stale");
+        }
+        repository.deleteSplitRoutes(tripId);
+    }
+
+    /**
      * Saves the initiator's boundary pair (spec REQ-005, design D7/D8/D9). After the shared guard, requires an
      * active draft, the initiator, the current version, both stops within the confirmed main plan and a positive
      * window; then conditionally updates the draft (draftVersion+1). Any rejection leaves boundaries/version intact.

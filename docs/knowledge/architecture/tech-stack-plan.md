@@ -687,13 +687,3 @@ requirements (`trips` +2, `main-itinerary` 3 MODIFIED + 2 ADDED,
   `docs/ai4se-plugins/20261118-143428-local-verify-report.md`.
 - **Open:** CI for PR #120, merge, living-merge and G3. G2 VL is Leo.
 
-## 30. Landed reconciliation - US-079 map navigation (archived 2026-11-18)
-
-- **Storage:** V12 `main_plan_stop` + nullable `address/lat/lng` + `place_cache(name, city, address, lat, lng, source)` PK(name, city) with 19 seed rows; V13 seeds the fixed first origin 珠海南方软件园 (WGS 22.375463,113.572607). Renumbered from V10/V11 after parallel-main collision.
-- **Backend:** generation completes stop address/coords from `place_cache` at persist time (cache miss leaves coords null, provider address preserved); `POST /api/trips/{id}/main-plan/stop-locations` writes back WGS-84 coords (`UNKNOWN_STOP`/`INVALID_COORDS`, gate order same as generate) and sediments `source=geocode`; confirm projection copies coords into `plan_node`; stop record union with US-045 `costCents`.
-- **Frontend:** `lib/amap.ts stopMapHref` pure decision (persisted coords → place-book → search-page fallback; origin = previous stop, first stop = fixed origin); `lib/coord.ts` WGS→GCJ-02 at URL build only (mainland lat≥18 + HK/Macau exclusion boxes); `lib/place-book.ts`/`stop-icon.ts`/`clipboard.ts`; StopMapButton (Amap link new tab + per-stop copy with transient feedback, stable size); CountdownCard next-stop address row; no iframe anywhere.
-- **Keys:** Amap JS Key + securityJsCode only in `frontend/.env` (gitignored), `.env.example` committed; REST geocode needs a Web-service Key (deferred OQ-5).
-- **Verification:** backend 509/509, frontend 73/73 + typecheck + build, Playwright map-navigation 6/6 (CI Browser acceptance green); local-verify 20261118-155859 Partial no CRITICAL; pipeline 20261118-162921 E1 Pass; PR #157 merged 5305172; archive PR #159.
-- **Gates:** G1 Pass (IO Emily + SA Lumi, ce4982f) + R1/R2 re-sign Pass; G2 Pass (VL Elian); G3 Pass (SA Lumi).
-- **Open:** X1/X2/X5/E11 real-browser recheck; OQ-5 overseas geocode / OQ-6 backfill / OQ-8 demo-seed guard deferred; dev-DB flyway history repair at next restart.
-

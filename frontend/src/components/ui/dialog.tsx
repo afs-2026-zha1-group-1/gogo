@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode } from "react"
+import { useEffect, useId, useRef, type ReactNode, type RefObject } from "react"
 import { IconX } from "@/components/icons"
 import { cn } from "@/lib/utils"
 
@@ -13,19 +13,30 @@ export function Dialog({
   onClose,
   children,
   footer,
+  initialFocus,
 }: {
   open: boolean
   title: string
   onClose: () => void
   children: ReactNode
   footer?: ReactNode
+  /** Optional first focus target (a form field); the close button is the default. */
+  initialFocus?: RefObject<HTMLElement | null>
 }) {
   const titleId = useId()
   const closeRef = useRef<HTMLButtonElement>(null)
 
+  // Focus once per opening. This effect deliberately does not depend on the parent's callbacks: re-running it on
+  // every keystroke would steal focus back to the first field while the user edits another one (US-090 编辑地点).
   useEffect(() => {
     if (!open) return
-    closeRef.current?.focus()
+    const target = initialFocus?.current
+    if (target) target.focus()
+    else closeRef.current?.focus()
+  }, [open, initialFocus])
+
+  useEffect(() => {
+    if (!open) return
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose()
     }
