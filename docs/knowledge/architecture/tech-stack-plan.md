@@ -592,3 +592,25 @@ US-089 shipped in PR #138, merge `3fcfbfc`. The living specifications modify
   CI runs 44112482366 / 44112533101 green (Backend tests, Frontend build, Browser
   acceptance). G1 Pass (SA Johnson + IO Johnson), G2 Pass (VL Leo), G3 Pass.
 
+## 27. Landed reconciliation — US-087-088 route edit + preview (2026-11-18)
+
+US-087-088 shipped in PR #135, merge `5c6840e`. The living `splits` delta is
+1 ADDED (`Split route pair edit`) + 4 MODIFIED.
+
+- **Split routes API:** `PUT /api/trips/{tripId}/split-draft/routes` saves the
+  pair as ordered station lists (`steps[{name,minutes}]`); group A has one leg
+  after every stop, group B has an outbound + return leg around its stops
+  (`legs = stops + 1`). The service derives activity/name/location, forces
+  `bufferMinutes = 0`, cleans the generated `主线·` marker, and updates the two
+  `plan_node` split rows plus `draft.routes` in one transaction with
+  `draftVersion` CAS. No migration, no new dependency, no security change.
+- **Screen 13:** both route cards are station lists with add/delete; rows are
+  read-only by default with a pencil that opens row-level editing; a new stop is
+  blank with a 「新站点」 placeholder. Travel legs all render as 「路程」.
+- **Preview:** `/split/preview` is the read-only team-route preview; the old
+  `/split/timing` URL redirects there. Stations and legs alternate, and station
+  names are cleaned in edit, read-only, preview and confirm views.
+- **Verification:** backend 381/381, frontend typecheck + 47 unit tests + build,
+  Playwright 85/85, CI runs 44234803228 / 44234811292 green; local-verify Pass;
+  G2 Pass (VL Leo). G1 Revision 2–4 IO re-sign remains tracked.
+
