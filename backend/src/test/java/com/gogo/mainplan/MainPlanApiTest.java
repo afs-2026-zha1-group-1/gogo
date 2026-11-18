@@ -31,7 +31,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 // fixtures "State setup" table; the fake provider is the real MVP provider.
 @SpringBootTest(classes = com.gogo.hello.HelloApplication.class, properties = {
         "spring.datasource.url=jdbc:sqlite:file:main-plan-test?mode=memory&cache=shared",
-        "spring.datasource.hikari.maximum-pool-size=1"
+        "spring.datasource.hikari.maximum-pool-size=1",
+        "gogo.plan.ai.api-key="
 })
 @AutoConfigureMockMvc
 class MainPlanApiTest {
