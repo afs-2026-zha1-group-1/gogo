@@ -1343,3 +1343,69 @@ AC 未声明保留期、SLA 或容量指标。列表是既有行的只读投影�
 
 分组规模 = 行程成员数（MVP 为个位数），单次改组为一次 JSON 文档 CAS 写入；无批量、无分页、
 无 SLA/保留期声明。并发由 `draftVersion` 乐观锁 + 既有 5s 轮询覆盖（后到者 `STALE_DRAFT_VERSION`）。
+
+## US-031-AI
+
+方向：add/extend（新增 AI provider 与降级纯函数，扩展既有生成路径）。数据契约、边界、
+跨 REQ 与提示契约如下。
+
+### ⑨ Data contract
+
+| 概念 | 粒度 | 字段 | 状态迁移 | 来源 |
+|---|---|---|---|---|
+| 主线草稿（既有） | 每次生成一个版本（`trip_id` + `version`） | 既有 `main_plan_draft`（status、cost_per_person_cents、input_revisions）与 `main_plan_stop`（seq/name/start_local/end_local/travel_minutes_to_next/interests_json） | 不新增：`current` → 被新版本取代；`current` → `confirmed`（US-037） | 本变更不迁移、不改列 |
+| Provider 输出（内部 DTO） | 一次生成一份 | `MainPlanResult{stops[], costPerPersonCents}`；`PlannedStop{seq,name,startTime,endTime,travelMinutesToNext,interests[]}` | 无持久化生命周期；校验通过即映射到草稿/站点行，校验失败即丢弃 | AI 响应 / 最小降级构造 |
+| AI 请求上下文（内部 DTO） | 一次生成一份 | `TripContext{tripId,destination,startDate,endDate,startLocation,endLocation}` + `MemberInput{userId,displayName,preferenceRevision,interests[],mustDo[],hardBudgetCents}` | 无持久化；只读快照 | 既有 `MainPlanService` 读取与地点补全 |
+| 降级行程 | 一次失败生成一份 | 两站：出发地 09:00–09:30（leg 30）、返程地 17:00–17:30（leg null）；费用 0 | 与 AI 成功同形，直接走既有草稿落库 | `MinimalFallbackPlan.build(TripContext)` |
+
+不新增业务实体、字段或生命周期；AI 的原始请求/响应不落库、不写审计表。
+
+### ⑩ Boundary enumeration
+
+| 规则 | 分支 | 归属 | 理由 |
+|---|---|---|---|
+| Provider 选择 | 未配置 `gogo.plan.ai.api-key` | Out（走 `FakeMainPlanProvider`） | 测试/CI/离线演示保持不变 |
+| Provider 选择 | key 非空 | In（走 `AiMainPlanProvider`） | 启用 AI 生成 |
+| 生成门禁 | 有成员未就绪 / 已确认 / 非组织者 / 非成员 | Out（AI 调用前返回既有 409/403） | 不改权限与门禁 |
+| AI 调用 | 超时、连接失败、非 2xx | In → 最小行程降级 | 保证有草稿；不新增错误码 |
+| AI 响应 | 空 content / 非 JSON / JSON 缺字段 | In → 最小行程降级 | 输出不可信，不落半成品 |
+| AI 响应 | JSON 合法但校验失败（seq 断号、坏 HH:mm、end ≤ start、leg 非法、费用负） | In → 最小行程降级 | 规格固定的校验集 |
+| AI 响应 | 合法且通过校验 | In → 持久化 AI 草稿 | 正常路径 |
+| 地点 | 出发地/返程地已填写 | 保留原值进入 `TripContext` | 用户输入优先 |
+| 地点 | 出发地/返程地为空 | 生成前由 `LocationCompletion` 补全，再进入降级/提示词 | 既有生成期补全规则 |
+| 输入完整性 | `destination` 为空、成员无偏好（noPreference） | In（提示词仍生成；无偏好成员贡献空列表、预算 null） | 既有 `MemberInput` 语义 |
+| 输入完整性 | 偏好 JSON 损坏 | Out（既有 `IllegalStateException`，非本变更引入） | 存储层错误不属于 AI 降级范围 |
+| 提示展示 | 输入页生成 / 方案页重新生成 | In（请求期间显示） | 两个生成入口 |
+| 提示展示 | 确认主线方案、读取页面 | Out（不显示） | 非生成请求 |
+
+### ⑪ Cross-REQ consistency
+
+| 能力 / 界面 | 其他 REQ | US-031-AI 行为 | 收敛 |
+|---|---|---|---|
+| `main-itinerary` G1/G2/G5/G6 | US-031/US-037 | G2/G5/G6 不变；G1 在“无 key”前提下仍为四夹具站点 | ✓ 仅补 provider 前提 |
+| `main-itinerary` 确认校验 | US-037 | 排期/硬预算/过期校验与错误码不变 | ✓ 不改 |
+| 地点补全 | 既有 `LocationCompletion` | 补全时机、候选来源、调用次数不变 | ✓ 不改 |
+| 草稿读取与过期 | US-031 | `stale`、`inputRevisions`、confirmed 冻结规则不变 | ✓ 不改 |
+| 确认后投影 | US-040/US-089 | `MainPlanProjection` 仍把确认草稿投影为 `plan_node`；AI 站点数可变（≥2） | ✓ 兼容；splits 按站点派生 |
+| splits 路线与演示 | US-089 | 无 key 时城市夹具不变，演示 A 组仍按 6/7 站派生 | ✓ 无回归 |
+| 身份/权限 | US-066 | 全部沿用会话主体与既有错误码 | ✓ 不改 |
+| 前端壳与路由 | `app-shell` | 仅在既有两页加提示条，无新路由 | ✓ 不改 |
+| 技术栈 | §7/§13 | 落实 `RestClient` 单 provider + 降级；不引 Spring AI | ✓ 归档时对账 |
+
+### ⑫ Notification / display contract
+
+| 界面 / 触发 | 受众 | 内容 + 显示字段 | 通道 | 数量 |
+|---|---|---|---|---|
+| 输入页「一键生成主线方案」点击后、请求未结束 | 组织者 | 页面内提示“AI 正在生成中…”，副文案“通常需要 10–20 秒”；触发按钮禁用 | 客户端渲染（`role="status"`） | 一 |
+| 方案页「重新生成」点击后、请求未结束 | 组织者 | 同上；页面其余内容仍可滚动/返回 | 客户端渲染 | 一 |
+| 请求成功 | 组织者 | 提示关闭；跳转/刷新沿用既有逻辑 | 客户端 | — |
+| 请求失败 | 组织者 | 提示关闭；沿用既有行内 `actionError`（`MEMBERS_NOT_READY`、`ALREADY_CONFIRMED`、HTTP 文案） | 客户端 | 一 |
+| 确认主线方案 | 组织者 | 不显示“AI 正在生成中…”；沿用“正在校验…” | 客户端 | — |
+
+无邮件、推送或站内消息；提示条不新增响应字段，成员在他人生成期间无额外可见状态。
+
+### NFR business-policy layer
+
+单次同步调用，读取超时 20s（低于前端 30s 口径），不重试；生成期间 SQLite 事务保持既有
+单连接语义；并发重复提交由既有按钮禁用 + 后端版本化草稿兜底（后到者成为新版本）。
+密钥仅环境变量注入，日志只记录失败类别；提示词只包含当前行程成员可见的偏好快照。
