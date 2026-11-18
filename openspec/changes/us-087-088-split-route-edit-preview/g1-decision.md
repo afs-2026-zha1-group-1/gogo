@@ -101,6 +101,19 @@ Revision 2 Decision: **Conditional**（仅因 IO 具名复签缺失；SA 已 Pas
 
 Revision 3 Decision: **Conditional**（IO 具名复签缺失；SA Pass、AC/DoV 无阻塞）。
 
+## Revision 4（2026-11-18，P4 第三轮反馈）
+
+- Trigger: 站名不显示「主线·」；新增站点不预填名称；站点/路程默认只读、右侧铅笔进入编辑；隐藏数字框原生步进按钮。
+- 实现: 前后端统一清洗站名前缀；新增站点空值 + 「新站点」占位；行级编辑态；全局隐藏 number spinner。
+- Verification: 后端全量通过（含新增 B 多站点用例）、前端单测 47/47、build 通过、浏览器 85/85、`validate --strict` valid。
+
+| Role | Name | Revision 4 decision | Date |
+|---|---|---|---|
+| SA | Leo | **Pass** | 2026-11-18 |
+| IO | Emily | **待复签** | — |
+
+Revision 4 Decision: **Conditional**（IO 具名复签缺失；SA Pass、AC/DoV 无阻塞）。
+
 ## Next
 
 G1 Pass（含 Revision Pass；Revision 2/3 Conditional 待 IO 复签）→ P4 已完成，进入 `/sdd:local-verify-report` → G2。本记录不是 G2/G3 决定。

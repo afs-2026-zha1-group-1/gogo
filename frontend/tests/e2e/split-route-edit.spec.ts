@@ -19,28 +19,35 @@ test('step-2 editing validates the window and hands off to the preview', async (
   await login(page)
   await page.goto('/trips/9101/split/routes')
 
-  const step2 = page.getByLabel('A 组 第 2 站名称')
-  await expect(step2).toBeEnabled()
-  await expect(step2).toHaveValue('National Gallery Singapore')
-  await expect(page.getByLabel('A 组 第 2 站停留分钟')).toHaveValue('30')
-  await expect(page.getByLabel('B 组 第 1 站名称')).toHaveValue('Gardens by the Bay')
-  await expect(page.getByLabel('A 组 路程 1')).toBeVisible()
-  await expect(page.getByLabel('A 组 路程 3')).toBeVisible()
-  await expect(page.getByLabel('B 组 路程 1')).toBeVisible()
-  await expect(page.getByLabel('B 组 路程 2')).toBeVisible()
+  await expect(page.getByText('National Gallery Singapore').first()).toBeVisible()
+  await expect(page.getByText('主线·National Gallery Singapore')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'A 组 编辑第 2 站' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'A 组 编辑路程 1' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'A 组 编辑路程 3' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'B 组 编辑路程 1' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'B 组 编辑路程 2' })).toBeVisible()
 
-  // Adding a station appends a stop and its leg; removing restores the original pair.
+  // Adding a station opens a blank editor (placeholder only), so the user never has to delete a prefilled name.
   await page.getByRole('button', { name: '添加站点' }).last().click()
-  await expect(page.getByLabel('B 组 第 2 站名称')).toHaveValue('新站点')
+  const newStation = page.getByLabel('B 组 第 2 站名称')
+  await expect(newStation).toHaveValue('')
+  await expect(newStation).toHaveAttribute('placeholder', '新站点')
   await page.getByLabel('B 组 删除第 2 站').click()
   await expect(page.getByLabel('B 组 第 2 站名称')).toHaveCount(0)
 
+  await page.getByRole('button', { name: 'A 组 编辑第 2 站' }).click()
+  const step2 = page.getByLabel('A 组 第 2 站名称')
+  await expect(step2).toHaveValue('National Gallery Singapore')
   await step2.fill('National Gallery (edited)')
   await page.getByLabel('A 组 第 2 站停留分钟').fill('20')
+  await page.getByRole('button', { name: 'A 组 完成编辑第 2 站' }).click()
+  await expect(page.getByText('National Gallery (edited)').first()).toBeVisible()
   await expect(page.getByText('合计 140 分').first()).toBeVisible()
 
+  await page.getByRole('button', { name: 'A 组 编辑第 3 站' }).click()
   const step3 = page.getByLabel('A 组 第 3 站停留分钟')
   await step3.fill('40')
+  await page.getByRole('button', { name: 'A 组 完成编辑第 3 站' }).click()
   await page.getByRole('button', { name: /下一步/ }).click()
 
   const dialog = page.getByRole('dialog', { name: '时间窗校验未通过' })
@@ -50,7 +57,9 @@ test('step-2 editing validates the window and hands off to the preview', async (
   await dialog.getByRole('button', { name: '关闭' }).last().click()
   await expect(dialog).toBeHidden()
 
-  await step3.fill('15')
+  await page.getByRole('button', { name: 'A 组 编辑第 3 站' }).click()
+  await page.getByLabel('A 组 第 3 站停留分钟').fill('15')
+  await page.getByRole('button', { name: 'A 组 完成编辑第 3 站' }).click()
   await page.getByRole('button', { name: /下一步/ }).click()
   await expect(page).toHaveURL(/\/split\/preview$/)
   await expect(page.getByText('队伍路线预览')).toBeVisible()
@@ -63,7 +72,9 @@ test('step-2 editing validates the window and hands off to the preview', async (
 
   // N2: with no local changes the Next action skips the save request entirely.
   await page.goto('/trips/9101/split/routes')
+  await page.getByRole('button', { name: 'A 组 编辑第 2 站' }).click()
   await expect(page.getByLabel('A 组 第 2 站停留分钟')).toHaveValue('20')
+  await page.getByRole('button', { name: 'A 组 完成编辑第 2 站' }).click()
   let saves = 0
   page.on('request', (request) => {
     if (request.method() === 'PUT' && request.url().endsWith('/split-draft/routes')) saves += 1
@@ -74,7 +85,9 @@ test('step-2 editing validates the window and hands off to the preview', async (
 
   // N10: a cleared minute is rejected by the save endpoint and keeps the user on step 2.
   await page.goto('/trips/9101/split/routes')
+  await page.getByRole('button', { name: 'A 组 编辑第 2 站' }).click()
   await page.getByLabel('A 组 第 2 站停留分钟').fill('')
+  await page.getByRole('button', { name: 'A 组 完成编辑第 2 站' }).click()
   await page.getByRole('button', { name: /下一步/ }).click()
   await expect(page.getByText(/路线输入非法/)).toBeVisible()
   await expect(page).toHaveURL(/\/split\/routes$/)

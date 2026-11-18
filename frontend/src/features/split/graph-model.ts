@@ -6,6 +6,7 @@
  */
 
 import { tripZone } from "../../lib/trip-zone.ts"
+import { cleanRouteName, cleanStationName } from "./station-name.ts"
 
 export type RouteKey = "a" | "b"
 export type LabelSide = "left" | "right"
@@ -110,7 +111,7 @@ export function routeLabelsFor(routes: RouteInput[]): Record<RouteKey, string> {
   const labels: Record<RouteKey, string> = { a: "Route A", b: "Route B" }
   routes.forEach((route, index) => {
     const key = routeKeyFor(route.groupLabel, index)
-    const name = route.activityName?.trim()
+    const name = cleanRouteName(route.activityName)
     labels[key] = name ? `Route ${key.toUpperCase()} · ${name}` : `Route ${key.toUpperCase()}`
   })
   return labels
@@ -118,8 +119,8 @@ export function routeLabelsFor(routes: RouteInput[]): Record<RouteKey, string> {
 
 /** Appends the edited location only when it adds information beyond the activity name (US-087 D-2). */
 function locationSuffix(route: RouteInput): string {
-  const location = route.locationName?.trim()
-  const activity = route.activityName?.trim()
+  const location = cleanStationName(route.locationName)
+  const activity = cleanRouteName(route.activityName)
   return location && location !== activity ? ` · ${location}` : ""
 }
 
@@ -147,7 +148,7 @@ function branchRowsFor(route: RouteInput, key: RouteKey): BranchRow[] {
         kind: "branch",
         id: `${key}-step-${index}`,
         route: key,
-        title: step.name,
+        title: cleanStationName(step.name),
         meta: `活动 · ${formatMinutes(step.minutes)}`,
       })
       pushLeg(key === "b" ? index + 1 : index)
@@ -159,7 +160,7 @@ function branchRowsFor(route: RouteInput, key: RouteKey): BranchRow[] {
       kind: "branch",
       id: `${key}-activity`,
       route: key,
-      title: route.activityName?.trim() || "活动",
+      title: cleanRouteName(route.activityName) || "活动",
       meta: `活动 · ${formatMinutes(route.activityMinutes)}${locationSuffix(route)}`,
     })
     const start = key === "b" ? 1 : 0
@@ -198,7 +199,7 @@ function mainRow(stop: StopInput, counter: number): MainRow {
   return {
     kind: "main",
     id: stop.id,
-    title: stop.name,
+    title: cleanStationName(stop.name),
     meta,
     side: counter % 2 === 0 ? "right" : "left",
   }
@@ -239,7 +240,7 @@ export function buildGraphRows(input: {
   rows.push({
     kind: "fork",
     id: fork.id,
-    title: fork.name,
+    title: cleanStationName(fork.name),
     meta: `${fork.startLabel} · 分头`,
     side: "right",
   })
@@ -252,7 +253,7 @@ export function buildGraphRows(input: {
   rows.push({
     kind: "join",
     id: join.id,
-    title: join.name,
+    title: cleanStationName(join.name),
     meta: `${join.startLabel} · 会合`,
     side: "left",
   })

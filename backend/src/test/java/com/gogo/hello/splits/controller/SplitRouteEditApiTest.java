@@ -117,6 +117,36 @@ class SplitRouteEditApiTest extends AbstractSplitApiTest {
     }
 
     @Test
+    @DisplayName("saveRoutes_groupBMultipleStations_derivesNameTotalsAndPersistsSteps")
+    void saveRoutes_groupBMultipleStations_derivesNameTotalsAndPersistsSteps() throws Exception {
+        int version = prepareConfirmableDraftAs("Alice");
+        Map<String, Object> routeB = new LinkedHashMap<>();
+        routeB.put("groupLabel", "B");
+        routeB.put("steps", List.of(
+                step("主线·Gardens by the Bay", 60),
+                step("跳楼机", 50),
+                step("摩天轮", 40)));
+        routeB.put("travelLegsMinutes", List.of(20, 20, 20, 20));
+        putRoutes(memberId("Alice"), version, List.of(
+                        groupA(List.of(30, 30, 15), List.of(30, 30, 15), "National Gallery Singapore"),
+                        routeB))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.routes[1].activityName").value("Gardens by the Bay → 摩天轮"))
+                .andExpect(jsonPath("$.data.routes[1].locationName").value("Gardens by the Bay"))
+                .andExpect(jsonPath("$.data.routes[1].activityMinutes").value(150))
+                .andExpect(jsonPath("$.data.routes[1].travelLegsMinutes.length()").value(4))
+                .andExpect(jsonPath("$.data.routes[1].bufferMinutes").value(0))
+                .andExpect(jsonPath("$.data.routes[1].steps[0].name").value("Gardens by the Bay"))
+                .andExpect(jsonPath("$.data.routes[1].steps[2].name").value("摩天轮"))
+                .andExpect(jsonPath("$.data.routes[1].steps[2].minutes").value(40));
+        assertThat(draftRoutes().get("B").get("steps")).hasSize(3);
+        assertThat(draftRoutes().get("B").get("activityMinutes").asInt()).isEqualTo(150);
+        assertThat(draftRoutes().get("B").get("travelLegsMinutes")).hasSize(4);
+        assertThat(draftRoutes().get("B").get("bufferMinutes").asInt()).isZero();
+        assertThat(splitRouteRow("split-b").get("title")).isEqualTo("Gardens by the Bay → 摩天轮");
+    }
+
+    @Test
     @DisplayName("saveRoutes_terminalDraft_returns409NotActive")
     void saveRoutes_terminalDraft_returns409NotActive() throws Exception {
         int version = prepareConfirmableDraftAs("Alice");

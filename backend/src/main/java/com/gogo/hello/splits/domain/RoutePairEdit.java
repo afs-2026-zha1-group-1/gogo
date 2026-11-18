@@ -4,6 +4,7 @@ import com.gogo.hello.splits.domain.SplitDraftDocument.RouteDurations;
 import com.gogo.hello.splits.dto.RouteStepInput;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Pure derivation for a manually edited station list (spec US-087 Revision 3, design DD2). Both groups are ordered
@@ -15,6 +16,16 @@ import java.util.List;
 public final class RoutePairEdit {
 
     private RoutePairEdit() {
+    }
+
+    private static final Pattern LEADING_MAINLINE = Pattern.compile("^主线\\s*[·•・:：-]\\s*");
+
+    /** Removes the generated "主线·" presentation marker; station names are user-owned (Revision 4). */
+    public static String cleanStationName(String name) {
+        if (name == null) return null;
+        String trimmed = name.trim();
+        String cleaned = LEADING_MAINLINE.matcher(trimmed).replaceFirst("").trim();
+        return cleaned.isEmpty() ? trimmed : cleaned;
     }
 
     /** Rebuilds one group's duration breakdown from its station list and travel legs. */
@@ -39,8 +50,12 @@ public final class RoutePairEdit {
             if (step.minutes() == null || step.minutes() < 0) {
                 throw new IllegalArgumentException("stay minutes must be non-negative integers");
             }
+            String cleanName = cleanStationName(step.name());
+            if (cleanName.isBlank()) {
+                throw new IllegalArgumentException("station names are required");
+            }
             activity += step.minutes();
-            steps.add(new RouteStep(step.name().trim(), step.minutes()));
+            steps.add(new RouteStep(cleanName, step.minutes()));
         }
         List<Integer> legs = new ArrayList<>();
         for (Integer leg : travelLegsMinutes) {
@@ -54,8 +69,8 @@ public final class RoutePairEdit {
 
     /** Derived route name: first→last station names (a single station keeps its name). */
     public static String deriveActivityName(List<RouteStep> steps) {
-        String first = steps.get(0).name();
-        String last = steps.get(steps.size() - 1).name();
+        String first = cleanStationName(steps.get(0).name());
+        String last = cleanStationName(steps.get(steps.size() - 1).name());
         return first.equals(last) ? first : first + " → " + last;
     }
 }

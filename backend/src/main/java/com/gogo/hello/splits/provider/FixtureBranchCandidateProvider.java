@@ -2,6 +2,7 @@ package com.gogo.hello.splits.provider;
 
 import com.gogo.hello.splits.domain.PlanStop;
 import com.gogo.hello.splits.domain.RouteCandidate;
+import com.gogo.hello.splits.domain.RoutePairEdit;
 import com.gogo.hello.splits.domain.RouteStep;
 import java.time.Duration;
 import java.time.Instant;
@@ -34,9 +35,10 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
             return mainLineCandidate(groupLabel, departure, reunion, mainPlanStops);
         }
         Branch branch = branchFor(cityOf(destination), groupLabel);
-        String location = destination == null || destination.isBlank() ? branch.activityName() : destination.trim();
-        List<RouteStep> steps = List.of(new RouteStep(branch.activityName(), branch.activityMinutes()));
-        return new RouteCandidate(groupLabel, branch.activityName(), location, branch.activityMinutes(),
+        String activityName = RoutePairEdit.cleanStationName(branch.activityName());
+        String location = destination == null || destination.isBlank() ? activityName : destination.trim();
+        List<RouteStep> steps = List.of(new RouteStep(activityName, branch.activityMinutes()));
+        return new RouteCandidate(groupLabel, activityName, location, branch.activityMinutes(),
                 branch.travelLegsMinutes(), 0, steps);
     }
 
@@ -55,7 +57,7 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
         for (int index = from; index < to; index++) {
             PlanStop stop = mainPlanStops.get(index);
             int stayMinutes = minutes(stop.startAt(), stop.endAt());
-            steps.add(new RouteStep(stop.name(), stayMinutes));
+            steps.add(new RouteStep(RoutePairEdit.cleanStationName(stop.name()), stayMinutes));
             activityMinutes += stayMinutes;
             PlanStop next = index + 1 < to ? mainPlanStops.get(index + 1) : reunion;
             legs.add(Math.max(0, minutes(stop.endAt(), next.startAt())));
@@ -68,6 +70,7 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
         String location = departure.locationName() == null || departure.locationName().isBlank()
                 ? departure.name()
                 : departure.locationName();
+        location = RoutePairEdit.cleanStationName(location);
         return new RouteCandidate(groupLabel, activityName, location, activityMinutes, legs, 0, steps);
     }
 

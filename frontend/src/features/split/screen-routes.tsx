@@ -14,12 +14,13 @@ import { useAuth } from "../auth/AuthProvider"
 import { SplitLayout } from "./split-layout"
 import { EmptyState, ErrorState, LoadingState } from "./states"
 import { RouteCard } from "./route-card"
+import { cleanStationName } from "./station-name"
 import type { GroupRoute, RouteEditInput, TimingResult } from "./types"
 import type { TripMember } from "../../types"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Dialog } from "@/components/ui/dialog"
-import { IconAlert, IconArrowRight, IconBranch, IconFlag, IconNav, IconRoute, IconSparkle, IconUsers, IconX } from "@/components/icons"
+import { IconAlert, IconArrowRight, IconBranch, IconCheck, IconEdit, IconFlag, IconNav, IconRoute, IconSparkle, IconUsers, IconX } from "@/components/icons"
 import { formatClock, shortId } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
@@ -45,7 +46,7 @@ function toForm(route: GroupRoute): RouteForm {
       : []
   return {
     groupLabel: route.groupLabel,
-    steps: steps.map((step) => ({ name: step.name, minutes: String(step.minutes) })),
+    steps: steps.map((step) => ({ name: cleanStationName(step.name), minutes: String(step.minutes) })),
     travelLegsMinutes: (route.travelLegsMinutes ?? []).map((minutes) => (minutes != null ? String(minutes) : "")),
   }
 }
@@ -65,6 +66,11 @@ function toApiRoute(form: RouteForm): RouteEditInput {
   }
 }
 
+function displayMinutes(value: string): string {
+  const trimmed = value.trim()
+  return trimmed === "" ? "—" : `${trimmed} 分`
+}
+
 function formTotal(form: RouteForm): number | null {
   const stays = form.steps.map((step) => toNum(step.minutes))
   const legs = form.travelLegsMinutes.map(toNum)
@@ -74,8 +80,8 @@ function formTotal(form: RouteForm): number | null {
 }
 
 function routeName(form: RouteForm): string {
-  const first = form.steps[0]?.name?.trim()
-  const last = form.steps[form.steps.length - 1]?.name?.trim()
+  const first = cleanStationName(form.steps[0]?.name)
+  const last = cleanStationName(form.steps[form.steps.length - 1]?.name)
   if (!first) return "未命名路线"
   return !last || first === last ? first : `${first} → ${last}`
 }
@@ -102,7 +108,7 @@ export function ScreenRoutes() {
   const myId = accountId == null ? null : String(accountId)
   const tooFewMembers = membersQuery.data != null && membersQuery.data.length < 2
 
-  const stopNames = new Map((detail?.mainPlanStops ?? []).map((stop) => [stop.id, stop.name]))
+  const stopNames = new Map((detail?.mainPlanStops ?? []).map((stop) => [stop.id, cleanStationName(stop.name)]))
   const nameOf = (id: string | null) => (id ? (stopNames.get(id) ?? "未知节点") : "—")
   const routes = detail?.routes ?? []
   const hasPair = routes.length === 2
@@ -302,7 +308,7 @@ export function ScreenRoutes() {
                       const current = form[index]
                       if (!current) return
                       patchRoute(index, {
-                        steps: [...current.steps, { name: "新站点", minutes: "0" }],
+                        steps: [...current.steps, { name: "", minutes: "0" }],
                         travelLegsMinutes: [...current.travelLegsMinutes, "0"],
                       })
                     }}
@@ -411,6 +417,9 @@ function EditableRouteCard({
 }) {
   const head = tone === "a" ? "from-a to-[#1e40af]" : "from-b to-[#9a3412]"
   const total = formTotal(form)
+  const [editingRow, setEditingRow] = useState<string | null>(null)
+  const stationKey = (index: number) => `${form.groupLabel}-station-${index}`
+  const legKey = (index: number) => `${form.groupLabel}-leg-${index}`
   const overrun = total != null && windowMinutes != null ? Math.max(0, total - windowMinutes) : null
   const inputClass =
     "w-full rounded-control border border-line bg-surface px-2 py-1.5 text-[12px] text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft disabled:bg-surface-3 disabled:text-ink-3"
@@ -419,18 +428,49 @@ function EditableRouteCard({
   const renderLeg = (legIndex: number) => {
     const minutes = form.travelLegsMinutes[legIndex]
     if (minutes === undefined) return null
+    const key = legKey(legIndex)
+    if (editingRow !== key) {
+      return (
+        <div key={key} className="flex items-center justify-between gap-2 px-1 py-1">
+          <span className="text-[12px] text-ink-2">路程</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[12px] tabular-nums text-ink-2">{displayMinutes(minutes)}</span>
+            {editable ? (
+              <button
+                type="button"
+                aria-label={`${form.groupLabel} 组 编辑路程 ${legIndex + 1}`}
+                onClick={() => setEditingRow(key)}
+                className="grid size-7 place-items-center rounded-[8px] text-ink-3 transition-colors hover:bg-surface-3 hover:text-ink [&_svg]:size-3.5"
+              >
+                <IconEdit />
+              </button>
+            ) : null}
+          </div>
+        </div>
+      )
+    }
     return (
-      <div key={`${form.groupLabel}-leg-${legIndex}`} className="flex items-center justify-between gap-2">
+      <div key={key} className="flex items-center justify-between gap-2 rounded-[9px] bg-surface-3/70 px-2 py-1.5">
         <span className="text-[12px] text-ink-2">路程</span>
-        <input
-          aria-label={`${form.groupLabel} 组 路程 ${legIndex + 1}`}
-          type="number"
-          min={0}
-          className={numberClass}
-          value={minutes}
-          disabled={!editable}
-          onChange={(event) => onLegChange(legIndex, event.target.value)}
-        />
+        <div className="flex items-center gap-1.5">
+          <input
+            aria-label={`${form.groupLabel} 组 路程 ${legIndex + 1}`}
+            type="number"
+            min={0}
+            className={numberClass}
+            value={minutes}
+            disabled={!editable}
+            onChange={(event) => onLegChange(legIndex, event.target.value)}
+          />
+          <button
+            type="button"
+            aria-label={`${form.groupLabel} 组 完成编辑路程 ${legIndex + 1}`}
+            onClick={() => setEditingRow(null)}
+            className="grid size-7 place-items-center rounded-[8px] bg-white text-ink-2 shadow-sm transition-colors hover:text-ink [&_svg]:size-3.5"
+          >
+            <IconCheck />
+          </button>
+        </div>
       </div>
     )
   }
@@ -462,7 +502,15 @@ function EditableRouteCard({
       <div className="flex flex-col gap-2.5 px-4 py-3">
         <div className="flex items-center justify-between gap-2">
           <span className="text-[10px] font-semibold text-ink-3">站点（站名与停留分钟可改）</span>
-          <Button size="sm" variant="outline" disabled={!editable} onClick={onAddStep}>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!editable}
+            onClick={() => {
+              onAddStep()
+              setEditingRow(stationKey(form.steps.length))
+            }}
+          >
             添加站点
           </Button>
         </div>
@@ -470,37 +518,70 @@ function EditableRouteCard({
         <div className="flex flex-col gap-1.5">
           {form.steps.map((step, index) => {
             const legAfter = form.groupLabel === "B" ? index + 1 : index
+            const key = stationKey(index)
             return (
-              <Fragment key={`${form.groupLabel}-step-${index}`}>
+              <Fragment key={key}>
                 {form.groupLabel === "B" && index === 0 ? renderLeg(0) : null}
-                <div className="flex items-center gap-2">
-                  <input
-                    aria-label={`${form.groupLabel} 组 第 ${index + 1} 站名称`}
-                    className={inputClass}
-                    value={step.name}
-                    disabled={!editable}
-                    onChange={(event) => onStepNameChange(index, event.target.value)}
-                  />
-                  <input
-                    aria-label={`${form.groupLabel} 组 第 ${index + 1} 站停留分钟`}
-                    type="number"
-                    min={0}
-                    className={numberClass}
-                    value={step.minutes}
-                    disabled={!editable}
-                    onChange={(event) => onStepMinutesChange(index, event.target.value)}
-                  />
-                  {editable && form.steps.length > 1 ? (
+                {editingRow === key ? (
+                  <div className="flex items-center gap-2 rounded-[9px] bg-surface-3/70 p-1.5">
+                    <input
+                      aria-label={`${form.groupLabel} 组 第 ${index + 1} 站名称`}
+                      className={cn(inputClass, "h-8 py-1", !step.name.trim() && "bg-brand-soft/50 placeholder:text-ink-3")}
+                      placeholder="新站点"
+                      autoFocus={!step.name.trim()}
+                      value={step.name}
+                      disabled={!editable}
+                      onChange={(event) => onStepNameChange(index, event.target.value)}
+                    />
+                    <input
+                      aria-label={`${form.groupLabel} 组 第 ${index + 1} 站停留分钟`}
+                      type="number"
+                      min={0}
+                      className={cn(numberClass, "h-8 py-1")}
+                      value={step.minutes}
+                      disabled={!editable}
+                      onChange={(event) => onStepMinutesChange(index, event.target.value)}
+                    />
                     <button
                       type="button"
-                      aria-label={`${form.groupLabel} 组 删除第 ${index + 1} 站`}
-                      onClick={() => onRemoveStep(index)}
-                      className="grid size-7 shrink-0 place-items-center rounded-[8px] border border-line text-ink-3 transition-colors hover:bg-surface-3 hover:text-ink [&_svg]:size-3.5"
+                      aria-label={`${form.groupLabel} 组 完成编辑第 ${index + 1} 站`}
+                      onClick={() => setEditingRow(null)}
+                      className="grid size-7 shrink-0 place-items-center rounded-[8px] bg-white text-ink-2 shadow-sm transition-colors hover:text-ink [&_svg]:size-3.5"
                     >
-                      <IconX />
+                      <IconCheck />
                     </button>
-                  ) : null}
-                </div>
+                    {form.steps.length > 1 ? (
+                      <button
+                        type="button"
+                        aria-label={`${form.groupLabel} 组 删除第 ${index + 1} 站`}
+                        onClick={() => {
+                          onRemoveStep(index)
+                          setEditingRow(null)
+                        }}
+                        className="grid size-7 shrink-0 place-items-center rounded-[8px] text-ink-3 transition-colors hover:bg-white hover:text-ink [&_svg]:size-3.5"
+                      >
+                        <IconX />
+                      </button>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 rounded-[9px] px-1 py-1">
+                    <span className="min-w-0 flex-1 truncate text-[12px] text-ink">
+                      {cleanStationName(step.name) || "未命名站点"}
+                    </span>
+                    <span className="text-[12px] tabular-nums text-ink-2">{displayMinutes(step.minutes)}</span>
+                    {editable ? (
+                      <button
+                        type="button"
+                        aria-label={`${form.groupLabel} 组 编辑第 ${index + 1} 站`}
+                        onClick={() => setEditingRow(key)}
+                        className="grid size-7 place-items-center rounded-[8px] text-ink-3 transition-colors hover:bg-surface-3 hover:text-ink [&_svg]:size-3.5"
+                      >
+                        <IconEdit />
+                      </button>
+                    ) : null}
+                  </div>
+                )}
                 {renderLeg(legAfter)}
               </Fragment>
             )

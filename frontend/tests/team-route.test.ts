@@ -9,6 +9,7 @@ import {
   routeLabelsFor,
   type StopInput,
 } from '../src/features/split/graph-model.ts'
+import { cleanRouteName, cleanStationName } from '../src/features/split/station-name.ts'
 
 const stops: StopInput[] = [
   { id: 's1', name: 'City Hall MRT', startLabel: '09:00', endLabel: '09:30' },
@@ -103,6 +104,13 @@ test('branch nodes: A steps expand per stop while B keeps a single activity', ()
   assert.equal(rows.find((row) => row.route === 'b' && row.meta.startsWith('活动'))?.meta, '活动 · 60 分钟')
   assert.equal(rows.filter((row) => row.route === 'a' && row.title === '路程').length, 3)
   assert.equal(rows.filter((row) => row.route === 'b' && row.title === '路程').length, 2)
+})
+
+test('station names drop the generated 主线 marker for display and saving', () => {
+  assert.equal(cleanStationName('主线·旧城早餐'), '旧城早餐')
+  assert.equal(cleanStationName('主线：滨海美术馆'), '滨海美术馆')
+  assert.equal(cleanStationName('Gardens by the Bay'), 'Gardens by the Bay')
+  assert.equal(cleanRouteName('主线·旧城早餐 → 主线·滨海美术馆'), '旧城早餐 → 滨海美术馆')
 })
 
 test('time formatting keeps ISO and local sources separate', () => {

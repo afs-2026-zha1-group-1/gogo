@@ -30,7 +30,7 @@ INSERT INTO plan_node (id, trip_id, plan_version, parent_id, branch_id, node_typ
 
 INSERT INTO split_draft (id, trip_id, document, draft_version, created_at, updated_at)
 VALUES ('split-draft-9101', 9101,
-  '{"initiatorMemberId":"1","mainPlanVersion":1,"draftVersion":3,"status":"active","departureStopId":"main-9101-1","reunionStopId":"main-9101-4","groups":{"A":["1","2"],"B":["3","4"]},"routes":{"A":{"activityMinutes":75,"travelLegsMinutes":[30,30,15],"bufferMinutes":0,"steps":[{"name":"City Hall MRT","minutes":30},{"name":"National Gallery Singapore","minutes":30},{"name":"Gardens by the Bay","minutes":15}]},"B":{"activityMinutes":60,"travelLegsMinutes":[20,20],"bufferMinutes":0,"steps":[{"name":"Gardens by the Bay","minutes":60}]}},"createdAt":"2026-12-20T00:00:00Z","updatedAt":"2026-12-20T00:00:00Z"}',
+  '{"initiatorMemberId":"1","mainPlanVersion":1,"draftVersion":3,"status":"active","departureStopId":"main-9101-1","reunionStopId":"main-9101-4","groups":{"A":["1","2"],"B":["3","4"]},"routes":{"A":{"activityMinutes":75,"travelLegsMinutes":[30,30,15],"bufferMinutes":0,"steps":[{"name":"City Hall MRT","minutes":30},{"name":"主线·National Gallery Singapore","minutes":30},{"name":"Gardens by the Bay","minutes":15}]},"B":{"activityMinutes":60,"travelLegsMinutes":[20,20],"bufferMinutes":0,"steps":[{"name":"Gardens by the Bay","minutes":60}]}},"createdAt":"2026-12-20T00:00:00Z","updatedAt":"2026-12-20T00:00:00Z"}',
   3, '2026-12-20T00:00:00Z', '2026-12-20T00:00:00Z');
 
 -- Confirmed draft for the terminal read-only assertions (N9).
@@ -54,5 +54,5 @@ INSERT INTO plan_node (id, trip_id, plan_version, parent_id, branch_id, node_typ
 
 INSERT INTO split_draft (id, trip_id, document, draft_version, created_at, updated_at)
 VALUES ('split-draft-9102', 9102,
-  '{"initiatorMemberId":"1","mainPlanVersion":1,"draftVersion":3,"status":"confirmed","departureStopId":"main-9102-1","reunionStopId":"main-9102-4","groups":{"A":["1","2"],"B":["3","4"]},"routes":{"A":{"activityMinutes":75,"travelLegsMinutes":[30,30,15],"bufferMinutes":0,"steps":[{"name":"City Hall MRT","minutes":30},{"name":"National Gallery Singapore","minutes":30},{"name":"Gardens by the Bay","minutes":15}]},"B":{"activityMinutes":60,"travelLegsMinutes":[20,20],"bufferMinutes":0,"steps":[{"name":"Gardens by the Bay","minutes":60}]}},"createdAt":"2026-12-22T00:00:00Z","updatedAt":"2026-12-22T00:00:00Z"}',
+  '{"initiatorMemberId":"1","mainPlanVersion":1,"draftVersion":3,"status":"confirmed","departureStopId":"main-9102-1","reunionStopId":"main-9102-4","groups":{"A":["1","2"],"B":["3","4"]},"routes":{"A":{"activityMinutes":75,"travelLegsMinutes":[30,30,15],"bufferMinutes":0,"steps":[{"name":"City Hall MRT","minutes":30},{"name":"主线·National Gallery Singapore","minutes":30},{"name":"Gardens by the Bay","minutes":15}]},"B":{"activityMinutes":60,"travelLegsMinutes":[20,20],"bufferMinutes":0,"steps":[{"name":"Gardens by the Bay","minutes":60}]}},"createdAt":"2026-12-22T00:00:00Z","updatedAt":"2026-12-22T00:00:00Z"}',
   3, '2026-12-22T00:00:00Z', '2026-12-22T00:00:00Z');

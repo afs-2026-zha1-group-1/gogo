@@ -5,6 +5,7 @@ import { useCancelDraft, useConfirmDraft, useSplitDraft, useTripMembers } from "
 import { useAuth } from "../auth/AuthProvider"
 import { SplitLayout } from "./split-layout"
 import { EmptyState, ErrorState, LoadingState } from "./states"
+import { cleanRouteName } from "./station-name"
 import type { GroupRoute, SplitDraftStatus } from "./types"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -210,7 +211,7 @@ function RouteReview({ route, windowMinutes }: { route: GroupRoute; windowMinute
     <Card className="p-4">
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className={cn("text-[13px] font-extrabold", tone === "a" ? "text-a" : "text-b")}>
-          {route.groupLabel} 组 · {route.activityName ?? "活动未生成"}
+          {route.groupLabel} 组 · {cleanRouteName(route.activityName) || "活动未生成"}
         </span>
         {!complete ? (
           <Badge variant="warn">

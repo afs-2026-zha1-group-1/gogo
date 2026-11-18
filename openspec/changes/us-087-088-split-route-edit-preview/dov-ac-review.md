@@ -97,6 +97,17 @@ SA Leo 对 Revision 2 签 Pass；IO Emily 待复签（G1 Revision 2 记 Conditio
 
 SA Leo 对 Revision 3 签 Pass；IO Emily 待复签（G1 Revision 3 记 Conditional）。
 
+## Revision review 4（2026-11-18，P4 第三轮反馈）
+
+| Item | Review | Result |
+|---|---|---|
+| 站名清洗 | 展示与保存均去除「主线·」前缀（前后端各一次） | Pass（单测 + E2E） |
+| 新增站点 | 空值 + 「新站点」占位 + 高亮底色，无需删除预填名 | Pass（E2E） |
+| 行级编辑 | 站点/路程默认只读，右侧铅笔进入编辑；隐藏 number spinner | Pass（typecheck + E2E） |
+| 回归 | 后端全量、前端 47/47、build、浏览器 85/85 | Pass |
+
+SA Leo 对 Revision 4 签 Pass；IO Emily 待复签。
+
 ## Verdict
 
 **AC 4/4 Pass · DoV 5/5 Pass**（含 US-089 重基线、P4 Revision 2/3）。G1 Revision 2/3 待 IO 具名复签。本文件不是 Gate 决定。
