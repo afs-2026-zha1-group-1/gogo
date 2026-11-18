@@ -118,11 +118,52 @@ public class MainPlanService {
         long draftId = plans.insertDraft(tripId, version, result.costPerPersonCents(), writeJson(revisions),
                 writeJson(tripBasics(trip.destination(), trip.startDate(), trip.endDate(),
                         completed.startLocation(), completed.endLocation())));
+        // US-079 路线1：坐标不由 AI/provider 产出——落库时查地址簿缓存补全；
+        // 缓存未命中的国内站由前端 JS API 查坐标后经 stop-locations 回写。
+        List<PlanResponse.Stop> completedStops = new ArrayList<>();
         for (MainPlanResult.PlannedStop stop : result.stops()) {
-            plans.insertStop(draftId, stop, writeJson(stop.interests()));
+            String city = stop.city() != null ? stop.city() : trip.destination();
+            Optional<MainPlanRepository.PlaceRow> cached = plans.cacheLookup(stop.name(), city);
+            String address = stop.address() != null ? stop.address()
+                    : cached.map(MainPlanRepository.PlaceRow::address).orElse(null);
+            Double lat = cached.map(MainPlanRepository.PlaceRow::lat).orElse(null);
+            Double lng = cached.map(MainPlanRepository.PlaceRow::lng).orElse(null);
+            plans.insertStop(draftId, stop, writeJson(stop.interests()), address, lat, lng);
+            completedStops.add(new PlanResponse.Stop(stop.seq(), stop.name(), stop.startTime(),
+                    stop.endTime(), stop.travelMinutesToNext(), stop.interests(), address, lat, lng));
         }
         return new PlanResponse(tripId, version, false, false,
-                result.costPerPersonCents(), revisions, toStops(result.stops()));
+                result.costPerPersonCents(), revisions, completedStops);
+    }
+
+    /** US-079 路线1：程序查坐标回写请求体（seq + WGS-84 坐标）。 */
+    public record StopLocation(int seq, double lat, double lng) {
+    }
+
+    // 回写当前草稿站点坐标并沉淀进地址簿；门序同生成（trip→member→organizer→draft）。
+    @Transactional
+    public PlanResponse completeStopLocations(long tripId, long caller, List<StopLocation> locations) {
+        TripResponse trip = requireTrip(tripId);
+        requireMember(tripId, caller);
+        requireOrganizer(trip, caller);
+        MainPlanRepository.DraftRow draft = plans.findDraftByStatus(tripId, "current")
+                .orElseThrow(() -> new MainPlanApiException(404, "NO_DRAFT",
+                        "No main plan draft has been generated for this trip"));
+        List<MainPlanRepository.StopRow> stops = plans.stopsForDraft(draft.id());
+        String city = trip.destination() == null ? "" : trip.destination();
+        for (StopLocation location : locations) {
+            if (Math.abs(location.lat()) > 90 || Math.abs(location.lng()) > 180) {
+                throw new MainPlanApiException(422, "INVALID_COORDS", "Coordinates out of range");
+            }
+            MainPlanRepository.StopRow row = stops.stream()
+                    .filter(stop -> stop.seq() == location.seq())
+                    .findFirst()
+                    .orElseThrow(() -> new MainPlanApiException(422, "UNKNOWN_STOP",
+                            "Stop seq is not part of the current draft"));
+            plans.updateStopLocation(draft.id(), location.seq(), location.lat(), location.lng());
+            plans.cacheUpsert(row.name(), city, row.address(), location.lat(), location.lng(), "geocode");
+        }
+        return readPlan(tripId, caller);
     }
 
     // D8: gate order trip -> member -> organizer -> no-draft ->
@@ -251,7 +292,8 @@ public class MainPlanService {
         boolean stale = !confirmed && isStale(tripId, revisions, draft);
         List<PlanResponse.Stop> stops = plans.stopsForDraft(draft.id()).stream()
                 .map(stop -> new PlanResponse.Stop(stop.seq(), stop.name(), stop.startLocal(),
-                        stop.endLocal(), stop.travelMinutesToNext(), readInterests(stop.interestsJson())))
+                        stop.endLocal(), stop.travelMinutesToNext(), readInterests(stop.interestsJson()),
+                        stop.address(), stop.lat(), stop.lng()))
                 .toList();
         return new PlanResponse(tripId, draft.version(), confirmed, stale,
                 draft.costPerPersonCents(), revisions, stops);
@@ -471,13 +513,6 @@ public class MainPlanService {
             tags.add(node.asText());
         }
         return tags;
-    }
-
-    private List<PlanResponse.Stop> toStops(List<MainPlanResult.PlannedStop> stops) {
-        return stops.stream()
-                .map(stop -> new PlanResponse.Stop(stop.seq(), stop.name(), stop.startTime(),
-                        stop.endTime(), stop.travelMinutesToNext(), stop.interests()))
-                .toList();
     }
 
     private JsonNode parse(String json) {

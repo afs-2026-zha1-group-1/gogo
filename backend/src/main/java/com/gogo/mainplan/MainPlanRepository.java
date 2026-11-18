@@ -20,13 +20,18 @@ public class MainPlanRepository {
     }
 
     public record StopRow(int seq, String name, String startLocal, String endLocal,
-            Integer travelMinutesToNext, String interestsJson, int costCents) {
+            Integer travelMinutesToNext, String interestsJson, String address, Double lat, Double lng,
+            int costCents) {
 
         /** Cost-less convenience for schedule-only fixtures (US-045 adds the cost column). */
         public StopRow(int seq, String name, String startLocal, String endLocal,
                 Integer travelMinutesToNext, String interestsJson) {
-            this(seq, name, startLocal, endLocal, travelMinutesToNext, interestsJson, 0);
+            this(seq, name, startLocal, endLocal, travelMinutesToNext, interestsJson, null, null, null, 0);
         }
+    }
+
+    /** place_cache 行：地址簿缓存（种子/程序查/人工补）。 */
+    public record PlaceRow(String address, Double lat, Double lng) {
     }
 
     public record MemberRow(long userId, String displayName, boolean ready, int preferenceRevision,
@@ -77,11 +82,36 @@ public class MainPlanRepository {
                 tripId);
     }
 
-    public void insertStop(long draftId, MainPlanResult.PlannedStop stop, String interestsJson) {
+    public void insertStop(long draftId, MainPlanResult.PlannedStop stop, String interestsJson,
+            String address, Double lat, Double lng) {
         jdbc.update("INSERT INTO main_plan_stop (draft_id, seq, name, start_local, end_local, "
-                + "travel_minutes_to_next, interests_json, cost_cents) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                + "travel_minutes_to_next, interests_json, address, lat, lng, cost_cents) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 draftId, stop.seq(), stop.name(), stop.startTime(), stop.endTime(),
-                stop.travelMinutesToNext(), interestsJson, stop.costCents());
+                stop.travelMinutesToNext(), interestsJson, address, lat, lng, stop.costCents());
+    }
+
+    /** US-079 路线1：程序查坐标回写当前草稿站点。 */
+    public void updateStopLocation(long draftId, int seq, double lat, double lng) {
+        jdbc.update("UPDATE main_plan_stop SET lat = ?, lng = ? WHERE draft_id = ? AND seq = ?",
+                lat, lng, draftId, seq);
+    }
+
+    public Optional<PlaceRow> cacheLookup(String name, String city) {
+        List<PlaceRow> rows = jdbc.query(
+                "SELECT address, lat, lng FROM place_cache WHERE name = ? AND city = ?",
+                (rs, rowNum) -> new PlaceRow(rs.getString("address"),
+                        (Double) rs.getObject("lat"), (Double) rs.getObject("lng")),
+                name, city);
+        return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
+    }
+
+    /** 查坐标成功后沉淀进地址簿，跨行程复用。 */
+    public void cacheUpsert(String name, String city, String address, double lat, double lng, String source) {
+        jdbc.update("INSERT INTO place_cache (name, city, address, lat, lng, source) VALUES (?, ?, ?, ?, ?, ?) "
+                + "ON CONFLICT(name, city) DO UPDATE SET address = excluded.address, lat = excluded.lat, "
+                + "lng = excluded.lng, source = excluded.source",
+                name, city, address, lat, lng, source);
     }
 
     public Optional<DraftRow> findDraftByStatus(long tripId, String status) {
@@ -97,11 +127,12 @@ public class MainPlanRepository {
 
     public List<StopRow> stopsForDraft(long draftId) {
         return jdbc.query(
-                "SELECT seq, name, start_local, end_local, travel_minutes_to_next, interests_json, cost_cents "
-                        + "FROM main_plan_stop WHERE draft_id = ? ORDER BY seq",
+                "SELECT seq, name, start_local, end_local, travel_minutes_to_next, interests_json, "
+                        + "address, lat, lng, cost_cents FROM main_plan_stop WHERE draft_id = ? ORDER BY seq",
                 (rs, rowNum) -> new StopRow(rs.getInt("seq"), rs.getString("name"),
                         rs.getString("start_local"), rs.getString("end_local"),
                         (Integer) rs.getObject("travel_minutes_to_next"), rs.getString("interests_json"),
+                        rs.getString("address"), (Double) rs.getObject("lat"), (Double) rs.getObject("lng"),
                         rs.getInt("cost_cents")),
                 draftId);
     }

@@ -189,6 +189,38 @@ const PATHS = {
       <path d="M13.5 13.5h3v3M20.5 13.5v7h-4M13.5 20.5h.01" />
     </>
   ),
+  // US-079: 站点类型图标（按名称/兴趣标签自动选配，见 lib/stop-icon）
+  ship: (
+    <>
+      <path d="M4 14l1.5-4h13L20 14M6 14l1.5 4h9L18 14M12 10V4M9 4h6" />
+      <path d="M3 20c1.5 1.4 3 1.4 4.5 0s3-1.4 4.5 0 3 1.4 4.5 0 3-1.4 4.5 0" />
+    </>
+  ),
+  landmark: (
+    <>
+      <path d="M3 10l9-6 9 6H3zM4 21h16M6 18v-8M10 18v-8M14 18v-8M18 18v-8M4 18h16" />
+    </>
+  ),
+  mountain: <path d="M3 19h18L14 8l-3 4-2-3-6 10zM12.5 10.5L14 8l1.5 2.5" />,
+  bag: (
+    <>
+      <path d="M5 8h14l-1 12H6L5 8z" />
+      <path d="M9 8V6a3 3 0 0 1 6 0v2" />
+    </>
+  ),
+  utensils: <path d="M6 3v5a2.5 2.5 0 0 0 5 0V3M8.5 3v18M16 3c-1.8 2.6-1.8 6.4 0 9v9" />,
+  coffee: (
+    <>
+      <path d="M4 8h12v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V8zM16 9h2a2.5 2.5 0 0 1 0 5h-2" />
+      <path d="M7 3v2M11 3v2" />
+    </>
+  ),
+  leaf: (
+    <>
+      <path d="M20 4c-9 0-15 4-15 11 0 3 2 5 5 5 7 0 10-7 10-16z" />
+      <path d="M5 20c3-6 8-9 12-11" />
+    </>
+  ),
 } satisfies Record<string, ReactNode>
 
 export type IconName = keyof typeof PATHS

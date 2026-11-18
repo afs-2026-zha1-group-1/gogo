@@ -1,0 +1,1099 @@
+===== CMD: ! grep -rn "Hello World" frontend/src =====
+cwd: /d/Bootcamp Training/Trip/gogo
+started: 2026-11-18T15:54:28+0800
+exit: 0
+ended: 2026-11-18T15:54:30+0800
+
+===== CMD: ! grep -inE "jpa|hibernate" backend/pom.xml =====
+cwd: /d/Bootcamp Training/Trip/gogo
+started: 2026-11-18T15:54:31+0800
+exit: 0
+ended: 2026-11-18T15:54:32+0800
+
+===== CMD: ! grep -rinE "h2database|org\.h2|jdbc:h2" backend/pom.xml backend/src =====
+cwd: /d/Bootcamp Training/Trip/gogo
+started: 2026-11-18T15:54:33+0800
+exit: 0
+ended: 2026-11-18T15:54:35+0800
+
+===== CMD: ! grep -q "artifact.oocl.com" frontend/package-lock.json =====
+cwd: /d/Bootcamp Training/Trip/gogo
+started: 2026-11-18T15:54:35+0800
+exit: 0
+ended: 2026-11-18T15:54:37+0800
+
+===== CMD: python -c "import yaml; d=yaml.safe_load(open('.github/workflows/ci.yml')); j=sorted(d['jobs']); assert j==['backend','browser-acceptance','frontend'], j; print('ci jobs:', j)" =====
+cwd: /d/Bootcamp Training/Trip/gogo
+started: 2026-11-18T15:54:37+0800
+ci jobs: ['backend', 'browser-acceptance', 'frontend']
+exit: 0
+ended: 2026-11-18T15:54:39+0800
+
+===== CMD: python -c "import yaml; d=yaml.load(open('.github/workflows/ci.yml'), Loader=yaml.BaseLoader); p=d['on']['push']; assert p is None or 'branches' not in p, p; assert 'main' in d['on']['pull_request']['branches']; print('ci triggers: any-branch push + pull request to main')" =====
+cwd: /d/Bootcamp Training/Trip/gogo
+started: 2026-11-18T15:54:39+0800
+ci triggers: any-branch push + pull request to main
+exit: 0
+ended: 2026-11-18T15:54:41+0800
+
+===== CMD: (cd backend && mvn -B test) =====
+cwd: /d/Bootcamp Training/Trip/gogo
+started: 2026-11-18T15:54:41+0800
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -----------------------< com.gogo:gogo-backend >------------------------
+[INFO] Building gogo-backend 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ gogo-backend ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 11 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ gogo-backend ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ gogo-backend ---
+[INFO] skip non existing resourceDirectory D:\Bootcamp Training\Trip\gogo\backend\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ gogo-backend ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.5.5:test (default-test) @ gogo-backend ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.gogo.auth.AuthApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-18T15:54:51.429+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.auth.AuthApiTest                : Starting AuthApiTest using Java 21.0.11 with PID 22736 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-18T15:54:51.431+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.auth.AuthApiTest                : No active profile set, falling back to 1 default profile: "default"
+2026-11-18T15:54:52.625+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-11-18T15:54:52.807+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.sqlite.jdbc4.JDBC4Connection@7d484fcd
+2026-11-18T15:54:52.808+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-11-18T15:54:52.822+08:00  INFO 22736 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:file:auth-api-test?mode=memory&cache=shared (SQLite 3.49)
+2026-11-18T15:54:52.853+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-18T15:54:52.855+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 11 migrations (execution time 00:00.017s)
+2026-11-18T15:54:52.857+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-18T15:54:52.875+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-18T15:54:52.880+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-18T15:54:52.890+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create trip"
+2026-11-18T15:54:52.893+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "3 - create invitation"
+2026-11-18T15:54:52.897+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "4 - splits"
+2026-11-18T15:54:52.902+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "5 - create main plan"
+2026-11-18T15:54:52.906+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "6 - create account credential"
+2026-11-18T15:54:52.908+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "7 - create member preference"
+2026-11-18T15:54:52.910+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "8 - add current trip"
+2026-11-18T15:54:52.913+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "9 - create user default interest"
+2026-11-18T15:54:52.920+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "10 - stop location"
+2026-11-18T15:54:52.924+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "11 - default origin place"
+2026-11-18T15:54:52.932+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 11 migrations to schema "main", now at version v11 (execution time 00:00.004s)
+2026-11-18T15:54:53.026+08:00  INFO 22736 --- [gogo-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name credentialUserDetailsService
+2026-11-18T15:54:54.397+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:54:54.398+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:54:54.399+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-11-18T15:54:54.422+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.auth.AuthApiTest                : Started AuthApiTest in 3.329 seconds (process running for 4.518)
+Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+WARNING: A Java agent has been loaded dynamically (C:\Users\DENGLU\.m2\repository\net\bytebuddy\byte-buddy-agent\1.17.8\byte-buddy-agent-1.17.8.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 5.196 s -- in com.gogo.auth.AuthApiTest
+[INFO] Running com.gogo.auth.AuthValidationTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.005 s -- in com.gogo.auth.AuthValidationTest
+[INFO] Running com.gogo.auth.LogoutApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-18T15:54:55.961+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.auth.LogoutApiTest              : Starting LogoutApiTest using Java 21.0.11 with PID 22736 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-18T15:54:55.961+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.auth.LogoutApiTest              : No active profile set, falling back to 1 default profile: "default"
+2026-11-18T15:54:56.272+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Starting...
+2026-11-18T15:54:56.273+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-2 - Added connection org.sqlite.jdbc4.JDBC4Connection@27107a97
+2026-11-18T15:54:56.274+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Start completed.
+2026-11-18T15:54:56.274+08:00  INFO 22736 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:file:logout-api-test?mode=memory&cache=shared (SQLite 3.49)
+2026-11-18T15:54:56.283+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-18T15:54:56.284+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 11 migrations (execution time 00:00.009s)
+2026-11-18T15:54:56.284+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-18T15:54:56.286+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-18T15:54:56.288+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-18T15:54:56.292+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create trip"
+2026-11-18T15:54:56.296+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "3 - create invitation"
+2026-11-18T15:54:56.301+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "4 - splits"
+2026-11-18T15:54:56.306+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "5 - create main plan"
+2026-11-18T15:54:56.310+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "6 - create account credential"
+2026-11-18T15:54:56.312+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "7 - create member preference"
+2026-11-18T15:54:56.315+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "8 - add current trip"
+2026-11-18T15:54:56.318+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "9 - create user default interest"
+2026-11-18T15:54:56.324+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "10 - stop location"
+2026-11-18T15:54:56.328+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "11 - default origin place"
+2026-11-18T15:54:56.329+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 11 migrations to schema "main", now at version v11 (execution time 00:00.003s)
+2026-11-18T15:54:56.343+08:00  INFO 22736 --- [gogo-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name credentialUserDetailsService
+2026-11-18T15:54:56.458+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:54:56.458+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:54:56.459+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-11-18T15:54:56.463+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.auth.LogoutApiTest              : Started LogoutApiTest in 0.519 seconds (process running for 6.559)
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.871 s -- in com.gogo.auth.LogoutApiTest
+[INFO] Running com.gogo.auth.ProfileApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-18T15:54:56.829+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.auth.ProfileApiTest             : Starting ProfileApiTest using Java 21.0.11 with PID 22736 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-18T15:54:56.829+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.auth.ProfileApiTest             : No active profile set, falling back to 1 default profile: "default"
+2026-11-18T15:54:57.112+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-3 - Starting...
+2026-11-18T15:54:57.113+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-3 - Added connection org.sqlite.jdbc4.JDBC4Connection@28b16193
+2026-11-18T15:54:57.114+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-3 - Start completed.
+2026-11-18T15:54:57.114+08:00  INFO 22736 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:file:profile-api-test?mode=memory&cache=shared (SQLite 3.49)
+2026-11-18T15:54:57.123+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-18T15:54:57.123+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 11 migrations (execution time 00:00.008s)
+2026-11-18T15:54:57.123+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-18T15:54:57.125+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-18T15:54:57.126+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-18T15:54:57.129+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create trip"
+2026-11-18T15:54:57.132+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "3 - create invitation"
+2026-11-18T15:54:57.135+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "4 - splits"
+2026-11-18T15:54:57.138+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "5 - create main plan"
+2026-11-18T15:54:57.142+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "6 - create account credential"
+2026-11-18T15:54:57.144+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "7 - create member preference"
+2026-11-18T15:54:57.146+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "8 - add current trip"
+2026-11-18T15:54:57.149+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "9 - create user default interest"
+2026-11-18T15:54:57.151+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "10 - stop location"
+2026-11-18T15:54:57.155+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "11 - default origin place"
+2026-11-18T15:54:57.156+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 11 migrations to schema "main", now at version v11 (execution time 00:00.002s)
+2026-11-18T15:54:57.167+08:00  INFO 22736 --- [gogo-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name credentialUserDetailsService
+2026-11-18T15:54:57.255+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:54:57.255+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:54:57.255+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-18T15:54:57.258+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.auth.ProfileApiTest             : Started ProfileApiTest in 0.444 seconds (process running for 7.355)
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.038 s -- in com.gogo.auth.ProfileApiTest
+[INFO] Running com.gogo.auth.RegisterApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-18T15:54:57.864+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.auth.RegisterApiTest            : Starting RegisterApiTest using Java 21.0.11 with PID 22736 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-18T15:54:57.864+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.auth.RegisterApiTest            : No active profile set, falling back to 1 default profile: "default"
+2026-11-18T15:54:58.036+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-4 - Starting...
+2026-11-18T15:54:58.038+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-4 - Added connection org.sqlite.jdbc4.JDBC4Connection@579cfcc4
+2026-11-18T15:54:58.038+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-4 - Start completed.
+2026-11-18T15:54:58.038+08:00  INFO 22736 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:file:register-api-test?mode=memory&cache=shared (SQLite 3.49)
+2026-11-18T15:54:58.045+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-18T15:54:58.045+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 11 migrations (execution time 00:00.007s)
+2026-11-18T15:54:58.045+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-18T15:54:58.046+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-18T15:54:58.047+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-18T15:54:58.049+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create trip"
+2026-11-18T15:54:58.052+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "3 - create invitation"
+2026-11-18T15:54:58.054+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "4 - splits"
+2026-11-18T15:54:58.056+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "5 - create main plan"
+2026-11-18T15:54:58.058+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "6 - create account credential"
+2026-11-18T15:54:58.060+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "7 - create member preference"
+2026-11-18T15:54:58.061+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "8 - add current trip"
+2026-11-18T15:54:58.062+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "9 - create user default interest"
+2026-11-18T15:54:58.064+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "10 - stop location"
+2026-11-18T15:54:58.066+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "11 - default origin place"
+2026-11-18T15:54:58.067+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 11 migrations to schema "main", now at version v11 (execution time 00:00.000s)
+2026-11-18T15:54:58.074+08:00  INFO 22736 --- [gogo-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name credentialUserDetailsService
+2026-11-18T15:54:58.136+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:54:58.136+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:54:58.136+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-18T15:54:58.140+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.auth.RegisterApiTest            : Started RegisterApiTest in 0.286 seconds (process running for 8.236)
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.748 s -- in com.gogo.auth.RegisterApiTest
+[INFO] Running com.gogo.auth.RegistrationConcurrencyTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-18T15:54:58.611+08:00  INFO 22736 --- [gogo-backend] [           main] c.gogo.auth.RegistrationConcurrencyTest  : Starting RegistrationConcurrencyTest using Java 21.0.11 with PID 22736 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-18T15:54:58.611+08:00  INFO 22736 --- [gogo-backend] [           main] c.gogo.auth.RegistrationConcurrencyTest  : No active profile set, falling back to 1 default profile: "default"
+2026-11-18T15:54:58.779+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-5 - Starting...
+2026-11-18T15:54:58.780+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-5 - Added connection org.sqlite.jdbc4.JDBC4Connection@3204146d
+2026-11-18T15:54:58.780+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-5 - Start completed.
+2026-11-18T15:54:58.781+08:00  INFO 22736 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:file:register-concurrency-test?mode=memory&cache=shared (SQLite 3.49)
+2026-11-18T15:54:58.787+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-18T15:54:58.788+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 11 migrations (execution time 00:00.006s)
+2026-11-18T15:54:58.788+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-18T15:54:58.788+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-18T15:54:58.791+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-18T15:54:58.794+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create trip"
+2026-11-18T15:54:58.795+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "3 - create invitation"
+2026-11-18T15:54:58.797+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "4 - splits"
+2026-11-18T15:54:58.800+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "5 - create main plan"
+2026-11-18T15:54:58.802+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "6 - create account credential"
+2026-11-18T15:54:58.803+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "7 - create member preference"
+2026-11-18T15:54:58.805+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "8 - add current trip"
+2026-11-18T15:54:58.807+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "9 - create user default interest"
+2026-11-18T15:54:58.808+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "10 - stop location"
+2026-11-18T15:54:58.810+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "11 - default origin place"
+2026-11-18T15:54:58.811+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 11 migrations to schema "main", now at version v11 (execution time 00:00.001s)
+2026-11-18T15:54:58.817+08:00  INFO 22736 --- [gogo-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name credentialUserDetailsService
+2026-11-18T15:54:58.875+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:54:58.875+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:54:58.875+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-18T15:54:58.880+08:00  INFO 22736 --- [gogo-backend] [           main] c.gogo.auth.RegistrationConcurrencyTest  : Started RegistrationConcurrencyTest in 0.278 seconds (process running for 8.977)
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.350 s -- in com.gogo.auth.RegistrationConcurrencyTest
+[INFO] Running com.gogo.auth.SessionExpiryApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-18T15:54:58.963+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.auth.SessionExpiryApiTest       : Starting SessionExpiryApiTest using Java 21.0.11 with PID 22736 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-18T15:54:58.963+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.auth.SessionExpiryApiTest       : No active profile set, falling back to 1 default profile: "default"
+2026-11-18T15:54:59.155+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-6 - Starting...
+2026-11-18T15:54:59.156+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-6 - Added connection org.sqlite.jdbc4.JDBC4Connection@3f04349b
+2026-11-18T15:54:59.156+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-6 - Start completed.
+2026-11-18T15:54:59.156+08:00  INFO 22736 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:file:session-expiry-test?mode=memory&cache=shared (SQLite 3.49)
+2026-11-18T15:54:59.163+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-18T15:54:59.163+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 11 migrations (execution time 00:00.006s)
+2026-11-18T15:54:59.164+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-18T15:54:59.164+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-18T15:54:59.165+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-18T15:54:59.168+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create trip"
+2026-11-18T15:54:59.169+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "3 - create invitation"
+2026-11-18T15:54:59.171+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "4 - splits"
+2026-11-18T15:54:59.173+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "5 - create main plan"
+2026-11-18T15:54:59.176+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "6 - create account credential"
+2026-11-18T15:54:59.177+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "7 - create member preference"
+2026-11-18T15:54:59.179+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "8 - add current trip"
+2026-11-18T15:54:59.180+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "9 - create user default interest"
+2026-11-18T15:54:59.181+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "10 - stop location"
+2026-11-18T15:54:59.183+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "11 - default origin place"
+2026-11-18T15:54:59.184+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 11 migrations to schema "main", now at version v11 (execution time 00:00.001s)
+2026-11-18T15:54:59.190+08:00  INFO 22736 --- [gogo-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name credentialUserDetailsService
+2026-11-18T15:54:59.254+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:54:59.255+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:54:59.255+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-18T15:54:59.259+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.auth.SessionExpiryApiTest       : Started SessionExpiryApiTest in 0.308 seconds (process running for 9.356)
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.511 s -- in com.gogo.auth.SessionExpiryApiTest
+[INFO] Running com.gogo.hello.common.GlobalExceptionHandlerTest
+2026-11-18T15:54:59.470+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.mock.web.MockServletContext          : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:54:59.471+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:54:59.471+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-18T15:54:59.510+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.mock.web.MockServletContext          : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:54:59.510+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:54:59.511+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-11-18T15:54:59.527+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.mock.web.MockServletContext          : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:54:59.527+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:54:59.527+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-18T15:54:59.534+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.mock.web.MockServletContext          : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:54:59.535+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:54:59.535+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-18T15:54:59.543+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.mock.web.MockServletContext          : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:54:59.543+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:54:59.543+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-18T15:54:59.550+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.mock.web.MockServletContext          : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:54:59.550+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:54:59.550+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-18T15:54:59.557+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.mock.web.MockServletContext          : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:54:59.557+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:54:59.557+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-18T15:54:59.563+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.mock.web.MockServletContext          : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:54:59.564+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:54:59.564+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-18T15:54:59.571+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.mock.web.MockServletContext          : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:54:59.571+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:54:59.572+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-11-18T15:54:59.581+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.mock.web.MockServletContext          : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:54:59.581+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:54:59.581+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-18T15:54:59.587+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.mock.web.MockServletContext          : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:54:59.587+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:54:59.587+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-18T15:54:59.593+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.mock.web.MockServletContext          : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:54:59.593+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:54:59.594+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-11-18T15:54:59.599+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.mock.web.MockServletContext          : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:54:59.599+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:54:59.601+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 2 ms
+2026-11-18T15:54:59.610+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.mock.web.MockServletContext          : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:54:59.610+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:54:59.610+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+[INFO] Tests run: 14, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.153 s -- in com.gogo.hello.common.GlobalExceptionHandlerTest
+[INFO] Running com.gogo.hello.GreetingApiTest
+2026-11-18T15:54:59.616+08:00  INFO 22736 --- [gogo-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gogo.hello.GreetingApiTest]: GreetingApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-18T15:54:59.630+08:00  INFO 22736 --- [gogo-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gogo.hello.HelloApplication for test class com.gogo.hello.GreetingApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-18T15:54:59.643+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.hello.GreetingApiTest           : Starting GreetingApiTest using Java 21.0.11 with PID 22736 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-18T15:54:59.643+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.hello.GreetingApiTest           : No active profile set, falling back to 1 default profile: "default"
+2026-11-18T15:54:59.914+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-7 - Starting...
+2026-11-18T15:54:59.916+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-7 - Added connection org.sqlite.jdbc4.JDBC4Connection@4d37a4d7
+2026-11-18T15:54:59.917+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-7 - Start completed.
+2026-11-18T15:54:59.917+08:00  INFO 22736 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:file:greeting-test?mode=memory&cache=shared (SQLite 3.49)
+2026-11-18T15:54:59.926+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-18T15:54:59.926+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 11 migrations (execution time 00:00.007s)
+2026-11-18T15:54:59.926+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-18T15:54:59.927+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-18T15:54:59.928+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-18T15:54:59.931+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create trip"
+2026-11-18T15:54:59.932+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "3 - create invitation"
+2026-11-18T15:54:59.935+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "4 - splits"
+2026-11-18T15:54:59.938+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "5 - create main plan"
+2026-11-18T15:54:59.941+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "6 - create account credential"
+2026-11-18T15:54:59.943+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "7 - create member preference"
+2026-11-18T15:54:59.945+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "8 - add current trip"
+2026-11-18T15:54:59.947+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "9 - create user default interest"
+2026-11-18T15:54:59.950+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "10 - stop location"
+2026-11-18T15:54:59.953+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "11 - default origin place"
+2026-11-18T15:54:59.954+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 11 migrations to schema "main", now at version v11 (execution time 00:00.001s)
+2026-11-18T15:54:59.964+08:00  INFO 22736 --- [gogo-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name credentialUserDetailsService
+2026-11-18T15:55:00.054+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:55:00.054+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:55:00.055+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-11-18T15:55:00.058+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.hello.GreetingApiTest           : Started GreetingApiTest in 0.425 seconds (process running for 10.154)
+2026-11-18T15:55:00.068+08:00  WARN 22736 --- [gogo-backend] [           main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'POST' is not supported]
+2026-11-18T15:55:00.070+08:00  WARN 22736 --- [gogo-backend] [           main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'PUT' is not supported]
+2026-11-18T15:55:00.072+08:00  WARN 22736 --- [gogo-backend] [           main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'DELETE' is not supported]
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.477 s -- in com.gogo.hello.GreetingApiTest
+[INFO] Running com.gogo.hello.splits.controller.ReunionTimingApiTest
+2026-11-18T15:55:00.099+08:00  INFO 22736 --- [gogo-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gogo.hello.splits.controller.ReunionTimingApiTest]: ReunionTimingApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-18T15:55:00.130+08:00  INFO 22736 --- [gogo-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gogo.hello.HelloApplication for test class com.gogo.hello.splits.controller.ReunionTimingApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-18T15:55:00.149+08:00  INFO 22736 --- [gogo-backend] [           main] c.g.h.s.controller.ReunionTimingApiTest  : Starting ReunionTimingApiTest using Java 21.0.11 with PID 22736 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-18T15:55:00.149+08:00  INFO 22736 --- [gogo-backend] [           main] c.g.h.s.controller.ReunionTimingApiTest  : No active profile set, falling back to 1 default profile: "default"
+2026-11-18T15:55:00.358+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-8 - Starting...
+2026-11-18T15:55:00.360+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-8 - Added connection org.sqlite.jdbc4.JDBC4Connection@7a12cb2c
+2026-11-18T15:55:00.360+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-8 - Start completed.
+2026-11-18T15:55:00.360+08:00  INFO 22736 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:file:split-api-test?mode=memory&cache=shared (SQLite 3.49)
+2026-11-18T15:55:00.367+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-18T15:55:00.367+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 11 migrations (execution time 00:00.006s)
+2026-11-18T15:55:00.367+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-18T15:55:00.368+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-18T15:55:00.369+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-18T15:55:00.370+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create trip"
+2026-11-18T15:55:00.372+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "3 - create invitation"
+2026-11-18T15:55:00.374+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "4 - splits"
+2026-11-18T15:55:00.385+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "5 - create main plan"
+2026-11-18T15:55:00.389+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "6 - create account credential"
+2026-11-18T15:55:00.391+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "7 - create member preference"
+2026-11-18T15:55:00.393+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "8 - add current trip"
+2026-11-18T15:55:00.394+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "9 - create user default interest"
+2026-11-18T15:55:00.395+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "10 - stop location"
+2026-11-18T15:55:00.397+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "11 - default origin place"
+2026-11-18T15:55:00.398+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 11 migrations to schema "main", now at version v11 (execution time 00:00.001s)
+2026-11-18T15:55:00.405+08:00  INFO 22736 --- [gogo-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name credentialUserDetailsService
+2026-11-18T15:55:00.983+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:55:00.983+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:55:00.984+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-11-18T15:55:01.002+08:00  INFO 22736 --- [gogo-backend] [           main] c.g.h.s.controller.ReunionTimingApiTest  : Started ReunionTimingApiTest in 0.869 seconds (process running for 11.099)
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.510 s -- in com.gogo.hello.splits.controller.ReunionTimingApiTest
+[INFO] Running com.gogo.hello.splits.controller.SplitAssignmentApiTest
+2026-11-18T15:55:01.612+08:00  INFO 22736 --- [gogo-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gogo.hello.splits.controller.SplitAssignmentApiTest]: SplitAssignmentApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-18T15:55:01.616+08:00  INFO 22736 --- [gogo-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gogo.hello.HelloApplication for test class com.gogo.hello.splits.controller.SplitAssignmentApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-18T15:55:01.646+08:00  INFO 22736 --- [gogo-backend] [           main] c.g.h.s.c.SplitAssignmentApiTest         : Starting SplitAssignmentApiTest using Java 21.0.11 with PID 22736 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-18T15:55:01.647+08:00  INFO 22736 --- [gogo-backend] [           main] c.g.h.s.c.SplitAssignmentApiTest         : No active profile set, falling back to 1 default profile: "default"
+2026-11-18T15:55:02.143+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-9 - Starting...
+2026-11-18T15:55:02.145+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-9 - Added connection org.sqlite.jdbc4.JDBC4Connection@386dd761
+2026-11-18T15:55:02.145+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-9 - Start completed.
+2026-11-18T15:55:02.146+08:00  INFO 22736 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:file:split-api-test?mode=memory&cache=shared (SQLite 3.49)
+2026-11-18T15:55:02.163+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 11 migrations (execution time 00:00.014s)
+2026-11-18T15:55:02.163+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": 11
+2026-11-18T15:55:02.164+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Schema "main" is up to date. No migration necessary.
+2026-11-18T15:55:02.193+08:00  INFO 22736 --- [gogo-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name credentialUserDetailsService
+2026-11-18T15:55:02.339+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:55:02.339+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:55:02.340+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-11-18T15:55:02.346+08:00  INFO 22736 --- [gogo-backend] [           main] c.g.h.s.c.SplitAssignmentApiTest         : Started SplitAssignmentApiTest in 0.725 seconds (process running for 12.444)
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.132 s -- in com.gogo.hello.splits.controller.SplitAssignmentApiTest
+[INFO] Running com.gogo.hello.splits.controller.SplitBoundaryApiTest
+2026-11-18T15:55:02.747+08:00  INFO 22736 --- [gogo-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gogo.hello.splits.controller.SplitBoundaryApiTest]: SplitBoundaryApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-18T15:55:02.749+08:00  INFO 22736 --- [gogo-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gogo.hello.HelloApplication for test class com.gogo.hello.splits.controller.SplitBoundaryApiTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.089 s -- in com.gogo.hello.splits.controller.SplitBoundaryApiTest
+[INFO] Running com.gogo.hello.splits.controller.SplitCancelApiTest
+2026-11-18T15:55:02.838+08:00  INFO 22736 --- [gogo-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gogo.hello.splits.controller.SplitCancelApiTest]: SplitCancelApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-18T15:55:02.840+08:00  INFO 22736 --- [gogo-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gogo.hello.HelloApplication for test class com.gogo.hello.splits.controller.SplitCancelApiTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.122 s -- in com.gogo.hello.splits.controller.SplitCancelApiTest
+[INFO] Running com.gogo.hello.splits.controller.SplitConfirmApiTest
+2026-11-18T15:55:02.962+08:00  INFO 22736 --- [gogo-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gogo.hello.splits.controller.SplitConfirmApiTest]: SplitConfirmApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-18T15:55:02.963+08:00  INFO 22736 --- [gogo-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gogo.hello.HelloApplication for test class com.gogo.hello.splits.controller.SplitConfirmApiTest
+[INFO] Tests run: 14, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.262 s -- in com.gogo.hello.splits.controller.SplitConfirmApiTest
+[INFO] Running com.gogo.hello.splits.controller.SplitDraftDetailApiTest
+2026-11-18T15:55:03.226+08:00  INFO 22736 --- [gogo-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gogo.hello.splits.controller.SplitDraftDetailApiTest]: SplitDraftDetailApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-18T15:55:03.229+08:00  INFO 22736 --- [gogo-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gogo.hello.HelloApplication for test class com.gogo.hello.splits.controller.SplitDraftDetailApiTest
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.108 s -- in com.gogo.hello.splits.controller.SplitDraftDetailApiTest
+[INFO] Running com.gogo.hello.splits.controller.SplitDraftStartApiTest
+2026-11-18T15:55:03.336+08:00  INFO 22736 --- [gogo-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gogo.hello.splits.controller.SplitDraftStartApiTest]: SplitDraftStartApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-18T15:55:03.338+08:00  INFO 22736 --- [gogo-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gogo.hello.HelloApplication for test class com.gogo.hello.splits.controller.SplitDraftStartApiTest
+[INFO] Tests run: 14, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.148 s -- in com.gogo.hello.splits.controller.SplitDraftStartApiTest
+[INFO] Running com.gogo.hello.splits.controller.SplitRouteGenerationApiTest
+2026-11-18T15:55:03.491+08:00  INFO 22736 --- [gogo-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gogo.hello.splits.controller.SplitRouteGenerationApiTest]: SplitRouteGenerationApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-18T15:55:03.493+08:00  INFO 22736 --- [gogo-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gogo.hello.HelloApplication for test class com.gogo.hello.splits.controller.SplitRouteGenerationApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-18T15:55:03.516+08:00  INFO 22736 --- [gogo-backend] [           main] c.g.h.s.c.SplitRouteGenerationApiTest    : Starting SplitRouteGenerationApiTest using Java 21.0.11 with PID 22736 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-18T15:55:03.516+08:00  INFO 22736 --- [gogo-backend] [           main] c.g.h.s.c.SplitRouteGenerationApiTest    : No active profile set, falling back to 1 default profile: "default"
+2026-11-18T15:55:04.073+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-10 - Starting...
+2026-11-18T15:55:04.075+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-10 - Added connection org.sqlite.jdbc4.JDBC4Connection@54557dd8
+2026-11-18T15:55:04.075+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-10 - Start completed.
+2026-11-18T15:55:04.075+08:00  INFO 22736 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:file:split-api-test?mode=memory&cache=shared (SQLite 3.49)
+2026-11-18T15:55:04.087+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 11 migrations (execution time 00:00.009s)
+2026-11-18T15:55:04.087+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": 11
+2026-11-18T15:55:04.087+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Schema "main" is up to date. No migration necessary.
+2026-11-18T15:55:04.099+08:00  INFO 22736 --- [gogo-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name credentialUserDetailsService
+2026-11-18T15:55:04.208+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:55:04.208+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:55:04.208+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-18T15:55:04.212+08:00  INFO 22736 --- [gogo-backend] [           main] c.g.h.s.c.SplitRouteGenerationApiTest    : Started SplitRouteGenerationApiTest in 0.717 seconds (process running for 14.31)
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.859 s -- in com.gogo.hello.splits.controller.SplitRouteGenerationApiTest
+[INFO] Running com.gogo.hello.splits.domain.ReunionTimingCalculatorTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.012 s -- in com.gogo.hello.splits.domain.ReunionTimingCalculatorTest
+[INFO] Running com.gogo.hello.splits.domain.SplitDraftDocumentStatusTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.048 s -- in com.gogo.hello.splits.domain.SplitDraftDocumentStatusTest
+[INFO] Running com.gogo.hello.splits.domain.SplitDraftDocumentTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.023 s -- in com.gogo.hello.splits.domain.SplitDraftDocumentTest
+[INFO] Running com.gogo.hello.splits.domain.SplitWindowTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.001 s -- in com.gogo.hello.splits.domain.SplitWindowTest
+[INFO] Running com.gogo.hello.splits.MemberGuardTest
+2026-11-18T15:55:04.437+08:00  INFO 22736 --- [gogo-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gogo.hello.splits.MemberGuardTest]: MemberGuardTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-18T15:55:04.456+08:00  INFO 22736 --- [gogo-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gogo.hello.HelloApplication for test class com.gogo.hello.splits.MemberGuardTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-18T15:55:04.471+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.hello.splits.MemberGuardTest    : Starting MemberGuardTest using Java 21.0.11 with PID 22736 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-18T15:55:04.471+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.hello.splits.MemberGuardTest    : No active profile set, falling back to 1 default profile: "default"
+2026-11-18T15:55:04.762+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-11 - Starting...
+2026-11-18T15:55:04.764+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-11 - Added connection org.sqlite.jdbc4.JDBC4Connection@6330c0a2
+2026-11-18T15:55:04.765+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-11 - Start completed.
+2026-11-18T15:55:04.765+08:00  INFO 22736 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:file:split-guard-test?mode=memory&cache=shared (SQLite 3.49)
+2026-11-18T15:55:04.774+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-18T15:55:04.775+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 11 migrations (execution time 00:00.009s)
+2026-11-18T15:55:04.775+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-18T15:55:04.777+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-18T15:55:04.779+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-18T15:55:04.783+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create trip"
+2026-11-18T15:55:04.786+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "3 - create invitation"
+2026-11-18T15:55:04.791+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "4 - splits"
+2026-11-18T15:55:04.795+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "5 - create main plan"
+2026-11-18T15:55:04.798+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "6 - create account credential"
+2026-11-18T15:55:04.801+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "7 - create member preference"
+2026-11-18T15:55:04.802+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "8 - add current trip"
+2026-11-18T15:55:04.804+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "9 - create user default interest"
+2026-11-18T15:55:04.807+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "10 - stop location"
+2026-11-18T15:55:04.810+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "11 - default origin place"
+2026-11-18T15:55:04.810+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 11 migrations to schema "main", now at version v11 (execution time 00:00.000s)
+2026-11-18T15:55:04.823+08:00  INFO 22736 --- [gogo-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name credentialUserDetailsService
+2026-11-18T15:55:04.922+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.hello.splits.MemberGuardTest    : Started MemberGuardTest in 0.464 seconds (process running for 15.019)
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.519 s -- in com.gogo.hello.splits.MemberGuardTest
+[INFO] Running com.gogo.hello.splits.provider.FixtureBranchCandidateProviderTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.026 s -- in com.gogo.hello.splits.provider.FixtureBranchCandidateProviderTest
+[INFO] Running com.gogo.hello.splits.repository.SplitSchemaMigrationTest
+2026-11-18T15:55:04.987+08:00  INFO 22736 --- [gogo-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gogo.hello.splits.repository.SplitSchemaMigrationTest]: SplitSchemaMigrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-18T15:55:05.009+08:00  INFO 22736 --- [gogo-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gogo.hello.HelloApplication for test class com.gogo.hello.splits.repository.SplitSchemaMigrationTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-18T15:55:05.025+08:00  INFO 22736 --- [gogo-backend] [           main] c.g.h.s.r.SplitSchemaMigrationTest       : Starting SplitSchemaMigrationTest using Java 21.0.11 with PID 22736 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-18T15:55:05.025+08:00  INFO 22736 --- [gogo-backend] [           main] c.g.h.s.r.SplitSchemaMigrationTest       : No active profile set, falling back to 1 default profile: "default"
+2026-11-18T15:55:05.387+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-12 - Starting...
+2026-11-18T15:55:05.389+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-12 - Added connection org.sqlite.jdbc4.JDBC4Connection@5b67d66c
+2026-11-18T15:55:05.389+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-12 - Start completed.
+2026-11-18T15:55:05.390+08:00  INFO 22736 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:file:split-schema-test?mode=memory&cache=shared (SQLite 3.49)
+2026-11-18T15:55:05.401+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-18T15:55:05.401+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 11 migrations (execution time 00:00.010s)
+2026-11-18T15:55:05.401+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-18T15:55:05.403+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-18T15:55:05.404+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-18T15:55:05.409+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create trip"
+2026-11-18T15:55:05.414+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "3 - create invitation"
+2026-11-18T15:55:05.418+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "4 - splits"
+2026-11-18T15:55:05.422+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "5 - create main plan"
+2026-11-18T15:55:05.426+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "6 - create account credential"
+2026-11-18T15:55:05.428+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "7 - create member preference"
+2026-11-18T15:55:05.431+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "8 - add current trip"
+2026-11-18T15:55:05.434+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "9 - create user default interest"
+2026-11-18T15:55:05.436+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "10 - stop location"
+2026-11-18T15:55:05.439+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "11 - default origin place"
+2026-11-18T15:55:05.440+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 11 migrations to schema "main", now at version v11 (execution time 00:00.002s)
+2026-11-18T15:55:05.454+08:00  INFO 22736 --- [gogo-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name credentialUserDetailsService
+2026-11-18T15:55:05.610+08:00  INFO 22736 --- [gogo-backend] [           main] c.g.h.s.r.SplitSchemaMigrationTest       : Started SplitSchemaMigrationTest in 0.599 seconds (process running for 15.708)
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.660 s -- in com.gogo.hello.splits.repository.SplitSchemaMigrationTest
+[INFO] Running com.gogo.hello.splits.repository.SqliteThreeIronRulesTest
+2026-11-18T15:55:05.647+08:00  INFO 22736 --- [gogo-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.gogo.hello.splits.repository.SqliteThreeIronRulesTest]: SqliteThreeIronRulesTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-18T15:55:05.648+08:00  INFO 22736 --- [gogo-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.gogo.hello.HelloApplication for test class com.gogo.hello.splits.repository.SqliteThreeIronRulesTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-18T15:55:05.667+08:00  INFO 22736 --- [gogo-backend] [           main] c.g.h.s.r.SqliteThreeIronRulesTest       : Starting SqliteThreeIronRulesTest using Java 21.0.11 with PID 22736 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-18T15:55:05.668+08:00  INFO 22736 --- [gogo-backend] [           main] c.g.h.s.r.SqliteThreeIronRulesTest       : No active profile set, falling back to 1 default profile: "default"
+2026-11-18T15:55:06.017+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-13 - Starting...
+2026-11-18T15:55:06.024+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-13 - Added connection org.sqlite.jdbc4.JDBC4Connection@4515c6f
+2026-11-18T15:55:06.024+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-13 - Start completed.
+2026-11-18T15:55:06.026+08:00  INFO 22736 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:./target/iron-rules-test.db?journal_mode=WAL&busy_timeout=5000&foreign_keys=on (SQLite 3.49)
+2026-11-18T15:55:06.038+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 11 migrations (execution time 00:00.011s)
+2026-11-18T15:55:06.040+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": 11
+2026-11-18T15:55:06.041+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Schema "main" is up to date. No migration necessary.
+2026-11-18T15:55:06.058+08:00  INFO 22736 --- [gogo-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name credentialUserDetailsService
+2026-11-18T15:55:06.180+08:00  INFO 22736 --- [gogo-backend] [           main] c.g.h.s.r.SqliteThreeIronRulesTest       : Started SqliteThreeIronRulesTest in 0.53 seconds (process running for 16.278)
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.554 s -- in com.gogo.hello.splits.repository.SqliteThreeIronRulesTest
+[INFO] Running com.gogo.invitation.InvitationApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-18T15:55:06.221+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.invitation.InvitationApiTest    : Starting InvitationApiTest using Java 21.0.11 with PID 22736 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-18T15:55:06.221+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.invitation.InvitationApiTest    : No active profile set, falling back to 1 default profile: "default"
+2026-11-18T15:55:06.547+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-14 - Starting...
+2026-11-18T15:55:06.548+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-14 - Added connection org.sqlite.jdbc4.JDBC4Connection@3c12ee82
+2026-11-18T15:55:06.548+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-14 - Start completed.
+2026-11-18T15:55:06.549+08:00  INFO 22736 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:file:invitation-test?mode=memory&cache=shared (SQLite 3.49)
+2026-11-18T15:55:06.557+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-18T15:55:06.557+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 11 migrations (execution time 00:00.008s)
+2026-11-18T15:55:06.558+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-18T15:55:06.558+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-18T15:55:06.560+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-18T15:55:06.562+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create trip"
+2026-11-18T15:55:06.566+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "3 - create invitation"
+2026-11-18T15:55:06.568+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "4 - splits"
+2026-11-18T15:55:06.571+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "5 - create main plan"
+2026-11-18T15:55:06.575+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "6 - create account credential"
+2026-11-18T15:55:06.577+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "7 - create member preference"
+2026-11-18T15:55:06.579+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "8 - add current trip"
+2026-11-18T15:55:06.581+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "9 - create user default interest"
+2026-11-18T15:55:06.583+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "10 - stop location"
+2026-11-18T15:55:06.585+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "11 - default origin place"
+2026-11-18T15:55:06.586+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 11 migrations to schema "main", now at version v11 (execution time 00:00.001s)
+2026-11-18T15:55:06.596+08:00  INFO 22736 --- [gogo-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name credentialUserDetailsService
+2026-11-18T15:55:06.681+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:55:06.681+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:55:06.681+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-18T15:55:06.684+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.invitation.InvitationApiTest    : Started InvitationApiTest in 0.477 seconds (process running for 16.782)
+2026-11-18T15:55:06.720+08:00  WARN 22736 --- [gogo-backend] [           main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'PATCH' is not supported]
+2026-11-18T15:55:06.726+08:00  WARN 22736 --- [gogo-backend] [           main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'DELETE' is not supported]
+[INFO] Tests run: 16, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.616 s -- in com.gogo.invitation.InvitationApiTest
+[INFO] Running com.gogo.mainplan.BudgetOverrunsTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in com.gogo.mainplan.BudgetOverrunsTest
+[INFO] Running com.gogo.mainplan.FakeMainPlanProviderTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s -- in com.gogo.mainplan.FakeMainPlanProviderTest
+[INFO] Running com.gogo.mainplan.LocationCompletionTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s -- in com.gogo.mainplan.LocationCompletionTest
+[INFO] Running com.gogo.mainplan.MainPlanApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-18T15:55:06.857+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.mainplan.MainPlanApiTest        : Starting MainPlanApiTest using Java 21.0.11 with PID 22736 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-18T15:55:06.857+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.mainplan.MainPlanApiTest        : No active profile set, falling back to 1 default profile: "default"
+2026-11-18T15:55:07.111+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-15 - Starting...
+2026-11-18T15:55:07.112+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-15 - Added connection org.sqlite.jdbc4.JDBC4Connection@182a8bf8
+2026-11-18T15:55:07.112+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-15 - Start completed.
+2026-11-18T15:55:07.112+08:00  INFO 22736 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:file:main-plan-test?mode=memory&cache=shared (SQLite 3.49)
+2026-11-18T15:55:07.118+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-18T15:55:07.118+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 11 migrations (execution time 00:00.005s)
+2026-11-18T15:55:07.118+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-18T15:55:07.119+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-18T15:55:07.120+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-18T15:55:07.122+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create trip"
+2026-11-18T15:55:07.124+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "3 - create invitation"
+2026-11-18T15:55:07.126+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "4 - splits"
+2026-11-18T15:55:07.128+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "5 - create main plan"
+2026-11-18T15:55:07.130+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "6 - create account credential"
+2026-11-18T15:55:07.132+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "7 - create member preference"
+2026-11-18T15:55:07.135+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "8 - add current trip"
+2026-11-18T15:55:07.136+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "9 - create user default interest"
+2026-11-18T15:55:07.138+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "10 - stop location"
+2026-11-18T15:55:07.140+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "11 - default origin place"
+2026-11-18T15:55:07.140+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 11 migrations to schema "main", now at version v11 (execution time 00:00.000s)
+2026-11-18T15:55:07.149+08:00  INFO 22736 --- [gogo-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name credentialUserDetailsService
+2026-11-18T15:55:07.225+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:55:07.225+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:55:07.226+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-11-18T15:55:07.229+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.mainplan.MainPlanApiTest        : Started MainPlanApiTest in 0.386 seconds (process running for 17.327)
+2026-11-18T15:55:07.614+08:00  WARN 22736 --- [gogo-backend] [           main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'POST' is not supported]
+2026-11-18T15:55:07.615+08:00  WARN 22736 --- [gogo-backend] [           main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'PATCH' is not supported]
+[INFO] Tests run: 38, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.816 s -- in com.gogo.mainplan.MainPlanApiTest
+[INFO] Running com.gogo.mainplan.MainPlanProjectionTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.006 s -- in com.gogo.mainplan.MainPlanProjectionTest
+[INFO] Running com.gogo.mainplan.ScheduleValidatorTest
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.010 s -- in com.gogo.mainplan.ScheduleValidatorTest
+[INFO] Running com.gogo.mainplan.StopLocationApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-18T15:55:07.692+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.mainplan.StopLocationApiTest    : Starting StopLocationApiTest using Java 21.0.11 with PID 22736 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-18T15:55:07.692+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.mainplan.StopLocationApiTest    : No active profile set, falling back to 1 default profile: "default"
+2026-11-18T15:55:07.949+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-16 - Starting...
+2026-11-18T15:55:07.951+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-16 - Added connection org.sqlite.jdbc4.JDBC4Connection@81a3c9b
+2026-11-18T15:55:07.951+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-16 - Start completed.
+2026-11-18T15:55:07.951+08:00  INFO 22736 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:file:stop-location-test?mode=memory&cache=shared (SQLite 3.49)
+2026-11-18T15:55:07.958+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-18T15:55:07.958+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 11 migrations (execution time 00:00.006s)
+2026-11-18T15:55:07.958+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-18T15:55:07.960+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-18T15:55:07.960+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-18T15:55:07.962+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create trip"
+2026-11-18T15:55:07.964+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "3 - create invitation"
+2026-11-18T15:55:07.966+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "4 - splits"
+2026-11-18T15:55:07.968+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "5 - create main plan"
+2026-11-18T15:55:07.970+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "6 - create account credential"
+2026-11-18T15:55:07.972+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "7 - create member preference"
+2026-11-18T15:55:07.973+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "8 - add current trip"
+2026-11-18T15:55:07.974+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "9 - create user default interest"
+2026-11-18T15:55:07.977+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "10 - stop location"
+2026-11-18T15:55:07.980+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "11 - default origin place"
+2026-11-18T15:55:07.981+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 11 migrations to schema "main", now at version v11 (execution time 00:00.001s)
+2026-11-18T15:55:07.990+08:00  INFO 22736 --- [gogo-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name credentialUserDetailsService
+2026-11-18T15:55:08.073+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:55:08.073+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:55:08.073+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-18T15:55:08.076+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.mainplan.StopLocationApiTest    : Started StopLocationApiTest in 0.397 seconds (process running for 18.174)
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.501 s -- in com.gogo.mainplan.StopLocationApiTest
+[INFO] Running com.gogo.preference.MustDoApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-18T15:55:08.190+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.preference.MustDoApiTest        : Starting MustDoApiTest using Java 21.0.11 with PID 22736 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-18T15:55:08.191+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.preference.MustDoApiTest        : No active profile set, falling back to 1 default profile: "default"
+2026-11-18T15:55:08.433+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-17 - Starting...
+2026-11-18T15:55:08.434+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-17 - Added connection org.sqlite.jdbc4.JDBC4Connection@5be3bb4b
+2026-11-18T15:55:08.434+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-17 - Start completed.
+2026-11-18T15:55:08.442+08:00  INFO 22736 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:file:mustdo-test?mode=memory&cache=shared&foreign_keys=on (SQLite 3.49)
+2026-11-18T15:55:08.450+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-18T15:55:08.450+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 11 migrations (execution time 00:00.008s)
+2026-11-18T15:55:08.451+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-18T15:55:08.451+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-18T15:55:08.453+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-18T15:55:08.454+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create trip"
+2026-11-18T15:55:08.456+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "3 - create invitation"
+2026-11-18T15:55:08.458+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "4 - splits"
+2026-11-18T15:55:08.460+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "5 - create main plan"
+2026-11-18T15:55:08.462+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "6 - create account credential"
+2026-11-18T15:55:08.464+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "7 - create member preference"
+2026-11-18T15:55:08.465+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "8 - add current trip"
+2026-11-18T15:55:08.466+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "9 - create user default interest"
+2026-11-18T15:55:08.468+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "10 - stop location"
+2026-11-18T15:55:08.470+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "11 - default origin place"
+2026-11-18T15:55:08.470+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 11 migrations to schema "main", now at version v11 (execution time 00:00.000s)
+2026-11-18T15:55:08.481+08:00  INFO 22736 --- [gogo-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name credentialUserDetailsService
+2026-11-18T15:55:08.554+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:55:08.554+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:55:08.555+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-11-18T15:55:08.557+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.preference.MustDoApiTest        : Started MustDoApiTest in 0.377 seconds (process running for 18.655)
+[INFO] Tests run: 33, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.889 s -- in com.gogo.preference.MustDoApiTest
+[INFO] Running com.gogo.preference.MustDoCodecAndServiceTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.070 s -- in com.gogo.preference.MustDoCodecAndServiceTest
+[INFO] Running com.gogo.preference.MustDoValidatorTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s -- in com.gogo.preference.MustDoValidatorTest
+[INFO] Running com.gogo.preference.PreferenceApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-18T15:55:09.156+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.preference.PreferenceApiTest    : Starting PreferenceApiTest using Java 21.0.11 with PID 22736 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-18T15:55:09.156+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.preference.PreferenceApiTest    : No active profile set, falling back to 1 default profile: "default"
+2026-11-18T15:55:09.395+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-18 - Starting...
+2026-11-18T15:55:09.396+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-18 - Added connection org.sqlite.jdbc4.JDBC4Connection@5c75524
+2026-11-18T15:55:09.396+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-18 - Start completed.
+2026-11-18T15:55:09.397+08:00  INFO 22736 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:file:preference-test?mode=memory&cache=shared&foreign_keys=on (SQLite 3.49)
+2026-11-18T15:55:09.404+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-18T15:55:09.404+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 11 migrations (execution time 00:00.006s)
+2026-11-18T15:55:09.405+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-18T15:55:09.405+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-18T15:55:09.406+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-18T15:55:09.408+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create trip"
+2026-11-18T15:55:09.410+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "3 - create invitation"
+2026-11-18T15:55:09.411+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "4 - splits"
+2026-11-18T15:55:09.415+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "5 - create main plan"
+2026-11-18T15:55:09.417+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "6 - create account credential"
+2026-11-18T15:55:09.419+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "7 - create member preference"
+2026-11-18T15:55:09.420+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "8 - add current trip"
+2026-11-18T15:55:09.422+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "9 - create user default interest"
+2026-11-18T15:55:09.423+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "10 - stop location"
+2026-11-18T15:55:09.425+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "11 - default origin place"
+2026-11-18T15:55:09.426+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 11 migrations to schema "main", now at version v11 (execution time 00:00.001s)
+2026-11-18T15:55:09.435+08:00  INFO 22736 --- [gogo-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name credentialUserDetailsService
+2026-11-18T15:55:09.513+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:55:09.513+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:55:09.513+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-18T15:55:09.516+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.preference.PreferenceApiTest    : Started PreferenceApiTest in 0.371 seconds (process running for 19.613)
+2026-11-18T15:55:09.626+08:00  WARN 22736 --- [gogo-backend] [           main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'PUT' is not supported]
+[INFO] Tests run: 29, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.511 s -- in com.gogo.preference.PreferenceApiTest
+[INFO] Running com.gogo.trip.CurrentTripApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-18T15:55:09.669+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.trip.CurrentTripApiTest         : Starting CurrentTripApiTest using Java 21.0.11 with PID 22736 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-18T15:55:09.669+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.trip.CurrentTripApiTest         : No active profile set, falling back to 1 default profile: "default"
+2026-11-18T15:55:09.902+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-19 - Starting...
+2026-11-18T15:55:09.903+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-19 - Added connection org.sqlite.jdbc4.JDBC4Connection@7a6a0db
+2026-11-18T15:55:09.903+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-19 - Start completed.
+2026-11-18T15:55:09.903+08:00  INFO 22736 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:file:current-trip-test?mode=memory&cache=shared (SQLite 3.49)
+2026-11-18T15:55:09.910+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-18T15:55:09.911+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 11 migrations (execution time 00:00.006s)
+2026-11-18T15:55:09.911+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-18T15:55:09.911+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-18T15:55:09.912+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-18T15:55:09.913+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create trip"
+2026-11-18T15:55:09.916+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "3 - create invitation"
+2026-11-18T15:55:09.917+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "4 - splits"
+2026-11-18T15:55:09.919+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "5 - create main plan"
+2026-11-18T15:55:09.921+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "6 - create account credential"
+2026-11-18T15:55:09.923+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "7 - create member preference"
+2026-11-18T15:55:09.924+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "8 - add current trip"
+2026-11-18T15:55:09.926+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "9 - create user default interest"
+2026-11-18T15:55:09.927+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "10 - stop location"
+2026-11-18T15:55:09.929+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "11 - default origin place"
+2026-11-18T15:55:09.929+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 11 migrations to schema "main", now at version v11 (execution time 00:00.000s)
+2026-11-18T15:55:09.938+08:00  INFO 22736 --- [gogo-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name credentialUserDetailsService
+2026-11-18T15:55:10.016+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:55:10.016+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:55:10.016+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-18T15:55:10.019+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.trip.CurrentTripApiTest         : Started CurrentTripApiTest in 0.362 seconds (process running for 20.117)
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.398 s -- in com.gogo.trip.CurrentTripApiTest
+[INFO] Running com.gogo.trip.TripApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-18T15:55:10.068+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.trip.TripApiTest                : Starting TripApiTest using Java 21.0.11 with PID 22736 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-18T15:55:10.068+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.trip.TripApiTest                : No active profile set, falling back to 1 default profile: "default"
+2026-11-18T15:55:10.312+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-20 - Starting...
+2026-11-18T15:55:10.313+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-20 - Added connection org.sqlite.jdbc4.JDBC4Connection@28d65efa
+2026-11-18T15:55:10.313+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-20 - Start completed.
+2026-11-18T15:55:10.313+08:00  INFO 22736 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:file:trip-test?mode=memory&cache=shared (SQLite 3.49)
+2026-11-18T15:55:10.321+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-18T15:55:10.321+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 11 migrations (execution time 00:00.008s)
+2026-11-18T15:55:10.321+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-18T15:55:10.322+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-18T15:55:10.324+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-18T15:55:10.325+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create trip"
+2026-11-18T15:55:10.327+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "3 - create invitation"
+2026-11-18T15:55:10.329+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "4 - splits"
+2026-11-18T15:55:10.331+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "5 - create main plan"
+2026-11-18T15:55:10.333+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "6 - create account credential"
+2026-11-18T15:55:10.335+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "7 - create member preference"
+2026-11-18T15:55:10.335+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "8 - add current trip"
+2026-11-18T15:55:10.337+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "9 - create user default interest"
+2026-11-18T15:55:10.338+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "10 - stop location"
+2026-11-18T15:55:10.340+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "11 - default origin place"
+2026-11-18T15:55:10.340+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 11 migrations to schema "main", now at version v11 (execution time 00:00.000s)
+2026-11-18T15:55:10.349+08:00  INFO 22736 --- [gogo-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name credentialUserDetailsService
+2026-11-18T15:55:10.424+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:55:10.424+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:55:10.424+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-18T15:55:10.427+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.trip.TripApiTest                : Started TripApiTest in 0.371 seconds (process running for 20.525)
+2026-11-18T15:55:10.465+08:00  WARN 22736 --- [gogo-backend] [           main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'PUT' is not supported]
+2026-11-18T15:55:10.465+08:00  WARN 22736 --- [gogo-backend] [           main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'DELETE' is not supported]
+[INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.433 s -- in com.gogo.trip.TripApiTest
+[INFO] Running com.gogo.trip.TripDashboardApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-18T15:55:10.499+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.trip.TripDashboardApiTest       : Starting TripDashboardApiTest using Java 21.0.11 with PID 22736 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-18T15:55:10.499+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.trip.TripDashboardApiTest       : No active profile set, falling back to 1 default profile: "default"
+2026-11-18T15:55:10.737+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-21 - Starting...
+2026-11-18T15:55:10.739+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-21 - Added connection org.sqlite.jdbc4.JDBC4Connection@7732b947
+2026-11-18T15:55:10.739+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-21 - Start completed.
+2026-11-18T15:55:10.739+08:00  INFO 22736 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:file:trip-dashboard-test?mode=memory&cache=shared (SQLite 3.49)
+2026-11-18T15:55:10.746+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-18T15:55:10.746+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 11 migrations (execution time 00:00.006s)
+2026-11-18T15:55:10.746+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-18T15:55:10.747+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-18T15:55:10.748+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-18T15:55:10.750+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create trip"
+2026-11-18T15:55:10.752+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "3 - create invitation"
+2026-11-18T15:55:10.754+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "4 - splits"
+2026-11-18T15:55:10.755+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "5 - create main plan"
+2026-11-18T15:55:10.759+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "6 - create account credential"
+2026-11-18T15:55:10.759+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "7 - create member preference"
+2026-11-18T15:55:10.762+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "8 - add current trip"
+2026-11-18T15:55:10.763+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "9 - create user default interest"
+2026-11-18T15:55:10.764+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "10 - stop location"
+2026-11-18T15:55:10.767+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "11 - default origin place"
+2026-11-18T15:55:10.767+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 11 migrations to schema "main", now at version v11 (execution time 00:00.000s)
+2026-11-18T15:55:10.776+08:00  INFO 22736 --- [gogo-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name credentialUserDetailsService
+2026-11-18T15:55:10.861+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:55:10.861+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:55:10.862+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-11-18T15:55:10.864+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.trip.TripDashboardApiTest       : Started TripDashboardApiTest in 0.374 seconds (process running for 20.963)
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.440 s -- in com.gogo.trip.TripDashboardApiTest
+[INFO] Running com.gogo.trip.TripListApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-18T15:55:10.943+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.trip.TripListApiTest            : Starting TripListApiTest using Java 21.0.11 with PID 22736 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-18T15:55:10.943+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.trip.TripListApiTest            : No active profile set, falling back to 1 default profile: "default"
+2026-11-18T15:55:11.213+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-22 - Starting...
+2026-11-18T15:55:11.215+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-22 - Added connection org.sqlite.jdbc4.JDBC4Connection@c38b88
+2026-11-18T15:55:11.215+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-22 - Start completed.
+2026-11-18T15:55:11.216+08:00  INFO 22736 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:file:trip-list-test?mode=memory&cache=shared (SQLite 3.49)
+2026-11-18T15:55:11.227+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-18T15:55:11.228+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 11 migrations (execution time 00:00.010s)
+2026-11-18T15:55:11.228+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-18T15:55:11.229+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-18T15:55:11.231+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-18T15:55:11.233+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create trip"
+2026-11-18T15:55:11.235+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "3 - create invitation"
+2026-11-18T15:55:11.237+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "4 - splits"
+2026-11-18T15:55:11.240+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "5 - create main plan"
+2026-11-18T15:55:11.242+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "6 - create account credential"
+2026-11-18T15:55:11.244+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "7 - create member preference"
+2026-11-18T15:55:11.245+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "8 - add current trip"
+2026-11-18T15:55:11.247+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "9 - create user default interest"
+2026-11-18T15:55:11.249+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "10 - stop location"
+2026-11-18T15:55:11.251+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "11 - default origin place"
+2026-11-18T15:55:11.252+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 11 migrations to schema "main", now at version v11 (execution time 00:00.000s)
+2026-11-18T15:55:11.264+08:00  INFO 22736 --- [gogo-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name credentialUserDetailsService
+2026-11-18T15:55:11.369+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:55:11.369+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:55:11.369+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-18T15:55:11.373+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.trip.TripListApiTest            : Started TripListApiTest in 0.441 seconds (process running for 21.471)
+2026-11-18T15:55:11.420+08:00  WARN 22736 --- [gogo-backend] [           main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'PUT' is not supported]
+2026-11-18T15:55:11.421+08:00  WARN 22736 --- [gogo-backend] [           main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'DELETE' is not supported]
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.501 s -- in com.gogo.trip.TripListApiTest
+[INFO] Running com.gogo.trip.TripMembersApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-11-18T15:55:11.449+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.trip.TripMembersApiTest         : Starting TripMembersApiTest using Java 21.0.11 with PID 22736 (started by DENGLU in D:\Bootcamp Training\Trip\gogo\backend)
+2026-11-18T15:55:11.449+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.trip.TripMembersApiTest         : No active profile set, falling back to 1 default profile: "default"
+2026-11-18T15:55:11.749+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-23 - Starting...
+2026-11-18T15:55:11.750+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-23 - Added connection org.sqlite.jdbc4.JDBC4Connection@35d281c5
+2026-11-18T15:55:11.750+08:00  INFO 22736 --- [gogo-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-23 - Start completed.
+2026-11-18T15:55:11.751+08:00  INFO 22736 --- [gogo-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:file:trip-members-test?mode=memory&cache=shared (SQLite 3.49)
+2026-11-18T15:55:11.762+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-18T15:55:11.763+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 11 migrations (execution time 00:00.009s)
+2026-11-18T15:55:11.763+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-18T15:55:11.764+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-18T15:55:11.765+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-18T15:55:11.767+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create trip"
+2026-11-18T15:55:11.769+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "3 - create invitation"
+2026-11-18T15:55:11.771+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "4 - splits"
+2026-11-18T15:55:11.774+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "5 - create main plan"
+2026-11-18T15:55:11.777+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "6 - create account credential"
+2026-11-18T15:55:11.778+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "7 - create member preference"
+2026-11-18T15:55:11.779+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "8 - add current trip"
+2026-11-18T15:55:11.781+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "9 - create user default interest"
+2026-11-18T15:55:11.783+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "10 - stop location"
+2026-11-18T15:55:11.785+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "11 - default origin place"
+2026-11-18T15:55:11.786+08:00  INFO 22736 --- [gogo-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 11 migrations to schema "main", now at version v11 (execution time 00:00.000s)
+2026-11-18T15:55:11.798+08:00  INFO 22736 --- [gogo-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name credentialUserDetailsService
+2026-11-18T15:55:11.891+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-18T15:55:11.891+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-18T15:55:11.891+08:00  INFO 22736 --- [gogo-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-18T15:55:11.895+08:00  INFO 22736 --- [gogo-backend] [           main] com.gogo.trip.TripMembersApiTest         : Started TripMembersApiTest in 0.461 seconds (process running for 21.993)
+2026-11-18T15:55:11.932+08:00  WARN 22736 --- [gogo-backend] [           main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'POST' is not supported]
+2026-11-18T15:55:11.933+08:00  WARN 22736 --- [gogo-backend] [           main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'PUT' is not supported]
+2026-11-18T15:55:11.934+08:00  WARN 22736 --- [gogo-backend] [           main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'DELETE' is not supported]
+[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.520 s -- in com.gogo.trip.TripMembersApiTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 381, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  25.808 s
+[INFO] Finished at: 2026-11-18T15:55:12+08:00
+[INFO] ------------------------------------------------------------------------
+exit: 0
+ended: 2026-11-18T15:55:12+0800
+
+===== CMD: (cd frontend && npm ci && npm run build) =====
+cwd: /d/Bootcamp Training/Trip/gogo
+started: 2026-11-18T15:55:13+0800
+
+added 84 packages, and audited 91 packages in 7s
+
+17 packages are looking for funding
+  run `npm fund` for details
+
+5 high severity vulnerabilities
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+
+> gogo-frontend@0.0.1 build
+> npm run typecheck && vite build
+
+
+> gogo-frontend@0.0.1 typecheck
+> tsc --noEmit
+
+[36mvite v8.3.8 [32mbuilding client environment for production...[36m[39m
+transforming...
+✓ 174 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.40 kB │ gzip:   0.27 kB
+dist/assets/index-YaPvsovF.css   58.56 kB │ gzip:  11.43 kB
+dist/assets/index-B59QlHyR.js   738.99 kB │ gzip: 230.13 kB
+
+[33m[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+[32m✓ built in 333ms[39m
+exit: 0
+ended: 2026-11-18T15:55:31+0800
+

@@ -109,7 +109,7 @@ class FakeMainPlanProviderTest {
         List<MainPlanRepository.StopRow> rows = planFor("合肥", "2026-12-05", "2026-12-05")
                 .stops().stream()
                 .map(stop -> new MainPlanRepository.StopRow(stop.seq(), stop.name(), stop.startTime(),
-                        stop.endTime(), stop.travelMinutesToNext(), null, stop.costCents()))
+                        stop.endTime(), stop.travelMinutesToNext(), null, null, null, null, stop.costCents()))
                 .toList();
         assertTrue(new ScheduleValidator().validate(rows).isEmpty());
     }

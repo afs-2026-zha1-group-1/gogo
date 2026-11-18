@@ -6,7 +6,9 @@ import java.util.List;
 // integer minute legs (null on the last stop), provider tags, the per-person
 // cost in integer cents and that stop's own per-person cost (0 = free). The
 // total is the sum of the stop costs, so the split budget check can subtract
-// a replaced stop without guessing.
+// a replaced stop without guessing. US-079: address/city are the AI-generation
+// contract fields; coordinates are NOT provider output - the service completes
+// them from place_cache / programmatic geocoding at persist time.
 public record MainPlanResult(List<PlannedStop> stops, int costPerPersonCents) {
 
     public record PlannedStop(
@@ -16,6 +18,8 @@ public record MainPlanResult(List<PlannedStop> stops, int costPerPersonCents) {
             String endTime,
             Integer travelMinutesToNext,
             List<String> interests,
+            String address,
+            String city,
             int costCents) {
     }
 

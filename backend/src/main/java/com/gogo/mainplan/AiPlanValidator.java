@@ -55,7 +55,7 @@ class AiPlanValidator {
                 }
             }
             stops.add(new MainPlanResult.PlannedStop(seq, name, text(stop, "startTime"),
-                    text(stop, "endTime"), leg, interests(stop), 0));
+                    text(stop, "endTime"), leg, interests(stop), optText(stop, "address"), optText(stop, "city"), 0));
         }
         return new MainPlanResult(stops, costNode.asInt());
     }
@@ -83,6 +83,12 @@ class AiPlanValidator {
             throw invalid(field + " must be a nonblank string on every stop");
         }
         return value.asText();
+    }
+
+    /** US-079: address/city are optional in the AI contract; missing = null (cache completes later). */
+    private static String optText(JsonNode stop, String field) {
+        JsonNode value = stop.path(field);
+        return value.isTextual() && !value.asText().isBlank() ? value.asText() : null;
     }
 
     private static List<String> interests(JsonNode stop) {

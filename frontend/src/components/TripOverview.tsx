@@ -56,7 +56,7 @@ export default function TripOverview({ state }: { state: ReadyState }) {
           </div>
         </section>
 
-        <CountdownCard state={countdown} schedule={state.schedule} />
+        <CountdownCard state={countdown} schedule={state.schedule} destination={state.trip.destination} />
 
         {state.members.length > 0 && (
           <>
@@ -81,7 +81,12 @@ export default function TripOverview({ state }: { state: ReadyState }) {
           </>
         )}
 
-        <MyPlanTimeline schedule={state.schedule} startDate={state.trip.startDate} isOrganizer={isOrganizer} />
+        <MyPlanTimeline
+          schedule={state.schedule}
+          startDate={state.trip.startDate}
+          isOrganizer={isOrganizer}
+          destination={state.trip.destination}
+        />
       </div>
     </div>
   )

@@ -80,6 +80,10 @@ export interface PlanStop {
   endTime: string
   travelMinutesToNext: number | null
   interests: string[]
+  // US-079 路线1：落库地址/坐标；后端非空序列化会省略 null，故可选。
+  address?: string | null
+  lat?: number | null
+  lng?: number | null
 }
 
 export interface PendingMember {
