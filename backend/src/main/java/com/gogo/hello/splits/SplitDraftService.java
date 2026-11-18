@@ -7,6 +7,7 @@ import com.gogo.hello.common.ErrorCode;
 import com.gogo.hello.splits.domain.PlanStop;
 import com.gogo.hello.splits.domain.ReunionTimingCalculator;
 import com.gogo.hello.splits.domain.RouteCandidate;
+import com.gogo.hello.splits.domain.RoutePairEdit;
 import com.gogo.hello.splits.domain.SplitDraftDocument;
 import com.gogo.hello.splits.domain.SplitDraftDocument.RouteDurations;
 import com.gogo.hello.splits.domain.RouteTimingInput;
@@ -18,8 +19,10 @@ import com.gogo.hello.splits.dto.BoundaryResponse;
 import com.gogo.hello.splits.dto.CheckTimingRequest;
 import com.gogo.hello.splits.dto.GenerateRoutesRequest;
 import com.gogo.hello.splits.dto.GroupRoute;
+import com.gogo.hello.splits.dto.RouteEditInput;
 import com.gogo.hello.splits.dto.RouteGenerationResponse;
 import com.gogo.hello.splits.dto.SaveBoundariesRequest;
+import com.gogo.hello.splits.dto.SaveRoutesRequest;
 import com.gogo.hello.splits.dto.SplitDraftDetailResponse;
 import com.gogo.hello.splits.provider.BranchCandidateProvider;
 import com.gogo.mainplan.MainPlanProjection;
@@ -30,6 +33,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -247,9 +251,9 @@ public class SplitDraftService {
             RouteCandidate candidate = entry.getValue();
             durations.put(entry.getKey(), new RouteDurations(candidate.activityMinutes(),
                     candidate.travelLegsMinutes(), candidate.bufferMinutes(), candidate.steps()));
-            routeViews.add(new GroupRoute(entry.getKey(), candidate.activityName(), departure.id(), reunion.id(),
-                    candidate.activityMinutes(), candidate.travelLegsMinutes(), candidate.bufferMinutes(),
-                    candidate.steps()));
+            routeViews.add(new GroupRoute(entry.getKey(), candidate.activityName(), candidate.activityName(),
+                    departure.id(), reunion.id(), candidate.activityMinutes(), candidate.travelLegsMinutes(),
+                    candidate.bufferMinutes(), candidate.steps()));
         }
         SplitDraftDocument updated = draft.withRoutes(durations, now);
         String updatedJson = toJson(updated);
@@ -267,6 +271,134 @@ public class SplitDraftService {
             }
         });
         return new RouteGenerationResponse(updated.draftVersion(), routeViews);
+    }
+
+    /**
+     * Saves a manual A/B route edit (spec US-087 S2/S2b, design DD1/DD2/DD3). Any trip member may edit while the
+     * draft is active; group A keeps the read-only stop names and derives its activity/leg totals from the submitted
+     * stay/travel minutes, while group B supplies a single activity breakdown. The plan_node headers and the draft
+     * document routes are written in one transaction with a conditional version bump; a stale version or a missing
+     * pair leaves both untouched. Timing is deliberately not judged here: the step-2 Next action calls
+     * routes:check-timing afterwards and blocks on feasible=false.
+     */
+    public RouteGenerationResponse saveRoutes(String tripId, String memberId, SaveRoutesRequest request) {
+        guard.requireMember(memberId, tripId);
+        SplitDraftDocument draft = requireActiveDraft(tripId);
+        if (request == null || request.routes() == null || request.routes().size() != 2) {
+            throw new ApiException(ErrorCode.INVALID_ROUTE_PAIR, "exactly two group routes are required");
+        }
+        if (request.draftVersion() != draft.draftVersion()) {
+            throw new ApiException(ErrorCode.STALE_DRAFT_VERSION, "draft version is stale");
+        }
+        Map<String, RouteDurations> existing = draft.routes();
+        List<String> missingRoutes = new ArrayList<>();
+        if (existing == null || existing.get("A") == null) {
+            missingRoutes.add("routes.A");
+        }
+        if (existing == null || existing.get("B") == null) {
+            missingRoutes.add("routes.B");
+        }
+        if (!missingRoutes.isEmpty()) {
+            throw new ApiException(ErrorCode.SPLIT_DRAFT_INCOMPLETE, "the draft is not complete",
+                    Map.of("missing", missingRoutes));
+        }
+        Map<String, RouteEditInput> inputs = new LinkedHashMap<>();
+        for (RouteEditInput input : request.routes()) {
+            if (input == null) {
+                throw new ApiException(ErrorCode.INVALID_ROUTE_INPUT, "route input is required");
+            }
+            String label = input.groupLabel() == null ? "" : input.groupLabel().trim();
+            if (!"A".equals(label) && !"B".equals(label)) {
+                throw new ApiException(ErrorCode.INVALID_GROUP_LABEL, "group label must be A or B");
+            }
+            if (inputs.put(label, input) != null) {
+                throw new ApiException(ErrorCode.INVALID_ROUTE_PAIR, "each group label may appear once");
+            }
+        }
+        if (!inputs.keySet().equals(Set.of("A", "B"))) {
+            throw new ApiException(ErrorCode.INVALID_ROUTE_PAIR, "exactly the A and B routes are required");
+        }
+        Map<String, RouteDurations> updatedRoutes = new LinkedHashMap<>();
+        List<GroupRoute> routeViews = new ArrayList<>();
+        for (String label : List.of("A", "B")) {
+            RouteEditInput input = inputs.get(label);
+            RouteDurations base = existing.get(label);
+            String activityName = requireActivityName(input.activityName());
+            String locationName = normalizeLocation(input.locationName());
+            RouteDurations durations = "A".equals(label) && base.steps() != null && !base.steps().isEmpty()
+                    ? deriveGroupA(base, input)
+                    : manualDurations(base, input);
+            updatedRoutes.put(label, durations);
+            routeViews.add(new GroupRoute(label, activityName, locationName, draft.departureStopId(),
+                    draft.reunionStopId(), durations.activityMinutes(), durations.travelLegsMinutes(),
+                    durations.bufferMinutes(), durations.steps()));
+        }
+        String now = Instant.now().toString();
+        SplitDraftDocument updated = draft.withRoutes(updatedRoutes, now);
+        String updatedJson = toJson(updated);
+        transactionTemplate.executeWithoutResult(status -> {
+            for (String label : List.of("A", "B")) {
+                RouteEditInput input = inputs.get(label);
+                String branchId = "split-" + label.toLowerCase(Locale.ROOT);
+                if (repository.updateSplitRoute(tripId, draft.mainPlanVersion(), branchId,
+                        requireActivityName(input.activityName()), normalizeLocation(input.locationName())) == 0) {
+                    throw new ApiException(ErrorCode.SPLIT_DRAFT_INCOMPLETE, "the route pair is missing",
+                            Map.of("missing", List.of("routes." + label)));
+                }
+            }
+            if (repository.updateDraftIfVersion(tripId, updatedJson, draft.draftVersion()) == 0) {
+                throw new ApiException(ErrorCode.STALE_DRAFT_VERSION, "draft version is stale");
+            }
+        });
+        return new RouteGenerationResponse(updated.draftVersion(), routeViews);
+    }
+
+    /** Group A keeps the existing stop names and derives activity/leg totals from the submitted minutes (DD2). */
+    private RouteDurations deriveGroupA(RouteDurations base, RouteEditInput input) {
+        try {
+            return RoutePairEdit.deriveForGroupA(base.steps(), input.stepMinutes(), input.travelLegsMinutes());
+        } catch (IllegalArgumentException ex) {
+            throw new ApiException(ErrorCode.INVALID_ROUTE_INPUT, ex.getMessage());
+        }
+    }
+
+    /** Single-activity breakdown for group B (and legacy A rows without steps); legs must keep their count. */
+    private RouteDurations manualDurations(RouteDurations base, RouteEditInput input) {
+        int expectedLegs = base.travelLegsMinutes() == null ? 0 : base.travelLegsMinutes().size();
+        return new RouteDurations(
+                requireMinutes(input.activityMinutes(), "activityMinutes"),
+                requireLegs(input.travelLegsMinutes(), expectedLegs, "travelLegsMinutes"),
+                requireMinutes(input.bufferMinutes(), "bufferMinutes"),
+                base.steps());
+    }
+
+    private static String requireActivityName(String value) {
+        if (value == null || value.isBlank()) {
+            throw new ApiException(ErrorCode.INVALID_ROUTE_INPUT, "activityName is required");
+        }
+        return value.trim();
+    }
+
+    private static String normalizeLocation(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private static int requireMinutes(Integer value, String field) {
+        if (value == null || value < 0) {
+            throw new ApiException(ErrorCode.INVALID_ROUTE_INPUT, field + " must be a non-negative integer");
+        }
+        return value;
+    }
+
+    private static List<Integer> requireLegs(List<Integer> legs, int expectedSize, String field) {
+        if (legs == null || legs.size() != expectedSize) {
+            throw new ApiException(ErrorCode.INVALID_ROUTE_INPUT, field + " must keep the saved leg count");
+        }
+        List<Integer> result = new ArrayList<>();
+        for (Integer leg : legs) {
+            result.add(requireMinutes(leg, field));
+        }
+        return result;
     }
 
     /**
@@ -314,12 +446,14 @@ public class SplitDraftService {
         }
         List<GroupRoute> routes = new ArrayList<>();
         if (draft.routes() != null) {
-            Map<String, String> activities = repository.findSplitRouteActivities(tripId);
+            Map<String, SplitDraftRepository.SplitRouteActivity> activities = repository.findSplitRouteActivities(tripId);
             for (Map.Entry<String, RouteDurations> entry : draft.routes().entrySet()) {
                 String label = entry.getKey();
                 RouteDurations durations = entry.getValue();
-                String activityName = activities.get("split-" + label.toLowerCase(Locale.ROOT));
-                routes.add(new GroupRoute(label, activityName, departureStopId, reunionStopId,
+                SplitDraftRepository.SplitRouteActivity activity =
+                        activities.get("split-" + label.toLowerCase(Locale.ROOT));
+                routes.add(new GroupRoute(label, activity == null ? null : activity.title(),
+                        activity == null ? null : activity.locationName(), departureStopId, reunionStopId,
                         durations.activityMinutes(), durations.travelLegsMinutes(), durations.bufferMinutes(),
                         durations.steps()));
             }

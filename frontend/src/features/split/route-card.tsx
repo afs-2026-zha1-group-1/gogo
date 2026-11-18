@@ -70,6 +70,9 @@ export function RouteCard({
         ) : (
           <Row label="活动" value={`${route.activityMinutes} 分`} />
         )}
+        {route.locationName && route.locationName !== route.activityName ? (
+          <Row label="地点" value={route.locationName} />
+        ) : null}
         <Row label={`路程（${route.travelLegsMinutes.join(" + ")}）`} value={`${legsTotal} 分`} italic />
         <Row label="缓冲" value={`${route.bufferMinutes} 分`} />
         {total != null && (

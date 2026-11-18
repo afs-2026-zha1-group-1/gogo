@@ -20,6 +20,8 @@ export interface StopInput {
 export interface RouteInput {
   groupLabel: string
   activityName: string | null
+  /** Editable display location (US-087); shown when it differs from the activity name. */
+  locationName?: string | null
   activityMinutes: number | null
   travelLegsMinutes: (number | null)[]
   bufferMinutes: number | null
@@ -114,6 +116,13 @@ export function routeLabelsFor(routes: RouteInput[]): Record<RouteKey, string> {
   return labels
 }
 
+/** Appends the edited location only when it adds information beyond the activity name (US-087 D-2). */
+function locationSuffix(route: RouteInput): string {
+  const location = route.locationName?.trim()
+  const activity = route.activityName?.trim()
+  return location && location !== activity ? ` · ${location}` : ""
+}
+
 /** One route's branch nodes: activity steps -> travel (summed legs) -> buffer. Zero buffer is omitted. */
 function branchRowsFor(route: RouteInput, key: RouteKey): BranchRow[] {
   const steps = route.steps ?? []
@@ -130,7 +139,7 @@ function branchRowsFor(route: RouteInput, key: RouteKey): BranchRow[] {
         id: `${key}-activity`,
         route: key,
         title: route.activityName?.trim() || "活动",
-        meta: `活动 · ${formatMinutes(route.activityMinutes)}`,
+        meta: `活动 · ${formatMinutes(route.activityMinutes)}${locationSuffix(route)}`,
       }]
   if (route.travelLegsMinutes.length > 0) {
     const missing = route.travelLegsMinutes.some((minutes) => minutes == null)

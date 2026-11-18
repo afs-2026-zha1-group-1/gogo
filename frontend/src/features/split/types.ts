@@ -47,6 +47,8 @@ export interface RouteDurations {
   activityMinutes: number | null
   travelLegsMinutes: number[]
   bufferMinutes: number | null
+  /** Ordered stops for group A (US-089); nullable for legacy documents. */
+  steps?: RouteStep[] | null
 }
 
 /** One visible step of a branch route (backend RouteStep); group A follows the main-plan stops. */
@@ -59,6 +61,8 @@ export interface RouteStep {
 export interface GroupRoute {
   groupLabel: string
   activityName: string | null
+  /** Editable display location (US-087 additive); legacy generated rows backfill the activity name. */
+  locationName?: string | null
   departureStopId: string | null
   reunionStopId: string | null
   activityMinutes: number | null
@@ -172,4 +176,23 @@ export interface SaveBoundariesRequest {
 /** POST routes:generate body (backend GenerateRoutesRequest). */
 export interface GenerateRoutesRequest {
   draftVersion: number
+}
+
+/** One editable group route in a PUT .../split-draft/routes request (spec US-087 S2). */
+export interface RouteEditInput {
+  groupLabel: "A" | "B"
+  activityName: string
+  locationName?: string | null
+  /** Group A only: ordered stay minutes; stop names stay read-only. */
+  stepMinutes?: (number | null)[] | null
+  travelLegsMinutes?: (number | null)[] | null
+  /** Group B only (legacy A rows without steps fall back to this breakdown). */
+  activityMinutes?: number | null
+  bufferMinutes?: number | null
+}
+
+/** PUT .../split-draft/routes body (backend SaveRoutesRequest). */
+export interface SaveRoutesRequest {
+  draftVersion: number
+  routes: RouteEditInput[]
 }

@@ -194,17 +194,35 @@ public class SplitDraftRepository {
                 tripId, planVersion);
     }
 
-    /** Reads the split route pair's activity names keyed by branch id (design D6/D14), ordered by sort_order. */
-    public Map<String, String> findSplitRouteActivities(String tripId) {
+    /**
+     * Updates one saved split route's editable header (spec US-087 S2, design DD3): activity name and location only.
+     * The current plan version and branch id pin the row so main-plan rows are never touched. Returns the affected
+     * row count (0 means the pair is missing and the caller maps it to SPLIT_DRAFT_INCOMPLETE).
+     */
+    public int updateSplitRoute(String tripId, int planVersion, String branchId, String activityName,
+            String locationName) {
+        return jdbcTemplate.update(
+                "UPDATE plan_node SET title = ?, location_name = ? "
+                        + "WHERE trip_id = ? AND plan_version = ? AND branch_id = ?",
+                activityName, locationName, tripId, planVersion, branchId);
+    }
+
+    /** Reads the split route pair's editable header keyed by branch id (design D6/D14/US-087 DD4). */
+    public Map<String, SplitRouteActivity> findSplitRouteActivities(String tripId) {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT branch_id, title FROM plan_node "
+                "SELECT branch_id, title, location_name FROM plan_node "
                         + "WHERE trip_id = ? AND branch_id IN ('split-a', 'split-b') ORDER BY sort_order",
                 tripId);
-        Map<String, String> activities = new LinkedHashMap<>();
+        Map<String, SplitRouteActivity> activities = new LinkedHashMap<>();
         for (Map<String, Object> row : rows) {
-            activities.put((String) row.get("branch_id"), (String) row.get("title"));
+            activities.put((String) row.get("branch_id"),
+                    new SplitRouteActivity((String) row.get("title"), (String) row.get("location_name")));
         }
         return activities;
+    }
+
+    /** Editable header of one split route row ({@code plan_node.title}/{@code location_name}). */
+    public record SplitRouteActivity(String title, String locationName) {
     }
 
     private static Instant parseInstant(String text) {

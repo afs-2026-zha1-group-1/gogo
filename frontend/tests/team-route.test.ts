@@ -73,6 +73,35 @@ test('branch nodes: missing durations render as pending instead of zero', () => 
   assert.equal(rows.filter((row) => row.route === 'b').length, 1)
 })
 
+test('branch nodes: A steps expand per stop while B keeps a single activity', () => {
+  const rows = buildBranchRows([
+    {
+      groupLabel: 'A',
+      activityName: '沿主线方案',
+      activityMinutes: 65,
+      travelLegsMinutes: [30, 30, 15],
+      bufferMinutes: 0,
+      steps: [
+        { name: 'City Hall MRT', minutes: 30 },
+        { name: 'National Gallery Singapore', minutes: 20 },
+        { name: 'Gardens by the Bay', minutes: 15 },
+      ],
+    },
+    { groupLabel: 'B', activityName: 'Gardens by the Bay', locationName: '滨海湾', activityMinutes: 60, travelLegsMinutes: [20, 20], bufferMinutes: 10 },
+  ])
+  const titles = rows.map((row) => row.title)
+  assert.ok(titles.includes('City Hall MRT'))
+  assert.ok(titles.includes('National Gallery Singapore'))
+  assert.ok(titles.includes('Gardens by the Bay'))
+  assert.equal(rows.filter((row) => row.route === 'a' && row.meta.startsWith('活动')).length, 3)
+  assert.equal(rows.filter((row) => row.route === 'b' && row.meta.startsWith('活动')).length, 1)
+  assert.deepEqual(
+    rows.filter((row) => row.route === 'a' && row.meta.startsWith('活动')).map((row) => row.meta),
+    ['活动 · 30 分钟', '活动 · 20 分钟', '活动 · 15 分钟'],
+  )
+  assert.equal(rows.find((row) => row.route === 'b' && row.meta.startsWith('活动'))?.meta, '活动 · 60 分钟 · 滨海湾')
+})
+
 test('time formatting keeps ISO and local sources separate', () => {
   assert.equal(formatTime('09:30', 'local'), '09:30')
   assert.match(formatTime('2026-12-05T01:30:00Z', 'iso'), /^\d{2}:\d{2}$/)

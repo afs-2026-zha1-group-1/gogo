@@ -7,6 +7,7 @@ import type {
   GenerateRoutesRequest,
   RouteGenerationResult,
   SaveBoundariesRequest,
+  SaveRoutesRequest,
   SplitDraftDetail,
   SplitDraftDocument,
   SplitErrorDetails,
@@ -80,6 +81,14 @@ export function saveBoundaries(tripId: string, body: SaveBoundariesRequest): Pro
 /** PUT move the caller into the target group (US-040 A1-A9, design DD1/DD16). */
 export function assignGroup(tripId: string, body: AssignmentRequest): Promise<SplitDraftDetail> {
   return request<SplitDraftDetail>(`/${tripId}/split-draft/assignment`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  })
+}
+
+/** PUT save the full A/B route pair while the draft is active (US-087 S2); any member may edit. */
+export function saveRoutes(tripId: string, body: SaveRoutesRequest): Promise<RouteGenerationResult> {
+  return request<RouteGenerationResult>(`/${tripId}/split-draft/routes`, {
     method: "PUT",
     body: JSON.stringify(body),
   })

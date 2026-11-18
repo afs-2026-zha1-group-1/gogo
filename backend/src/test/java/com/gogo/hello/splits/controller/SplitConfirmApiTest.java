@@ -221,6 +221,32 @@ class SplitConfirmApiTest extends AbstractSplitApiTest {
     }
 
     @Test
+    @DisplayName("confirmDraft_afterRouteEdit_usesEditedDerivedTotals")
+    void confirmDraft_afterRouteEdit_usesEditedDerivedTotals() throws Exception {
+        int version = prepareConfirmableDraftAs("Ben");
+        int edited = saveRoutesAs("Ben", version, 20, 15);
+        confirm(memberId("Alice"), edited)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("confirmed"))
+                .andExpect(jsonPath("$.data.routes[0].activityMinutes").value(65))
+                .andExpect(jsonPath("$.data.routes[0].steps[1].minutes").value(20));
+        assertThat(objectMapper.readTree(draftJson()).get("status").asText()).isEqualTo("confirmed");
+    }
+
+    @Test
+    @DisplayName("confirmDraft_editedRouteOverWindow_returns409WithEditedTotals")
+    void confirmDraft_editedRouteOverWindow_returns409WithEditedTotals() throws Exception {
+        int version = prepareConfirmableDraftAs("Ben");
+        int edited = saveRoutesAs("Ben", version, 30, 40);
+        confirm(memberId("Alice"), edited)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("SPLIT_TIMING_INFEASIBLE"))
+                .andExpect(jsonPath("$.error.details.routes[0].totalMinutes").value(175))
+                .andExpect(jsonPath("$.error.details.routes[0].overrunMinutes").value(25));
+        assertThat(objectMapper.readTree(draftJson()).get("status").asText()).isEqualTo("active");
+    }
+
+    @Test
     @DisplayName("confirmDraft_slashFormPath_isNotRouted")
     void confirmDraft_slashFormPath_isNotRouted() throws Exception {
         int status = mockMvc.perform(post("/api/trips/{tripId}/split-draft/confirm", sgfTripId())
@@ -230,6 +256,34 @@ class SplitConfirmApiTest extends AbstractSplitApiTest {
                 .andReturn().getResponse().getStatus();
         assertThat(status).isIn(404, 405);
         assertThat(activeDraftCount()).isZero();
+    }
+
+    /** Saves an A step-minute edit and returns the resulting draft version (CF9). */
+    private int saveRoutesAs(String actor, int draftVersion, int secondStay, int thirdStay) throws Exception {
+        Map<String, Object> routeA = new java.util.LinkedHashMap<>();
+        routeA.put("groupLabel", "A");
+        routeA.put("activityName", "沿主线方案");
+        routeA.put("locationName", "Singapore");
+        routeA.put("stepMinutes", java.util.List.of(30, secondStay, thirdStay));
+        routeA.put("travelLegsMinutes", java.util.List.of(30, 30, 15));
+        Map<String, Object> routeB = new java.util.LinkedHashMap<>();
+        routeB.put("groupLabel", "B");
+        routeB.put("activityName", "Gardens by the Bay");
+        routeB.put("locationName", "滨海湾");
+        routeB.put("activityMinutes", 60);
+        routeB.put("travelLegsMinutes", java.util.List.of(20, 20));
+        routeB.put("bufferMinutes", 10);
+        var result = mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .put("/api/trips/{tripId}/split-draft/routes", sgfTripId())
+                        .with(TestAuth.asUser(memberId(actor)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "draftVersion", draftVersion,
+                                "routes", java.util.List.of(routeA, routeB)))))
+                .andExpect(status().isOk())
+                .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString())
+                .path("data").path("draftVersion").asInt();
     }
 
     /** Confirm call helper: POST .../split-draft:confirm as the given actor with the given draft version. */
