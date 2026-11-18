@@ -3,7 +3,7 @@
 - Change: `us-031-037-main-itinerary` (US-031 + US-037)
 - Inputs: [proposal](proposal.md) · [delta spec](specs/main-itinerary/spec.md) ·
   [ATDD design](atdd-design.md) · [design](design.md) ·
-  [fixtures](../../../requirement-workspace/acceptance-test-fixtures.md) ·
+  [fixtures](../../../../requirement-workspace/acceptance-test-fixtures.md) ·
   [G1 record](g1-decision.md)
 - Order rule: acceptance checks red before production code (ATDD design §2);
   the V5 migration is the schema prerequisite authored first (design D1).

@@ -3,7 +3,7 @@
 - Change: `req-003-trip-create-and-view` (REQ-003, US-001/US-002)
 - Inputs: [proposal](proposal.md) · [delta spec](specs/trips/spec.md) ·
   [ATDD design](atdd-design.md) · [design](design.md) ·
-  [fixtures](../../../requirement-workspace/acceptance-test-fixtures.md)
+  [fixtures](../../../../requirement-workspace/acceptance-test-fixtures.md)
 - G1: Pass recorded 2026-11-14 (IO Emily, SA Johnson).
 - Order rule: acceptance checks red before production code (ATDD design §2).
 - Commit rule: local commits only with the user's typed authorization; push to
