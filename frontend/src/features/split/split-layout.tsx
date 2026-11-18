@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
-import { useNavigate, useParams } from "react-router-dom"
+import { useLocation, useParams } from "react-router-dom"
+import { useSplitNavigate } from "./split-navigation"
 import TabBar from "@/TabBar"
 import { StepBar } from "@/components/ui/step-bar"
 import { IconArrowLeft } from "@/components/icons"
@@ -29,8 +30,10 @@ export function SplitLayout({
   showTabBar?: boolean
   children: ReactNode
 }) {
-  const navigate = useNavigate()
+  const navigate = useSplitNavigate()
   const { tripId } = useParams()
+  const { search } = useLocation()
+  const dashboardOrigin = new URLSearchParams(search).get("from") === "dashboard"
   return (
     <div className="flex min-h-screen justify-center bg-bg">
       <div className="flex h-screen w-full max-w-[440px] flex-col overflow-hidden bg-surface-2 shadow-[0_0_40px_rgba(28,25,23,0.06)]">
@@ -69,8 +72,8 @@ export function SplitLayout({
           <TabBar
             fullPage
             active="split"
-            tripsHref="#/trips"
-            splitHref={tripId ? `/trips/${tripId}/split` : "#/trips"}
+            tripsHref={dashboardOrigin ? "#/dashboard/trip-entry" : "#/trips"}
+            splitHref={tripId ? `/trips/${tripId}/split${dashboardOrigin ? "?from=dashboard" : ""}` : "#/trips"}
           />
         ) : null}
       </div>

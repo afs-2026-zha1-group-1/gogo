@@ -40,10 +40,11 @@ public class MainPlanService {
     private final ScheduleValidator scheduleValidator;
     private final BudgetOverruns budgetOverruns;
     private final ObjectMapper objectMapper;
+    private final MainPlanProjection projection;
 
     public MainPlanService(TripRepository trips, MainPlanRepository plans, MainPlanProvider provider,
             LocationCompletion locationCompletion, ScheduleValidator scheduleValidator,
-            BudgetOverruns budgetOverruns, ObjectMapper objectMapper) {
+            BudgetOverruns budgetOverruns, ObjectMapper objectMapper, MainPlanProjection projection) {
         this.trips = trips;
         this.plans = plans;
         this.provider = provider;
@@ -51,6 +52,7 @@ public class MainPlanService {
         this.scheduleValidator = scheduleValidator;
         this.budgetOverruns = budgetOverruns;
         this.objectMapper = objectMapper;
+        this.projection = projection;
     }
 
     // D4: gate order confirmed-check before readiness; one transaction for
@@ -167,6 +169,9 @@ public class MainPlanService {
         }
         plans.markDraftConfirmed(draft.id());
         plans.setTripConfirmedAndJoiningClosed(tripId);
+        // The confirmed plan becomes the trip's main-line nodes in the same transaction, so the splits
+        // capability reads the very rows this confirmation approved instead of a separate synthetic set.
+        projection.projectConfirmed(tripId);
         return readPlan(tripId, caller);
     }
 

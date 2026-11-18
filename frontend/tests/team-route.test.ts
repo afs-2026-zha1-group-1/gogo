@@ -9,6 +9,7 @@ import {
   routeLabelsFor,
   type StopInput,
 } from '../src/features/split/graph-model.ts'
+import { cleanRouteName, cleanStationName } from '../src/features/split/station-name.ts'
 
 const stops: StopInput[] = [
   { id: 's1', name: 'City Hall MRT', startLabel: '09:00', endLabel: '09:30' },
@@ -47,15 +48,16 @@ test('buildGraphRows: boundaries split the main line and interleave A/B branches
     'branch',
     'branch',
     'branch',
+    'branch',
     'join',
     'main',
   ])
   assert.equal(model.forkRow, 1)
-  assert.equal(model.joinRow, 8)
+  assert.equal(model.joinRow, 9)
   assert.equal(model.routeLabels.a, 'Route A · 潜水')
   assert.equal(model.routeLabels.b, 'Route B · 咖啡')
   const branchTitles = model.rows.filter((row) => row.kind === 'branch').map((row) => row.title)
-  assert.deepEqual(branchTitles, ['潜水', '咖啡', '前往会合点', '前往会合点', '缓冲', '缓冲'])
+  assert.deepEqual(branchTitles, ['潜水', '路程', '路程', '咖啡', '路程', '缓冲', '缓冲'])
 })
 
 test('branch nodes: missing durations render as pending instead of zero', () => {
@@ -71,6 +73,44 @@ test('branch nodes: missing durations render as pending instead of zero', () => 
   ])
   assert.equal(rows[0].title, '活动')
   assert.equal(rows.filter((row) => row.route === 'b').length, 1)
+})
+
+test('branch nodes: A steps expand per stop while B keeps a single activity', () => {
+  const rows = buildBranchRows([
+    {
+      groupLabel: 'A',
+      activityName: '沿主线方案',
+      activityMinutes: 65,
+      travelLegsMinutes: [30, 30, 15],
+      bufferMinutes: 0,
+      steps: [
+        { name: 'City Hall MRT', minutes: 30 },
+        { name: 'National Gallery Singapore', minutes: 20 },
+        { name: 'Gardens by the Bay', minutes: 15 },
+      ],
+    },
+    { groupLabel: 'B', activityName: 'Gardens by the Bay', locationName: '滨海湾', activityMinutes: 60, travelLegsMinutes: [20, 20], bufferMinutes: 0, steps: [{ name: 'Gardens by the Bay', minutes: 60 }] },
+  ])
+  const titles = rows.map((row) => row.title)
+  assert.ok(titles.includes('City Hall MRT'))
+  assert.ok(titles.includes('National Gallery Singapore'))
+  assert.ok(titles.includes('Gardens by the Bay'))
+  assert.equal(rows.filter((row) => row.route === 'a' && row.meta.startsWith('活动')).length, 3)
+  assert.equal(rows.filter((row) => row.route === 'b' && row.meta.startsWith('活动')).length, 1)
+  assert.deepEqual(
+    rows.filter((row) => row.route === 'a' && row.meta.startsWith('活动')).map((row) => row.meta),
+    ['活动 · 30 分钟', '活动 · 20 分钟', '活动 · 15 分钟'],
+  )
+  assert.equal(rows.find((row) => row.route === 'b' && row.meta.startsWith('活动'))?.meta, '活动 · 60 分钟')
+  assert.equal(rows.filter((row) => row.route === 'a' && row.title === '路程').length, 3)
+  assert.equal(rows.filter((row) => row.route === 'b' && row.title === '路程').length, 2)
+})
+
+test('station names drop the generated 主线 marker for display and saving', () => {
+  assert.equal(cleanStationName('主线·旧城早餐'), '旧城早餐')
+  assert.equal(cleanStationName('主线：滨海美术馆'), '滨海美术馆')
+  assert.equal(cleanStationName('Gardens by the Bay'), 'Gardens by the Bay')
+  assert.equal(cleanRouteName('主线·旧城早餐 → 主线·滨海美术馆'), '旧城早餐 → 滨海美术馆')
 })
 
 test('time formatting keeps ISO and local sources separate', () => {

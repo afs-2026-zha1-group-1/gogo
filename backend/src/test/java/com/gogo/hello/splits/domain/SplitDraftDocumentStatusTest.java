@@ -81,8 +81,8 @@ class SplitDraftDocumentStatusTest {
     void nullableDurations_roundTripThroughJsonKeepingNulls() throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         SplitDraftDocument draft = new SplitDraftDocument("2", 1, 3, "active", "stop-a", "stop-b", groups(),
-                Map.of("A", new RouteDurations(null, List.of(15, 20), null),
-                        "B", new RouteDurations(60, List.of(20, 20), 10)),
+                Map.of("A", new RouteDurations(null, List.of(15, 20), null, null),
+                        "B", new RouteDurations(60, List.of(20, 20), 10, null)),
                 NOW, NOW);
         String json = mapper.writeValueAsString(draft);
         SplitDraftDocument parsed = mapper.readValue(json, SplitDraftDocument.class);
@@ -105,7 +105,7 @@ class SplitDraftDocumentStatusTest {
     }
 
     private Map<String, RouteDurations> routes() {
-        return Map.of("A", new RouteDurations(60, List.of(15, 20), 10),
-                "B", new RouteDurations(60, List.of(20, 20), 10));
+        return Map.of("A", new RouteDurations(60, List.of(15, 20), 10, null),
+                "B", new RouteDurations(60, List.of(20, 20), 10, null));
     }
 }

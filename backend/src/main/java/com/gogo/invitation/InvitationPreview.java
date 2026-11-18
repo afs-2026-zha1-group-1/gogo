@@ -6,5 +6,8 @@ public record InvitationPreview(
         String startDate,
         String endDate,
         boolean mainPlanConfirmed,
-        boolean joiningClosed) {
+        boolean joiningClosed,
+        long organizerId,
+        long tripId,
+        boolean viewerMember) {
 }

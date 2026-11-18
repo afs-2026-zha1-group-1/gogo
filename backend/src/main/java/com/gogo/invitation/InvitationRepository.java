@@ -47,17 +47,27 @@ public class InvitationRepository {
         throw new IllegalStateException("Unreachable token issuance state");
     }
 
-    public InvitationPreview preview(String token) {
+    public InvitationPreview preview(String token, Long viewerId) {
         List<InvitationPreview> rows = jdbc.query(
-                "SELECT t.name, t.destination, t.start_date, t.end_date, t.main_plan_confirmed, t.joining_closed "
+                "SELECT t.id, t.name, t.destination, t.start_date, t.end_date, t.main_plan_confirmed, "
+                        + "t.joining_closed, t.organizer_id "
                         + "FROM trip_invitation i JOIN trip t ON t.id = i.trip_id WHERE i.token = ?",
                 (rs, rowNum) -> new InvitationPreview(rs.getString("name"), rs.getString("destination"),
                         rs.getString("start_date"), rs.getString("end_date"),
-                        rs.getInt("main_plan_confirmed") != 0, rs.getInt("joining_closed") != 0),
+                        rs.getInt("main_plan_confirmed") != 0, rs.getInt("joining_closed") != 0,
+                        rs.getLong("organizer_id"), rs.getLong("id"), false),
                 token);
-        return rows.stream().findFirst()
+        InvitationPreview base = rows.stream().findFirst()
                 .orElseThrow(() -> new InvitationApiException(404, "INVITATION_NOT_FOUND",
                         "This invitation is not usable"));
+        // Membership probe runs after the preview query releases its connection
+        // (SQLite pool is single-connection; nesting queries deadlocks).
+        if (viewerId == null || !trips.isMember(base.tripId(), viewerId)) {
+            return base;
+        }
+        return new InvitationPreview(base.tripName(), base.destination(), base.startDate(),
+                base.endDate(), base.mainPlanConfirmed(), base.joiningClosed(),
+                base.organizerId(), base.tripId(), true);
     }
 
     @Transactional

@@ -47,17 +47,28 @@ export interface RouteDurations {
   activityMinutes: number | null
   travelLegsMinutes: number[]
   bufferMinutes: number | null
+  /** Ordered stops for group A (US-089); nullable for legacy documents. */
+  steps?: RouteStep[] | null
+}
+
+/** One visible step of a branch route (backend RouteStep); group A follows the main-plan stops. */
+export interface RouteStep {
+  name: string
+  minutes: number
 }
 
 /** One group's route view (backend GroupRoute), shared by generation response and detail snapshot. */
 export interface GroupRoute {
   groupLabel: string
   activityName: string | null
+  /** Editable display location (US-087 additive); legacy generated rows backfill the activity name. */
+  locationName?: string | null
   departureStopId: string | null
   reunionStopId: string | null
   activityMinutes: number | null
   travelLegsMinutes: number[]
   bufferMinutes: number | null
+  steps?: RouteStep[] | null
 }
 
 /** Draft document returned by POST start (backend SplitDraftDocument). */
@@ -90,6 +101,8 @@ export interface SplitDraftDetail {
   reunionAt: string | null
   windowMinutes: number | null
   routes: GroupRoute[]
+  /** Trip destination; the screens use it to render instants in the trip's own zone. */
+  destination: string | null
 }
 
 /** Boundary save response (backend BoundaryResponse). */
@@ -138,6 +151,16 @@ export interface TimingResult {
   routes: RouteTimingResult[]
 }
 
+/**
+ * PUT .../split-draft/assignment body (US-040 A1-A3 + revision 2026-11-17, design DD16).
+ * memberId names the member being moved (any trip member may move any member); omitted = the caller.
+ */
+export interface AssignmentRequest {
+  memberId?: string
+  groupLabel: "A" | "B"
+  draftVersion: number
+}
+
 /** POST :confirm / :cancel body (backend DraftVersionRequest). */
 export interface DraftVersionRequest {
   draftVersion: number
@@ -153,4 +176,24 @@ export interface SaveBoundariesRequest {
 /** POST routes:generate body (backend GenerateRoutesRequest). */
 export interface GenerateRoutesRequest {
   draftVersion: number
+}
+
+/** One editable station (US-087 Revision 3): both groups own their stop names and stay minutes. */
+export interface RouteStepInput {
+  name: string
+  minutes: number | null
+}
+
+/** One editable group route in a PUT .../split-draft/routes request (spec US-087 Revision 3). */
+export interface RouteEditInput {
+  groupLabel: "A" | "B"
+  steps: RouteStepInput[]
+  /** Group A: one leg after every stop; group B: outbound + return around the stops (stops + 1). */
+  travelLegsMinutes: (number | null)[]
+}
+
+/** PUT .../split-draft/routes body (backend SaveRoutesRequest). */
+export interface SaveRoutesRequest {
+  draftVersion: number
+  routes: RouteEditInput[]
 }

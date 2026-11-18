@@ -245,6 +245,13 @@ fixtures below are **decoded text values** the scanner must accept or reject.
 The `<app-origin>` placeholder is `http://localhost:5173` on a dev machine
 (vite proxy forwards `/api` to `:8080`).
 
+**2026-11-17 revision contracts:** scanner × closes to `#/` from any origin
+(no restore state). The scan→join hand-off: `GET /api/invitations/{token}`
+additively carries `tripId` and `viewerMember` (true only for a signed-in
+viewer who is already a member; guests/non-members false); such viewers land
+directly on the already-in-team notice (organizer wording for the creator),
+while non-members keep preview+accept. No new endpoint or migration.
+
 ### Reused invitation state inputs (from REQ-004)
 
 | Case | Scanner behavior | Backed by REQ-004 outcome |
@@ -564,6 +571,69 @@ Alice 的预期顺序（以 2026-11-16 为“今天”，2026-11-17 修订：**�
 | 分页/搜索参数 | 本变更明确不做；传 `?page=1` 不得产生分页元信息 |
 | 错误 message 文本 | 只有 `code` 是契约 |
 
+## US-040 — 成员分组（2026-11-17）
+
+复用 §Users（Alice=1 组织者、Ben=2、Chloe=3、Daniel=4、Eve=5 非成员）与 V2 种子行程
+`Singapore Friends Day`（id=1，四名成员，`main_plan_confirmed=1`）。不用新建行程，
+除「单成员行程」用例需 **test-only** 新建一个。
+
+### 初始与分组序列
+
+| Item | Value | Why |
+|---|---|---|
+| 发起后的初始分组 | `groups = {"A": [1,2,3,4], "B": []}`（按 `display_name` 升序） | BQ-7；取代旧的 2/2 均分 |
+| 改组序列（主用例） | Ben 发起 → v1；保存边界 → v2；Chloe 切 B → v3；生成路线 → v4 | 演示「先分组再生成」；A1/A2/A4 可裁剪此序列 |
+| 往返切换 | Chloe 再切回 A → v5 | A2 |
+| 同组幂等 | Chloe（已在 A）再提交 A | 200；`groups` 不变；`draftVersion` 不变（DD4/OQ-10） |
+| 空组（G6-N / CF8-N） | 文档 `groups = {"A": [1,2,3,4], "B": []}`（发起后不分组直接生成/确认） | 新规则下最常见的不完整态 |
+| 漏分组（构造） | 文档 `groups = {"A": [1,2,3], "B": [4]}` 后从 A 移除 Daniel → 只有 4 在 B，Daniel 无组 | 只有构造数据能产生 |
+| 重复分组（构造） | 文档 `groups = {"A": [1,2,3,4], "B": [4]}` | 同一成员出现在两组 |
+| 单成员行程（S10-N） | 测试新建 trip + 仅 organizer 一行 `trip_member`，`main_plan_confirmed=1` | IO-1 门禁；不得复用种子四成员行程 |
+| 边界与路线数值 | 窗口 09:30–11:30 = 120；A = 15+60+20+10 = 105；B = 20+60+20+10 = 110 | 与 US-049-050 相同算术 |
+
+### Requests
+
+| Case | Call | Expected |
+|---|---|---|
+| A1 切到另一组 | `PUT /api/trips/1/split-draft/assignment`（Chloe）`{"groupLabel":"B","draftVersion":2}` | `200`；`groups.A` 不含 Chloe、`groups.B` = [Chloe]；`draftVersion` = 3 |
+| A2 往返 | Chloe `{"groupLabel":"A","draftVersion":3}` | `200`；Chloe 只在 A；`draftVersion` = 4 |
+| A3 同组幂等 | 已在 A 的 Chloe 再传 `A` + 当前版本 | `200`；`groups` 不变；响应 `draftVersion` = 当前值（不递增） |
+| A4 保留路线与边界 | 已生成路线（v4）后 Ben 切 B，`draftVersion: 4` | `200`；`draftVersion` = 5；`routes`、`departureStopId`、`reunionStopId` 逐字不变；`plan_node` split 行数不变 |
+| A5-N confirmed 改组 | CF1 确认后任一成员调用 | `409 SPLIT_DRAFT_NOT_ACTIVE`；分组/路线/状态/版本不变 |
+| A5-N cancelled 改组 | CN1 取消后 | 同上 |
+| A6-N 过期版本 | 草稿 v4 时传 `draftVersion: 2` | `409 STALE_DRAFT_VERSION`；分组与版本不变 |
+| A7-N 守卫 | 无会话 / trip 999 / Eve | `401 MEMBER_REQUIRED` / `404 TRIP_NOT_FOUND` / `403 NOT_A_MEMBER`；`data = null` |
+| A8-N 非法组别 | `{"groupLabel":"C"}` | `400 INVALID_GROUP_LABEL`；无持久化 |
+| A9 移动他人 | Ben 调 `{"memberId": <Chloe>, "groupLabel":"B", "draftVersion":1}` | `200`；Chloe 移到 B；Ben 仍在 A；`draftVersion` = 2 |
+| A9b-N 目标非成员 | body `memberId` = Eve | `403 NOT_A_MEMBER`；分组与版本不变 |
+| S9 初始分组 | 任一成员 `POST split-draft` | `201`；`groups.A` = 4 人、`groups.B` = `[]`；两键均存在 |
+| S10-N 单成员发起 | 单成员行程成员 `POST split-draft` | `409 SPLIT_MEMBERS_INSUFFICIENT`；不建行；`cancelled` 行也不重建 |
+| G6-N 空组生成 | Ben 在 B 空的草稿上 `POST routes:generate` | `409 SPLIT_DRAFT_INCOMPLETE`；`details.missing` 含 `groups.B`；无 `split-a/b` 行；版本不变 |
+| G6-N 漏/重分组 | 构造漏组 / 重复组后生成 | `details.missing` 含 `groups.unassigned` / `groups.duplicate` |
+| CF8-N 空组确认 | 边界与路线齐备但 B 空（或构造漏/重） | `409 SPLIT_DRAFT_INCOMPLETE`；`details.missing` 含对应 `groups.*`；不进入时间复算 |
+| 反向：无分组路由 | 浏览器访问 `#/trips/1/split/groups` | 无分组屏（无该路由）；仍停留在既有页面 |
+| 反向：认证不变 | 无会话调用 assignment | `401 MEMBER_REQUIRED`；`SecurityConfig` 无 diff |
+
+### Wire projection
+
+`PUT /api/trips/{tripId}/split-draft/assignment` 返回与 `GET /split-draft` 相同的
+`SplitDraftDetailResponse`（`initiatorMemberId`、`mainPlanVersion`、`draftVersion`、`status`、
+`groups` {A,B}、`createdAt`、`updatedAt`、`mainPlanStops`、`departureStopId`、`reunionStopId`、
+`departureAt`、`reunionAt`、`windowMinutes`、`routes`）。请求体只接受
+`groupLabel`（`A`|`B`）与 `draftVersion`；**不接收 `memberId`**。
+
+`SPLIT_DRAFT_INCOMPLETE.details.missing` 的标准项：`boundaries`、`routes`、`routes.A`、
+`routes.B`、`groups.A`、`groups.B`、`groups.unassigned`、`groups.duplicate`（顺序固定，便于逐项断言）。
+
+### Values deliberately not fixed（US-040）
+
+| Item | Why no value is set |
+|---|---|
+| 分组卡列宽、徽标颜色、提示文案样式 | `ui-design-reference` + `@theme` token；契约是成员名可见、切组可操作、提示可见 |
+| 成员显示名拼接顺序以外的细节 | 断言集合而非字符串拼接 |
+| 错误 message 文本 | 只有 `code` 与 `details` 是契约 |
+| 改组后的 `updatedAt` | 由后端生成，测试只断言递增关系（如可比时） |
+
 ## US-086 队伍路线（Screen 11）
 
 无新增端点、迁移或 seed；复用演示行程与既有 split/main-plan 接口构造状态。UI 参考：`ui-design-reference/screenshots/screen-11-split-start.png`。
@@ -686,3 +756,66 @@ Alice 的预期顺序（以 2026-11-16 为“今天”，2026-11-17 修订：**�
 | 编辑页/弹窗文案 | 只有 `code` 与可见性/状态是契约 |
 | 手动编辑目标值 | 任意合法 `HH:MM` 与名称；断言用提交值 |
 | stop 的 seq / 交通时长 / 兴趣标签 | 契约规定不可经编辑改变 |
+
+## US-089 — 分队开始时间窗口 + A 组沿主线（2026-11-17）
+
+### 演示行程（`scripts/demo-seed.py`）
+
+| id | 名称 | 目的地 | 日期 | 成员 | 主线站数 |
+|---|---|---|---|---|---|
+| 2 | 演示 · 香港两日 | 香港 | 2026-11-21 ~ 11-22 | Ben（组织者）+ Eve | 6 |
+| 3 | 演示 · 伦敦一周 | 伦敦 | 2026-11-23 ~ 11-29 | Ben（组织者）+ Eve | 7 |
+
+香港站序：西九 M+（09:00–10:20）→ 天星小轮（10:40–11:10）→ 中环街市（11:25–12:45）→ 太平山（13:05–14:35）→ 铜锣湾（15:15–16:30）→ 尖沙咀海滨（16:55–18:10）。
+
+### 窗口（会合开始 − 出发开始）
+
+| 出发 | 会合 | 窗口 | 说明 |
+|---|---|---|---|
+| 西九 M+ 09:00 | 天星小轮 10:40 | 100 | 最小可用窗口之一 |
+| 西九 M+ 09:00 | 中环街市 11:25 | 145 | A 组含 M+/天星 |
+| 西九 M+ 09:00 | 铜锣湾 15:15 | 375 | 截图场景 |
+| 同一站 | 同站 | 0 | 400 NONPOSITIVE_SPLIT_WINDOW |
+
+### A 组（沿主线）与 B 组（夹具）
+
+| 边界 | A 组 steps | A 合计 | B 组合计 |
+|---|---|---|---|
+| M+ → 天星 | M+(80) | 100 | 香港故宫 90 |
+| M+ → 中环街市 | M+(80) / 天星(30) | 145 | 90 |
+| M+ → 铜锣湾 | M+(80) / 天星(30) / 中环街市(80) / 太平山(90)；legs 20+15+20+40 | 375 = 窗口 | 90 |
+
+- 保存新边界后 `routes` 清空、`split-a/b` 节点删除，详情 `routes=[]`。
+- 行程详情：Ben（A）逐站显示主线站点并标 A 组；Eve（B）显示香港故宫活动并标 B 组；无“沿主线方案”卡片。
+
+## US-087-088 — 路线可编辑 + 下一步校验与队伍路线预览（2026-11-18）
+
+### API 夹具（后端 `AbstractSplitApiTest`，trip 99xx）
+
+| Fixture | 草稿状态 / 数据 | 覆盖场景 |
+|---|---|---|
+| F1 基准 | `active` v3；边界 City Hall 09:00 → Merlion 11:30（窗口 150）；A/B 均为站点列表：A = City Hall(30)/National Gallery(30)/Gardens(15)，legs 30/30/15；B = Gardens(60)，legs 20/20；buffer 均 0；A 合计 150、B 合计 100 | S2/S2b/D1/S7/CF1 |
+| F2 编辑后 | A 第二站站名改为 National Gallery (edited)、30→20（合计 140）；B 可添加/删除站点与路程 | S2/S2b 持久化 |
+| F3 A 超窗 | A 第三站 15→40（合计 175，窗口 150，超 25） | N3a `check-timing` 数值（feasible=false / overrun=25） |
+| F4 版本/缺失/终态 | 请求 v2；`routes=null`；`status=confirmed`；`status=cancelled` | S3/S4/S6 |
+| F5 非法载荷 | 非两条；组别重复/非 A/B；负分钟；A `legs.size ≠ steps.size`；B legs 由 2 段改 3 段；活动名全空格 | S5（`INVALID_ROUTE_PAIR`/`INVALID_GROUP_LABEL`/`INVALID_ROUTE_INPUT`） |
+| F6 权限 | Eve 非成员；未认证会话；非发起人成员保存 | S8（403/401）与 BQ-6（非发起人保存仍 200） |
+
+不变式：A 的 `activityMinutes = Σ steps.minutes`、`bufferMinutes = 0`；保存不判定时间窗；超窗只由下一步 `check-timing` 拦截。
+
+### E2E 夹具（Playwright，trip 9101）
+
+- 行程「路线编辑演示」，destination `Singapore`，organizer Alice(1)，成员 Alice/Ben/Chloe/Daniel；主线 v1 同 F1 四站。
+- `split_draft` v3 `active`：groups A=[1,2]、B=[3,4]；`document.routes` 含 A steps 与 B 分解；`plan_node` split-a/b 已写入。
+- 登录：`ben@example.com`（A 组成员，验证任意成员编辑）/ `alice@example.com`（组织者，验证复核）。
+- 数据文件：`frontend/tests/fixtures/split-route-edit.sql`，由 `playwright.config.ts` 与 `dashboard.sql` 并列加载；`run-e2e.mjs` 每次创建/删除临时库。
+
+### 反向验收
+
+| 断言 | 层 |
+|---|---|
+| 路线卡无活动名/地点/缓冲输入；A/B 均为站点列表可增删 | E2E |
+| A/B 站名与停留分钟均可编辑；可添加/删除站点 | E2E |
+| `GroupRoute` JSON 无 fee 字段 | API |
+| 无新增 `V*.sql`、无新依赖、`ci.yml` 不改 | 静态（git diff） |
+| 非发起人 `routes:generate` 仍 403；保存仍 200（BQ-6） | API |

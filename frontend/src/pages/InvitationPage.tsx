@@ -7,6 +7,7 @@ import { useAuth } from '../features/auth/AuthProvider'
 
 interface InvitationPageProps {
   tripId: number
+  backHref?: string
 }
 
 type PageState =
@@ -21,7 +22,7 @@ type PageState =
 // link + copy with a 生效中 pill, a non-organizer sees the permission state
 // without any link/token/QR payload. Prototype extras (WeChat share, expiry,
 // revoke) are deviation D-1 and intentionally absent.
-export default function InvitationPage({ tripId }: InvitationPageProps) {
+export default function InvitationPage({ tripId, backHref = `#/trips/${tripId}` }: InvitationPageProps) {
   const { account } = useAuth()
   const [state, setState] = useState<PageState>({ kind: 'loading' })
   const [invitationReady, setInvitationReady] = useState(false)
@@ -53,7 +54,7 @@ export default function InvitationPage({ tripId }: InvitationPageProps) {
 
   const appbar = (
     <header className="appbar">
-      <a className="iconbtn" href={`#/trips/${tripId}`} aria-label="Back"><Icon name="left" /></a>
+      <a className="iconbtn" href={backHref} aria-label="Back"><Icon name="left" /></a>
       <div className="grow">
         <div className="title">邀请朋友</div>
         <div className="sub">US-008 · 分享邀请链接</div>
@@ -90,7 +91,7 @@ export default function InvitationPage({ tripId }: InvitationPageProps) {
               <h2>{heading}</h2>
               <p className="hint">{explanation}</p>
             </div>
-            <a className="btn btn-ghost" href={`#/trips/${tripId}`}>返回行程详情</a>
+            <a className="btn btn-ghost" href={backHref}>返回行程详情</a>
           </section>
         </div>
       </div>

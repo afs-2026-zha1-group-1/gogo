@@ -15,7 +15,9 @@ import org.springframework.stereotype.Repository;
  * JdbcTemplate persistence for the splits capability (design D2/D9). Adapted to the main trip schema:
  * identity is app_user (INTEGER) supplied by the session principal, membership is trip_member(trip_id, user_id),
  * confirmation is {@code trip.main_plan_confirmed}, and the split draft lives in the separate {@code split_draft}
- * table (unique per trip). main-line stops and split route structure nodes live in {@code plan_node}. No ORM.
+ * table (unique per trip). Main-line stops and split route structure nodes live in {@code plan_node}; main-line rows
+ * are written only by the main-plan confirmation projection ({@code MainPlanProjection}), never by this repository.
+ * No ORM.
  */
 @Repository
 public class SplitDraftRepository {
@@ -82,13 +84,14 @@ public class SplitDraftRepository {
             return Optional.empty();
         }
         List<PlanStop> stops = jdbcTemplate.query(
-                "SELECT id, title, start_at, end_at FROM plan_node "
+                "SELECT id, title, start_at, end_at, location_name FROM plan_node "
                         + "WHERE trip_id = ? AND id = ? AND branch_id = 'main' AND plan_version = ?",
                 (rs, rowNum) -> new PlanStop(
                         rs.getString("id"),
                         rs.getString("title"),
                         parseInstant(rs.getString("start_at")),
-                        parseInstant(rs.getString("end_at"))),
+                        parseInstant(rs.getString("end_at")),
+                        rs.getString("location_name")),
                 tripId, stopId, planVersion);
         return stops.stream().findFirst();
     }
@@ -123,6 +126,13 @@ public class SplitDraftRepository {
         List<String> ids = jdbcTemplate.queryForList(
                 "SELECT organizer_id FROM trip WHERE id = ?", String.class, tripId);
         return ids.stream().findFirst();
+    }
+
+    /** Trip destination, used to pick the city fixture for branch candidates and the display zone. */
+    public Optional<String> findDestination(String tripId) {
+        List<String> values = jdbcTemplate.queryForList(
+                "SELECT destination FROM trip WHERE id = ?", String.class, tripId);
+        return values.stream().findFirst();
     }
 
     /**
@@ -173,38 +183,57 @@ public class SplitDraftRepository {
      * document, not here.
      */
     public void insertSplitRoute(String id, String tripId, int planVersion, String branchId, String activityName,
-            String startAt, String endAt, int sortOrder, String createdAt) {
+            String locationName, String startAt, String endAt, int sortOrder, String createdAt) {
         jdbcTemplate.update(
                 "INSERT INTO plan_node (id, trip_id, plan_version, parent_id, branch_id, node_type, title, "
                         + "start_at, end_at, location_name, lat, lng, sort_order, created_at) "
                         + "VALUES (?, ?, ?, NULL, ?, 'activity', ?, ?, ?, ?, NULL, NULL, ?, ?)",
-                id, tripId, planVersion, branchId, activityName, startAt, endAt, activityName, sortOrder, createdAt);
+                id, tripId, planVersion, branchId, activityName, startAt, endAt, locationName, sortOrder, createdAt);
     }
 
     /** Loads all confirmed main-plan stops at a version (design D14), ordered by sort_order. */
     public List<PlanStop> findMainPlanStops(String tripId, int planVersion) {
         return jdbcTemplate.query(
-                "SELECT id, title, start_at, end_at FROM plan_node "
+                "SELECT id, title, start_at, end_at, location_name FROM plan_node "
                         + "WHERE trip_id = ? AND branch_id = 'main' AND plan_version = ? ORDER BY sort_order",
                 (rs, rowNum) -> new PlanStop(
                         rs.getString("id"),
                         rs.getString("title"),
                         parseInstant(rs.getString("start_at")),
-                        parseInstant(rs.getString("end_at"))),
+                        parseInstant(rs.getString("end_at")),
+                        rs.getString("location_name")),
                 tripId, planVersion);
     }
 
-    /** Reads the split route pair's activity names keyed by branch id (design D6/D14), ordered by sort_order. */
-    public Map<String, String> findSplitRouteActivities(String tripId) {
+    /**
+     * Updates one saved split route's editable header (spec US-087 S2, design DD3): activity name and location only.
+     * The current plan version and branch id pin the row so main-plan rows are never touched. Returns the affected
+     * row count (0 means the pair is missing and the caller maps it to SPLIT_DRAFT_INCOMPLETE).
+     */
+    public int updateSplitRoute(String tripId, int planVersion, String branchId, String activityName,
+            String locationName) {
+        return jdbcTemplate.update(
+                "UPDATE plan_node SET title = ?, location_name = ? "
+                        + "WHERE trip_id = ? AND plan_version = ? AND branch_id = ?",
+                activityName, locationName, tripId, planVersion, branchId);
+    }
+
+    /** Reads the split route pair's editable header keyed by branch id (design D6/D14/US-087 DD4). */
+    public Map<String, SplitRouteActivity> findSplitRouteActivities(String tripId) {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT branch_id, title FROM plan_node "
+                "SELECT branch_id, title, location_name FROM plan_node "
                         + "WHERE trip_id = ? AND branch_id IN ('split-a', 'split-b') ORDER BY sort_order",
                 tripId);
-        Map<String, String> activities = new LinkedHashMap<>();
+        Map<String, SplitRouteActivity> activities = new LinkedHashMap<>();
         for (Map<String, Object> row : rows) {
-            activities.put((String) row.get("branch_id"), (String) row.get("title"));
+            activities.put((String) row.get("branch_id"),
+                    new SplitRouteActivity((String) row.get("title"), (String) row.get("location_name")));
         }
         return activities;
+    }
+
+    /** Editable header of one split route row ({@code plan_node.title}/{@code location_name}). */
+    public record SplitRouteActivity(String title, String locationName) {
     }
 
     private static Instant parseInstant(String text) {
@@ -214,42 +243,5 @@ public class SplitDraftRepository {
     private int count(String sql, Object... args) {
         Integer value = jdbcTemplate.queryForObject(sql, Integer.class, args);
         return value == null ? 0 : value;
-    }
-
-    /**
-     * Ensures the trip has main-plan boundary stops for the split flow (REQ-005). Newly created trips have none
-     * (main's trip table stores only free-text start/end locations), so derive two stops from the trip's
-     * start/end location on its start date with a 2-hour window. Idempotent: returns immediately when main
-     * stops already exist (e.g. the seeded fixture trip).
-     */
-    public void ensureMainPlanStops(String tripId) {
-        Integer existing = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM plan_node WHERE trip_id = ? AND branch_id = 'main'", Integer.class, tripId);
-        if (existing != null && existing > 0) {
-            return;
-        }
-        List<Map<String, Object>> trips = jdbcTemplate.queryForList(
-                "SELECT start_location, end_location, start_date FROM trip WHERE id = ?", tripId);
-        if (trips.isEmpty()) {
-            return;
-        }
-        Map<String, Object> trip = trips.get(0);
-        String startLocation = (String) trip.get("start_location");
-        String endLocation = (String) trip.get("end_location");
-        String date = (String) trip.get("start_date");
-        String departure = (startLocation == null || startLocation.isBlank()) ? "出发地" : startLocation;
-        String reunion = (endLocation == null || endLocation.isBlank()) ? "会合点" : endLocation;
-        String now = Instant.now().toString();
-        insertMainStop(departure, tripId, date + "T09:00:00Z", date + "T09:30:00Z", departure, 1, now);
-        insertMainStop(reunion, tripId, date + "T11:30:00Z", date + "T12:00:00Z", reunion, 2, now);
-    }
-
-    private void insertMainStop(String title, String tripId, String startAt, String endAt, String location,
-            int sortOrder, String createdAt) {
-        jdbcTemplate.update(
-                "INSERT INTO plan_node (id, trip_id, plan_version, parent_id, branch_id, node_type, title, "
-                        + "start_at, end_at, location_name, lat, lng, sort_order, created_at) "
-                        + "VALUES (?, ?, 1, NULL, 'main', 'stop', ?, ?, ?, ?, NULL, NULL, ?, ?)",
-                UUID.randomUUID().toString(), tripId, title, startAt, endAt, location, sortOrder, createdAt);
     }
 }

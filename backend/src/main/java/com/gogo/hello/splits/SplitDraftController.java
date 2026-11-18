@@ -4,12 +4,14 @@ import com.gogo.auth.AccountPrincipal;
 import com.gogo.hello.common.ApiResponse;
 import com.gogo.hello.splits.domain.SplitDraftDocument;
 import com.gogo.hello.splits.domain.TimingResult;
+import com.gogo.hello.splits.dto.AssignmentRequest;
 import com.gogo.hello.splits.dto.BoundaryResponse;
 import com.gogo.hello.splits.dto.CheckTimingRequest;
 import com.gogo.hello.splits.dto.DraftVersionRequest;
 import com.gogo.hello.splits.dto.GenerateRoutesRequest;
 import com.gogo.hello.splits.dto.RouteGenerationResponse;
 import com.gogo.hello.splits.dto.SaveBoundariesRequest;
+import com.gogo.hello.splits.dto.SaveRoutesRequest;
 import com.gogo.hello.splits.dto.SplitDraftDetailResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -71,6 +73,16 @@ public class SplitDraftController {
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
+    /** Saves a manual A/B route edit for any trip member while the draft is active (US-087 S2/S2b). */
+    @PutMapping("/split-draft/routes")
+    public ResponseEntity<ApiResponse<RouteGenerationResponse>> saveRoutes(
+            @PathVariable String tripId,
+            Authentication authentication,
+            @RequestBody SaveRoutesRequest request) {
+        RouteGenerationResponse response = service.saveRoutes(tripId, caller(authentication), request);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
     @PostMapping("/split-draft/routes:check-timing")
     public ResponseEntity<ApiResponse<TimingResult>> checkTiming(
             @PathVariable String tripId,
@@ -78,6 +90,16 @@ public class SplitDraftController {
             @RequestBody CheckTimingRequest request) {
         TimingResult result = service.checkTiming(tripId, caller(authentication), request);
         return ResponseEntity.ok(ApiResponse.ok(result));
+    }
+
+    /** Moves the caller into the target group (US-040 A1-A9, design DD1/DD2). */
+    @PutMapping("/split-draft/assignment")
+    public ResponseEntity<ApiResponse<SplitDraftDetailResponse>> assignGroup(
+            @PathVariable String tripId,
+            Authentication authentication,
+            @RequestBody AssignmentRequest request) {
+        SplitDraftDetailResponse detail = service.assign(tripId, caller(authentication), request);
+        return ResponseEntity.ok(ApiResponse.ok(detail));
     }
 
     /** Confirms the current draft as the trip's split (US-049, design D1/D5). */

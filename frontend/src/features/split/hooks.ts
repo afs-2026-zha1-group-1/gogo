@@ -1,10 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "../../api"
+import type { Trip, TripMemberList } from "../../types"
 import type { MainPlan } from "../../types/mainPlan"
-import type { Trip } from "../../types"
-import { cancelConfirmedSplit, cancelSplitDraft, checkTiming, confirmSplitDraft, fetchDraftDetail, generateRoutes, saveBoundaries, startDraft } from "./api"
-import { SplitApiError } from "./api"
-import type { CheckTimingRequest, GenerateRoutesRequest, SaveBoundariesRequest } from "./types"
+import { SplitApiError, assignGroup, cancelConfirmedSplit, cancelSplitDraft, checkTiming, confirmSplitDraft, fetchDraftDetail, generateRoutes, saveBoundaries, saveRoutes, startDraft } from "./api"
+import type { AssignmentRequest, CheckTimingRequest, GenerateRoutesRequest, SaveBoundariesRequest, SaveRoutesRequest } from "./types"
 
 /**
  * TanStack Query v5 data hooks. The member-only GET detail snapshot is polled so a concurrent
@@ -50,6 +49,30 @@ export function useStartDraft(tripId: string) {
   })
 }
 
+/** Moves a member (memberId, defaults to the caller) into the target group (US-040 A1-A9, design DD13/DD16). */
+export function useAssignGroup(tripId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: AssignmentRequest) => assignGroup(tripId, body),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [DETAIL_KEY, tripId] }),
+  })
+}
+
+/** Trip member roster used to map group member ids to display names (US-040 DD12). */
+export function useTripMembers(tripId: string) {
+  return useQuery({
+    queryKey: ["trip-members", tripId],
+    queryFn: async () => {
+      const result = await api<TripMemberList>(`/api/trips/${tripId}/members`)
+      if (!result.ok || !result.data) {
+        throw new SplitApiError(`HTTP ${result.status}`, `HTTP ${result.status}`, result.status)
+      }
+      return result.data.members
+    },
+    enabled: tripId.length > 0,
+  })
+}
+
 export function useSaveBoundaries(tripId: string) {
   const queryClient = useQueryClient()
   return useMutation({
@@ -62,6 +85,15 @@ export function useGenerateRoutes(tripId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (body: GenerateRoutesRequest) => generateRoutes(tripId, body),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [DETAIL_KEY, tripId] }),
+  })
+}
+
+/** Saves the full A/B route pair (US-087 S2); any trip member may edit while the draft is active. */
+export function useSaveRoutes(tripId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: SaveRoutesRequest) => saveRoutes(tripId, body),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [DETAIL_KEY, tripId] }),
   })
 }

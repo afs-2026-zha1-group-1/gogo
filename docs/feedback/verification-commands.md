@@ -35,8 +35,8 @@ is the success case. A match, or a non-zero exit, is a failure.
 # No internal registry host published in the lockfile
 ! grep -q "artifact.oocl.com" frontend/package-lock.json
 
-# CI workflow parses and declares exactly the two expected jobs
-python -c "import yaml; d=yaml.safe_load(open('.github/workflows/ci.yml')); j=sorted(d['jobs']); assert j==['backend','frontend'], j; print('ci jobs:', j)"
+# CI workflow parses and declares the backend, frontend and browser acceptance jobs
+python -c "import yaml; d=yaml.safe_load(open('.github/workflows/ci.yml')); j=sorted(d['jobs']); assert j==['backend','browser-acceptance','frontend'], j; print('ci jobs:', j)"
 
 # CI runs on every branch push (main itself is PR-only per `.githooks/pre-push`)
 # and on pull requests targeting main

@@ -7,11 +7,6 @@ interface TripDetailsProps {
   tripId: number
 }
 
-// US-083 (2026-11-17 revision): the compact overview only takes over once a
-// main plan exists. Before generation the legacy detail page (trip info,
-// preference entry, invitation panel, main-plan link) stays in charge, so the
-// pre-plan flow keeps its existing entries. Loading/denied/missing/failed are
-// shared here; the legacy page re-reads the trip on its own (kept verbatim).
 export default function TripDetails({ tripId }: TripDetailsProps) {
   const state = useTripOverview(tripId)
 

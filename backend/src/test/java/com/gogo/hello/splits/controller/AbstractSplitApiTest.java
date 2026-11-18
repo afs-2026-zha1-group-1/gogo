@@ -1,5 +1,6 @@
 package com.gogo.hello.splits.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -10,6 +11,8 @@ import com.gogo.auth.TestAuth;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.gogo.mainplan.MainPlanProjection;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,10 +26,11 @@ import org.springframework.test.web.servlet.MvcResult;
 /**
  * Shared base for splits API acceptance tests on the main trip schema. Boots one in-memory SQLite context with
  * the real Flyway migrations (V1 greeting, V2 app_user/trip/trip_member seed, V3 invitation + main_plan_confirmed,
- * V4 split_draft + plan_node). Before each test it resets to a split-ready seed state: no active draft, no
- * generated split route pairs, and the fixture trip's main plan confirmed. Identity comes from the authenticated
- * principal (`TestAuth.asUser`), the same model production uses since the session-auth change; fixtures are
- * resolved by natural keys so tests never hardcode ids.
+ * V4 split_draft + plan_node, V5 main_plan_draft/main_plan_stop). Before each test it resets to a split-ready seed
+ * state: no active draft, no generated split route pairs, and a confirmed main plan whose stops are projected into
+ * the main-line plan_node rows (the production MainPlanProjection is the only writer). Identity comes from the
+ * authenticated principal (`TestAuth.asUser`), the same model production uses since the session-auth change;
+ * fixtures are resolved by natural keys so tests never hardcode ids.
  */
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:sqlite:file:split-api-test?mode=memory&cache=shared",
@@ -44,11 +48,44 @@ abstract class AbstractSplitApiTest {
     @Autowired
     protected ObjectMapper objectMapper;
 
+    @Autowired
+    protected MainPlanProjection mainPlanProjection;
+
     @BeforeEach
     void resetToSeed() {
         jdbc.update("DELETE FROM split_draft");
         jdbc.update("DELETE FROM plan_node WHERE branch_id IN ('split-a', 'split-b')");
         jdbc.update("UPDATE trip SET main_plan_confirmed = 1");
+        seedConfirmedMainPlan(1);
+    }
+
+    /**
+     * Replaces the trip's confirmed main plan with the fake provider's four stops (09:00/09:30, 10:00/10:30,
+     * 11:00/11:15, 11:30/12:00 trip-local) and projects it into the main-line plan_node rows, mirroring
+     * production confirmation (main_plan_stop -> plan_node branch_id='main', plan_version = draft version).
+     */
+    protected void seedConfirmedMainPlan(int version) {
+        String tripId = sgfTripId();
+        jdbc.update("DELETE FROM plan_node WHERE trip_id = ? AND branch_id = 'main'", tripId);
+        jdbc.update("DELETE FROM main_plan_stop WHERE draft_id IN "
+                + "(SELECT id FROM main_plan_draft WHERE trip_id = ?)", tripId);
+        jdbc.update("DELETE FROM main_plan_draft WHERE trip_id = ?", tripId);
+        jdbc.update("INSERT INTO main_plan_draft (trip_id, version, status, cost_per_person_cents, "
+                        + "input_revisions_json) VALUES (?, ?, 'confirmed', 5000, '[]')",
+                tripId, version);
+        Number draftId = jdbc.queryForObject(
+                "SELECT id FROM main_plan_draft WHERE trip_id = ? AND version = ?", Number.class, tripId, version);
+        insertMainPlanStop(draftId, 1, "City Hall MRT", "09:00", "09:30", 30);
+        insertMainPlanStop(draftId, 2, "National Gallery Singapore", "10:00", "10:30", 30);
+        insertMainPlanStop(draftId, 3, "Gardens by the Bay", "11:00", "11:15", 15);
+        insertMainPlanStop(draftId, 4, "Merlion Park", "11:30", "12:00", null);
+        assertThat(mainPlanProjection.projectConfirmed(Long.parseLong(tripId))).contains(version);
+    }
+
+    private void insertMainPlanStop(Number draftId, int seq, String name, String start, String end, Integer leg) {
+        jdbc.update("INSERT INTO main_plan_stop (draft_id, seq, name, start_local, end_local, "
+                        + "travel_minutes_to_next, interests_json) VALUES (?, ?, ?, ?, ?, ?, '[]')",
+                draftId, seq, name, start, end, leg);
     }
 
     protected String sgfTripId() {
@@ -115,12 +152,40 @@ abstract class AbstractSplitApiTest {
                 .andExpect(status().isOk());
     }
 
-    /** start (v1) -> boundaries (v2) -> routes (v3); returns the resulting draftVersion (3). */
+    /** start (v1) -> boundaries (v2) -> Chloe to B (v3) -> routes (v4); returns the resulting draftVersion (4). */
     protected int prepareConfirmableDraftAs(String displayName) throws Exception {
         int version = startDraftAs(displayName);
         saveBoundariesAs(displayName, version);
-        generateRoutesAs(displayName, version + 1);
-        return version + 2;
+        int grouped = assignAs("Chloe", "B", version + 1);
+        generateRoutesAs(displayName, grouped);
+        return grouped + 1;
+    }
+
+    /** Moves the named member into group A or B (US-040 A1) and returns the resulting draftVersion. */
+    protected int assignAs(String displayName, String groupLabel, int draftVersion) throws Exception {
+        String body = objectMapper.writeValueAsString(Map.of(
+                "groupLabel", groupLabel,
+                "draftVersion", draftVersion));
+        MvcResult result = mockMvc.perform(put("/api/trips/{tripId}/split-draft/assignment", sgfTripId())
+                        .with(TestAuth.asUser(memberId(displayName)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString())
+                .path("data").path("draftVersion").asInt();
+    }
+
+    /** Test-only document mutation replacing the saved groups (漏组/重复组 construction, US-040 G6-N/CF8-N). */
+    protected void updateGroups(Map<String, List<String>> groups) throws Exception {
+        ObjectNode node = (ObjectNode) draftNode();
+        ObjectNode groupsNode = objectMapper.createObjectNode();
+        groups.forEach((label, members) -> {
+            ArrayNode array = groupsNode.putArray(label);
+            members.forEach(array::add);
+        });
+        node.set("groups", groupsNode);
+        updateDraftDocument(node);
     }
 
     protected int splitRouteCount() {

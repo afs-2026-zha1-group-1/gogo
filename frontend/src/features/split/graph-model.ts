@@ -5,6 +5,9 @@
  * GroupRoute fields only (activity name/minutes, travel legs, buffer); nothing is invented.
  */
 
+import { tripZone } from "../../lib/trip-zone.ts"
+import { cleanRouteName, cleanStationName } from "./station-name.ts"
+
 export type RouteKey = "a" | "b"
 export type LabelSide = "left" | "right"
 
@@ -18,9 +21,13 @@ export interface StopInput {
 export interface RouteInput {
   groupLabel: string
   activityName: string | null
+  /** Editable display location (US-087); shown when it differs from the activity name. */
+  locationName?: string | null
   activityMinutes: number | null
   travelLegsMinutes: (number | null)[]
   bufferMinutes: number | null
+  /** Main-plan steps for the group that keeps the confirmed itinerary (backend RouteStep). */
+  steps?: { name: string; minutes: number }[] | null
 }
 
 export interface MainRow {
@@ -72,7 +79,11 @@ export function truncateLabel(text: string, maxUnits: number): string {
 }
 
 /** ISO timestamps (draft snapshot) and local HH:MM (main-plan stops) are formatted separately, never converted. */
-export function formatTime(value: string | null | undefined, source: "iso" | "local"): string {
+export function formatTime(
+  value: string | null | undefined,
+  source: "iso" | "local",
+  destination?: string | null,
+): string {
   if (value == null || value === "") return PENDING_LABEL
   if (source === "local") return value
   const date = new Date(value)
@@ -81,6 +92,7 @@ export function formatTime(value: string | null | undefined, source: "iso" | "lo
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
+    timeZone: tripZone(destination),
   }).format(date)
 }
 
@@ -99,33 +111,60 @@ export function routeLabelsFor(routes: RouteInput[]): Record<RouteKey, string> {
   const labels: Record<RouteKey, string> = { a: "Route A", b: "Route B" }
   routes.forEach((route, index) => {
     const key = routeKeyFor(route.groupLabel, index)
-    const name = route.activityName?.trim()
+    const name = cleanRouteName(route.activityName)
     labels[key] = name ? `Route ${key.toUpperCase()} · ${name}` : `Route ${key.toUpperCase()}`
   })
   return labels
 }
 
-/** One route's branch nodes: activity -> travel (summed legs) -> buffer. Zero buffer is omitted. */
+/** Appends the edited location only when it adds information beyond the activity name (US-087 D-2). */
+function locationSuffix(route: RouteInput): string {
+  const location = cleanStationName(route.locationName)
+  const activity = cleanRouteName(route.activityName)
+  return location && location !== activity ? ` · ${location}` : ""
+}
+
+/** One route's branch nodes in travel order: places and legs alternate; zero buffer is omitted. */
 function branchRowsFor(route: RouteInput, key: RouteKey): BranchRow[] {
-  const rows: BranchRow[] = [
-    {
+  const steps = route.steps ?? []
+  const legs = route.travelLegsMinutes
+  const rows: BranchRow[] = []
+  const pushLeg = (legIndex: number) => {
+    if (legIndex < 0 || legIndex >= legs.length) return
+    const minutes = legs[legIndex]
+    rows.push({
+      kind: "branch",
+      id: `${key}-leg-${legIndex}`,
+      route: key,
+      title: "路程",
+      meta: minutes == null ? `路程 · ${PENDING_LABEL}` : `路程 · ${minutes} 分钟`,
+    })
+  }
+  if (steps.length > 0) {
+    // Group B starts with the outbound trip; group A starts at the departure stop itself.
+    if (key === "b") pushLeg(0)
+    steps.forEach((step, index) => {
+      rows.push({
+        kind: "branch",
+        id: `${key}-step-${index}`,
+        route: key,
+        title: cleanStationName(step.name),
+        meta: `活动 · ${formatMinutes(step.minutes)}`,
+      })
+      pushLeg(key === "b" ? index + 1 : index)
+    })
+  } else {
+    // Legacy single-activity documents (pre Revision 3): keep one activity row around its legs.
+    if (key === "b") pushLeg(0)
+    rows.push({
       kind: "branch",
       id: `${key}-activity`,
       route: key,
-      title: route.activityName?.trim() || "活动",
-      meta: `活动 · ${formatMinutes(route.activityMinutes)}`,
-    },
-  ]
-  if (route.travelLegsMinutes.length > 0) {
-    const missing = route.travelLegsMinutes.some((minutes) => minutes == null)
-    const total = route.travelLegsMinutes.reduce<number>((sum, minutes) => sum + (minutes ?? 0), 0)
-    rows.push({
-      kind: "branch",
-      id: `${key}-travel`,
-      route: key,
-      title: "前往会合点",
-      meta: missing ? `路程 · ${PENDING_LABEL}` : `路程 · ${total} 分钟`,
+      title: cleanRouteName(route.activityName) || "活动",
+      meta: `活动 · ${formatMinutes(route.activityMinutes)}${locationSuffix(route)}`,
     })
+    const start = key === "b" ? 1 : 0
+    for (let index = start; index < legs.length; index += 1) pushLeg(index)
   }
   if (route.bufferMinutes !== 0) {
     rows.push({
@@ -160,7 +199,7 @@ function mainRow(stop: StopInput, counter: number): MainRow {
   return {
     kind: "main",
     id: stop.id,
-    title: stop.name,
+    title: cleanStationName(stop.name),
     meta,
     side: counter % 2 === 0 ? "right" : "left",
   }
@@ -201,8 +240,8 @@ export function buildGraphRows(input: {
   rows.push({
     kind: "fork",
     id: fork.id,
-    title: fork.name,
-    meta: `${fork.endLabel} · 分头`,
+    title: cleanStationName(fork.name),
+    meta: `${fork.startLabel} · 分头`,
     side: "right",
   })
 
@@ -214,7 +253,7 @@ export function buildGraphRows(input: {
   rows.push({
     kind: "join",
     id: join.id,
-    title: join.name,
+    title: cleanStationName(join.name),
     meta: `${join.startLabel} · 会合`,
     side: "left",
   })

@@ -26,6 +26,7 @@ import type {
 
 interface PreferencesPageProps {
   tripId: number
+  backHref?: string
 }
 
 interface Rejection {
@@ -97,14 +98,14 @@ function submissionFailureOf(error: unknown): string {
   return messageOf(error)
 }
 
-export default function PreferencesPage({ tripId }: PreferencesPageProps) {
+export default function PreferencesPage({ tripId, backHref = `#/trips/${tripId}` }: PreferencesPageProps) {
   // US-066: the session supplies identity, so the page no longer takes a userId prop.
   const { account } = useAuth()
   const userId = account?.id ?? null
   const queryClient = useQueryClient()
   // MD11: two independent caches, so a must-do action never rewrites the interest section.
-  const interestsKey = ['preferences', tripId]
-  const mustDosKey = ['must-dos', tripId]
+  const interestsKey = ['preferences', tripId, userId]
+  const mustDosKey = ['must-dos', tripId, userId]
   const [selected, setSelected] = useState<string[]>([])
   const [acknowledged, setAcknowledged] = useState<string[]>([])
 
@@ -152,12 +153,12 @@ export default function PreferencesPage({ tripId }: PreferencesPageProps) {
     queryFn: () => fetchMustDos(tripId),
   })
 
-  const budgetsKey = ['budgets', tripId]
-  const readinessKey = ['readiness', tripId]
+  const budgetsKey = ['budgets', tripId, userId]
+  const readinessKey = ['readiness', tripId, userId]
   const budgetsQuery = useQuery({ queryKey: budgetsKey, queryFn: () => fetchBudgets(tripId) })
   const readinessQuery = useQuery({ queryKey: readinessKey, queryFn: () => fetchReadiness(tripId) })
   // US-019: personal defaults, used only to pre-select when this member has no saved interests.
-  const userDefaultsQuery = useQuery({ queryKey: ['user-interests'], queryFn: fetchUserInterests })
+  const userDefaultsQuery = useQuery({ queryKey: ['user-interests', userId], queryFn: fetchUserInterests })
   const defaultsApplied = useRef(false)
 
   // Switching identity starts from an empty, clearly unloaded state; the fetches below seed it.
@@ -345,7 +346,7 @@ export default function PreferencesPage({ tripId }: PreferencesPageProps) {
 
   const appbar = (
     <div className="appbar">
-      <a className="iconbtn" href={`#/trips/${tripId}`} aria-label="返回行程">
+      <a className="iconbtn" href={backHref} aria-label="返回行程">
         <Icon name="left" />
       </a>
       <div className="grow">
@@ -383,7 +384,7 @@ export default function PreferencesPage({ tripId }: PreferencesPageProps) {
                   重试
                 </button>
               )}
-              <a className="btn btn-ghost sm" href={`#/trips/${tripId}`}>
+              <a className="btn btn-ghost sm" href={backHref}>
                 返回行程
               </a>
             </div>

@@ -7,7 +7,7 @@ import RequireAuth from "./features/auth/RequireAuth"
 import { ScreenStart } from "./features/split/screen-start"
 import { ScreenBoundary } from "./features/split/screen-boundary"
 import { ScreenRoutes } from "./features/split/screen-routes"
-import { ScreenTiming } from "./features/split/screen-timing"
+import { ScreenPreview } from "./features/split/screen-preview"
 import { ScreenConfirm } from "./features/split/screen-confirm"
 
 /**
@@ -19,10 +19,17 @@ function SplitKeyed({ Screen }: { Screen: ComponentType }) {
   return <Screen key={tripId} />
 }
 
+/** Old Screen 14 deep links land on the read-only preview (US-088 N8/D-1). */
+function SplitTimingRedirect() {
+  const { tripId = "" } = useParams()
+  return <Navigate to={`/trips/${tripId}/split/preview`} replace />
+}
+
 /**
  * App routes. "/" renders the hash-based shell App. Split routes require an authenticated session;
  * signed-out visitors are sent to /login. The flow runs Screen 11 start -> 12 boundaries -> 13 routes
- * -> 14 timing -> 15 review/confirm (US-049) with the initiator's cancel action (US-050) on Screen 15.
+ * -> 13b preview -> 15 review/confirm (US-088 supersedes the old Screen 14 timing page, which now
+ * redirects) with the initiator's cancel action (US-050) on Screen 15.
  */
 export const router = createBrowserRouter([
   { path: "/", element: <App /> },
@@ -42,8 +49,12 @@ export const router = createBrowserRouter([
     element: <RequireAuth><SplitKeyed Screen={ScreenRoutes} /></RequireAuth>,
   },
   {
+    path: "/trips/:tripId/split/preview",
+    element: <RequireAuth><SplitKeyed Screen={ScreenPreview} /></RequireAuth>,
+  },
+  {
     path: "/trips/:tripId/split/timing",
-    element: <RequireAuth><SplitKeyed Screen={ScreenTiming} /></RequireAuth>,
+    element: <RequireAuth><SplitTimingRedirect /></RequireAuth>,
   },
   {
     path: "/trips/:tripId/split/confirm",

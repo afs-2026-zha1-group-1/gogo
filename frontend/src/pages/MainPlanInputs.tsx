@@ -53,9 +53,11 @@ type InputsState =
 
 interface MainPlanInputsProps {
   tripId: number
+  dashboardOrigin?: boolean
+  backToDashboard?: boolean
 }
 
-export default function MainPlanInputs({ tripId }: MainPlanInputsProps) {
+export default function MainPlanInputs({ tripId, dashboardOrigin = false, backToDashboard = false }: MainPlanInputsProps) {
   const { account } = useAuth()
   const [state, setState] = useState<InputsState>({ kind: 'loading' })
   const [generating, setGenerating] = useState(false)
@@ -101,7 +103,9 @@ export default function MainPlanInputs({ tripId }: MainPlanInputsProps) {
     try {
       const { status, ok, data } = await api<MainPlan & MainPlanError>(`/api/trips/${tripId}/main-plan`, { method: 'POST' })
       if (ok) {
-        window.location.hash = `#/trips/${tripId}/main-plan`
+        window.location.hash = dashboardOrigin
+          ? `#/dashboard/trips/${tripId}/main-plan`
+          : `#/trips/${tripId}/main-plan`
         return
       }
       if (status === 409 && data?.code === 'MEMBERS_NOT_READY') {
@@ -121,7 +125,11 @@ export default function MainPlanInputs({ tripId }: MainPlanInputsProps) {
 
   const appbar = (
     <header className="appbar">
-      <a className="iconbtn" href={`#/trips/${tripId}/main-plan`} aria-label="Back"><Icon name="left" /></a>
+      <a className="iconbtn" href={backToDashboard
+        ? `#/dashboard/trips/${tripId}`
+        : dashboardOrigin
+        ? `#/dashboard/trips/${tripId}/main-plan`
+        : `#/trips/${tripId}/main-plan`} aria-label="Back"><Icon name="left" /></a>
       <div className="grow">
         <div className="title">生成主线方案</div>
         <div className="sub">US-031 · 仅组织者可生成 · 基于就绪成员</div>

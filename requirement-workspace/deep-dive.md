@@ -1261,3 +1261,178 @@ MODIFIED 放置 requirement + 详情页一个入口卡片）。单故事、单�
 
 AC 未声明保留期、SLA 或容量指标。列表是既有行的只读投影，按用户维度过滤，规模为
 个位数到几十，MVP 不分页（OQ-5 deferred）。若后续出现首屏预算压力，再单独立项。
+
+## US-040
+
+触发：impact 方向为 **extend + modify**（`splits` 新增一条分组写入能力，并修改初始分组、
+生成前置与确认完整性）。单故事、单 change，零迁移、零新依赖、无新表。
+
+### ⑨ Data contract
+
+| 概念 | 粒度 | 字段 | 状态迁移 | 来源 |
+|---|---|---|---|---|
+| 草稿分组 | 每草稿一份（`split_draft.document.groups`） | `{"A": [app_user.id...], "B": [...]}`，两个键恒存在、允许空数组 | 发起时 `A = 全部成员 / B = []`；每次 assignment 移动一人并 `draftVersion + 1`；确认冻结；取消保留 | `SplitDraftDocument.groups`（既有字段，无迁移） |
+| 分组写入请求 | 每次调用一份 | `groupLabel`（`A`\|`B`）、`draftVersion` | 服务端解析调用者 `AccountPrincipal.id`；不接收 `memberId` | 新 `AssignmentRequest` DTO |
+| 草稿版本 | 每草稿一个整数 | `draftVersion`（文档字段）+ `split_draft.draft_version`（CAS 列） | assignment `+1`；boundaries/generate `+1`；confirm/cancel 不变 | `V4__splits.sql` + 文档字段 |
+| 已生成路线 | 每组一对（文档 `routes` + `plan_node` 行） | `RouteDurations{activityMinutes, travelLegsMinutes[], bufferMinutes}` | assignment **不改动**；generate 成对替换并 `draftVersion + 1` | 既有 `withRoutes` |
+| 行程成员集合 | 一行 per (trip, user) | `trip_member.user_id`（= `app_user.id`） | 本变更只读；不增删成员 | `V2__create_trip.sql`；`findMemberIdsOrdered` |
+| 完整性明细 | 每次拒绝一份 | `error.details.missing: string[]`，取值 `groups.A` / `groups.B` / `groups.unassigned` / `groups.duplicate` | 生成与确认共用 | 新 `groupProblems()` 投影 |
+| 成员名投影 | 每次渲染一份 | `displayName`（按 `app_user.id` 查名册） | 前端派生，不落库 | `GET /api/trips/{id}/members` |
+
+无 `{TBD}` 字段。不变式：`groups` 的两个键集合恒为 `{A, B}`；任一成员至多出现在一个组；
+`groups` 元素必为当前行程成员（否则按 `groups.unassigned` 反例处理）。
+
+### ⑩ Boundary enumeration
+
+| 规则 | 分支 | In / Out | 依据 |
+|---|---|---|---|
+| 调用者身份 | 无认证会话 | Out — `401 MEMBER_REQUIRED` | R1；链级约定 |
+| 行程归属 | 未知 tripId | Out — `404 TRIP_NOT_FOUND` | R3 |
+| 成员资格 | 已知账号但非该行程成员 | Out — `403 NOT_A_MEMBER`，无分组数据 | R2 |
+| 草稿状态 | 无草稿行 | Out — `409 SPLIT_DRAFT_NOT_ACTIVE` | R4 |
+| 草稿状态 | `confirmed` / `cancelled` | Out — `409 SPLIT_DRAFT_NOT_ACTIVE` | R4 / S10 / S11 / BQ-6 |
+| 版本 | `draftVersion` 不等于当前 | Out — `409 STALE_DRAFT_VERSION`，无持久化 | R5 |
+| 组别 | `groupLabel` ∉ {A, B} | Out — `400`（码见 OQ-9） | R6 |
+| 目标人 | 请求体夹带 `memberId` / `groups` | 忽略或 `400`；**永不移动他人** | R7 / AC「不能替其他成员选择」 |
+| 正常改组 | 调用者在 A，目标 A | In — `200` 幂等，是否 `+1` 见 OQ-10 | S4 |
+| 正常改组 | 调用者在 A，目标 B | In — `200`，从 A 移除、加入 B，`draftVersion + 1` | S2 / S3 |
+| 路线保留 | 改组时已有 `routes` | In — `routes` 与边界字段逐字不变 | S14 / R8 / BQ-2 |
+| 空组 | `groups.A` 或 `groups.B` 为空 | In（草稿态允许）；生成 Out（`409 SPLIT_DRAFT_INCOMPLETE`）；确认 Out（同码） | S6 / S12 / BQ-3 / BQ-8 |
+| 漏分组 | 成员不在任何组 | 仅可由构造数据产生；生成/确认 Out（`groups.unassigned`） | S7 |
+| 重复分组 | 同一成员同时在 A、B | 仅可由构造数据产生；生成/确认 Out（`groups.duplicate`） | S8 |
+| 生成权限 | 非发起人调 generate | Out — `403 NOT_SPLIT_INITIATOR` | S16 / BQ-5 |
+| 确认权限 | 非组织者调 confirm | Out — `403 NOT_SPLIT_ORGANIZER`（既有） | 不在本变更范围 |
+| 确认门禁 | 分组完整、边界与路线齐备 | In — `200`，`status = confirmed` | S9 |
+| 成员表 | 改组对 `trip_member` | 不变 — 不新增/删除成员、不改角色 | R9 |
+| 成员数 | 当前行程成员数 < 2（单人行程） | Out — 发起/重建 `409 SPLIT_MEMBERS_INSUFFICIENT`，不创建也不改写草稿行 | OQ-13 / BQ-9（单人无法「两组非空」） |
+
+### ⑪ Cross-REQ consistency
+
+| 能力 | 其他 REQ / 界面 | US-040 行为 | 收敛 |
+|---|---|---|---|
+| `splits` Split draft start | US-038 | 发起后 `groups = {A: 全部成员, B: []}`，其余字段与返回不变 | ✓ MODIFIED（本变更） |
+| `splits` Split boundary selection | US-039 | 保存边界仍保留 `groups`/`routes`；不改边界语义 | ✓ 不改 |
+| `splits` Group route generation | US-042 | 新增分组完整性前置（取代「夹具保证」）；仍只准许发起人、仍按 `groups.keySet()` 成对生成 | ✓ MODIFIED（本变更） |
+| `splits` Reunion timing check | US-043 | 仍按显式快照计算，不读分组 | ✓ 不改 |
+| `splits` Split draft detail read | US-049/050 | `groups` 字段与 member-only 读取不变；前端新增名册映射 | ✓ 不改契约 |
+| `splits` Split confirmation | US-049 | `missingDraftParts` 增加 `groups.*`；错误码不变 | ✓ MODIFIED（本变更） |
+| `splits` Split draft cancellation | US-050 | 取消仍保留 `groups`、清空 `routes`；重建时初始分组改全员 A | ✓ 仅初始分组收敛 |
+| `trips` 成员名册 | US-013 | 前端复用 `displayName`，不新增字段 | ✓ 组合，不改 |
+| `trips` 行程详情/成员 | REQ-003 / US-013 | 无写入变更；Screen 13 入口仍在行程内 | ✓ 不改 |
+| `app-shell` | US-064 / US-082 | 不新增路由、不改 stepbar、不改返回链 | ✓ 不改 |
+| `auth` 会话 | US-066 / REQ-008 | 沿用会话主体；splits 路径在 `SecurityConfig` 为 `permitAll`，401 由 `MemberGuard` 产出 `MEMBER_REQUIRED` + `{data,error}`（auth 已登记的 splits 例外）；新 PUT 必须命中 `"/api/trips/*/split-draft/**"` | ✓ 不改配置，但实现需核对匹配器 |
+| `main-itinerary` / `invitations` / `preferences` | — | 无交叉写入 | ✓ 无影响 |
+
+### ⑫ Notification / display contract
+
+| 界面 | 触发 | 受众 | 内容 + 显示字段 | 通道 | 数量 |
+|---|---|---|---|---|---|
+| Screen 13 分组卡 | 打开分组与路线屏（含草稿/无草稿/终态） | 全部行程成员 | A 组 / B 组标题、人数、成员 `displayName` 列表、「我」标记；副标题去掉「分组移动本期不开放」 | `GET split-draft` + `GET members` | 每次渲染一组 |
+| 切组按钮 | 成员点击目标组 | 操作者本人 | 调 `PUT assignment`（`groupLabel` + `draftVersion`）；成功后 `invalidate` 并重绘，失败按 `code` 显示 | 写入 + 查询失效 | 一次一人一组 |
+| 改组成功提示 | assignment `200` | 操作者本人 | 「分组已更新，路线仍为上次生成的版本，可点击重新生成」 | 页内提示 | 一 |
+| 分组不完整（生成） | `routes:generate` 返回 `SPLIT_DRAFT_INCOMPLETE` | 发起人 | 错误卡：`SPLIT_DRAFT_INCOMPLETE` + 中文说明「分组不完整」+ `details.missing` 映射（`groups.A`=A 组无人、`groups.B`=B 组无人、`groups.unassigned`=有成员未分组、`groups.duplicate`=有成员重复分组） | `ErrorState` | 一 |
+| 分组不完整（确认） | `:confirm` 返回 `SPLIT_DRAFT_INCOMPLETE` | 组织者 | 同上，且同时可含 `boundaries` / `routes.A` / `routes.B` | `ErrorState` | 一 |
+| Screen 15 分组复核 | 打开复核屏 | 全部行程成员 | A 组 / B 组以成员名展示（无名字回退短 id）；若分组晚于路线生成，同屏显示「分组已更新，路线仍为上次生成的版本」提示 | `GET split-draft` + `GET members` | 每次渲染一组 |
+| 空组引导 | 草稿 active 且任一组为空 | 全部行程成员 | 分组卡内提示「至少一人加入另一组后才能生成路线与确认」 | 页内文案 | 一 |
+| 权限态 | `403 NOT_SPLIT_INITIATOR` / `NOT_A_MEMBER` / `401` | 操作者 | 现有 `ErrorState` 权限样式；非发起人的「重新生成」不可用 | `ErrorState` | 一 |
+| loading / empty / 终态 | 读取中、无草稿、`confirmed`/`cancelled` | 查看者 | 沿用既有四态；终态不显示切组控件 | 客户端渲染 | 一 |
+
+无通知（邮件/推送/队列）在范围内；分组卡不展示偏好、预算、就绪度等他人私密字段。
+
+### NFR business-policy layer
+
+分组规模 = 行程成员数（MVP 为个位数），单次改组为一次 JSON 文档 CAS 写入；无批量、无分页、
+无 SLA/保留期声明。并发由 `draftVersion` 乐观锁 + 既有 5s 轮询覆盖（后到者 `STALE_DRAFT_VERSION`）。
+
+## US-087-088
+
+触发：impact 方向为 **extend + modify**（`splits` 新增整对路线编辑写入，并修改 Screen 13/14/15 的
+编辑、校验与返回入口）。单 change 覆盖两条 story，零迁移、零新依赖、无新表。
+
+### ⑨ Data contract
+
+| 概念 | 粒度 | 字段 | 状态迁移 | 来源 |
+|---|---|---|---|---|
+| 草稿路线时长 | 每草稿每组成员（`split_draft.document.routes`） | `RouteDurations{activityMinutes:int, travelLegsMinutes:int[], bufferMinutes:int, steps?:RouteStep[]}`；A/B 合计均由站点+路段派生，buffer=0 | generate 成对替换并 `draftVersion + 1`；**routes 保存整对覆盖并 `+1`**（两组 steps/派生值一并写入）；分组变更保留；确认冻结；取消清空 | `SplitDraftDocument.routes`（US-089 已含 steps，无迁移） |
+| 路线节点（活动名/地点） | 每草稿每组一行（`plan_node`，`branch_id = split-a/split-b`） | `title`（活动名，必填非空）、`location_name`（地点，可空）、`start_at`/`end_at`（沿用草图边界）、`sort_order` | generate 成对删除+插入（A 活动名 = 首末站拼接、地点 = 首站真实地点；B 地点 = 目的地）；**routes 保存更新 `title`/`location_name`**；取消删除 split 行；主线行不动 | `plan_node`（V4/V5 既有列，无迁移） |
+| 路线编辑请求 | 每次调用一份（整对） | `draftVersion:int`；`routes[2]{groupLabel, steps[{name,minutes}], travelLegsMinutes[]}`；A 组 legs=站点数，B 组 legs=站点数+1 | 仅 `active` 草稿可写；成功后 `draftVersion + 1`；两组均由服务端派生 | 新 `SaveRoutesRequest` / `RouteEditInput` / `RouteStepInput` |
+| 路线视图 | 每次读取一份 | `GroupRoute{groupLabel, activityName, locationName?, departureStopId, reunionStopId, activityMinutes, travelLegsMinutes[], bufferMinutes, steps?}` | 读取不写；`locationName` 为 additive；A 组返回编辑后的 steps | `GET split-draft`（`SplitDraftDetailResponse.routes`） |
+| 草稿版本 | 每草稿一个整数 | 文档 `draftVersion` + `split_draft.draft_version`（CAS 列） | 保存 `+1`；boundaries/generate/assignment 既有语义不变；confirm/cancel 不变 | `V4__splits.sql` + 文档字段 |
+| 时间窗校验快照 | 每次校验一份 | `windowMinutes:int`；`routes[2]{groupLabel, activityMinutes, travelLegsMinutes[], bufferMinutes}`；结果 `TimingResult{feasible, routes[{totalMinutes, overrunMinutes, missingInputs}]}` | 只读、零写库；不落库 | 既有 `CheckTimingRequest` / `ReunionTimingCalculator` |
+| 编辑权限主体 | 每次调用一个身份 | 会话 `AccountPrincipal.id`（= `trip_member.user_id`） | 任意行程成员可写；不接收 `memberId` | `MemberGuard` / `SecurityConfig` |
+| 完整性明细 | 每次拒绝一份 | `error.details.missing: string[]`（`routes.A` / `routes.B`） | 无路线时保存拒绝 | 复用 `SPLIT_DRAFT_INCOMPLETE` |
+
+无 `{TBD}` 字段。不变式：`routes` 的键集合恒为草稿 `groups` 键集合（`{A, B}`）；`plan_node` 的
+split 行每草稿每组恰好一行；`draftVersion` 是唯一并发令牌；活动名/地点与时长必须同事务生效；
+A 组 `activityMinutes`/`travelLegsMinutes` 由 `steps` 派生，客户端提交的合计被忽略；生成时 A 合计 = 时间窗（US-089 G7），
+手工编辑后以下一步校验的「A 合计 ≤ 时间窗」为准。
+
+### ⑩ Boundary enumeration
+
+| 规则 | 分支 | In / Out | 依据 |
+|---|---|---|---|
+| 身份 | 无认证会话 | Out — `401 MEMBER_REQUIRED` | 链级约定 |
+| 行程归属 | 未知 tripId | Out — `404 TRIP_NOT_FOUND` | 既有守卫 |
+| 成员资格 | 已知账号但非该行程成员 | Out — `403 NOT_A_MEMBER` | 既有守卫 |
+| 草稿存在 | 无草稿行 | Out — `409 SPLIT_DRAFT_NOT_ACTIVE` | 既有语义 |
+| 草稿状态 | `confirmed` / `cancelled` | Out — `409 SPLIT_DRAFT_NOT_ACTIVE`；页面只读 | S6 / N9 |
+| 版本 | `draftVersion` 不等于当前 | Out — `409 STALE_DRAFT_VERSION`；无部分写入 | S3 |
+| 路线存在 | 草稿 `routes` 为空 | Out — `409 SPLIT_DRAFT_INCOMPLETE`（`routes.A`/`routes.B`） | S4 |
+| 路线数量 | 请求不是恰好两条 | Out — `400 INVALID_ROUTE_PAIR` | S5 |
+| 组别集合 | 组别重复或非 A/B 或与 `groups` 键不一致 | Out — `400 INVALID_GROUP_LABEL` | S5 |
+| 字段值 | 活动名或站名为空；分钟为负或非整数；A 组路段数与站点数不一致；B 组路程段数变化 | Out — `400 INVALID_ROUTE_INPUT`（新码） | S5 / N10 |
+| A 组编辑超窗 | 保存后 A 合计 > `windowMinutes` | 保存 In（200）；下一步校验 Out（`feasible=false` + 弹窗），不进入预览 | N3a |
+| 正常保存 | 任意成员、`active`、版本匹配、输入合法 | In — `200`，双写 `plan_node` + 文档 `routes`，`draftVersion + 1` | S2 |
+| 无改动继续 | 本地值等于草稿快照 | In — 跳过保存，`draftVersion` 不变，直接校验 | N2 |
+| 校验可行 | `feasible = true` | In — 200；前端进入 `/split/preview` | N1 |
+| 校验不可行 | 超窗或缺输入 | In（200 + `feasible=false`）；前端弹窗阻断，不跳转 | N3 |
+| 校验请求失败 | 4xx/5xx/网络 | Out — 页内错误，不跳转 | N5 |
+| 保存请求失败 | 409/5xx/网络 | Out — 页内错误，不发起校验、不跳转 | N4 |
+| 预览只读 | 预览页任何状态 | In — 只显示图；无编辑控件；终态无提交动作 | N6 / N9 |
+| 复核入口 | 预览「前往复核并确认」 | In — 进入 `/split/confirm`；服务端复算 | N7 |
+| 旧地址 | 访问 `/split/timing` | In — 重定向 `/split/preview` | N8 / D-1 |
+| 生成权限 | 非发起人调 `routes:generate` | Out — `403 NOT_SPLIT_INITIATOR`（不变） | US-042 |
+| 编辑权限 | 非发起人但为成员调 `PUT routes` | In — 允许（BQ-6） | S1 / BQ-6 |
+| 主线/分组 | 保存对 `groups`、`boundaries`、main 节点 | 不变 — 不移动成员、不改边界与主线 | 约束 |
+| 确认规则 | 保存后 `:confirm` | 不变 — 服务端从草稿复算（`SPLIT_TIMING_INFEASIBLE`） | N7 |
+
+### ⑪ Cross-REQ consistency
+
+| 能力 | 其他 REQ / 界面 | 本变更行为 | 收敛 |
+|---|---|---|---|
+| `splits` Split draft start | US-038 | 发起仍按成员顺序初始分组、`draftVersion = 1`；不变 | ✓ 不改 |
+| `splits` Split boundary selection | US-039 | 边界保存保留 `groups`/`routes`；保存成功后版本语义不变 | ✓ 不改 |
+| `splits` Group route generation | US-042 / Screen 13 | 生成仍成对原子、仅发起人；Screen 13 从只读展示改为可编辑，并承接「下一步」 | ✓ MODIFIED（P2） |
+| `splits` Reunion timing check | US-043 / Screen 14 | `check-timing` 端点契约不变；校验入口从 Screen 14 迁移到第 2 步「下一步」，Screen 14 由只读预览取代 | ✓ MODIFIED（P2） |
+| `splits` Split draft detail read | US-049/050 / Screen 11 | `GroupRoute` 增 `locationName`（additive）；读取仍只读、member-only | ✓ MODIFIED（P2，additive） |
+| `splits` Split confirmation | US-049 / Screen 15 | 判定文本与错误码不变；复核屏 返回目标改为 `/split/preview` | ✓ MODIFIED（P2，导航） |
+| `splits` Split draft cancellation | US-050 | 取消仍清空 split `plan_node` 与 routes；不变 | ✓ 不改 |
+| `splits` Member group assignment | US-040 / Screen 13 | 任意成员可编辑路线，与「任意成员可移动成员」一致；生成仍仅发起人 | ✓ 组合，不改 |
+| Screen 11 队伍路线（US-086） | `team-route-graph.tsx` / `graph-model.ts` | 复用图组件作为第 3 步预览；标题/动作不同，不改图组件契约 | ✓ 组合，不改 |
+| `app-shell` | US-064 / US-082 | 新增 `/split/preview` 属流程内部路由；shell 契约不枚举该层 | ✓ 不改 |
+| `trips` 成员名册 | US-013 | 编辑卡不新增成员数据依赖；分组仍用既有名册 | ✓ 不改 |
+| `auth` 会话 | US-066 / REQ-008 | 沿用会话主体；`/api/trips/*/split-draft/**` 已在 `SecurityConfig` 匹配，PUT 自动受保护，401 由 `MemberGuard` 产出 | ✓ 不改配置 |
+| `main-itinerary` / `invitations` / `preferences` | — | 无交叉写入 | ✓ 无影响 |
+
+### ⑫ Notification / display contract
+
+| 界面 | 触发 | 受众 | 内容 + 显示字段 | 通道 | 数量 |
+|---|---|---|---|---|---|
+| Screen 13 路线卡（编辑态） | 打开分组与路线屏，草稿 `active` 且有路线对 | 全部行程成员 | A/B 均为站点列表（站名+停留分钟可改，可添加/删除站点）；A 每站后一段路程、B 首站前后各一段，统一标注「路程」；不再提供活动名/地点/缓冲输入；卡片显示「合计 X 分 / 窗口 Y 分」 | `GET split-draft`（含 `locationName`/`steps`） | 每次渲染 A/B 两张 |
+| Screen 13 路线卡（只读） | 草稿 `confirmed` / `cancelled` | 查看者 | 同上字段但不可编辑；无「下一步」动作 | 客户端状态渲染 | 每次渲染 A/B 两张 |
+| 「下一步」按钮 | 草稿 `active` 且有路线对、分组完整 | 操作者 | 文案「下一步」；保存/校验中显示进行态并禁用重复点击 | 保存 + 校验写入链 | 一 |
+| 保存/校验成功 | `PUT routes` 200 且 `check-timing` `feasible=true` | 操作者 | 导航到 `/split/preview`；无额外成功提示（进入预览即反馈） | 路由跳转 | 一 |
+| 时间窗失败弹窗 | `check-timing` 200 且 `feasible=false` | 操作者 | 新增 shadcn 风格 `components/ui/dialog.tsx`（受控 open、遮罩不可点外关闭）；标题「时间窗校验未通过」；结论；A/B 组各自「合计 X 分 / 时间窗 Y 分 / 超窗 Z 分」；缺失输入项列表；底部仅「关闭」；不自动跳转，关闭后焦点回列表 | 前端弹窗 | 一 |
+| 保存/校验请求错误 | `PUT routes` 或 `check-timing` 非 2xx / 网络失败 | 操作者 | 既有 `ErrorState` / 页内错误提示，带 `error.code` 中文映射；保留输入；不跳转 | 页内错误 | 一 |
+| Screen 预览（新第 3 步） | 校验通过后进入 | 全部行程成员 | 标题「队伍路线预览」；副标题「校验通过 · 只读预览」；顶部 A 组 / B 组人数徽标；`TeamRouteGraph` 图：A/B 地点与路程交替成节点（A 首站无前置路程、B 首站前为去程），每段标注「路程」；底部「前往复核并确认」；返回第 2 步 | `GET split-draft` | 一 |
+| 预览空/错误态 | 无草稿、无路线对、读取失败 | 查看者 | 沿用 `states.tsx` 的 loading / empty / error；无路线对时提示返回第 2 步生成 | 客户端渲染 | 一 |
+| 旧 Screen 14 地址 | 直接访问 `/split/timing` | 任意 | 重定向到 `/split/preview`，不渲染可编辑校验表单 | 路由重定向 | 一 |
+| 终态复核（Screen 15） | `confirmed` / `cancelled` | 查看者 | 既有只读展示；返回指向预览页；无确认/取消可用动作 | 客户端渲染 | 一 |
+
+无通知（邮件/推送/队列）在范围内；弹窗不展示他人偏好、预算等私密字段。
+
+### NFR business-policy layer
+
+单次保存 = 一次 JSON 文档 CAS + 两行 `plan_node` 更新，属 O(1) 写；路线规模固定为 A/B 两条，
+无批量/分页。并发由 `draftVersion` 乐观锁 + 既有 5s 轮询覆盖，后到者获 `STALE_DRAFT_VERSION` 并需
+重新拉取。无保留期/SLA 声明；校验为纯计算、零写库。

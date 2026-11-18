@@ -1,12 +1,12 @@
 /**
  * Display-only formatters for the split screens. The backend is the single source of truth for times,
  * windows and feasibility; these helpers only render the values it returns (no client-side judgment).
- * Stop instants are ISO-8601 UTC; the fixture trip is in Singapore, so clocks render in its local zone.
+ * Stop instants are ISO-8601 UTC; clocks render in the trip's destination zone.
  */
-const TRIP_ZONE = "Asia/Singapore"
+import { tripZone } from './trip-zone'
 
 /** Render an ISO instant as HH:MM in the trip's local zone, or an em dash when absent/invalid. */
-export function formatClock(iso: string | null | undefined): string {
+export function formatClock(iso: string | null | undefined, destination?: string | null): string {
   if (!iso) return "—"
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return "—"
@@ -14,7 +14,7 @@ export function formatClock(iso: string | null | undefined): string {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-    timeZone: TRIP_ZONE,
+    timeZone: tripZone(destination),
   }).format(date)
 }
 

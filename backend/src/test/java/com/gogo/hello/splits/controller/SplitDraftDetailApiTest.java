@@ -34,7 +34,8 @@ class SplitDraftDetailApiTest extends AbstractSplitApiTest {
     void getDetail_memberChloeAfterBoundariesAndRoutes_returns200ConsistentSnapshotWithoutVersionBump() throws Exception {
         startDraft();
         saveBoundaries(1);
-        postGenerate(memberId("Ben"), 2).andExpect(status().isOk());
+        assignAs("Chloe", "B", 2);
+        postGenerate(memberId("Ben"), 3).andExpect(status().isOk());
         String ben = memberId("Ben");
         String cityHall = stopId("City Hall MRT");
         String merlion = stopId("Merlion Park");
@@ -43,38 +44,51 @@ class SplitDraftDetailApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.error").doesNotExist())
                 .andExpect(jsonPath("$.data.initiatorMemberId").value(ben))
                 .andExpect(jsonPath("$.data.mainPlanVersion").value(1))
-                .andExpect(jsonPath("$.data.draftVersion").value(3))
+                .andExpect(jsonPath("$.data.draftVersion").value(4))
                 .andExpect(jsonPath("$.data.status").value("active"))
-                .andExpect(jsonPath("$.data.groups.A.length()").value(2))
-                .andExpect(jsonPath("$.data.groups.B.length()").value(2))
+                .andExpect(jsonPath("$.data.groups.A.length()").value(3))
+                .andExpect(jsonPath("$.data.groups.B.length()").value(1))
                 .andExpect(jsonPath("$.data.createdAt").isNotEmpty())
                 .andExpect(jsonPath("$.data.updatedAt").isNotEmpty())
-                .andExpect(jsonPath("$.data.mainPlanStops.length()").value(2))
+                .andExpect(jsonPath("$.data.mainPlanStops.length()").value(4))
                 .andExpect(jsonPath("$.data.mainPlanStops[0].id").value(cityHall))
                 .andExpect(jsonPath("$.data.mainPlanStops[0].name").value("City Hall MRT"))
                 .andExpect(jsonPath("$.data.mainPlanStops[0].startAt").value("2026-12-05T01:00:00Z"))
                 .andExpect(jsonPath("$.data.mainPlanStops[0].endAt").value("2026-12-05T01:30:00Z"))
-                .andExpect(jsonPath("$.data.mainPlanStops[1].name").value("Merlion Park"))
+                .andExpect(jsonPath("$.data.mainPlanStops[1].name").value("National Gallery Singapore"))
+                .andExpect(jsonPath("$.data.mainPlanStops[1].startAt").value("2026-12-05T02:00:00Z"))
+                .andExpect(jsonPath("$.data.mainPlanStops[1].endAt").value("2026-12-05T02:30:00Z"))
+                .andExpect(jsonPath("$.data.mainPlanStops[2].name").value("Gardens by the Bay"))
+                .andExpect(jsonPath("$.data.mainPlanStops[2].startAt").value("2026-12-05T03:00:00Z"))
+                .andExpect(jsonPath("$.data.mainPlanStops[2].endAt").value("2026-12-05T03:15:00Z"))
+                .andExpect(jsonPath("$.data.mainPlanStops[3].name").value("Merlion Park"))
+                .andExpect(jsonPath("$.data.mainPlanStops[3].startAt").value("2026-12-05T03:30:00Z"))
+                .andExpect(jsonPath("$.data.mainPlanStops[3].endAt").value("2026-12-05T04:00:00Z"))
                 .andExpect(jsonPath("$.data.departureStopId").value(cityHall))
                 .andExpect(jsonPath("$.data.reunionStopId").value(merlion))
-                .andExpect(jsonPath("$.data.departureAt").value("2026-12-05T01:30:00Z"))
+                .andExpect(jsonPath("$.data.departureAt").value("2026-12-05T01:00:00Z"))
                 .andExpect(jsonPath("$.data.reunionAt").value("2026-12-05T03:30:00Z"))
-                .andExpect(jsonPath("$.data.windowMinutes").value(120))
+                .andExpect(jsonPath("$.data.windowMinutes").value(150))
                 .andExpect(jsonPath("$.data.routes.length()").value(2))
                 .andExpect(jsonPath("$.data.routes[0].groupLabel").value("A"))
-                .andExpect(jsonPath("$.data.routes[0].activityName").value("National Gallery Singapore"))
+                .andExpect(jsonPath("$.data.routes[0].activityName").value("City Hall MRT → Gardens by the Bay"))
+                .andExpect(jsonPath("$.data.routes[0].locationName").value("City Hall MRT"))
+                .andExpect(jsonPath("$.data.routes[0].steps[0].name").value("City Hall MRT"))
+                .andExpect(jsonPath("$.data.routes[0].steps[0].minutes").value(30))
+                .andExpect(jsonPath("$.data.routes[0].steps[2].minutes").value(15))
                 .andExpect(jsonPath("$.data.routes[0].departureStopId").value(cityHall))
                 .andExpect(jsonPath("$.data.routes[0].reunionStopId").value(merlion))
-                .andExpect(jsonPath("$.data.routes[0].activityMinutes").value(60))
-                .andExpect(jsonPath("$.data.routes[0].travelLegsMinutes[0]").value(15))
-                .andExpect(jsonPath("$.data.routes[0].travelLegsMinutes[1]").value(20))
-                .andExpect(jsonPath("$.data.routes[0].bufferMinutes").value(10))
+                .andExpect(jsonPath("$.data.routes[0].activityMinutes").value(75))
+                .andExpect(jsonPath("$.data.routes[0].travelLegsMinutes[0]").value(30))
+                .andExpect(jsonPath("$.data.routes[0].travelLegsMinutes[1]").value(30))
+                .andExpect(jsonPath("$.data.routes[0].bufferMinutes").value(0))
                 .andExpect(jsonPath("$.data.routes[1].groupLabel").value("B"))
                 .andExpect(jsonPath("$.data.routes[1].activityName").value("Gardens by the Bay"))
+                .andExpect(jsonPath("$.data.routes[1].locationName").value("Singapore"))
                 .andExpect(jsonPath("$.data.routes[1].travelLegsMinutes[0]").value(20))
                 .andExpect(jsonPath("$.data.routes[1].travelLegsMinutes[1]").value(20));
         JsonNode draft = objectMapper.readTree(draftJson());
-        assertThat(draft.get("draftVersion").asInt()).isEqualTo(3);
+        assertThat(draft.get("draftVersion").asInt()).isEqualTo(4);
         assertThat(activeDraftCount()).isEqualTo(1);
     }
 
@@ -86,7 +100,7 @@ class SplitDraftDetailApiTest extends AbstractSplitApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.error").doesNotExist())
                 .andExpect(jsonPath("$.data.draftVersion").value(1))
-                .andExpect(jsonPath("$.data.mainPlanStops.length()").value(2))
+                .andExpect(jsonPath("$.data.mainPlanStops.length()").value(4))
                 .andExpect(jsonPath("$.data.departureStopId").doesNotExist())
                 .andExpect(jsonPath("$.data.reunionStopId").doesNotExist())
                 .andExpect(jsonPath("$.data.departureAt").doesNotExist())
@@ -96,8 +110,8 @@ class SplitDraftDetailApiTest extends AbstractSplitApiTest {
     }
 
     @Test
-    @DisplayName("getDetail_afterBoundariesBeforeGeneration_returns200Window120AndEmptyRoutes")
-    void getDetail_afterBoundariesBeforeGeneration_returns200Window120AndEmptyRoutes() throws Exception {
+    @DisplayName("getDetail_afterBoundariesBeforeGeneration_returns200Window150AndEmptyRoutes")
+    void getDetail_afterBoundariesBeforeGeneration_returns200Window150AndEmptyRoutes() throws Exception {
         startDraft();
         saveBoundaries(1);
         getDetail(memberId("Chloe"))
@@ -106,7 +120,7 @@ class SplitDraftDetailApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.data.draftVersion").value(2))
                 .andExpect(jsonPath("$.data.departureStopId").value(stopId("City Hall MRT")))
                 .andExpect(jsonPath("$.data.reunionStopId").value(stopId("Merlion Park")))
-                .andExpect(jsonPath("$.data.windowMinutes").value(120))
+                .andExpect(jsonPath("$.data.windowMinutes").value(150))
                 .andExpect(jsonPath("$.data.routes.length()").value(0));
     }
 
@@ -178,7 +192,7 @@ class SplitDraftDetailApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.data.status").value("confirmed"))
                 .andExpect(jsonPath("$.data.draftVersion").value(version))
                 .andExpect(jsonPath("$.data.routes.length()").value(2))
-                .andExpect(jsonPath("$.data.routes[0].activityName").value("National Gallery Singapore"));
+                .andExpect(jsonPath("$.data.routes[0].activityName").value("City Hall MRT → Gardens by the Bay"));
     }
 
     @Test
