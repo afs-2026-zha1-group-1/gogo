@@ -60,13 +60,13 @@ apply 执行组 6–7、9–10（缺口测试先红后绿 + 验收证据 + 门�
 
 - [x] 9.1 /sdd:local-verify-report（V1–V8；Overall Partial 无 CRITICAL；20261118-155859）
 - [x] 9.2 建分支/PR（禁直推 main）→ CI 双绿（G2 输入）：PR #157，Backend tests / Frontend build / Browser acceptance 全绿
-- [ ] 9.3 /sdd:g2-decision-record（VL 签）→ 合并 → /sdd:living-merge → /sdd:g3-decision-record（SA 签）
+- [x] 9.3 /sdd:g2-decision-record（VL Elian Pass）→ 合并 PR #157 → /sdd:living-merge → /sdd:g3-decision-record（SA Lumi Pass）→ 合并 PR #159
 
 ## 组 10 归档对账 — open
 
-- [ ] 10.1 registry/handoff 状态同步（P3/P4/G2/G3）
-- [ ] 10.2 tech-stack-plan + _LOG 对账（地图能力节）
-- [ ] 10.3 change-summary + 归档（openspec archive）
+- [x] 10.1 registry/handoff 状态同步（P3/P4/G2/G3）
+- [x] 10.2 tech-stack-plan §30 + _LOG A30 对账（地图能力节）
+- [x] 10.3 change-summary + 归档（openspec archive → 2026-11-18-us-079-map-navigation）
 
 ## 对齐自检（Spec ↔ Design ↔ Tasks ↔ ATDD）
 
