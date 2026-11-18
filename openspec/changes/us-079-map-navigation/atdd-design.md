@@ -36,7 +36,7 @@ DOM 断言（不开外部 tab，断言 href/target/文案/图标）：
 |---|---|---|
 | E1 | M1 无主线无入口 | legacy 页无 `.map-btn` |
 | E2 | M2 逐站入口 + 坐标直链 | 每站 `.map-btn` href 含 `to[lnglat]`/`from[lnglat]`（第 2 站起） |
-| E3 | M3 首站只带终点 | 首站 href 无 `from[` 参数 |
+| E3 | M3 首站固定起点（R1） | 首站 href 含 from=珠海南方软件园坐标 |
 | E4 | M4 个人路线逐站入口 | confirmed split 态各站 `.map-btn` 存在 |
 | E5 | M5 不串站 | 相邻站 href 的 to 坐标互异 |
 | E6 | M6 无坐标退搜索页 | href = `www.amap.com/search?query=站名+城市` |

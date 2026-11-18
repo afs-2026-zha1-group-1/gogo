@@ -31,6 +31,7 @@ apply 阶段执行组 6–7、9–10（缺口测试先红后绿 + 验收证据 +
 - [x] 4.4 lib/stop-icon.ts + Icons 七图标 + lib/place-book.ts 兜底
 - [x] 4.5 删 StopMapModal 与 iframe 样式（grep 零残留）
 - [x] 4.6 前端单测 amap/coord/place-book/stop-icon + 夹具同步（64/64）
+- [x] 4.7 R1 首站固定出发点=珠海南方软件园（place-book FIRST_STOP_ORIGIN + V11 种子 + StopMapButton 默认 origin + 单测）
 
 ## 组 5 查坐标回写客户端与 Key 治理（DD11/DD12）— done
 

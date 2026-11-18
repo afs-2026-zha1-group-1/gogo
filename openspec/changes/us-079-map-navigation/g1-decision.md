@@ -28,6 +28,16 @@
   按仓库先例代记，非代理自批）。
 - Timestamp: 2026-11-18（+08:00）
 
+## Revision R1（2026-11-18，G1 后用户裁决）
+
+- 内容：首站出发点统一固定为**珠海南方软件园**（原 M3/倒计时口径为"留空手填"）；
+  place-book `FIRST_STOP_ORIGIN` + V11 种子 + StopMapButton 默认 origin 同步；
+  delta trips M3/倒计时正文、P1 AC3、design DD8、atdd E3 同步修订。
+- 坐标来源：高德 POI（唐家湾镇软件园路1号）GCJ 22.372424,113.577651 反算 WGS-84
+  22.375463,113.572607（往返误差 <1m）。
+- 影响面：仅首站起点可观察口径；错误码/端点/存储形状不变。
+- 复审：待 IO Emily / SA Lumi 复签（记 **C-R1**，不阻塞 apply，随 G2 一并闭环）。
+
 ## Next
 
 P3：`/sdd:atdd-design` + `/sdd:task-plan`（design.md / tasks.md 本轮起才生成）。

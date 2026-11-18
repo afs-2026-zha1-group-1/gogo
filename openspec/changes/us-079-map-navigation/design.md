@@ -50,8 +50,10 @@ dir 直链 `from[name]/from[lnglat]/to[name]/to[lnglat]`（lng,lat 序）。
 
 ## DD8 起点口径
 
-时间轴：index>0 取 schedule[index-1]；首站 from=null → 只带终点。
-倒计时：during 取 state.item；between 取 timed[index-1]；next 为首个 timed 站时 from=null。
+时间轴：index>0 取 schedule[index-1]；**首站（from=null）统一固定出发点=珠海南方软件园
+（R1，用户 2026-11-18 裁决；place-book FIRST_STOP_ORIGIN + V11 种子；WGS 22.375463,113.572607
+由高德 POI GCJ 反算）**；地址簿缺该行才退空起点。
+倒计时：during 取 state.item；between 取 timed[index-1]；next 为首个 timed 站时同 R1 默认起点。
 
 ## DD9 地址展示/复制
 

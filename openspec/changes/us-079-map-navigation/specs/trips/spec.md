@@ -19,7 +19,8 @@ copy control; copy failure SHALL surface inline without blocking the card, and
 a missing address SHALL render as pending confirmation. The next-stop
 navigation entry SHALL use the current activity stop (during) or the stop
 preceding the next stop (between) as origin; when the next stop is the first
-timed stop the origin SHALL be left for manual entry.
+timed stop the origin SHALL default to the fixed departure point
+珠海南方软件园 (R1, user ruling 2026-11-18).
 
 #### Scenario: Pre-trip countdown to departure
 
@@ -91,8 +92,8 @@ timed stop the origin SHALL be left for manual entry.
 - **WHEN** the member activates the next-stop navigation entry during an activity
 - **THEN** the opened route page uses the current activity stop as origin and
   the next stop as destination
-- **AND** when the next stop is the first timed stop the route page carries only
-  the destination and the origin is left for manual entry
+- **AND** when the next stop is the first timed stop the origin defaults to
+  珠海南方软件园 (R1)
 
 ## ADDED Requirements
 
@@ -104,8 +105,9 @@ link opening a new browser tab; the application SHALL NOT embed third-party
 map pages in an iframe. With persisted or address-book coordinates the link
 SHALL open the Amap desktop route page carrying `from`/`to` lnglat (WGS-84
 corrected to GCJ-02 for mainland China; Hong Kong, Macau and overseas
-uncorrected), origin = the previous stop and destination = the stop; the first
-stop SHALL carry destination only. Without coordinates the link SHALL open the
+uncorrected), origin = the previous stop and destination = the stop; when no
+previous stop exists (first stop) the origin SHALL default to the fixed
+departure point 珠海南方软件园 (seeded in place-book/place_cache, R1). Without coordinates the link SHALL open the
 Amap desktop search page with query = stop name + city (destination
 auto-resolved, origin manual). Stop icons SHALL be semantic by stop name
 keywords and interest tags with a pin/route fallback. Navigation or copy
@@ -124,11 +126,12 @@ SHALL remain on the trip detail so returning lands on the parent trip.
 - **AND** activating it opens a new tab on the Amap route page with destination =
   that stop's coordinates and origin = the previous stop's coordinates
 
-#### Scenario: M3 — first stop carries destination only
+#### Scenario: M3 — first stop uses the fixed default origin (R1)
 
 - **WHEN** the member activates the map entry of the first stop
-- **THEN** the opened route page carries only the destination
-- **AND** the origin field is left empty for manual entry
+- **THEN** the opened route page carries destination = the stop and origin =
+  珠海南方软件园 (fixed default departure point)
+- **AND** the origin remains manually overridable inside the Amap page
 
 #### Scenario: M4 — confirmed personal route stops carry the entry
 
