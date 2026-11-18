@@ -88,9 +88,9 @@
 
 ## 11. 归档前（P5 前置）
 
-- [ ] 11.1 对账 `docs/knowledge/architecture/tech-stack-plan.md`（新增端点、`locationName`、A steps 编辑）
-- [ ] 11.2 追加 `docs/knowledge/_LOG.md` 行
-- [ ] 11.3 更新 `requirement-workspace/registry.md`（P4/G2/G3 状态按实际）
+- [x] 11.1 对账 `docs/knowledge/architecture/tech-stack-plan.md`（新增端点、`locationName`、A steps 编辑）
+- [x] 11.2 追加 `docs/knowledge/_LOG.md` 行
+- [x] 11.3 更新 `requirement-workspace/registry.md`（P4/G2/G3 状态按实际）
 
 ## 12. 对齐自检（Spec ↔ Design ↔ Tasks ↔ ATDD）
 
