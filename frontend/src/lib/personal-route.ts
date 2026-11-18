@@ -1,13 +1,13 @@
 /**
- * US-084/US-089: pure derivation of the member's personal timeline (design DD-2/DD-3, R6).
+ * US-084/US-089 + ai-split-route-generation: pure derivation of the member's personal timeline (design DD-2/DD-3, R6).
  * Confirmed split snapshot is authoritative: shared segments come from mainPlanStops (ISO timestamps).
- * The group that keeps the confirmed plan (route steps present) fills the departure→reunion segment with
- * those main-plan stops; the other group gets its generated activity centered inside the window only when
- * its duration is known and fits. Missing inputs stay null (待确认, never fabricated).
+ * Group A keeps the confirmed plan; group B expands its own ordered station list and travel legs.
+ * Older routes without steps keep their single activity. Missing times stay null (待确认, never fabricated).
  */
 import type { ScheduleItem } from './countdown'
 import type { SplitDraftDetail, PlanStop as SplitPlanStop } from '../features/split/types'
 import type { MainPlan } from '../types/mainPlan'
+import { cleanStationName } from '../features/split/station-name.ts'
 
 /** Combine main-plan `HH:mm` stops with the trip start date in the device-local timezone. */
 export function scheduleFromMainPlan(plan: MainPlan | null, startDate: string): ScheduleItem[] {
@@ -78,11 +78,13 @@ export function derivePersonalRoute(
   const stops = detail.mainPlanStops
   const departureIndex = stops.findIndex((stop) => stop.id === detail.departureStopId)
   const reunionIndex = stops.findIndex((stop) => stop.id === detail.reunionStopId)
-  // departureAt/reunionAt are the two stops' start times (backend BoundaryResponse). The group that keeps
-  // the confirmed plan walks its scheduled stops inside the window; the other group is away from them.
+  // departureAt/reunionAt are the two stops' start times (backend BoundaryResponse). Group A keeps the confirmed
+  // plan and walks its scheduled stops inside the window; group B is away from them. Whether a group already had
+  // steps (old documents) is not the deciding signal — group B may now also carry its own generated station list
+  // (ai-split-route-generation), so the main-line judgment keys off the group label first.
   const steps = myRoute.steps ?? []
   const keepsMainLine =
-    steps.length > 0 && departureIndex >= 0 && reunionIndex > departureIndex
+    myGroupLabel === 'A' && steps.length > 0 && departureIndex >= 0 && reunionIndex > departureIndex
   const mainLineItems = keepsMainLine
     ? stops.slice(departureIndex, reunionIndex).map((stop) => ({
         ...sharedItem(stop, plan),
@@ -96,6 +98,50 @@ export function derivePersonalRoute(
 
   const departureMs = toMs(detail.departureAt)
   const reunionMs = toMs(detail.reunionAt)
+  const legs = myRoute.travelLegsMinutes ?? []
+
+  if (myGroupLabel === 'B' && steps.length > 0 && departureIndex >= 0 && reunionIndex > departureIndex) {
+    const validMinutes = (value: number | null | undefined): value is number =>
+      value != null && Number.isSafeInteger(value) && value >= 0
+    const validTiming = departureMs != null && reunionMs != null && reunionMs > departureMs
+      && legs.length === steps.length + 1 && legs.every(validMinutes)
+      && steps.every((step) => validMinutes(step.minutes)) && validMinutes(myRoute.bufferMinutes)
+      && steps.reduce((sum, step) => sum + step.minutes, 0) + legs.reduce((sum, leg) => sum + leg, 0)
+        + (myRoute.bufferMinutes ?? 0) <= (reunionMs - departureMs) / 60_000
+    let cursor = validTiming && departureMs != null ? departureMs + legs[0] * 60_000 : null
+    const groupItems: ScheduleItem[] = steps.map((step, index) => {
+      const start: number | null = cursor
+      const end: number | null = start == null ? null : start + step.minutes * 60_000
+      const nextLeg = legs[index + 1]
+      cursor = end == null || !validMinutes(nextLeg) ? null : end + nextLeg * 60_000
+      const name = cleanStationName(step.name)
+      return {
+        key: `group-${myGroupLabel}-step-${index}`,
+        name,
+        start,
+        end,
+        groupLabel: myGroupLabel,
+        interests: plan?.stops.find((candidate) => candidate.name === name)?.interests ?? [],
+        address: null,
+        lat: null,
+        lon: null,
+        travelMinutesToNext: validMinutes(nextLeg) ? nextLeg : null,
+      }
+    })
+    return [
+      ...stops.slice(0, departureIndex).map((stop) => sharedItem(stop, plan)),
+      {
+        ...sharedItem(stops[departureIndex], plan),
+        kind: 'split-departure',
+        start: departureMs,
+        end: departureMs,
+        travelMinutesToNext: validMinutes(legs[0]) ? legs[0] : null,
+      },
+      ...groupItems,
+      ...after.map((stop) => sharedItem(stop, plan)),
+    ]
+  }
+
   let activityStart: number | null = null
   let activityEnd: number | null = null
   if (departureMs != null && reunionMs != null && myRoute.activityMinutes != null) {
@@ -107,7 +153,6 @@ export function derivePersonalRoute(
       activityEnd = center + activityMs / 2
     }
   }
-  const legs = myRoute.travelLegsMinutes ?? []
   // T7.3 验收缺陷修复：组活动与共同段一样按名从 main plan 补全 interests（无匹配保持空）。
   const groupInterests =
     plan?.stops.find((candidate) => candidate.name === myRoute.activityName)?.interests ?? []
