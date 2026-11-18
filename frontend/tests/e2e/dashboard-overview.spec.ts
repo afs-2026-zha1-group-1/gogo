@@ -410,7 +410,9 @@ for (const email of ['alice@example.com', 'ben@example.com']) {
     ]) {
       await navigation.getByRole('link', { name: tab, exact: true }).click()
       await expect(navigation.getByRole('link', { name: tab, exact: true })).toHaveAttribute('aria-current', 'page')
-      if (tab === '成员') await expect(page.getByText('谁已加入 · 偏好与预算一览')).toBeVisible()
+      // The members page carries the 成员 app-bar title (same locator style as the preference-screen checks above).
+      // The subtitle copy changes with the member-profile work, so it is not a stable navigation marker.
+      if (tab === '成员') await expect(page.locator('.appbar .title').getByText('成员', { exact: true })).toBeVisible()
       else if (tab === '行程') await expect(page.getByText(visibleText, { exact: true })).toBeVisible()
       else await expect(page.getByText(visibleText, { exact: false }).first()).toBeVisible()
       expect(await page.evaluate(() => (window as Window & { dashboardMarker?: string }).dashboardMarker)).toBe('retained')
