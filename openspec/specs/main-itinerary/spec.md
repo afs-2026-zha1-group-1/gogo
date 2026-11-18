@@ -30,6 +30,10 @@ closing joining so the group follows a single feasible plan.
 阅读页面其余内容。提示必须在请求成功或失败后关闭。提示不得引入新的错误面；失败仍
 由现有行内操作错误展示。
 
+US-079：生成落库时必须按站名+城市查 `place_cache` 补全每站地址与 WGS-84 坐标；
+缓存未命中时坐标留 null（地址保留提供者供给值），由程序查坐标回写端点后续补全；
+201 投影逐站携带 address/lat/lng 三字段。
+
 > 规范性说明：本需求中的“必须/不得”即 RFC 2119 的 **SHALL / MUST NOT**。
 
 #### Scenario: G1 — all members ready, draft generated (US-031 AC1)
@@ -100,6 +104,20 @@ closing joining so the group follows a single feasible plan.
 - **THEN** 该输出被拒绝，改为持久化最小两站降级行程
 - **AND** 响应状态为 201
 
+#### Scenario: G7 — generation persists stop address and coordinates from the place cache
+
+- **GIVEN** the place cache holds the fixture stops' addresses and WGS-84 coordinates
+- **WHEN** the organizer generates the main plan
+- **THEN** each persisted stop row carries `address`, `lat`, `lng` from the cache
+- **AND** the 201 body's `stops` carry the same three fields per stop
+
+#### Scenario: G8 — cache miss leaves coordinates null without blocking generation
+
+- **GIVEN** a supplied stop name is absent from the place cache
+- **WHEN** the organizer generates the main plan
+- **THEN** generation succeeds and that stop's `lat`, `lng` are null
+- **AND** the provider-supplied `address` is preserved and no coordinate is fabricated
+
 ### Requirement: Location completion at generation
 
 When the trip's start or end location is empty at generation time, the system
@@ -128,7 +146,9 @@ The system SHALL let trip members read the current draft at
 ordered `stops` with times and travel legs). After confirmation the same read
 SHALL return the confirmed version. `stale` SHALL be computed on read, not
 stored, and applies to unconfirmed drafts only; the confirmed version SHALL be
-frozen (P2 lint ruling 2026-11-15).
+frozen (P2 lint ruling 2026-11-15). The projection's `stops` SHALL additionally
+carry `address`, `lat`, `lng` when persisted; null values SHALL be omitted from
+the wire (additive, old clients unaffected).
 
 #### Scenario: Member reads the current draft
 
@@ -161,6 +181,13 @@ frozen (P2 lint ruling 2026-11-15).
 - **GIVEN** the main plan was confirmed at version 1
 - **WHEN** Ben's preference revision advances to 2 and a member reads the main plan
 - **THEN** the response status is 200 with `version` 1, `confirmed` true and `stale` false (the confirmed version is frozen: `stale` is always false for it regardless of later revision changes; staleness applies to unconfirmed drafts only)
+
+#### Scenario: Read carries persisted stop location fields
+
+- **GIVEN** a draft whose stops carry persisted `address`, `lat`, `lng`
+- **WHEN** a trip member reads the main plan
+- **THEN** the 200 body's `stops` carry the three fields for those stops
+- **AND** stops without persisted location omit the fields (null)
 
 ### Requirement: Generation inputs read projection
 
@@ -288,3 +315,57 @@ free.
 - **GIVEN** the caller is a seeded user
 - **WHEN** a main-plan request targets a trip that does not exist
 - **THEN** the request is rejected with 404 and code `TRIP_NOT_FOUND`
+
+### Requirement: Stop location write-back and place cache sedimentation
+
+The system SHALL let the trip organizer write programmatically geocoded
+coordinates via `POST /api/trips/{id}/main-plan/stop-locations` with body
+`{stops:[{seq,lat,lng}]}` (WGS-84), responding 200 with the same projection as
+the draft read. The write SHALL update only the current draft's matching stop
+rows and SHALL upsert the place cache (`place_cache`, name+city) with
+`source=geocode` so later trips reuse the resolved location. Coordinates are
+program-produced (browser geocode write-back); the AI generation contract
+SHALL NOT supply coordinates. Rejections SHALL use the established codes:
+no current draft 404 `NO_DRAFT` (including confirmed-only trips), non-organizer
+403 `NOT_ORGANIZER`, unknown stop seq 422 `UNKNOWN_STOP`, out-of-range
+coordinates 422 `INVALID_COORDS`.
+
+#### Scenario: W1 — write-back persists coordinates and sediments the cache
+
+- **GIVEN** a current draft exists and the caller is the organizer
+- **WHEN** the organizer posts `{stops:[{seq:1,lat:1.3,lng:103.86}]}`
+- **THEN** the response status is 200 and stop 1 of the current draft carries lat 1.3 / lng 103.86
+- **AND** the place cache row for that stop's name+city is upserted with `source=geocode`
+
+#### Scenario: W2 — unknown stop seq rejected
+
+- **GIVEN** a current draft exists
+- **WHEN** the organizer posts a seq not present in the draft
+- **THEN** the request is rejected with 422 and code `UNKNOWN_STOP`
+- **AND** no stop row or cache row changes
+
+#### Scenario: W3 — out-of-range coordinates rejected
+
+- **GIVEN** a current draft exists
+- **WHEN** the organizer posts lat 91 (or lng beyond ±180)
+- **THEN** the request is rejected with 422 and code `INVALID_COORDS`
+- **AND** no stop row or cache row changes
+
+#### Scenario: W4 — non-organizer member cannot write locations
+
+- **GIVEN** Ben is a member but not the organizer
+- **WHEN** Ben posts stop locations
+- **THEN** the request is rejected with 403 and code `NOT_ORGANIZER`
+
+#### Scenario: W5 — no current draft rejected
+
+- **GIVEN** the trip has no current draft (never generated, or only a confirmed version)
+- **WHEN** the organizer posts stop locations
+- **THEN** the request is rejected with 404 and code `NO_DRAFT`
+- **AND** the confirmed version is untouched
+
+#### Scenario: W6 — sedimented cache reused by a later trip
+
+- **GIVEN** a stop location was sedimented into the place cache by write-back
+- **WHEN** another trip with the same stop name+city generates its main plan
+- **THEN** generation completes that stop's address/coordinates from the cache without a new geocode
