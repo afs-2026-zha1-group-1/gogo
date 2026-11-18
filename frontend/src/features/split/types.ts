@@ -246,13 +246,7 @@ export interface BudgetCheck {
 /** PUT .../split-draft/activities body (backend SaveActivitiesRequest, US-045). */
 export interface SaveActivitiesRequest {
   groupLabel: "A" | "B"
-  activities: { name: string; location?: string | null; costCents: number }[]
-  draftVersion: number
-}
-
-/** POST .../split-draft/activities:recommend body (backend RecommendActivitiesRequest, US-045). */
-export interface RecommendActivitiesRequest {
-  groupLabel: "A" | "B"
+  activities: { name: string; location?: string | null; costCents: number; source?: ActivitySource }[]
   draftVersion: number
 }
 

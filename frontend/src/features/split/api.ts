@@ -6,8 +6,6 @@ import type {
   CheckTimingRequest,
   Envelope,
   GenerateRoutesRequest,
-  RecommendActivitiesRequest,
-  RouteActivity,
   RouteGenerationResult,
   SaveActivitiesRequest,
   SaveBoundariesRequest,
@@ -139,17 +137,6 @@ export function fetchBudgetCheck(tripId: string): Promise<BudgetCheck> {
 export function saveActivities(tripId: string, body: SaveActivitiesRequest): Promise<SplitDraftDetail> {
   return request<SplitDraftDetail>(`/${tripId}/split-draft/activities`, {
     method: "PUT",
-    body: JSON.stringify(body),
-  })
-}
-
-/** POST ask the mock AI for a budget-fitting squad activity (US-045); nothing is persisted here. */
-export function recommendActivities(
-  tripId: string,
-  body: RecommendActivitiesRequest,
-): Promise<RouteActivity[]> {
-  return request<RouteActivity[]>(`/${tripId}/split-draft/activities:recommend`, {
-    method: "POST",
     body: JSON.stringify(body),
   })
 }
