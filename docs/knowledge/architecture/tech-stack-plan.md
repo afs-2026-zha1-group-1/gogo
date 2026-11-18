@@ -675,7 +675,7 @@ requirements (`trips` +2, `main-itinerary` 3 MODIFIED + 2 ADDED,
 - **Frontend:** `#/trips/{id}/edit` EditTrip page with in-app save dialog;
   trip detail edit entry for all members; organizer-only confirm; MainPlan
   stop edit and stale prompt; split confirmed-cancel dialog; My Account name
-  edit is a pencil button that expands in place.
+  edit turns the name into an inline input with save/cancel icons.
 - **Drift recorded (not fixed here):** Living `trips` still says the trip
   response 「不暴露确认操作」 and the trip list is read-only; this change does
   not add those operations to the list response and leaves the wording for the
