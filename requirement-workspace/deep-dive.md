@@ -1502,3 +1502,46 @@ A 组 `activityMinutes`/`travelLegsMinutes` 由 `steps` 派生，客户端提交
 单次同步调用，读取超时 20s（低于前端 30s 口径），不重试；生成期间 SQLite 事务保持既有
 单连接语义；并发重复提交由既有按钮禁用 + 后端版本化草稿兜底（后到者成为新版本）。
 密钥仅环境变量注入，日志只记录失败类别；提示词只包含当前行程成员可见的偏好快照。
+---
+
+## §US-079 地图导航（P1，2026-11-18）
+
+### 数据契约
+
+| 对象 | 形状 | grain / lifecycle |
+|---|---|---|
+| main_plan_stop | +address TEXT / lat REAL / lng REAL（均可空） | 随草稿版本生灭；生成时查 place_cache 补全；回写只改 current 草稿 |
+| place_cache | name+city 联合 PK；address/lat/lng；source ∈ seed/geocode/manual | 跨行程长存；upsert 沉淀；种子 19 站与前端 place-book 逐字对齐 |
+| stop-locations 请求 | `{stops:[{seq,lat,lng}]}`（WGS-84） | 一次生成后一批；组织者门；越界 422 INVALID_COORDS、未知 seq 422 UNKNOWN_STOP |
+| stop-locations 响应 | 200 + PlanResponse（与读同投影） | 回写后立即读回一致 |
+| PlanResponse.Stop | +address/lat/lng（null 省略，后端非空序列化） | additive，老客户端不受影响 |
+| plan_node | 确认投影抄 lat/lng 进预留列 | 随确认重写；splits 只读消费 |
+
+### 边界
+
+- 地理编码**仅**生成后回写路径（浏览器 JS API，8s 超时、多结果取第一个）；展示/搜索词拼装不查坐标。
+- GCJ-02 纠偏**仅**拼高德网址时（国内加偏；港澳/海外不偏；矩形 bbox + 港澳排除框，W2 残余接受）。
+- 兜底链顺序：站点落库坐标 → 前端地址簿 → 高德电脑版搜索页直链；不经 uri.amap.com（UA 跳手机版纯壳）。
+- Key：JS Key + 安全密钥仅 frontend/.env（gitignore）；REST 地理编码需 Web-service Key，本轮不启用。
+
+### 跨 REQ 一致性
+
+- US-031-037：确认后冻结不变（stop-locations 只作用于 current 草稿，confirmed 后无 current → 404）。
+- US-083-085：概览读组合不变，仅 additive 消费三字段；R9 分流不变（无主线无地图入口）。
+- US-089：投影坐标抄进 plan_node，splits 契约不变；个人路线态快照无坐标 → 地址簿兜底（W1 deferred）。
+- US-090（未立项）：站点编辑重查坐标联动留 Out（OQ-7 deferred）。
+- 集中夹具：acceptance-test-fixtures 无地图类历史裁决冲突；19 种子坐标为新增夹具事实。
+
+### 显示 / 交互
+
+| 元素 | 行为 | 数据源 |
+|---|---|---|
+| 站点卡右侧"高德"按钮 | 新标签页路线页（起=上一站、终=本站）；首站只带终点 | 落库坐标 → 地址簿 → 搜索页 |
+| 倒计时"下一站"地址行 | 真地址 + 复制按钮；失败就地提示；无地址"地址待确认" | stop.address → 地址簿 |
+| 倒计时"下一站""高德"按钮 | 起点=当前活动站/下一站前一站 | 同上 |
+| 站点图标 | 名称关键词 → 兴趣标签 → 公园花园 → pin/route | stop-icon.ts 纯函数 |
+
+### NFR business-policy layer
+
+无通知/队列；查坐标为生成后异步后台补全（hash 跳转不卸载文档），失败静默留空不阻塞生成；
+无批量上限/频率限制（S2 后续打磨）；place_cache 无保留期声明（长存）。

@@ -74,12 +74,22 @@ export interface PlanInputRevision {
 }
 
 export interface PlanStop {
+  // Persisted main_plan_stop row id (US-090 「我的方案」edit target).
+  id?: number
   seq: number
   name: string
   startTime: string
   endTime: string
+  // Edited display location; absent for plans generated before US-090.
+  locationName?: string | null
+  // 站点备注（「编辑站点」弹窗中编辑）；地图按名称导航，备注只作展示。
+  note?: string | null
   travelMinutesToNext: number | null
   interests: string[]
+  // US-079 路线1：落库地址/坐标；后端非空序列化会省略 null，故可选。
+  address?: string | null
+  lat?: number | null
+  lng?: number | null
 }
 
 export interface PendingMember {

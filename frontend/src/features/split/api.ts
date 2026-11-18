@@ -2,10 +2,14 @@ import { csrfHeaders } from "../../lib/csrf"
 import type {
   AssignmentRequest,
   BoundaryResult,
+  BudgetCheck,
   CheckTimingRequest,
   Envelope,
   GenerateRoutesRequest,
+  RecommendActivitiesRequest,
+  RouteActivity,
   RouteGenerationResult,
+  SaveActivitiesRequest,
   SaveBoundariesRequest,
   SaveRoutesRequest,
   SplitDraftDetail,
@@ -123,6 +127,30 @@ export function cancelSplitDraft(tripId: string, draftVersion: number): Promise<
   return request<SplitDraftDetail>(`/${tripId}/split-draft:cancel`, {
     method: "POST",
     body: JSON.stringify({ draftVersion }),
+  })
+}
+
+/** GET the member-readable budget check (US-045): squad + remaining shared cost, per-member verdicts. */
+export function fetchBudgetCheck(tripId: string): Promise<BudgetCheck> {
+  return request<BudgetCheck>(`/${tripId}/split-draft/budget-check`)
+}
+
+/** PUT replace one group's costed activities (US-045 manual entry / accepted AI suggestion). */
+export function saveActivities(tripId: string, body: SaveActivitiesRequest): Promise<SplitDraftDetail> {
+  return request<SplitDraftDetail>(`/${tripId}/split-draft/activities`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  })
+}
+
+/** POST ask the mock AI for a budget-fitting squad activity (US-045); nothing is persisted here. */
+export function recommendActivities(
+  tripId: string,
+  body: RecommendActivitiesRequest,
+): Promise<RouteActivity[]> {
+  return request<RouteActivity[]>(`/${tripId}/split-draft/activities:recommend`, {
+    method: "POST",
+    body: JSON.stringify(body),
   })
 }
 

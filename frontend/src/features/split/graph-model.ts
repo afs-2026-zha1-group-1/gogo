@@ -236,17 +236,22 @@ export function buildGraphRows(input: {
     mainCounter += 1
   }
   const fork = stops[forkIndex]
+  const branches = buildBranchRows(routes)
+  // The generated A route starts at the departure stop. Render that activity on the
+  // fork itself, while retaining its following travel leg and any edited A stops.
+  const firstA = branches.find((row) => row.route === "a" && row.id === "a-step-0")
+  const forkTitle = cleanStationName(fork.name)
+  const sameDeparture = firstA != null && forkTitle !== "" && firstA.title === forkTitle
   const forkRow = rows.length
   rows.push({
     kind: "fork",
     id: fork.id,
-    title: cleanStationName(fork.name),
-    meta: `${fork.startLabel} · 分头`,
+    title: forkTitle,
+    meta: sameDeparture ? `${fork.startLabel} · 分头 · A 组${firstA.meta}` : `${fork.startLabel} · 分头`,
     side: "right",
   })
 
-  const branches = buildBranchRows(routes)
-  rows.push(...branches)
+  rows.push(...(sameDeparture ? branches.filter((row) => row !== firstA) : branches))
 
   const join = stops[joinIndex]
   const joinRow = rows.length

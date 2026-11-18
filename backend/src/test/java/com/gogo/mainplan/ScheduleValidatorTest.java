@@ -16,10 +16,10 @@ class ScheduleValidatorTest {
 
     private List<MainPlanRepository.StopRow> fixtureStops() {
         List<MainPlanRepository.StopRow> stops = new ArrayList<>();
-        stops.add(new MainPlanRepository.StopRow(1, "City Hall MRT", "09:00", "09:30", 30, null));
-        stops.add(new MainPlanRepository.StopRow(2, "National Gallery Singapore", "10:00", "10:30", 30, null));
-        stops.add(new MainPlanRepository.StopRow(3, "Gardens by the Bay", "11:00", "11:15", 15, null));
-        stops.add(new MainPlanRepository.StopRow(4, "Merlion Park", "11:30", "12:00", null, null));
+        stops.add(new MainPlanRepository.StopRow(1, "City Hall MRT", "09:00", "09:30", 30, null, null, null, null, 500));
+        stops.add(new MainPlanRepository.StopRow(2, "National Gallery Singapore", "10:00", "10:30", 30, null, null, null, null, 1500));
+        stops.add(new MainPlanRepository.StopRow(3, "Gardens by the Bay", "11:00", "11:15", 15, null, null, null, null, 2000));
+        stops.add(new MainPlanRepository.StopRow(4, "Merlion Park", "11:30", "12:00", null, null, null, null, null, 1000));
         return stops;
     }
 
@@ -36,7 +36,7 @@ class ScheduleValidatorTest {
     @Test
     void outOfOrderStartIsFlaggedOnTheLaterSeq() {
         List<MainPlanRepository.StopRow> stops = fixtureStops();
-        stops.set(1, new MainPlanRepository.StopRow(2, "National Gallery Singapore", "08:00", "10:30", 30, null));
+        stops.set(1, new MainPlanRepository.StopRow(2, "National Gallery Singapore", "08:00", "10:30", 30, null, null, null, null, 1500));
         assertTrue(hasError(validator.validate(stops), "OUT_OF_ORDER", 2));
     }
 

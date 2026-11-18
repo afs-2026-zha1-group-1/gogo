@@ -17,11 +17,17 @@ public record PlanResponse(
     }
 
     public record Stop(
+            long id,
             int seq,
             String name,
             String startTime,
             String endTime,
+            String locationName,
+            String note,
             Integer travelMinutesToNext,
-            List<String> interests) {
+            List<String> interests,
+            String address,
+            Double lat,
+            Double lng) {
     }
 }

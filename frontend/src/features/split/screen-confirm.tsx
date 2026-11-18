@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react"
 import { useLocation, useParams } from "react-router-dom"
 import { useSplitNavigate } from "./split-navigation"
-import { useCancelConfirmedSplit, useCancelDraft, useConfirmDraft, useSplitDraft, useTripMembers, useTripOrganizer } from "./hooks"
+import { useBudgetCheck, useCancelConfirmedSplit, useCancelDraft, useConfirmDraft, useSplitDraft, useTripMembers, useTripOrganizer } from "./hooks"
 import ConfirmDialog from "@/components/ui/confirm-dialog"
 import { useAuth } from "../auth/AuthProvider"
 import { SplitLayout } from "./split-layout"
 import { EmptyState, ErrorState, LoadingState } from "./states"
 import { cleanRouteName } from "./station-name"
-import type { GroupRoute, SplitDraftStatus } from "./types"
+import { SplitApiError } from "./api"
+import { BudgetCheckPanel } from "./budget-check-panel"
+import { BudgetOverrunDialog } from "./budget-overrun-dialog"
+import type { BudgetOverrunDetail, GroupRoute, SplitDraftStatus } from "./types"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -31,6 +34,7 @@ export function ScreenConfirm() {
   const draft = useSplitDraft(tripId)
   const confirm = useConfirmDraft(tripId)
   const cancel = useCancelDraft(tripId)
+  const budget = useBudgetCheck(tripId, draft.data?.draftVersion)
   const cancelConfirmed = useCancelConfirmedSplit(tripId)
   const trip = useTripOrganizer(tripId)
   const { accountId } = useAuth()
@@ -42,9 +46,20 @@ export function ScreenConfirm() {
     ids && ids.length > 0 ? ids.map(nameOf).join(" / ") : "暂无成员"
   const status: SplitDraftStatus | undefined = detail?.status
   const isInitiator = detail != null && accountId != null && detail.initiatorMemberId === accountId
+  const viewerIsOrganizer =
+    membersQuery.data?.some(
+      (member) => member.organizer && String(member.userId) === String(accountId),
+    ) === true
   const isOrganizer = trip.data?.organizerId != null && String(trip.data.organizerId) === accountId
   const busy = confirm.isPending || cancel.isPending || cancelConfirmed.isPending
   const [cancelPrompt, setCancelPrompt] = useState<"active" | "confirmed" | null>(null)
+  // US-045: a hard-budget rejection carries one row per overrun member; the dialog renders those amounts and
+  // asks about the budget first, then about the squad activities. Other rejections stay inline.
+  const overrunDetails: BudgetOverrunDetail[] =
+    confirm.error instanceof SplitApiError && confirm.error.code === "SPLIT_BUDGET_HARD_OVERRUN"
+      ? (confirm.error.details?.overruns ?? [])
+      : []
+  const budgetBlockedShown = overrunDetails.length > 0
 
   // US-084 AC1: a successful confirmation returns to the same trip's detail page,
   // where the confirmed personal route is derived. Cross-router-space navigation
@@ -174,6 +189,15 @@ export function ScreenConfirm() {
             </div>
           )}
 
+          {detail.routes.length > 0 ? (
+            <BudgetCheckPanel
+              check={budget.data}
+              loading={budget.isPending}
+              error={budget.error}
+              destination={detail.destination}
+            />
+          ) : null}
+
           {status === "confirmed" ? (
             <Card className="flex items-start gap-2.5 border-[#a7f3d0] bg-ok-soft p-3.5">
               <span className="grid size-7 shrink-0 place-items-center rounded-full bg-ok/15 text-ok [&_svg]:size-4">
@@ -202,7 +226,7 @@ export function ScreenConfirm() {
             </Card>
           ) : null}
 
-          {confirm.error ? <ErrorState error={confirm.error} /> : null}
+          {confirm.error && !budgetBlockedShown ? <ErrorState error={confirm.error} /> : null}
           {cancel.error ? <ErrorState error={cancel.error} /> : null}
           {cancelConfirmed.error ? <ErrorState error={cancelConfirmed.error} /> : null}
 
@@ -218,6 +242,22 @@ export function ScreenConfirm() {
         </div>
       )}
       </SplitLayout>
+      {budgetBlockedShown ? (
+        <BudgetOverrunDialog
+          overruns={overrunDetails}
+          destination={detail?.destination ?? null}
+          viewerId={accountId == null ? null : String(accountId)}
+          viewerIsOrganizer={viewerIsOrganizer}
+          onAdjustBudget={(memberId) => {
+            window.location.href = `/#/trips/${tripId}/members/${memberId}/preferences`
+          }}
+          onEditActivities={() => {
+            confirm.reset()
+            navigate(`/trips/${tripId}/split/routes`)
+          }}
+          onClose={() => confirm.reset()}
+        />
+      ) : null}
       <ConfirmDialog
         open={cancelPrompt != null}
         title={cancelPrompt === "confirmed" ? "取消已确认分队？" : "取消拆分草稿？"}

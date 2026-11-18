@@ -31,6 +31,12 @@ public enum ErrorCode {
     SPLIT_BOUNDARIES_REQUIRED(HttpStatus.CONFLICT),
     SPLIT_DRAFT_INCOMPLETE(HttpStatus.CONFLICT),
     SPLIT_TIMING_INFEASIBLE(HttpStatus.CONFLICT),
+    // US-045: the draft fits the clock but a member's hard budget would be exceeded; error.details
+    // carries overruns[] with the exceeded amount so the screen can offer budget/activity fixes.
+    SPLIT_BUDGET_HARD_OVERRUN(HttpStatus.CONFLICT),
+    // US-045: the submitted group activities are malformed (blank name, negative/oversized cost, too many rows).
+    INVALID_ACTIVITIES(HttpStatus.BAD_REQUEST),
+    // US-003: the split window already started, so the trip basics can no longer be re-planned.
     SPLIT_ALREADY_DEPARTED(HttpStatus.CONFLICT),
     ROUTE_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR);
 

@@ -686,3 +686,36 @@ requirements (`trips` +2, `main-itinerary` 3 MODIFIED + 2 ADDED,
   (`docs/ai4se-plugins/20261118-143428-local-verify-report.md`).
 - **Open:** G3 signature, issue #60 and board closure after the archive PR.
 
+## 30. Landed reconciliation – ai-split-route-generation (archived 2026-11-18)
+
+Split route generation now uses the same AI seam as the main plan. Living delta:
+`splits` 1 MODIFIED (`Group route generation`), plus the scenarios AI1 / AI2-N /
+AI3-N / AI4.
+
+- **Provider seam:** `BranchCandidateProvider` is selected by
+  `BranchCandidateProviderConfig` from `gogo.plan.ai.api-key`. A blank key keeps
+  `FixtureBranchCandidateProvider` (no network, tests/CI/offline unchanged); a
+  non-blank key wires `AiBranchCandidateProvider`.
+- **AI branch:** group A still delegates to the fixture's main-line derivation.
+  Group B prompts the internal DeepSeek gateway (same `PlanAiProperties`,
+  `deepseek-v4.1-flash`, 30s read) with destination, boundary stops/times, the
+  window minutes and the main-plan segment as data only.
+- **Validation:** `AiBranchValidator` requires 1–10 named stops with
+  non-negative integer stays, `travelLegsMinutes` = stops + 1, and a total
+  (stays + legs + 0 buffer) within the window. Optional `costCents` feeds the
+  US-045 `RouteActivity` list as `source = ai`.
+- **Degradation:** timeout/HTTP/empty/non-JSON/invalid/over-window all fall back
+  to the deterministic fixture B candidate with a warn log; the endpoint keeps
+  200 and never persists partial AI output.
+- **Frontend:** the split route screen reuses `AiGeneratingNotice` while
+  generation is in flight.
+- **Follow-up fixes in the same change:** group-B personal timeline now expands
+  its own stations (outbound + between-station legs) and keeps the shared fork
+  point once; the team-route graph no longer draws a first A stop that duplicates
+  the fork; the main-plan AI prompt now requires Simplified Chinese stop names.
+- **No schema, endpoint, dependency or security change.** PR #161 merged
+  `b48c176`; backend focused suites pass, frontend typecheck/unit/build pass.
+- **Open:** real `LLM_API_KEY` manual generation and browser acceptance were not
+  re-run in this session; the pre-existing `dashboard-overview` browser failures
+  on `main` (from PR #158) are unrelated.
+

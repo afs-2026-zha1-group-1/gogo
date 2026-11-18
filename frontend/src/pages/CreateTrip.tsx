@@ -1,6 +1,8 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { api, errorMessage } from '../api'
 import Icon from '../Icons'
+import { persistCurrentTrip } from '../lib/current-trip'
+import { queueNotice } from '../lib/notice'
 import type { Trip, TripCreatePayload } from '../types'
 
 interface CreateTripProps {
@@ -40,6 +42,10 @@ export default function CreateTrip({ backHref }: CreateTripProps) {
     try {
       const result = await api<Trip>('/api/trips', { method: 'POST', body: form })
       if (result.ok && result.data) {
+        // US-090: the new trip becomes the member's current trip (replacing the previous one). A failed switch
+        // never blocks the success path; the next screen explains that the current trip did not change.
+        const switched = await persistCurrentTrip(result.data.id)
+        if (!switched) queueNotice('当前行程未切换，可在「我的行程」中手动选择这个行程。')
         window.location.hash = `#/trips/${result.data.id}`
         return
       }

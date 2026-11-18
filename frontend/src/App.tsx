@@ -22,6 +22,7 @@ import LoginPage from './features/auth/LoginPage'
 import RegisterPage from './features/auth/RegisterPage'
 import AccountPage from './features/auth/AccountPage'
 import { useAuth } from './features/auth/AuthProvider'
+import SessionNotice from './components/SessionNotice'
 
 function parseRoute(hash: string): Route {
   const path = hash.replace(/^#/, '') || '/'
@@ -76,6 +77,14 @@ function parseRoute(hash: string): Route {
   if (mainPlanInputsMatch) return { page: 'main-plan-inputs', tripId: Number(mainPlanInputsMatch[1]) }
   const mainPlanMatch = path.match(/^\/trips\/(\d+)\/main-plan$/)
   if (mainPlanMatch) return { page: 'main-plan', tripId: Number(mainPlanMatch[1]) }
+  const memberPreferencesMatch = path.match(/^\/trips\/(\d+)\/members\/(\d+)\/preferences$/)
+  if (memberPreferencesMatch) {
+    return {
+      page: 'preferences',
+      tripId: Number(memberPreferencesMatch[1]),
+      memberId: Number(memberPreferencesMatch[2]),
+    }
+  }
   const preferencesMatch = path.match(/^\/trips\/(\d+)\/preferences$/)
   if (preferencesMatch) return { page: 'preferences', tripId: Number(preferencesMatch[1]) }
   // US-083 R4: the invitation page is trip-scoped; match before the generic `/trips/<id>`.
@@ -106,7 +115,7 @@ const TAB_FOR_PAGE: Record<InAppPage, TabId> = {
   home: 'dashboard',
   'dashboard-trip': 'dashboard',
   'dashboard-trip-guard': 'trips',
-  'my-trips': 'account',
+  'my-trips': 'trips',
   'trips-current': 'trips',
   details: 'trips',
   'trip-edit': 'trips',
@@ -202,7 +211,8 @@ export default function App() {
     } else if (route.page === 'my-trips') {
       explicitTripContext.current = false
       setLastTripId(null)
-    } else if (route.page === 'details' || route.page === 'main-plan' || route.page === 'main-plan-inputs') {
+    } else if (route.page === 'details' || route.page === 'main-plan' || route.page === 'main-plan-inputs'
+      || (route.page === 'preferences' && route.memberId != null)) {
       explicitTripContext.current = true
       setLastTripId(route.tripId)
     }
@@ -237,9 +247,9 @@ export default function App() {
     }
   }, [status, account?.id, route.page, dashboardSelectionAttempted, pickerReadBlocked])
 
-  // US-071: the bottom "行程" tab always opens the caller's trip list; trip-scoped
-  // pages (roster back, main plan) still use their own `#/trips/<id>` links.
-  const tripsHref = dashboardContext ? '#/dashboard/trip-entry' : '#/trips'
+  // US-071: the bottom "行程" tab opens the caller's trip list in both shells; the dashboard's old
+  // trip-number entry page is kept only as a deep link for existing bookmarks.
+  const tripsHref = dashboardContext ? '#/my-trips' : '#/trips'
   const tripHref = lastTripId != null
     ? dashboardContext ? `#/dashboard/trips/${lastTripId}` : `#/trips/${lastTripId}`
     : tripsHref
@@ -289,7 +299,14 @@ export default function App() {
       <div className="app">
         <PreferencesPage
           tripId={route.tripId}
-          backHref={route.dashboardOrigin ? `#/dashboard/trips/${route.tripId}` : undefined}
+          memberId={route.memberId}
+          backHref={
+            route.memberId != null
+              ? '#/members'
+              : route.dashboardOrigin
+                ? `#/dashboard/trips/${route.tripId}`
+                : undefined
+          }
         />
       </div>
     )
@@ -316,6 +333,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <SessionNotice />
       <div className="shell-content">
         {route.page === 'home' && (
           <Home key={`${account.id}-current`} onTripReady={handleDashboardReady} selectionInFlight={pickerWritePending} />

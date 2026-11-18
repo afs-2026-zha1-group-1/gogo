@@ -27,6 +27,13 @@ dist/
 .parcel-cache/
 *.tsbuildinfo
 
+# Local frontend secrets (Amap key etc.); .env.example stays committed
+.env
+.env.local
+
+# Python bytecode caches
+__pycache__/
+
 # Local database files and service logs
 data/
 logs/

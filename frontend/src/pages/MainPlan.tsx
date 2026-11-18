@@ -27,7 +27,13 @@ const ERROR_LABELS: Record<string, string> = {
 // Per-person cost is stored in the destination's currency (cents); the symbol follows the trip.
 function money(cents: number, destination?: string | null) {
   const value = destination ?? ''
-  const symbol = /香港|hong\s*kong/i.test(value) ? 'HK$' : /伦敦|london/i.test(value) ? '£' : 'S$'
+  const symbol = /香港|hong\s*kong/i.test(value)
+    ? 'HK$'
+    : /伦敦|london/i.test(value)
+      ? '£'
+      : /合肥|hefei/i.test(value)
+        ? '¥'
+        : 'S$'
   return `${symbol}${cents / 100}`
 }
 
@@ -59,7 +65,7 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
   const [busy, setBusy] = useState<'regen' | 'confirm' | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [blocked, setBlocked] = useState<BlockedConfirm | null>(null)
-  const [editingSeq, setEditingSeq] = useState<number | null>(null)
+  const [editingStopId, setEditingStopId] = useState<number | null>(null)
   const [stopForm, setStopForm] = useState({ name: '', startTime: '', endTime: '' })
   const [stopBusy, setStopBusy] = useState(false)
   const [stopError, setStopError] = useState<string | null>(null)
@@ -164,23 +170,23 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
   }
 
   function beginStopEdit(stop: PlanStop) {
-    setEditingSeq(stop.seq)
+    setEditingStopId(stop.id ?? null)
     setStopForm({ name: stop.name, startTime: stop.startTime, endTime: stop.endTime })
     setStopError(null)
   }
 
   async function saveStop() {
-    if (editingSeq == null) return
+    if (editingStopId == null || state.kind !== 'ready') return
     setStopBusy(true)
     setStopError(null)
     try {
       const { ok, status, data } = await api<MainPlan & MainPlanError>(
-        `/api/trips/${tripId}/main-plan/stops/${editingSeq}`,
-        { method: 'PUT', body: stopForm },
+        `/api/trips/${tripId}/main-plan/stops/${editingStopId}`,
+        { method: 'PUT', body: { ...stopForm, mainPlanVersion: state.plan.version } },
       )
       if (ok && data) {
         setState((current) => current.kind === 'ready' ? { ...current, plan: data } : current)
-        setEditingSeq(null)
+        setEditingStopId(null)
       } else if (status === 409 && data?.code === 'ALREADY_CONFIRMED') {
         setStopError('主线方案已确认，不能再编辑。')
         await refreshPlan()
@@ -339,7 +345,7 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
                   </div>
                 )}
                 {isOrganizer && !plan.confirmed && (
-                  editingSeq === stop.seq ? (
+                  editingStopId === stop.id ? (
                     <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
                       <input
                         className="input"
@@ -372,7 +378,7 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
                           className="btn btn-ghost"
                           type="button"
                           disabled={stopBusy}
-                          onClick={() => { setEditingSeq(null); setStopError(null) }}
+                          onClick={() => { setEditingStopId(null); setStopError(null) }}
                         >
                           取消
                         </button>
@@ -453,8 +459,8 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
       </div>
 
       {plan.confirmed ? (
-        <div className="actionbar">
-          {isOrganizer ? (
+        <div className="actionbar" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {isOrganizer && (
             <button
               className="btn btn-primary"
               type="button"
@@ -462,7 +468,15 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
             >
               <Icon name="fork" className="sm" /> 进入智能分队
             </button>
-          ) : (
+          )}
+          {/* US-090: the confirmed plan gets a second exit back to the trip for every member. */}
+          <a
+            className="btn btn-ghost"
+            href={dashboardOrigin ? `#/dashboard/trips/${tripId}` : `#/trips/${tripId}`}
+          >
+            <Icon name="left" className="sm" /> 返回行程
+          </a>
+          {!isOrganizer && (
             <p className="hint" style={{ textAlign: 'center' }}>
               主线方案已确认，等待组织者发起智能分队。
             </p>

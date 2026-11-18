@@ -2,15 +2,31 @@
  * US-083/084 (design DD-5): embedded 我的方案 timeline. Renders the derived schedule
  * (main-plan stops or the member's confirmed personal route) with the MainPlan page's
  * tl-* markup pattern; an empty schedule shows the no-plan state, never another
- * trip's or another group's route.
+ * trip's or another group's route. US-090: a main-plan stop carries an edit entry
+ * (pencil) that opens the name/time/note dialog; split route items stay read-only.
+ * US-079: every stop card carries a mint Amap button on its right opening the
+ * embedded map modal; the address + navigation live on the countdown card's
+ * next-stop row, not on the timeline; map failures never blank the trip.
  */
 import Icon from '../Icons'
+import StopMapButton from './StopMapButton'
 import { formatClock, type ScheduleItem } from '../lib/countdown'
+import { stopIcon } from '../lib/stop-icon'
 
 interface MyPlanTimelineProps {
   schedule: ScheduleItem[]
   startDate: string
   isOrganizer: boolean
+  /** Present only when the schedule comes from the main plan and the member may edit it. */
+  onEditStop?: (item: ScheduleItem) => void
+  /** Present only when the plan has more than one stop (US-090 删除节点). */
+  onDeleteStop?: (item: ScheduleItem) => void
+  /** Present when the member may append a stop (US-090 新增节点). */
+  onAddStop?: () => void
+  /** A stop mutation is in flight: the entry buttons are disabled so a double click cannot post twice. */
+  busy?: boolean
+  /** US-079: trip destination passed to the embedded Amap modal. */
+  destination: string
 }
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
@@ -23,10 +39,20 @@ function dayLabel(startDate: string): string {
 
 function timeLabel(item: ScheduleItem): string {
   if (item.start == null || item.end == null) return '时间待确认'
+  if (item.kind === 'split-departure') return `${formatClock(item.start)} · 分头`
   return `${formatClock(item.start)} – ${formatClock(item.end)}`
 }
 
-export default function MyPlanTimeline({ schedule, startDate, isOrganizer }: MyPlanTimelineProps) {
+export default function MyPlanTimeline({
+  schedule,
+  startDate,
+  isOrganizer,
+  onEditStop,
+  onDeleteStop,
+  onAddStop,
+  busy = false,
+  destination,
+}: MyPlanTimelineProps) {
   return (
     <>
       <div className="sec-title"><Icon name="list" className="sm" /> 我的方案</div>
@@ -53,11 +79,15 @@ export default function MyPlanTimeline({ schedule, startDate, isOrganizer }: MyP
                   <div className="tl-time">{timeLabel(item)}</div>
                   <div className="act-card">
                     <span className="act-ic">
-                      <Icon name={item.groupLabel ? 'route' : 'pin'} className="sm" />
+                      <Icon name={stopIcon(item)} className="sm" />
                     </span>
                     <div className="act-main">
                       <div className="act-name">{item.name}</div>
-                      <div className="act-sub">{item.groupLabel ? `${item.groupLabel} 组` : '全员'} · 免费</div>
+<div className="act-sub">
+                        {item.kind === 'split-departure'
+                          ? '全员 · 分头'
+                          : `${item.note ? `${item.note} · ` : ''}${item.groupLabel ? `${item.groupLabel} 组` : '全员'} · 免费`}
+                      </div>
                       {item.interests.length > 0 && (
                         <div className="chips" style={{ marginTop: 6 }}>
                           {item.interests.map((tag) => (
@@ -66,6 +96,29 @@ export default function MyPlanTimeline({ schedule, startDate, isOrganizer }: MyP
                         </div>
                       )}
                     </div>
+                    {item.stopId != null && onEditStop ? (
+                      <button
+                        type="button"
+                        className="tl-edit"
+                        disabled={busy}
+                        aria-label={`编辑 ${item.name}`}
+                        onClick={() => onEditStop(item)}
+                      >
+                        <Icon name="edit" className="sm" />
+                      </button>
+                    ) : null}
+                    {item.stopId != null && onDeleteStop ? (
+                      <button
+                        type="button"
+                        className="tl-edit tl-edit-danger"
+                        disabled={busy}
+                        aria-label={`删除 ${item.name}`}
+                        onClick={() => onDeleteStop(item)}
+                      >
+                        <Icon name="trash" className="sm" />
+                      </button>
+                    ) : null}
+                    <StopMapButton item={item} destination={destination} from={index > 0 ? schedule[index - 1] : null} />
                   </div>
                   {item.travelMinutesToNext != null && (
                     <div className="tl-leg">
@@ -76,6 +129,11 @@ export default function MyPlanTimeline({ schedule, startDate, isOrganizer }: MyP
               </div>
             ))}
           </div>
+          {onAddStop ? (
+            <button type="button" className="tl-add" disabled={busy} onClick={onAddStop}>
+              <Icon name="plus" className="sm" /> 添加节点
+            </button>
+          ) : null}
         </>
       )}
     </>

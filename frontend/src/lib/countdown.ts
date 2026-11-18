@@ -7,7 +7,13 @@
 /** One timeline entry shared by the countdown and the 我的方案 section (design DD-2). */
 export interface ScheduleItem {
   key: string
+  // Set only for main-plan stops: the stop a「我的方案」edit targets (US-090).
+  stopId?: number
   name: string
+  // 站点备注（主线站可编辑）；null/省略 = 无备注，时间线不额外展示说明。
+  note?: string | null
+  /** Shared split junction at a specific instant, rather than an activity interval. */
+  kind?: 'split-departure'
   /** epoch ms; null = time pending confirmation (never fabricated). */
   start: number | null
   end: number | null
@@ -15,6 +21,9 @@ export interface ScheduleItem {
   groupLabel: string | null
   interests: string[]
   address: string | null
+  /** US-079 路线1：落库坐标（WGS-84）；null = 未补全，导航退回地址簿/搜索页。 */
+  lat: number | null
+  lon: number | null
   travelMinutesToNext: number | null
 }
 

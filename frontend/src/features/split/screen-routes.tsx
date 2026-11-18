@@ -20,7 +20,9 @@ import type { TripMember } from "../../types"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Dialog } from "@/components/ui/dialog"
+import { AiGeneratingNotice } from "@/components/AiGeneratingNotice"
 import { IconAlert, IconArrowRight, IconBranch, IconCheck, IconEdit, IconFlag, IconNav, IconRoute, IconSparkle, IconUsers, IconX } from "@/components/icons"
+import { ActivityEditor } from "./activity-editor"
 import { formatClock, shortId } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
@@ -121,6 +123,9 @@ export function ScreenRoutes() {
   const draftActive = detail?.status === "active"
   const editable = draftActive && hasPair
   const pending = save.isPending || check.isPending
+
+  // US-045: only the initiator may edit the draft (boundaries/routes/activities), matching the backend gate.
+  const canEditActivities = draftActive && myId != null && detail?.initiatorMemberId === myId
 
   useEffect(() => {
     if (!detail || detail.routes.length !== 2) return
@@ -270,10 +275,15 @@ export function ScreenRoutes() {
             </p>
           )}
 
+          {generate.isPending ? (
+            <AiGeneratingNotice />
+          ) : null}
+
           {hasPair ? (
             <div className="flex flex-col gap-3">
               {routes.map((route, index) => (
-                editable && formVersion === detail.draftVersion ? (
+                <Fragment key={route.groupLabel}>
+                {editable && formVersion === detail.draftVersion ? (
                   <EditableRouteCard
                     key={route.groupLabel}
                     form={form[index] ?? toForm(route)}
@@ -333,7 +343,15 @@ export function ScreenRoutes() {
                     stale={(detail.groups[route.groupLabel] ?? []).length === 0}
                     windowMinutes={detail.windowMinutes}
                   />
-                )
+                )}
+                  <ActivityEditor
+                    tripId={tripId}
+                    detail={detail}
+                    route={route}
+                    canEdit={canEditActivities}
+                    destination={detail.destination}
+                  />
+                </Fragment>
               ))}
             </div>
           ) : (

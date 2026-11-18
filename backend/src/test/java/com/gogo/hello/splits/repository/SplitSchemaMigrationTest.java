@@ -47,7 +47,8 @@ class SplitSchemaMigrationTest {
     void migrate_v4_planNodeHasExpectedColumns() {
         assertThat(columnNames("plan_node")).containsExactlyInAnyOrder(
                 "id", "trip_id", "plan_version", "parent_id", "branch_id", "node_type", "title",
-                "start_at", "end_at", "location_name", "lat", "lng", "sort_order", "created_at");
+                "start_at", "end_at", "location_name", "lat", "lng", "sort_order", "created_at",
+                "cost_cents");
     }
 
     @Test
