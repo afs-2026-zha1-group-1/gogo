@@ -1,6 +1,6 @@
 # Shared Trip App - Must-Have MVP Story List
 
-This list retains the agreed core journey and its reliability safeguards. Optional enhancements are listed in [backlog-good-to-have.md](backlog-good-to-have.md). Original story IDs are preserved so removed stories leave numbering gaps. Optional budget entry means a traveler may omit a budget, not that budget support is outside MVP.
+This list retains the agreed core journey and its reliability safeguards. The separate optional-enhancements backlog is not included in this repository. Original story IDs are preserved so removed stories leave numbering gaps. Optional budget entry means a traveler may omit a budget, not that budget support is outside MVP.
 
 There are 21 user stories left in story-list-mvp.md, across 8 categories.
 
@@ -112,4 +112,3 @@ As a trip member, I would like to open map directions to the confirmed reunion p
 ### US-058: Complete the Shared Trip
 **Required layers:** Frontend: Yes | Backend: Yes | Database: Yes (Read/Write)
 As a trip organizer, I would like to mark the trip completed once any confirmed split is resolved, so that everyone knows our shared journey has ended.
-
