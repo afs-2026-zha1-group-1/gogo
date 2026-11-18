@@ -46,6 +46,54 @@ class SplitBoundaryApiTest extends AbstractSplitApiTest {
     }
 
     @Test
+    @DisplayName("saveBoundaries_fromStartSplitsAtFirstStop_returnsFromStartMode")
+    void saveBoundaries_fromStartSplitsAtFirstStop_returnsFromStartMode() throws Exception {
+        startDraft();
+        String merlion = stopId("Merlion Park");
+        putBoundaries(memberId("Ben"), boundaryBody(null, merlion, 1))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.error").doesNotExist())
+                .andExpect(jsonPath("$.data.splitMode").value("FROM_START"))
+                .andExpect(jsonPath("$.data.reunionStopId").value(merlion))
+                .andExpect(jsonPath("$.data.departureAt").value("2026-12-05T01:00:00Z"))
+                .andExpect(jsonPath("$.data.reunionAt").value("2026-12-05T03:30:00Z"))
+                .andExpect(jsonPath("$.data.windowMinutes").value(150))
+                .andExpect(jsonPath("$.data.draftVersion").value(2));
+        JsonNode draft = objectMapper.readTree(draftJson());
+        assertThat(draft.get("splitMode").asText()).isEqualTo("FROM_START");
+        assertThat(draft.get("departureStopId").isNull()).isTrue();
+        assertThat(draft.get("reunionStopId").asText()).isEqualTo(merlion);
+    }
+
+    @Test
+    @DisplayName("saveBoundaries_fromStartWithFirstStopAsReunion_returns400NonPositiveWindow")
+    void saveBoundaries_fromStartWithFirstStopAsReunion_returns400NonPositiveWindow() throws Exception {
+        startDraft();
+        String cityHall = stopId("City Hall MRT");
+        putBoundaries(memberId("Ben"), boundaryBody(null, cityHall, 1))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.data").doesNotExist())
+                .andExpect(jsonPath("$.error.code").value("NONPOSITIVE_SPLIT_WINDOW"));
+        JsonNode draft = objectMapper.readTree(draftJson());
+        assertThat(draft.get("draftVersion").asInt()).isEqualTo(1);
+        assertThat(draft.get("splitMode").isNull()).isTrue();
+    }
+
+    @Test
+    @DisplayName("saveBoundaries_missingReunion_returns400BoundaryNotInMainPlan")
+    void saveBoundaries_missingReunion_returns400BoundaryNotInMainPlan() throws Exception {
+        startDraft();
+        String cityHall = stopId("City Hall MRT");
+        putBoundaries(memberId("Ben"), boundaryBody(cityHall, null, 1))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.data").doesNotExist())
+                .andExpect(jsonPath("$.error.code").value("BOUNDARY_NOT_IN_MAIN_PLAN"));
+        JsonNode draft = objectMapper.readTree(draftJson());
+        assertThat(draft.get("draftVersion").asInt()).isEqualTo(1);
+        assertThat(draft.get("splitMode").isNull()).isTrue();
+    }
+
+    @Test
     @DisplayName("saveBoundaries_reverseNonPositiveWindow_returns400AndKeepsBoundariesAndVersion")
     void saveBoundaries_reverseNonPositiveWindow_returns400AndKeepsBoundariesAndVersion() throws Exception {
         startDraft();
@@ -123,21 +171,6 @@ class SplitBoundaryApiTest extends AbstractSplitApiTest {
         JsonNode draft = objectMapper.readTree(draftJson());
         assertThat(draft.get("draftVersion").asInt()).isEqualTo(2);
         assertThat(draft.get("departureStopId").asText()).isEqualTo(cityHall);
-    }
-
-    @Test
-    @DisplayName("saveBoundaries_halfBoundaryMissingReunion_returns400PairRequired")
-    void saveBoundaries_halfBoundaryMissingReunion_returns400PairRequired() throws Exception {
-        startDraft();
-        String cityHall = stopId("City Hall MRT");
-        putBoundaries(memberId("Ben"), boundaryBody(cityHall, null, 1))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.data").doesNotExist())
-                .andExpect(jsonPath("$.error.code").value("BOUNDARY_NOT_IN_MAIN_PLAN"));
-        JsonNode draft = objectMapper.readTree(draftJson());
-        assertThat(draft.get("draftVersion").asInt()).isEqualTo(1);
-        assertThat(draft.get("departureStopId").isNull()).isTrue();
-        assertThat(draft.get("reunionStopId").isNull()).isTrue();
     }
 
     private void startDraft() throws Exception {

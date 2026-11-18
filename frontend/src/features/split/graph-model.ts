@@ -70,6 +70,7 @@ export interface RoundSpan {
 /** One round accepted by the multi-round graph builder. Cancelled rounds are filtered by the caller. */
 export interface RoundInput {
   roundIndex: number
+  splitMode?: "MIDDLE" | "FROM_START" | null
   departureStopId: string | null
   reunionStopId: string | null
   routes: RouteInput[]
@@ -82,6 +83,10 @@ export interface GraphModel {
   routeLabels: Record<RouteKey, string>
   /** Multi-round spans; empty for the legacy single-round graph. */
   rounds: RoundSpan[]
+  /** True when a saved boundary shape exists (US-095). */
+  hasBoundaries: boolean
+  /** True when any round starts at the trip's first stop (US-095 FROM_START). */
+  fromStart: boolean
 }
 
 export const PENDING_LABEL = "待补全"
@@ -146,7 +151,7 @@ function locationSuffix(route: RouteInput): string {
 }
 
 /** One route's branch nodes in travel order: places and legs alternate; zero buffer is omitted. */
-function branchRowsFor(route: RouteInput, key: RouteKey, roundIndex?: number): BranchRow[] {
+function branchRowsFor(route: RouteInput, key: RouteKey, roundIndex?: number, fromStart = false): BranchRow[] {
   const steps = route.steps ?? []
   const legs = route.travelLegsMinutes
   const rows: BranchRow[] = []
@@ -164,8 +169,9 @@ function branchRowsFor(route: RouteInput, key: RouteKey, roundIndex?: number): B
     })
   }
   if (steps.length > 0) {
-    // Group B starts with the outbound trip; group A starts at the departure stop itself.
-    if (key === "b") pushLeg(0)
+    // Group B starts with the outbound trip unless the round starts at the trip's first stop (US-095).
+    const entry = key === "b" && !fromStart
+    if (entry) pushLeg(0)
     steps.forEach((step, index) => {
       rows.push({
         kind: "branch",
@@ -175,7 +181,7 @@ function branchRowsFor(route: RouteInput, key: RouteKey, roundIndex?: number): B
         meta: `活动 · ${formatMinutes(step.minutes)}`,
         roundIndex,
       })
-      pushLeg(key === "b" ? index + 1 : index)
+      pushLeg(entry ? index + 1 : index)
     })
   } else {
     // Legacy single-activity documents (pre Revision 3): keep one activity row around its legs.
@@ -205,11 +211,11 @@ function branchRowsFor(route: RouteInput, key: RouteKey, roundIndex?: number): B
 }
 
 /** Interleave A/B step by step so the two lanes advance together: A活动, B活动, A路程, B路程, ... */
-export function buildBranchRows(routes: RouteInput[], roundIndex?: number): BranchRow[] {
+export function buildBranchRows(routes: RouteInput[], roundIndex?: number, fromStart = false): BranchRow[] {
   const byKey: Record<RouteKey, BranchRow[]> = { a: [], b: [] }
   routes.forEach((route, index) => {
     const key = routeKeyFor(route.groupLabel, index)
-    byKey[key] = branchRowsFor(route, key, roundIndex)
+    byKey[key] = branchRowsFor(route, key, roundIndex, fromStart)
   })
   const max = Math.max(byKey.a.length, byKey.b.length)
   const rows: BranchRow[] = []
@@ -251,6 +257,7 @@ function mainRow(stop: StopInput, counter: number): MainRow {
  */
 export function buildGraphRows(input: {
   stops: StopInput[]
+  splitMode?: "MIDDLE" | "FROM_START" | null
   departureStopId?: string | null
   reunionStopId?: string | null
   routes?: RouteInput[]
@@ -260,17 +267,21 @@ export function buildGraphRows(input: {
     return buildMultiRoundGraphRows(input.stops, input.rounds)
   }
   const { stops, departureStopId = null, reunionStopId = null, routes = [] } = input
-  const forkIndex = departureStopId ? stops.findIndex((stop) => stop.id === departureStopId) : -1
+  const fromStart = input.splitMode === "FROM_START"
+  const forkIndex = fromStart ? 0
+    : departureStopId ? stops.findIndex((stop) => stop.id === departureStopId) : -1
   const joinIndex = reunionStopId ? stops.findIndex((stop) => stop.id === reunionStopId) : -1
   const routeLabels = routeLabelsFor(routes)
 
-  if (forkIndex < 0 || joinIndex < 0 || forkIndex >= joinIndex) {
+  if (stops.length === 0 || forkIndex < 0 || joinIndex < 0 || forkIndex >= joinIndex) {
     return {
       rows: stops.map((stop, index) => mainRow(stop, index)),
       forkRow: null,
       joinRow: null,
       routeLabels,
       rounds: [],
+      hasBoundaries: false,
+      fromStart: false,
     }
   }
 
@@ -281,7 +292,7 @@ export function buildGraphRows(input: {
     mainCounter += 1
   }
   const fork = stops[forkIndex]
-  const branches = buildBranchRows(routes)
+  const branches = buildBranchRows(routes, undefined, fromStart)
   // The generated A route starts at the departure stop. Render that activity on the
   // fork itself, while retaining its following travel leg and any edited A stops.
   const firstA = branches.find((row) => row.route === "a" && row.id === "a-step-0")
@@ -292,7 +303,9 @@ export function buildGraphRows(input: {
     kind: "fork",
     id: fork.id,
     title: forkTitle,
-    meta: sameDeparture ? `${fork.startLabel} · 分头 · A 组${firstA.meta}` : `${fork.startLabel} · 分头`,
+    meta: fromStart
+      ? `行程起点 · 分头${sameDeparture && firstA ? ` · A 组${firstA.meta}` : ""}`
+      : sameDeparture ? `${fork.startLabel} · 分头 · A 组${firstA.meta}` : `${fork.startLabel} · 分头`,
     side: "right",
   })
 
@@ -313,7 +326,7 @@ export function buildGraphRows(input: {
     mainCounter += 1
   }
 
-  return { rows, forkRow, joinRow, routeLabels, rounds: [] }
+  return { rows, forkRow, joinRow, routeLabels, rounds: [], hasBoundaries: true, fromStart }
 }
 
 interface PreparedRound {
@@ -327,6 +340,7 @@ interface PreparedRound {
   joinStartLabel: string
   firstA: BranchRow | null
   sameDeparture: boolean
+  fromStart: boolean
   branches: BranchRow[]
 }
 
@@ -337,14 +351,16 @@ interface PreparedRound {
  */
 function buildMultiRoundGraphRows(stops: StopInput[], rounds: RoundInput[]): GraphModel {
   const prepared: PreparedRound[] = rounds
-    .filter((round) => round.departureStopId != null && round.reunionStopId != null)
+    .filter((round) => round.reunionStopId != null
+      && (round.departureStopId != null || round.splitMode === "FROM_START"))
     .map((round) => {
-      const depIndex = stops.findIndex((stop) => stop.id === round.departureStopId)
+      const fromStart = round.splitMode === "FROM_START"
+      const depIndex = fromStart ? 0 : stops.findIndex((stop) => stop.id === round.departureStopId)
       const reuIndex = stops.findIndex((stop) => stop.id === round.reunionStopId)
       if (depIndex < 0 || reuIndex <= depIndex) return null
       const fork = stops[depIndex]
       const join = stops[reuIndex]
-      const branches = buildBranchRows(round.routes, round.roundIndex)
+      const branches = buildBranchRows(round.routes, round.roundIndex, fromStart)
       const forkTitle = cleanStationName(fork.name)
       const firstA = branches.find((row) => row.route === "a" && row.title === forkTitle) ?? null
       const sameDeparture = firstA != null && forkTitle !== ""
@@ -359,6 +375,7 @@ function buildMultiRoundGraphRows(stops: StopInput[], rounds: RoundInput[]): Gra
         joinStartLabel: join.startLabel,
         firstA,
         sameDeparture,
+        fromStart,
         branches: interleaveBranchRows(sameDeparture ? branches.filter((row) => row !== firstA) : branches),
       }
     })
@@ -376,6 +393,8 @@ function buildMultiRoundGraphRows(stops: StopInput[], rounds: RoundInput[]): Gra
       joinRow: null,
       routeLabels,
       rounds: [],
+      hasBoundaries: false,
+      fromStart: false,
     }
   }
 
@@ -395,7 +414,7 @@ function buildMultiRoundGraphRows(stops: StopInput[], rounds: RoundInput[]): Gra
         mainCounter += 1
       }
       span.forkRow = rows.length
-      const forkMeta = `${round.forkStartLabel} · 第 ${round.roundIndex} 次分头`
+      const forkMeta = `${round.fromStart ? "行程起点" : round.forkStartLabel} · 第 ${round.roundIndex} 次分头`
       rows.push({
         kind: "fork",
         id: `${round.roundIndex}-fork-${stops[round.depIndex].id}`,
@@ -450,6 +469,8 @@ function buildMultiRoundGraphRows(stops: StopInput[], rounds: RoundInput[]): Gra
     joinRow: spans[spans.length - 1]?.joinRow ?? null,
     routeLabels,
     rounds: spans,
+    hasBoundaries: spans.length > 0,
+    fromStart: prepared.some((round) => round.fromStart),
   }
 }
 

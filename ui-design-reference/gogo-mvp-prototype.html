@@ -305,6 +305,100 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
 .empty{text-align:center;padding:26px 16px;color:var(--ink-3)}
 .empty .ic{width:34px;height:34px;margin-bottom:8px;opacity:.5}
 
+
+/* --- 已实现界面同步（US-061 / 083–089） --- */
+.dashboard-progress{margin-top:18px}
+.dashboard-progress h2,.dashboard-next h2{display:flex;align-items:center;gap:7px;margin:0 0 12px;font-size:14px}
+.dashboard-progress h2{color:var(--ink-3)}.dashboard-next h2{color:var(--brand-ink)}
+.dashboard-progress ol{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:0;padding:16px 12px;list-style:none;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-1)}
+.dashboard-progress li{display:flex;min-width:0;align-items:center;flex-direction:column;gap:4px;color:var(--ink-3);font-size:10px;text-align:center;overflow-wrap:anywhere}
+.dashboard-progress li strong{color:var(--ink-2);font-size:11px}
+.dashboard-progress-icon{display:grid;width:32px;height:32px;place-items:center;border-radius:50%;border:2px solid var(--line);background:var(--surface);color:var(--ink-3)}
+.dashboard-progress [data-state="done"] .dashboard-progress-icon{border-color:var(--ok);background:var(--ok);color:#fff}
+.dashboard-progress [data-state="active"] .dashboard-progress-icon{border-color:var(--brand);background:var(--brand);color:#fff;box-shadow:0 0 0 4px var(--brand-soft)}
+.dashboard-progress [data-state="active"] strong{color:var(--brand-ink)}
+.dashboard-stat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin-top:14px}
+.dashboard-stat{min-width:0;padding:13px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);box-shadow:var(--sh-1)}
+.dashboard-stat-label{display:flex;align-items:center;gap:6px;color:var(--ink-3);font-size:11px;font-weight:600}
+.dashboard-stat-value{margin-top:6px;font-size:22px;font-weight:780;line-height:1}
+.dashboard-stat-value small{color:var(--ink-3);font-size:12px}
+.dashboard-stat-status{margin-top:10px;font-size:16px;font-weight:700}
+.dashboard-next{margin-top:14px;border-color:#99f6e4;background:linear-gradient(135deg,#f0fdfa,#fff)}
+.dashboard-next p{margin:0 0 12px;color:var(--ink-2);font-size:12px}
+.dashboard-next .btn{width:100%}
+.dashboard-quick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.dashboard-quick .qcard{margin:0;width:100%}
+.countdown{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.countdown-label{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:650;color:var(--ink-2)}
+.countdown-value{font-size:22px;font-weight:780;letter-spacing:.2px;color:var(--brand-ink);font-variant-numeric:tabular-nums}
+.countdown-text{font-size:15px;font-weight:700;color:var(--ink-2)}
+.members-summary{display:flex;align-items:center;gap:12px}
+.members-summary .ms-main{flex:1;min-width:0}
+.members-summary .ms-title{font-size:13.5px;font-weight:700}
+.members-summary .ms-sub{margin-top:1px;font-size:11.5px;color:var(--ink-3)}
+.members-summary .avstack .av{width:34px;height:34px;border:2px solid var(--surface);font-size:13px}
+.members-summary .avstack .av+.av{margin-left:-10px}
+.day-tag{color:var(--brand-ink)}
+.act-card{display:flex;align-items:flex-start;gap:10px;margin-top:6px;padding:12px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);box-shadow:var(--sh-1)}
+.act-ic{width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:10px;background:var(--brand-soft);color:var(--brand-ink)}
+.act-main{flex:1;min-width:0}.act-name{font-size:14px;font-weight:700}.act-sub{margin-top:1px;font-size:11.5px;color:var(--ink-3)}
+.tl-card .act-card{margin-top:6px}.tl-leg{display:flex;align-items:center;gap:5px;margin-top:6px;font-size:11px;color:var(--ink-3)}
+.pick{display:inline-flex;align-items:center;gap:6px;padding:8px 13px;border:1px solid var(--line);border-radius:999px;background:var(--surface);font-family:inherit;font-size:12.5px;font-weight:600;color:var(--ink-2);cursor:pointer;transition:.16s}
+.pick:hover{border-color:var(--ink-3)}.pick.on{border-color:var(--ink);background:var(--ink);color:#fff}.pick:disabled{opacity:.5;cursor:not-allowed}
+.notice{border:1px solid #f0c0bd;background:#fdf3f2;color:#9a2723;border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.5}
+.notice strong{display:block;font-size:13px;margin-bottom:2px}
+.btnrow{display:flex;gap:8px;margin-top:12px}.btnrow .btn{flex:1;margin-top:0}
+.info-note{display:flex;gap:9px;padding:14px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface-2)}
+.info-note .ic{margin-top:1px;color:var(--brand)}
+.identity-line{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;font-size:12px;color:var(--ink-3)}
+.identity-line b{color:var(--ink-2);font-weight:650}
+.empty-state{text-align:center;padding:24px 14px}.empty-state h2{font-size:17px}.empty-state .hint{margin-top:6px}
+.mustdo-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.mustdo-lead{width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--brand-soft);color:var(--brand-ink)}
+.meta-line{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:2px}
+.meta-line .meta{display:inline-flex;align-items:center;gap:4px}
+.row-actions{display:flex;gap:8px;flex:none}
+.qcard{margin-top:10px}.qcard:first-of-type{margin-top:0}
+.qcard .qtag{flex:none}.qcard.selected{border-color:#5eead4;background:linear-gradient(135deg,#f0fdfa,#fff);box-shadow:0 0 0 3px var(--brand-soft),var(--sh-1)}
+.account-profile{display:flex;align-items:center;gap:13px;margin:8px 0 24px}
+.account-avatar{width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:999px;color:#fff;font-size:18px;font-weight:700;background:linear-gradient(135deg,var(--brand),#0891b2);box-shadow:0 8px 18px rgba(13,148,136,.24)}
+.account-name{font-size:18px;font-weight:750;letter-spacing:-.3px}
+.account-email{margin-top:1px;font-size:12px;color:var(--ink-3)}
+.account-logout{border:1px solid #f4c7c7;background:var(--surface);color:var(--err);box-shadow:none}
+.account-logout:hover{background:var(--err-soft)}
+.member-list{display:flex;flex-direction:column}
+.member-list .member-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line-2)}
+.member-list .member-row:last-child{border-bottom:0}
+.member-avatar{flex:none;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--brand-soft);color:var(--brand-ink);font-size:15px;font-weight:750}
+.member-avatar.tone-2{background:#e6efff;color:#2563eb}.member-avatar.tone-3{background:#fff0e2;color:#ea580c}.member-avatar.tone-4{background:#fce7f3;color:#db2777}
+.member-main{flex:1;min-width:0}.member-name{font-size:14px;font-weight:650}.member-meta{font-size:12px;color:var(--ink-3)}
+.split-note{font-size:11.5px;line-height:1.65;color:var(--ink-3);margin:0 2px 12px}
+.group-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.group-card{border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;background:var(--surface);box-shadow:var(--sh-1)}
+.group-card.a{border-color:var(--a-line)}.group-card.b{border-color:var(--b-line)}
+.group-head{display:flex;align-items:center;gap:8px;padding:10px 12px;color:#fff}
+.group-card.a .group-head{background:linear-gradient(135deg,var(--a),#1e40af)}
+.group-card.b .group-head{background:linear-gradient(135deg,var(--b),#9a3412)}
+.gcode{width:24px;height:24px;border-radius:7px;background:rgba(255,255,255,.25);display:grid;place-items:center;font-weight:800;font-size:12px;flex:none}
+.ght{flex:1;font-size:13px;font-weight:700}.gnum{font-size:11px;opacity:.85}
+.gbody{display:flex;flex-wrap:wrap;gap:7px;padding:11px 12px;min-height:58px;align-content:flex-start}
+.group-card .chip{font-size:12px;padding:5px 10px}
+.route-summary{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;padding:4px 0}
+.route-summary .rs-l{color:var(--ink-2)}.route-summary .rs-v{font-weight:700}
+.route-summary.italic .rs-l{font-style:italic}
+.route .rhead .rpill{margin-left:auto;flex:none;border-radius:999px;background:rgba(255,255,255,.2);padding:3px 8px;font-size:10.5px;font-weight:700}
+.rfoot.ok{background:var(--ok-soft);color:#047857}
+.rfoot .rtime{margin-left:auto;font-weight:700}
+.timing-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.timing-grid .tf{font-size:10.5px;color:var(--ink-3);margin-bottom:4px}
+.timing-grid .tv{width:100%;font-family:inherit;font-size:12.5px;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);text-align:center;color:var(--ink)}
+.meta-card dl{display:flex;flex-direction:column;gap:4px;margin:8px 0 0;font-size:12px}
+.meta-card dl div{display:flex;justify-content:space-between;gap:10px}
+.meta-card dt{color:var(--ink-3)}.meta-card dd{margin:0;font-weight:650}
+.body a{color:var(--brand-ink);font-weight:650;text-decoration:none}
+.legend-swatch{width:11px;height:11px;border-radius:3px;display:inline-block;flex:none}
+.route-mix{display:flex;height:26px;border-radius:8px;overflow:hidden;border:1px solid var(--line);margin:10px 0 2px}
+
 /* 右侧面板 */
 .panel{width:336px;position:sticky;top:34px;display:flex;flex-direction:column;gap:16px;max-height:calc(100vh - 60px);overflow-y:auto}
 .panel::-webkit-scrollbar{width:6px}.panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
@@ -425,34 +519,47 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
         <div class="viewport" id="viewport">
 
           <!-- ========== 1 · 仪表盘 Dashboard ========== -->
+
           <section class="screen is-active" id="s19" data-screen="19">
-            <div class="appbar"><div class="row"><div class="title">登录 GoGo</div><button class="iconbtn" onclick="go(20)" title="Scan invitation" aria-label="Scan invitation"><svg class="ic"><use href="#i-camera"/></svg></button></div></div>
+            <div class="appbar"><div class="row">
+              <div class="logo" style="width:36px;height:36px;border-radius:11px"><svg class="ic" style="width:20px;height:20px"><use href="#i-branch"/></svg></div>
+              <div style="flex:1"><div class="title">我的行程</div><div class="sub">共享旅行，从这里开始</div></div>
+            </div></div>
             <div class="body">
-              <div class="login-brand"><div class="logo"><svg class="ic"><use href="#i-branch"/></svg></div><div><h2>GoGo</h2><p class="hint">一起出发，各有所爱</p></div></div>
-              <h3 style="font-size:20px;margin-bottom:20px">欢迎回来</h3>
-              <form class="login-form" onsubmit="login(event)">
-                <div class="field"><label class="label" for="loginEmail">邮箱</label><input class="input" id="loginEmail" type="email" autocomplete="username" placeholder="you@example.com" required /></div>
-                <div class="field"><label class="label" for="loginPassword">密码</label><input class="input" id="loginPassword" type="password" autocomplete="current-password" required minlength="6" /></div>
-                <p id="loginMessage" class="flow-message" role="status" aria-live="polite"></p>
-                <button class="btn btn-primary" type="submit"><svg class="ic sm"><use href="#i-lock"/></svg> 登录</button>
-                <button class="btn btn-ghost" type="button" onclick="demoLogin()">使用演示账号</button>
-                <button class="btn btn-ghost" type="button" onclick="go(22)">创建账号</button>
-              </form>
+              <div class="hero"><div class="htop"><svg class="ic sm"><use href="#i-sparkle"/></svg> GOGO · 一起旅行</div><h2>一起出发</h2><div class="hdest"><svg class="ic sm"><use href="#i-pin"/></svg> 登录后继续你的共享行程</div></div>
+              <div class="sec-title"><svg class="ic sm"><use href="#i-user"/></svg> 账号登录</div>
+              <section class="card pad">
+                <form onsubmit="login(event)">
+                  <div class="field"><label class="label" for="loginEmail">邮箱</label><input class="input" id="loginEmail" type="email" autocomplete="username" placeholder="name@example.com" required /></div>
+                  <div class="field"><label class="label" for="loginPassword">密码</label><input class="input" id="loginPassword" type="password" autocomplete="current-password" required minlength="6" /></div>
+                  <p id="loginMessage" class="flow-message" role="status" aria-live="polite"></p>
+                  <button class="btn btn-primary" type="submit" style="margin-top:8px"><svg class="ic sm"><use href="#i-lock"/></svg> 登录</button>
+                </form>
+                <p class="hint" style="margin-top:12px">还没有账号？<a href="#" onclick="go(22);return false;">创建账号</a></p>
+              </section>
+              <p class="hint" style="margin-top:14px">登录后会回到你的仪表盘；如果正在打开邀请，会先回到邀请预览，再由你确认加入。</p>
+              <div class="sec-title"><svg class="ic sm"><use href="#i-user"/></svg> 演示账号（仅演示）</div>
+              <section class="card pad">
+                <p class="hint" style="margin-bottom:10px">点击账号自动填入邮箱与统一密码，便于演示登录。</p>
+                <button class="btn btn-ghost sm" type="button" style="justify-content:space-between;width:100%" onclick="demoLogin()"><span>小明</span><span style="color:var(--ink-3);font-weight:500">demo@gogo.app</span></button>
+                <p class="hint" style="margin-top:10px">统一密码：<code>gogo-demo</code>（仅演示环境，不是生产账号目录）</p>
+              </section>
             </div>
           </section>
+
           <section class="screen" id="s22" data-screen="22">
             <div class="appbar"><div class="row"><button class="iconbtn" onclick="go(19)" title="返回登录" aria-label="返回登录"><svg class="ic"><use href="#i-left"/></svg></button><div class="title">创建 GoGo 账号</div></div></div>
             <div class="body">
               <div class="login-brand"><div class="logo"><svg class="ic"><use href="#i-branch"/></svg></div><div><h2>GoGo</h2><p class="hint">一起出发，各有所爱</p></div></div>
-              <form class="login-form" id="registerForm" onsubmit="registerAccount(event)">
+              <form id="registerForm" onsubmit="registerAccount(event)" novalidate>
                 <div class="field"><label class="label" for="registerName">名字</label><input class="input" id="registerName" autocomplete="nickname" required maxlength="30" /></div>
                 <div class="field"><label class="label" for="registerEmail">邮箱</label><input class="input" id="registerEmail" type="email" autocomplete="username" placeholder="you@example.com" required /></div>
                 <div class="field"><label class="label" for="registerPassword">密码</label><input class="input" id="registerPassword" type="password" autocomplete="new-password" required minlength="8" aria-describedby="registerPasswordHint" /><p class="hint" id="registerPasswordHint">至少 8 个字符</p></div>
                 <div class="field"><label class="label" for="registerConfirm">确认密码</label><input class="input" id="registerConfirm" type="password" autocomplete="new-password" required minlength="8" /></div>
-                <button class="btn btn-primary" type="submit"><svg class="ic sm"><use href="#i-users"/></svg> 创建账号</button>
+                <button class="btn btn-primary" type="submit" style="margin-top:8px"><svg class="ic sm"><use href="#i-user"/></svg> 创建账号</button>
               </form>
               <p id="registerMessage" class="flow-message" role="status" aria-live="polite"></p>
-              <button class="btn btn-ghost" onclick="go(19)">已有账号？去登录</button>
+              <button class="btn btn-ghost" style="margin-top:6px" onclick="go(19)">已有账号？去登录</button>
             </div>
           </section>
           <section class="screen" id="s20" data-screen="20">
@@ -468,104 +575,81 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
               </form>
             </div>
           </section>
+
           <section class="screen" id="s1" data-screen="1">
-            <div class="appbar">
-              <div class="row">
-                <div class="logo" style="width:36px;height:36px;border-radius:11px"><svg class="ic" style="width:20px;height:20px"><use href="#i-branch"/></svg></div>
-                <div style="flex:1;min-width:0"><div class="title">我的行程</div><div class="sub" id="dashboardGreeting" style="overflow-wrap:anywhere">你好，<span data-account-name>小明</span></div></div>
-                <button class="iconbtn" onclick="go(20)" title="Scan invitation · 扫码加入" aria-label="Scan invitation"><svg class="ic"><use href="#i-camera"/></svg></button>
-                <button class="iconbtn" onclick="openSelectedTrip()" title="行程信息" aria-label="行程信息"><svg class="ic"><use href="#i-info"/></svg></button>
-              </div>
-            </div>
+            <div class="appbar"><div class="row">
+              <div class="logo" style="width:36px;height:36px;border-radius:11px"><svg class="ic" style="width:20px;height:20px"><use href="#i-branch"/></svg></div>
+              <div style="flex:1;min-width:0"><div class="title">我的行程</div><div class="sub" style="overflow-wrap:anywhere">你好，<span data-account-name>小明</span></div></div>
+              <button class="iconbtn" onclick="go(20)" title="扫码加入行程" aria-label="扫码加入行程"><svg class="ic"><use href="#i-camera"/></svg></button>
+            </div></div>
             <div class="body">
-              <div class="hero">
-                <div class="htop"><svg class="ic sm"><use href="#i-cal"/></svg> 11月14日 – 11月15日 · 周末</div>
+              <section class="hero">
+                <div class="htop"><svg class="ic sm"><use href="#i-cal"/></svg> 2026-11-14 – 2026-11-15</div>
                 <h2>周末海边游</h2>
                 <div class="hdest"><svg class="ic sm"><use href="#i-pin"/></svg> 青岛 · 黄金海岸</div>
-                <div class="hmeta">
-                  <div>出发地<b>青岛站</b></div>
-                  <div>返程地<b>青岛北站</b></div>
-                  <div>同行<b>4 人</b></div>
+                <div class="hmeta"><div>出发地<b>青岛站</b></div><div>返程地<b>青岛北站</b></div><div>同行<b>4 人</b></div></div>
+              </section>
+
+              <section class="dashboard-progress" aria-label="旅程进度">
+                <h2><svg class="ic sm"><use href="#i-nav"/></svg> 旅程进度</h2>
+                <ol>
+                  <li data-state="done" onclick="go(2)" style="cursor:pointer"><span class="dashboard-progress-icon"><svg class="ic sm"><use href="#i-check"/></svg></span><strong>建局</strong><span>已创建</span></li>
+                  <li data-state="done" onclick="go(4)" style="cursor:pointer"><span class="dashboard-progress-icon"><svg class="ic sm"><use href="#i-check"/></svg></span><strong>邀请</strong><span>已加入</span></li>
+                  <li data-state="done" onclick="go(8)" style="cursor:pointer"><span class="dashboard-progress-icon"><svg class="ic sm"><use href="#i-check"/></svg></span><strong>偏好</strong><span>4/4</span></li>
+                  <li data-state="done" onclick="go(10)" style="cursor:pointer"><span class="dashboard-progress-icon"><svg class="ic sm"><use href="#i-check"/></svg></span><strong>主线</strong><span>已确认</span></li>
+                  <li data-state="active" onclick="go(11)" style="cursor:pointer"><span class="dashboard-progress-icon"><svg class="ic sm"><use href="#i-branch"/></svg></span><strong>分队</strong><span>待确认</span></li>
+                  <li data-state="pending" onclick="go(17)" style="cursor:pointer"><span class="dashboard-progress-icon"><svg class="ic sm"><use href="#i-users"/></svg></span><strong>会合</strong><span>未开始</span></li>
+                  <li data-state="pending" onclick="go(18)" style="cursor:pointer"><span class="dashboard-progress-icon"><svg class="ic sm"><use href="#i-flag"/></svg></span><strong>完成</strong><span>未开始</span></li>
+                </ol>
+              </section>
+
+              <div class="dashboard-stat-grid">
+                <section class="dashboard-stat" aria-label="成员"><div class="dashboard-stat-label"><svg class="ic sm"><use href="#i-users"/></svg> 成员</div><div class="dashboard-stat-value">4<small> 人</small></div></section>
+                <section class="dashboard-stat" aria-label="偏好就绪"><div class="dashboard-stat-label"><svg class="ic sm"><use href="#i-check"/></svg> 偏好就绪</div><div class="dashboard-stat-value">4/4</div></section>
+                <section class="dashboard-stat" aria-label="主线方案"><div class="dashboard-stat-label"><svg class="ic sm"><use href="#i-list"/></svg> 主线方案</div><div class="dashboard-stat-status">已确认</div><div class="hint">6 个活动</div></section>
+                <section class="dashboard-stat" aria-label="智能分队"><div class="dashboard-stat-label"><svg class="ic sm"><use href="#i-branch"/></svg> 智能分队</div><div class="dashboard-stat-status">待确认</div><div class="hint">Route A / B 已生成</div></section>
+              </div>
+
+              <section class="dashboard-next card pad" aria-label="下一步">
+                <h2><svg class="ic sm"><use href="#i-sparkle"/></svg> 下一步</h2>
+                <p>分队方案已生成并通过会合时间窗校验，等待你作为组织者确认。确认后两条路线锁定，大家分头出发。</p>
+                <button class="btn btn-primary" onclick="go(15)">去确认分队方案 <svg class="ic sm"><use href="#i-arrow"/></svg></button>
+              </section>
+
+              <section aria-label="快捷入口">
+                <div class="sec-title"><svg class="ic sm"><use href="#i-grid"/></svg> 快捷入口</div>
+                <div class="dashboard-quick">
+                  <button class="qcard" onclick="go(4)"><span class="qi"><svg class="ic"><use href="#i-link"/></svg></span><span style="min-width:0"><span class="qt" style="display:block">邀请朋友</span><span class="qd" style="display:block">分享邀请链接</span></span></button>
+                  <button class="qcard" onclick="go(8)"><span class="qi"><svg class="ic"><use href="#i-star"/></svg></span><span style="min-width:0"><span class="qt" style="display:block">我的偏好</span><span class="qd" style="display:block">查看和编辑偏好</span></span></button>
+                  <button class="qcard" onclick="go(10)"><span class="qi"><svg class="ic"><use href="#i-list"/></svg></span><span style="min-width:0"><span class="qt" style="display:block">主线方案</span><span class="qd" style="display:block">查看共同路线</span></span></button>
                 </div>
-              </div>
-
-              <div class="sec-title"><svg class="ic sm"><use href="#i-route"/></svg> 旅程进度</div>
-              <div class="card pad">
-                <div class="journey">
-                  <div class="jnode done" onclick="go(2)"><div class="jc"><svg class="ic"><use href="#i-check"/></svg></div><div class="jl">建局</div></div>
-                  <div class="jnode done" onclick="go(4)"><div class="jc"><svg class="ic"><use href="#i-check"/></svg></div><div class="jl">邀请</div></div>
-                  <div class="jnode done" onclick="go(8)"><div class="jc"><svg class="ic"><use href="#i-check"/></svg></div><div class="jl">偏好</div></div>
-                  <div class="jnode done" onclick="go(10)"><div class="jc"><svg class="ic"><use href="#i-check"/></svg></div><div class="jl">主线</div></div>
-                  <div class="jnode now" onclick="go(11)"><div class="jc"><svg class="ic"><use href="#i-branch"/></svg></div><div class="jl">分队</div></div>
-                  <div class="jnode" onclick="go(17)"><div class="jc"><svg class="ic"><use href="#i-flag"/></svg></div><div class="jl">会合</div></div>
-                  <div class="jnode" onclick="go(18)"><div class="jc"><svg class="ic"><use href="#i-star"/></svg></div><div class="jl">完成</div></div>
-                </div>
-              </div>
-
-              <div class="stat-grid" style="margin-top:14px">
-                <div class="stat"><div class="sl"><svg class="ic sm"><use href="#i-users"/></svg> 成员</div><div class="sv">4<small> 人</small></div><div class="sx" style="color:var(--ok)">全部已加入</div></div>
-                <div class="stat"><div class="sl"><svg class="ic sm"><use href="#i-check"/></svg> 偏好就绪</div><div class="sv">4<small>/4</small></div><div class="sx" style="color:var(--ok)">可生成主线</div></div>
-                <div class="stat"><div class="sl"><svg class="ic sm"><use href="#i-list"/></svg> 主线方案</div><div class="sv" style="font-size:16px;padding-top:4px">已确认</div><div class="sx" style="color:var(--ink-3)">6 个活动 · 校验通过</div></div>
-                <div class="stat"><div class="sl"><svg class="ic sm"><use href="#i-branch"/></svg> 智能分队</div><div class="sv" style="font-size:16px;padding-top:4px">待确认</div><div class="sx" style="color:var(--warn)">Route A / B 已生成</div></div>
-              </div>
-
-              <div class="card pad" style="margin-top:14px;border-color:#99f6e4;background:linear-gradient(135deg,#f0fdfa,#fff)">
-                <div style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--brand-ink)"><svg class="ic sm"><use href="#i-sparkle"/></svg> 下一步</div>
-                <p class="hint" style="margin:7px 0 12px">分队方案已生成并通过会合时间窗校验，等待你作为组织者确认。确认后两条路线锁定，大家分头出发。</p>
-                <button class="btn btn-primary sm" style="width:100%" onclick="go(15)">去确认分队方案 <svg class="ic sm"><use href="#i-arrow"/></svg></button>
-              </div>
-
-              <div class="sec-title"><svg class="ic sm"><use href="#i-grid"/></svg> 快捷入口</div>
-              <div class="quick">
-                <button class="qcard" onclick="openSelectedTrip()"><span class="qi"><svg class="ic"><use href="#i-info"/></svg></span><span><span class="qt">行程详情</span><span class="qd">US-002</span></span></button>
-                <button class="qcard" onclick="go(4)"><span class="qi"><svg class="ic"><use href="#i-link"/></svg></span><span><span class="qt">邀请朋友</span><span class="qd">US-008</span></span></button>
-                <button class="qcard" onclick="go(7)"><span class="qi"><svg class="ic"><use href="#i-users"/></svg></span><span><span class="qt">成员就绪</span><span class="qd">US-013</span></span></button>
-                <button class="qcard" onclick="go(8)"><span class="qi"><svg class="ic"><use href="#i-star"/></svg></span><span><span class="qt">我的偏好</span><span class="qd">US-019~027</span></span></button>
-                <button class="qcard" onclick="go(10)"><span class="qi"><svg class="ic"><use href="#i-list"/></svg></span><span><span class="qt">主线方案</span><span class="qd">US-037</span></span></button>
-                <button class="qcard" onclick="go(11)"><span class="qi"><svg class="ic"><use href="#i-branch"/></svg></span><span><span class="qt">智能分队</span><span class="qd">US-038~050</span></span></button>
-                <button class="qcard" onclick="go(17)"><span class="qi"><svg class="ic"><use href="#i-nav"/></svg></span><span><span class="qt">会合导航</span><span class="qd">US-054</span></span></button>
-                <button class="qcard" onclick="go(18)"><span class="qi"><svg class="ic"><use href="#i-flag"/></svg></span><span><span class="qt">完成行程</span><span class="qd">US-058</span></span></button>
-              </div>
+              </section>
             </div>
-            <div class="tabbar">
-              <div class="tab on"><svg class="ic"><use href="#i-home"/></svg>仪表盘</div>
-              <button class="tab tabbutton" onclick="openSelectedTrip()"><svg class="ic"><use href="#i-list"/></svg>行程</button>
-              <div class="tab" onclick="go(11)"><svg class="ic"><use href="#i-branch"/></svg>分队</div>
-              <div class="tab" onclick="go(7)"><svg class="ic"><use href="#i-users"/></svg>成员</div>
-              <button class="tab tabbutton" onclick="go(21)"><svg class="ic"><use href="#i-user"/></svg>我的</button>
-            </div>
+            <div class="tabbar"><button class="tab tabbutton on" aria-current="page" onclick="go(1)"><svg class="ic"><use href="#i-home"/></svg>仪表盘</button><button class="tab tabbutton" onclick="openSelectedTrip()"><svg class="ic"><use href="#i-list"/></svg>行程</button><button class="tab tabbutton" onclick="go(11)"><svg class="ic"><use href="#i-branch"/></svg>分队</button><button class="tab tabbutton" onclick="go(7)"><svg class="ic"><use href="#i-users"/></svg>成员</button><button class="tab tabbutton" onclick="go(21)"><svg class="ic"><use href="#i-user"/></svg>我的</button></div>
           </section>
           <!-- ========== 2 · 创建行程 US-001 ========== -->
+
           <section class="screen" id="s21" data-screen="21">
             <div class="appbar"><div class="row"><button class="iconbtn" onclick="go(1)" title="返回仪表盘" aria-label="返回仪表盘"><svg class="ic"><use href="#i-left"/></svg></button><div class="title">我的</div></div></div>
             <div class="body">
-              <div class="profile-heading"><div class="av av-teal lg" id="profileAvatar">小</div><div style="min-width:0"><h2 id="profileName">小明</h2><p class="hint" id="profileEmail" style="overflow-wrap:anywhere">demo@gogo.app</p></div></div>
-              <button class="btn btn-ghost" style="margin-bottom:20px" onclick="go(23)"><svg class="ic sm"><use href="#i-list"/></svg> 我的行程 <svg class="ic sm"><use href="#i-arrow"/></svg></button>
-              <form onsubmit="saveProfile(event)" novalidate>
-                <div class="field"><label class="label" for="displayName">名字</label><input class="input" id="displayName" value="小明" maxlength="30" autocomplete="nickname" aria-describedby="profileMessage" /></div>
+              <div class="account-profile"><div class="account-avatar" id="profileAvatar">小</div><div style="min-width:0"><div class="account-name" id="profileName">小明</div><div class="account-email" id="profileEmail" style="overflow-wrap:anywhere">demo@gogo.app</div></div></div>
+              <button class="qcard" style="width:100%" onclick="go(23)"><span class="qi"><svg class="ic"><use href="#i-list"/></svg></span><span style="min-width:0;flex:1"><span class="qt" style="display:block">我的行程</span><span class="qd" style="display:block">选择当前行程，在「行程」页查看</span></span><svg class="ic sm"><use href="#i-arrow"/></svg></button>
+              <button class="qcard" style="width:100%" onclick="go(26)"><span class="qi"><svg class="ic"><use href="#i-star"/></svg></span><span style="min-width:0;flex:1"><span class="qt" style="display:block">偏好设置</span><span class="qd" style="display:block">设置我的默认兴趣，之后的行程自动勾选</span></span><svg class="ic sm"><use href="#i-arrow"/></svg></button>
+              <form onsubmit="saveProfile(event)" style="margin-top:22px">
+                <label class="label" for="displayName">名字</label>
+                <input class="input" id="displayName" value="小明" maxlength="30" autocomplete="nickname" aria-describedby="profileMessage" />
                 <p id="profileMessage" class="flow-message" role="status" aria-live="polite"></p>
-                <button class="btn btn-primary" type="submit"><svg class="ic sm"><use href="#i-check"/></svg> 保存名字</button>
+                <button class="btn btn-primary" type="submit" style="margin-top:12px"><svg class="ic sm"><use href="#i-check"/></svg> 保存名字</button>
               </form>
-              <button class="btn btn-danger" style="margin-top:28px" onclick="signOut()"><svg class="ic sm"><use href="#i-left"/></svg> 退出登录</button>
+              <button class="btn btn-danger account-logout" style="margin-top:22px" onclick="signOut()"><svg class="ic sm"><use href="#i-left"/></svg> 退出登录</button>
             </div>
-            <div class="tabbar">
-              <button class="tab tabbutton" onclick="go(1)"><svg class="ic"><use href="#i-home"/></svg>仪表盘</button>
-              <button class="tab tabbutton" onclick="openSelectedTrip()"><svg class="ic"><use href="#i-list"/></svg>行程</button>
-              <button class="tab tabbutton" onclick="go(11)"><svg class="ic"><use href="#i-branch"/></svg>分队</button>
-              <button class="tab tabbutton" onclick="go(7)"><svg class="ic"><use href="#i-users"/></svg>成员</button>
-              <button class="tab tabbutton on" aria-current="page" onclick="go(21)"><svg class="ic"><use href="#i-user"/></svg>我的</button>
-            </div>
+            <div class="tabbar"><button class="tab tabbutton" onclick="go(1)"><svg class="ic"><use href="#i-home"/></svg>仪表盘</button><button class="tab tabbutton" onclick="openSelectedTrip()"><svg class="ic"><use href="#i-list"/></svg>行程</button><button class="tab tabbutton" onclick="go(11)"><svg class="ic"><use href="#i-branch"/></svg>分队</button><button class="tab tabbutton" onclick="go(7)"><svg class="ic"><use href="#i-users"/></svg>成员</button><button class="tab tabbutton on" aria-current="page" onclick="go(21)"><svg class="ic"><use href="#i-user"/></svg>我的</button></div>
           </section>
+
           <section class="screen" id="s23" data-screen="23">
             <div class="appbar"><div class="row"><button class="iconbtn" onclick="go(21)" title="返回我的" aria-label="返回我的"><svg class="ic"><use href="#i-left"/></svg></button><div style="flex:1"><div class="title">我的行程</div><div class="sub" id="tripListCount"></div></div></div></div>
-            <div class="body"><div id="myTripList" role="radiogroup" aria-label="选择当前行程"></div></div>
-            <div class="tabbar">
-              <button class="tab tabbutton" onclick="go(1)"><svg class="ic"><use href="#i-home"/></svg>仪表盘</button>
-              <button class="tab tabbutton" onclick="openSelectedTrip()"><svg class="ic"><use href="#i-list"/></svg>行程</button>
-              <button class="tab tabbutton" onclick="go(11)"><svg class="ic"><use href="#i-branch"/></svg>分队</button>
-              <button class="tab tabbutton" onclick="go(7)"><svg class="ic"><use href="#i-users"/></svg>成员</button>
-              <button class="tab tabbutton on" aria-current="page" onclick="go(21)"><svg class="ic"><use href="#i-user"/></svg>我的</button>
-            </div>
+            <div class="body"><div id="myTripList" role="group" aria-label="选择当前行程"></div><button class="btn btn-ghost" style="margin-top:16px" onclick="go(2)"><svg class="ic sm"><use href="#i-plus"/></svg> 创建行程</button></div>
+            <div class="tabbar"><button class="tab tabbutton" onclick="go(1)"><svg class="ic"><use href="#i-home"/></svg>仪表盘</button><button class="tab tabbutton" onclick="openSelectedTrip()"><svg class="ic"><use href="#i-list"/></svg>行程</button><button class="tab tabbutton" onclick="go(11)"><svg class="ic"><use href="#i-branch"/></svg>分队</button><button class="tab tabbutton" onclick="go(7)"><svg class="ic"><use href="#i-users"/></svg>成员</button><button class="tab tabbutton on" aria-current="page" onclick="go(21)"><svg class="ic"><use href="#i-user"/></svg>我的</button></div>
           </section>
           <section class="screen" id="s24" data-screen="24">
             <div class="appbar"><div class="row"><div style="flex:1"><div class="title">行程详情</div><div class="sub">US-002 · 全员可见</div></div><button class="iconbtn" onclick="go(4)" title="邀请朋友" aria-label="邀请朋友"><svg class="ic"><use href="#i-users"/></svg></button></div></div>
@@ -583,6 +667,28 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
             <div class="appbar"><div class="row"><button class="iconbtn" onclick="go(24)" title="返回行程详情" aria-label="返回行程详情"><svg class="ic"><use href="#i-left"/></svg></button><div class="title">主线方案</div></div></div>
             <div class="body"><div class="card pad"><h3>还没有主线方案</h3><p class="hint" style="margin-top:8px">新行程的主线方案生成尚未在原型中实现。</p></div></div>
           </section>
+
+
+          <section class="screen" id="s26" data-screen="26">
+            <div class="appbar"><div class="row"><button class="iconbtn" onclick="go(21)" aria-label="返回我的"><svg class="ic"><use href="#i-left"/></svg></button><div style="flex:1"><div class="title">偏好设置</div><div class="sub">我的默认兴趣 · US-019</div></div><span class="pill ok" id="userPrefStatus">已保存</span></div></div>
+            <div class="body">
+              <div class="sec-title"><svg class="ic sm"><use href="#i-star"/></svg> 我的偏好（默认勾选）</div>
+              <div class="chips" id="userInterestChips">
+                <button class="pick on" data-int="水上运动">🌊 水上运动</button>
+                <button class="pick on" data-int="潜水">🤿 潜水</button>
+                <button class="pick on" data-int="摄影">📷 摄影</button>
+                <button class="pick" data-int="美食">🍜 美食</button>
+                <button class="pick" data-int="咖啡">☕ 咖啡</button>
+                <button class="pick" data-int="历史人文">🏛️ 历史人文</button>
+                <button class="pick" data-int="手作">🧶 手作</button>
+                <button class="pick" data-int="自然风景">🏞️ 自然风景</button>
+                <button class="pick" data-int="冒险">🧗 冒险</button>
+                <button class="pick" data-int="慢游">🚶 慢游</button>
+              </div>
+              <p class="hint" style="margin-top:10px">设好默认偏好后，之后每个行程的偏好页会先自动勾选这些兴趣（仍是未保存，你可随时改再存）。</p>
+            </div>
+            <div class="actionbar"><button class="btn btn-primary" onclick="toast('默认偏好已保存');$('userPrefStatus').className='pill ok';$('userPrefStatus').textContent='已保存'"><svg class="ic sm"><use href="#i-check"/></svg> 保存默认偏好</button></div>
+          </section>
           <section class="screen" id="s2" data-screen="2">
             <div class="appbar"><div class="row">
               <button class="iconbtn" onclick="go(23)" title="返回行程列表" aria-label="返回行程列表"><svg class="ic"><use href="#i-left"/></svg></button>
@@ -590,68 +696,69 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
             </div></div>
             <div class="body">
               <div class="field">
-                <label class="label"><svg class="ic sm"><use href="#i-edit"/></svg> 行程名称</label>
+                <label class="label" for="f-name"><svg class="ic sm"><use href="#i-edit"/></svg> 行程名称</label>
                 <input class="input" id="f-name" value="周末海边游" placeholder="给这次旅行起个名字" />
               </div>
               <div class="field">
-                <label class="label"><svg class="ic sm"><use href="#i-pin"/></svg> 目的地</label>
+                <label class="label" for="f-dest"><svg class="ic sm"><use href="#i-pin"/></svg> 目的地</label>
                 <div class="inp-ic"><svg class="ic"><use href="#i-pin"/></svg><input class="input" id="f-dest" value="青岛 · 黄金海岸" placeholder="城市 / 景区" /></div>
               </div>
               <div class="two">
                 <div class="field" id="fld-start">
-                  <label class="label"><svg class="ic sm"><use href="#i-cal"/></svg> 开始日期</label>
+                  <label class="label" for="f-start"><svg class="ic sm"><use href="#i-cal"/></svg> 开始日期</label>
                   <input class="input" type="date" id="f-start" value="2026-11-14" />
                 </div>
                 <div class="field" id="fld-end">
-                  <label class="label">结束日期</label>
+                  <label class="label" for="f-end">结束日期</label>
                   <input class="input" type="date" id="f-end" value="2026-11-15" />
                   <div class="err-msg"><svg class="ic sm"><use href="#i-alert"/></svg> 结束日期不能早于开始日期</div>
                 </div>
               </div>
               <div class="two">
                 <div class="field">
-                  <label class="label"><svg class="ic sm"><use href="#i-nav"/></svg> 出发地</label>
+                  <label class="label" for="f-from"><svg class="ic sm"><use href="#i-nav"/></svg> 出发地 <span class="opt">可选</span></label>
                   <input class="input" id="f-from" value="青岛站" placeholder="集合出发地点" />
                 </div>
                 <div class="field">
-                  <label class="label"><svg class="ic sm"><use href="#i-flag"/></svg> 返程地</label>
+                  <label class="label" for="f-to"><svg class="ic sm"><use href="#i-flag"/></svg> 返程地 <span class="opt">可选</span></label>
                   <input class="input" id="f-to" value="青岛北站" placeholder="行程结束地点" />
                 </div>
               </div>
-              <div class="card pad" style="background:var(--surface-2);margin-top:4px">
-                <p class="hint"><svg class="ic sm" style="vertical-align:-3px;color:var(--brand)"><use href="#i-info"/></svg> 创建后你会成为<b>组织者</b>，可邀请朋友、生成并确认主线方案。名称、目的地、日期与起终点全员可见。</p>
+              <div class="info-note">
+                <svg class="ic sm"><use href="#i-info"/></svg>
+                <p class="hint">创建后你会成为<b>组织者</b>，可邀请朋友加入。名称、目的地、日期与起终点全员可见；起终点也可稍后再补。</p>
               </div>
             </div>
             <div class="actionbar"><button class="btn btn-primary" onclick="createTrip()"><svg class="ic sm"><use href="#i-plus"/></svg> 创建行程</button></div>
           </section>
 
           <!-- ========== 3 · 行程详情 US-002 ========== -->
+
           <section class="screen" id="s3" data-screen="3">
             <div class="appbar"><div class="row">
+              <button class="iconbtn" onclick="go(1)" aria-label="返回"><svg class="ic"><use href="#i-left"/></svg></button>
               <div style="flex:1"><div class="title">行程详情</div><div class="sub">US-002 · 全员可见</div></div>
-              <button class="iconbtn" onclick="go(4)" title="邀请朋友" aria-label="邀请朋友"><svg class="ic"><use href="#i-users"/></svg></button>
+              <button class="iconbtn" onclick="go(4)" title="邀请朋友" aria-label="邀请朋友"><svg class="ic"><use href="#i-user"/></svg></button>
             </div></div>
             <div class="body">
-              <div class="hero trip-hero">
-                <div class="htop"><svg class="ic sm"><use href="#i-cal"/></svg> 2026年11月14日 – 11月15日</div>
-                <h2>周末海边游</h2>
-                <div class="hdest"><svg class="ic sm"><use href="#i-pin"/></svg> 青岛 · 黄金海岸</div>
-              </div>
-              <div class="trip-countdown" id="demoTripCountdown"></div>
+              <section class="hero">
+                <h1 style="margin-top:0;font-size:23px;font-weight:780">周末海边游</h1>
+                <div class="hdest"><svg class="ic sm"><use href="#i-cal"/></svg> 2026-11-14 – 2026-11-15 <svg class="ic sm"><use href="#i-pin"/></svg> 青岛 · 黄金海岸</div>
+              </section>
+              <section class="card pad countdown" id="demoTripCountdown" style="margin-top:12px" aria-label="行程倒计时"></section>
               <div class="sec-title"><svg class="ic sm"><use href="#i-users"/></svg> 同行成员</div>
-              <div class="card pad" style="display:flex;align-items:center;gap:12px">
-                <div class="avstack"><div class="av av-teal">明</div><div class="av av-blue">强</div><div class="av av-amber">红</div><div class="av av-rose">美</div></div>
-                <div style="flex:1"><div style="font-size:13.5px;font-weight:650">4 位朋友已加入</div><div class="tiny muted">偏好全部就绪</div></div>
+              <section class="card pad members-summary">
+                <div class="avstack" aria-hidden="true"><div class="av av-teal">明</div><div class="av av-blue">强</div><div class="av av-amber">红</div><div class="av av-rose">美</div></div>
+                <div class="ms-main"><div class="ms-title">4 位朋友已加入</div><div class="ms-sub">偏好全部就绪</div></div>
                 <button class="btn btn-ghost sm" onclick="go(7)">查看</button>
-              </div>
-              <div class="sec-title"><svg class="ic sm"><use href="#i-list"/></svg> 我的方案</div>
-              <div class="sec-title"><svg class="ic sm"><use href="#i-clock"/></svg> Day 1 · 11月14日（周六）</div>
+              </section>
               <div id="tripMainTimeline"></div>
             </div>
             <div class="tabbar"><button class="tab tabbutton" onclick="go(1)"><svg class="ic"><use href="#i-home"/></svg>仪表盘</button><button class="tab tabbutton on" aria-current="page" onclick="openSelectedTrip()"><svg class="ic"><use href="#i-list"/></svg>行程</button><button class="tab tabbutton" onclick="go(11)"><svg class="ic"><use href="#i-branch"/></svg>分队</button><button class="tab tabbutton" onclick="go(7)"><svg class="ic"><use href="#i-users"/></svg>成员</button><button class="tab tabbutton" onclick="go(21)"><svg class="ic"><use href="#i-user"/></svg>我的</button></div>
           </section>
 
           <!-- ========== 4 · 分享邀请 US-008 ========== -->
+
           <section class="screen" id="s4" data-screen="4">
             <div class="appbar"><div class="row">
               <button class="iconbtn" onclick="go(invitationBackScreen)" title="返回" aria-label="返回"><svg class="ic"><use href="#i-left"/></svg></button>
@@ -668,19 +775,17 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
               <div class="linkbox">
                 <svg class="ic sm" style="color:var(--ink-3)"><use href="#i-link"/></svg>
                 <span class="url" id="inviteUrl">https://gogo.app/j/8f3k-海边游-2q9x</span>
-                <button class="iconbtn" style="width:30px;height:30px" onclick="copyInvite()"><svg class="ic sm"><use href="#i-copy"/></svg></button>
+                <button class="iconbtn" style="width:30px;height:30px" onclick="copyInvite()" aria-label="复制邀请链接"><svg class="ic sm"><use href="#i-copy"/></svg></button>
               </div>
-              <div class="two" style="margin-top:12px">
-                <button class="btn btn-ghost sm" style="width:100%" onclick="toast('已唤起微信分享（演示）')"><svg class="ic sm"><use href="#i-users"/></svg> 微信</button>
-                <button class="btn btn-ghost sm" style="width:100%" onclick="copyInvite()"><svg class="ic sm"><use href="#i-copy"/></svg> 复制链接</button>
-              </div>
+              <button class="btn btn-ghost" style="margin-top:12px" onclick="copyInvite()"><svg class="ic sm"><use href="#i-copy"/></svg> 复制链接</button>
               <div class="card pad" style="margin-top:16px;background:var(--surface-2)">
                 <div class="switch-row">
                   <div class="txt"><b>链接有效期</b><p>7 天后自动失效，可随时撤销</p></div>
                   <span class="pill">11月20日 到期</span>
                 </div>
                 <div style="border-top:1px solid var(--line-2);margin:12px 0"></div>
-                <button class="btn btn-danger sm" style="width:100%" onclick="go(6)"><svg class="ic sm"><use href="#i-x"/></svg> 撤销此邀请链接</button>
+                <button class="btn btn-ghost sm" style="width:100%" onclick="toast('已唤起微信分享（演示）')"><svg class="ic sm"><use href="#i-users"/></svg> 微信</button>
+                <button class="btn btn-danger sm" style="width:100%;margin-top:8px" onclick="go(6)"><svg class="ic sm"><use href="#i-x"/></svg> 撤销此邀请链接</button>
                 <p class="help" style="text-align:center">撤销后旧链接立即失效（见 US-012 失效页）</p>
               </div>
             </div>
@@ -688,42 +793,43 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
           </section>
 
           <!-- ========== 5 · 加入行程 US-010 ========== -->
+
           <section class="screen" id="s5" data-screen="5">
             <div class="appbar"><div class="row">
               <div class="logo" style="width:36px;height:36px;border-radius:11px"><svg class="ic" style="width:20px;height:20px"><use href="#i-branch"/></svg></div>
               <div style="flex:1"><div class="title">你被邀请加入行程</div><div class="sub">US-010 · 接受邀请前仅显示公开信息</div></div>
             </div></div>
             <div class="body">
-              <div class="card pad" style="text-align:center;background:linear-gradient(135deg,#f0fdfa,#fff);border-color:#99f6e4">
-                <div class="av av-teal lg" style="margin:0 auto 10px">明</div>
-                <div style="font-size:12px;color:var(--ink-2)"><span data-account-name>小明</span> 邀请你加入</div>
-                <div style="font-size:21px;font-weight:780;margin:5px 0 3px">周末海边游</div>
-                <div class="tiny muted" style="display:flex;align-items:center;justify-content:center;gap:6px"><svg class="ic sm"><use href="#i-pin"/></svg> 青岛 · 黄金海岸 · 11月14–15日</div>
-              </div>
-              <div id="joinForm">
-                <div class="field" style="margin-top:18px">
-                  <label class="label" for="f-nick"><svg class="ic sm"><use href="#i-user"/></svg> 当前登录身份</label>
-                  <input class="input" id="f-nick" value="小明" readonly />
-                  <p class="help">接受邀请后加入，同一账号不会重复加入。</p>
+              <div id="joinPreview">
+                <div class="card pad" style="text-align:center;background:linear-gradient(135deg,#f0fdfa,#fff);border-color:#99f6e4">
+                  <div class="logo" style="width:44px;height:44px;margin:0 auto 10px;border-radius:13px"><svg class="ic"><use href="#i-branch"/></svg></div>
+                  <div style="font-size:12px;color:var(--ink-2)"><span data-account-name>小明</span> 邀请你加入</div>
+                  <div style="font-size:21px;font-weight:780;margin:5px 0 3px">周末海边游</div>
+                  <div class="tiny muted" style="display:flex;align-items:center;justify-content:center;gap:6px"><svg class="ic sm"><use href="#i-pin"/></svg> 青岛 · 黄金海岸 · 11月14–15日</div>
                 </div>
-                <div class="card pad" style="background:var(--surface-2)">
-                  <p class="hint"><svg class="ic sm" style="vertical-align:-3px;color:var(--brand)"><use href="#i-shield"/></svg> 接受邀请后才会看到完整行程与成员。当前主线<b>尚未确认</b>，你可以加入。</p>
+                <div class="identity-line" style="margin-top:16px"><span>以当前账号加入</span><b data-account-name>小明</b></div>
+                <p class="help">同一账号仅能加入一次，不会重复。预览是公开的；接受邀请后才会看到完整行程与成员。</p>
+                <div class="card pad" style="margin-top:14px;background:var(--surface-2)">
+                  <p class="hint"><svg class="ic sm" style="vertical-align:-3px;color:var(--ok)"><use href="#i-shield"/></svg> 接受邀请后才会看到完整行程与成员。当前主线<b>尚未确认</b>，你可以加入。</p>
                 </div>
                 <button class="btn btn-primary" style="margin-top:16px" onclick="joinTrip()"><svg class="ic sm"><use href="#i-check"/></svg> 接受邀请并加入</button>
+                <button class="btn btn-ghost" style="margin-top:10px" onclick="go(20)">不接受</button>
               </div>
               <div id="joinDone" style="display:none">
                 <div class="success-hero">
                   <div class="checkring"><svg class="ic"><use href="#i-check"/></svg></div>
                   <div style="font-size:19px;font-weight:760">已加入「周末海边游」</div>
-                  <p class="hint" style="margin-top:6px">你现在是行程成员，去填写偏好让方案照顾到你吧。</p>
+                  <p class="hint" style="margin-top:6px">你现在是行程成员，可以查看完整行程信息。</p>
                 </div>
-                <button class="btn btn-primary" onclick="go(8)">填写我的偏好 <svg class="ic sm"><use href="#i-arrow"/></svg></button>
-                <button class="btn btn-ghost" style="margin-top:10px" onclick="go(1)">查看仪表盘</button>
+                <button class="btn btn-primary" onclick="go(3)">进入行程</button>
+                <button class="btn btn-ghost" style="margin-top:10px" onclick="go(8)">填写我的偏好</button>
+                <button class="btn btn-ghost" style="margin-top:10px" onclick="go(1)">返回首页</button>
               </div>
             </div>
           </section>
 
           <!-- ========== 6 · 邀请失效 US-012 ========== -->
+
           <section class="screen" id="s6" data-screen="6">
             <div class="appbar"><div class="row">
               <div style="flex:1"><div class="title">邀请无法使用</div><div class="sub">US-012 · 不泄露任何行程隐私</div></div>
@@ -732,7 +838,7 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
               <div class="success-hero" style="padding-top:40px">
                 <div class="checkring" style="background:var(--err-soft);color:var(--err)"><svg class="ic"><use href="#i-alert"/></svg></div>
                 <div style="font-size:19px;font-weight:760">这个邀请链接已失效</div>
-                <p class="hint" style="margin-top:8px;max-width:280px;margin-inline:auto">链接可能已被组织者<b>撤销</b>、已<b>过期</b>，或地址不正确。请联系邀请你的朋友重新获取。</p>
+                <p class="hint" style="margin-top:8px;max-width:280px;margin-inline:auto">链接可能已失效，或地址不正确。请联系邀请你的朋友重新获取。</p>
               </div>
               <div class="card pad" style="margin-top:20px;background:var(--surface-2)">
                 <div style="display:flex;align-items:center;gap:9px;font-size:12.5px;font-weight:650;color:var(--ink-2)"><svg class="ic sm" style="color:var(--ok)"><use href="#i-shield"/></svg> 隐私保护</div>
@@ -743,55 +849,33 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
             </div>
           </section>
           <!-- ========== 7 · 成员与就绪 US-013 ========== -->
+
           <section class="screen" id="s7" data-screen="7">
             <div class="appbar"><div class="row">
-              <button class="iconbtn" onclick="go(1)"><svg class="ic"><use href="#i-left"/></svg></button>
-              <div style="flex:1"><div class="title">成员与就绪</div><div class="sub">US-013 · 谁已加入 / 谁是组织者</div></div>
-              <button class="iconbtn" onclick="go(4)"><svg class="ic"><use href="#i-plus"/></svg></button>
+              <div class="logo" style="width:36px;height:36px;border-radius:11px"><svg class="ic" style="width:20px;height:20px"><use href="#i-users"/></svg></div>
+              <div style="flex:1"><div class="title">成员</div><div class="sub">谁已加入 · 谁是组织者</div></div>
             </div></div>
             <div class="body">
-              <div class="card pad" style="display:flex;align-items:center;gap:13px;background:linear-gradient(135deg,#f0fdfa,#fff);border-color:#99f6e4">
-                <div style="position:relative;width:52px;height:52px;flex:none">
-                  <svg viewBox="0 0 52 52" style="width:52px;height:52px;transform:rotate(-90deg)"><circle cx="26" cy="26" r="22" fill="none" stroke="#e9e7e2" stroke-width="6"/><circle cx="26" cy="26" r="22" fill="none" stroke="#0d9488" stroke-width="6" stroke-linecap="round" stroke-dasharray="138.2" stroke-dashoffset="0"/></svg>
-                  <span style="position:absolute;inset:0;display:grid;place-items:center;font-size:13px;font-weight:780;color:var(--brand-ink)">4/4</span>
-                </div>
-                <div><div style="font-size:14.5px;font-weight:700">全员偏好已就绪</div><p class="tiny muted" style="margin-top:2px">可以生成主线方案了</p></div>
-              </div>
-
               <div class="sec-title"><svg class="ic sm"><use href="#i-users"/></svg> 4 位成员</div>
-              <div class="card pad">
-                <div class="member-row">
-                  <div class="av av-teal">明</div>
-                  <div class="mi"><div class="mn"><span data-account-name>小明</span> <span class="pill brand" style="padding:2px 8px"><svg class="ic sm" style="width:12px;height:12px"><use href="#i-star"/></svg> 组织者</span></div><div class="md">水上运动 · 摄影 · 潜水</div></div>
-                  <span class="pill ok"><svg class="ic sm" style="width:12px;height:12px"><use href="#i-check"/></svg> 就绪</span>
+              <section class="card pad" aria-label="成员列表">
+                <div class="member-list">
+                  <div class="member-row"><div class="member-avatar">明</div><div class="member-main"><div class="member-name"><span data-account-name>小明</span></div><div class="member-meta">负责确认共享方案</div></div><span class="pill brand"><svg class="ic sm" style="width:12px;height:12px"><use href="#i-sparkle"/></svg> 组织者</span></div>
+                  <div class="member-row"><div class="member-avatar tone-2">强</div><div class="member-main"><div class="member-name">阿强</div><div class="member-meta">已加入</div></div></div>
+                  <div class="member-row"><div class="member-avatar tone-3">红</div><div class="member-main"><div class="member-name">小红</div><div class="member-meta">已加入</div></div></div>
+                  <div class="member-row"><div class="member-avatar tone-4">美</div><div class="member-main"><div class="member-name">小美</div><div class="member-meta">已加入</div></div></div>
                 </div>
-                <div class="member-row">
-                  <div class="av av-blue">强</div>
-                  <div class="mi"><div class="mn">阿强</div><div class="md">水上运动 · 冒险 · 必做：潜水</div></div>
-                  <span class="pill ok"><svg class="ic sm" style="width:12px;height:12px"><use href="#i-check"/></svg> 就绪</span>
-                </div>
-                <div class="member-row">
-                  <div class="av av-amber">红</div>
-                  <div class="mi"><div class="mn">小红</div><div class="md">咖啡 · 美食 · 慢游 · 预算 ¥600（硬）</div></div>
-                  <span class="pill ok"><svg class="ic sm" style="width:12px;height:12px"><use href="#i-check"/></svg> 就绪</span>
-                </div>
-                <div class="member-row">
-                  <div class="av av-rose">美</div>
-                  <div class="mi"><div class="mn">小美</div><div class="md">显式选择「无偏好」· 按默认参与</div></div>
-                  <span class="pill"><svg class="ic sm" style="width:12px;height:12px"><use href="#i-check"/></svg> 无偏好</span>
-                </div>
-              </div>
-              <div class="card pad" style="margin-top:14px;background:var(--surface-2)">
-                <p class="hint"><svg class="ic sm" style="vertical-align:-3px;color:var(--brand)"><use href="#i-info"/></svg> 生成主线时<b>只采用「就绪」成员</b>的偏好；选择「无偏好」也视为就绪（用默认值），沉默不被当作同意。</p>
-              </div>
-              <button class="btn btn-primary" style="margin-top:16px" onclick="go(9)"><svg class="ic sm"><use href="#i-sparkle"/></svg> 生成主线方案</button>
+              </section>
+              <p class="hint">本页只展示成员和组织者；偏好与就绪状态不在成员页。</p>
+              <button class="btn btn-ghost" onclick="go(3)"><svg class="ic sm"><use href="#i-left"/></svg> 返回行程</button>
             </div>
+            <div class="tabbar"><button class="tab tabbutton" onclick="go(1)"><svg class="ic"><use href="#i-home"/></svg>仪表盘</button><button class="tab tabbutton" onclick="openSelectedTrip()"><svg class="ic"><use href="#i-list"/></svg>行程</button><button class="tab tabbutton" onclick="go(11)"><svg class="ic"><use href="#i-branch"/></svg>分队</button><button class="tab tabbutton on" aria-current="page" onclick="go(7)"><svg class="ic"><use href="#i-users"/></svg>成员</button><button class="tab tabbutton" onclick="go(21)"><svg class="ic"><use href="#i-user"/></svg>我的</button></div>
           </section>
 
           <!-- ========== 8 · 我的偏好 US-019~027 ========== -->
+
           <section class="screen" id="s8" data-screen="8">
             <div class="appbar"><div class="row">
-              <button class="iconbtn" onclick="go(1)"><svg class="ic"><use href="#i-left"/></svg></button>
+              <button class="iconbtn" onclick="go(3)"><svg class="ic"><use href="#i-left"/></svg></button>
               <div style="flex:1"><div class="title">我的偏好</div><div class="sub"><span data-account-name>小明</span> · US-019~027</div></div>
               <span class="pill" id="readyPill">未提交</span>
             </div></div>
@@ -799,70 +883,67 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
               <div class="card pad" style="background:var(--surface-2)">
                 <div class="switch-row">
                   <div class="txt"><b>我没有特别偏好</b><p>显式选择后按默认参与规划（US-027）</p></div>
-                  <button class="switch" id="noPrefSw" onclick="toggleNoPref()"></button>
+                  <button class="switch" id="noPrefSw" onclick="toggleNoPref()" role="switch" aria-checked="false" aria-label="我没有特别偏好"></button>
                 </div>
               </div>
-
               <div id="noPrefNote" style="display:none">
                 <div class="card pad" style="margin-top:14px;border-color:#99f6e4;background:linear-gradient(135deg,#f0fdfa,#fff)">
                   <div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--brand-ink)"><svg class="ic sm"><use href="#i-shield"/></svg> 已选择无偏好</div>
-                  <p class="hint" style="margin-top:6px">规划将使用默认值，并把你标记为就绪。你的沉默不会被当作同意——这是一个明确的选择。</p>
+                  <p class="hint" style="margin-top:6px">已勾选的兴趣与填写的预算会被清空；提交后规划使用默认值，并把你标记为就绪。</p>
                 </div>
               </div>
+              <p class="hint" style="margin-top:12px;color:var(--ink-3)">就绪进度：4/4 · 全员已就绪</p>
+              <div class="sec-title"><svg class="ic sm"><use href="#i-star"/></svg> 兴趣（US-019 · 预设列表、不重复）</div>
+              <div class="chips" id="interestChips">
+                <button class="pick on" data-int="水上运动">🌊 水上运动</button>
+                <button class="pick on" data-int="潜水">🤿 潜水</button>
+                <button class="pick on" data-int="摄影">📷 摄影</button>
+                <button class="pick" data-int="美食">🍜 美食</button>
+                <button class="pick" data-int="咖啡">☕ 咖啡</button>
+                <button class="pick" data-int="历史人文">🏛️ 历史人文</button>
+                <button class="pick" data-int="手作">🧶 手作</button>
+                <button class="pick" data-int="自然风景">🏞️ 自然风景</button>
+                <button class="pick" data-int="冒险">🧗 冒险</button>
+                <button class="pick" data-int="慢游">🚶 慢游</button>
+              </div>
+              <p class="hint" style="margin-top:10px">选中你在这趟旅程中喜欢的主题；点底部的「提交并标记就绪」后，行程成员才能看到。</p>
 
-              <div id="prefFields">
-                <div class="sec-title"><svg class="ic sm"><use href="#i-star"/></svg> 兴趣（US-019 · 预设列表、不重复）</div>
-                <div class="chips" id="interestChips">
-                  <button class="chip on" data-int="水上运动">🌊 水上运动</button>
-                  <button class="chip on" data-int="潜水">🤿 潜水</button>
-                  <button class="chip on" data-int="摄影">📷 摄影</button>
-                  <button class="chip" data-int="美食">🍜 美食</button>
-                  <button class="chip" data-int="咖啡">☕ 咖啡</button>
-                  <button class="chip" data-int="历史人文">🏛️ 历史人文</button>
-                  <button class="chip" data-int="手作">🧶 手作</button>
-                  <button class="chip" data-int="自然风景">🏞️ 自然风景</button>
-                  <button class="chip" data-int="冒险">🧗 冒险</button>
-                  <button class="chip" data-int="慢游">🚶 慢游</button>
+              <div class="sec-title" style="margin-top:22px"><svg class="ic sm"><use href="#i-target"/></svg> 必做项（US-020 · 可增删改）</div>
+              <div id="mustdoList">
+                <div class="mustdo">
+                  <span class="md-i"><svg class="ic sm"><use href="#i-flag"/></svg></span>
+                  <div class="md-b"><div class="md-t">体验一次潜水</div><div class="md-m"><span><svg class="ic sm" style="width:12px;height:12px;vertical-align:-2px"><use href="#i-pin"/></svg> 黄金海岸潜水中心</span></div></div>
+                  <button class="iconbtn" style="width:30px;height:30px" onclick="editMustdo(this)" aria-label="编辑必做项"><svg class="ic sm"><use href="#i-edit"/></svg></button>
+                  <button class="iconbtn" style="width:30px;height:30px" onclick="rmMustdo(this)" aria-label="删除必做项"><svg class="ic sm"><use href="#i-trash"/></svg></button>
                 </div>
+              </div>
+              <div id="mustdoForm" style="display:none" class="card pad">
+                <div class="field"><label class="label" for="md-name">活动名称</label><input class="input" id="md-name" placeholder="例如：看海上日出" /></div>
+                <div class="field"><label class="label" for="md-loc">地点</label><input class="input" id="md-loc" placeholder="例如：栈桥" /></div>
+                <div class="field"><label class="label" for="md-time">固定时间</label><input class="input" id="md-time" placeholder="例如：06:00" /><p class="hint" style="margin-top:8px">地点与时间至少填一项。</p></div>
+                <div class="btnrow"><button class="btn btn-ghost sm" onclick="toggleMustdoForm(false)">取消</button><button class="btn btn-primary sm" onclick="addMustdo()">保存</button></div>
+              </div>
+              <button class="btn btn-ghost" style="margin-top:12px" onclick="toggleMustdoForm(true)"><svg class="ic sm"><use href="#i-plus"/></svg> 添加必做项</button>
 
-                <div class="sec-title"><svg class="ic sm"><use href="#i-target"/></svg> 必做项（US-020 · 可增删改）</div>
-                <div id="mustdoList">
-                  <div class="mustdo">
-                    <span class="md-i"><svg class="ic sm"><use href="#i-waves"/></svg></span>
-                    <div class="md-b"><div class="md-t">体验一次潜水</div><div class="md-m"><span><svg class="ic sm" style="width:12px;height:12px;vertical-align:-2px"><use href="#i-pin"/></svg> 黄金海岸潜水中心</span></div></div>
-                    <button class="iconbtn" style="width:30px;height:30px" onclick="editMustdo(this)"><svg class="ic sm"><use href="#i-edit"/></svg></button>
-                    <button class="iconbtn" style="width:30px;height:30px" onclick="rmMustdo(this)"><svg class="ic sm"><use href="#i-trash"/></svg></button>
-                  </div>
+              <div class="sec-title" style="margin-top:22px"><svg class="ic sm"><use href="#i-wallet"/></svg> 预算（US-024 · 可选、人均全程）</div>
+              <div class="card pad">
+                <div class="two">
+                  <div class="field" style="margin-bottom:11px"><label class="label" for="f-budget">金额 <span class="opt">可选</span></label><div class="inp-ic"><svg class="ic"><use href="#i-wallet"/></svg><input class="input" id="f-budget" type="number" min="0" step="1" value="1200" placeholder="留空=不设预算" /></div></div>
+                  <div class="field" style="margin-bottom:11px"><label class="label" for="f-cur">币种</label><select class="select" id="f-cur"><option>CNY 人民币</option><option>USD 美元</option><option>EUR 欧元</option><option>JPY 日元</option></select></div>
                 </div>
-                <div id="mustdoForm" style="display:none" class="card pad">
-                  <div class="field"><label class="label">活动名称</label><input class="input" id="md-name" placeholder="例如：看海上日出" /></div>
-                  <div class="two">
-                    <div class="field"><label class="label">地点 <span class="opt">二选一</span></label><input class="input" id="md-loc" placeholder="例如：栈桥" /></div>
-                    <div class="field"><label class="label">固定时间 <span class="opt">可选</span></label><input class="input" id="md-time" placeholder="例如：06:00" /></div>
-                  </div>
-                  <div class="two"><button class="btn btn-ghost sm" style="width:100%" onclick="toggleMustdoForm(false)">取消</button><button class="btn btn-primary sm" style="width:100%" onclick="addMustdo()">保存</button></div>
-                </div>
-                <button class="btn btn-ghost sm" style="width:100%;margin-top:4px" onclick="toggleMustdoForm(true)"><svg class="ic sm"><use href="#i-plus"/></svg> 添加必做项</button>
-
-                <div class="sec-title"><svg class="ic sm"><use href="#i-wallet"/></svg> 预算（US-024 · 可选、人均全程）</div>
-                <div class="card pad">
-                  <div class="two">
-                    <div class="field" style="margin-bottom:11px"><label class="label">金额 <span class="opt">可选</span></label><div class="inp-ic"><svg class="ic"><use href="#i-wallet"/></svg><input class="input" id="f-budget" type="number" min="0" step="1" value="1200" placeholder="留空=不设预算" /></div></div>
-                    <div class="field" style="margin-bottom:11px"><label class="label">币种</label><select class="select" id="f-cur"><option>CNY 人民币</option><option>USD 美元</option><option>EUR 欧元</option><option>JPY 日元</option></select></div>
-                  </div>
-                  <label class="label">限额类型</label>
-                  <div class="seg" id="limitSeg"><button class="on" data-limit="soft">软上限·尽量不超</button><button data-limit="hard">硬上限·绝不超</button></div>
-                  <p class="help">非负整数、人均、整段行程。硬上限会在生成时被严格过滤；软上限仅尽量满足。</p>
-                </div>
+                <span class="label">限额类型</span>
+                <div class="seg" id="limitSeg"><button class="on" data-limit="soft">软上限·尽量不超</button><button data-limit="hard">硬上限·绝不超</button></div>
+                <p class="help">非负整数、人均、整段行程。硬上限会在生成时被严格过滤；软上限仅尽量满足。</p>
               </div>
             </div>
             <div class="actionbar"><button class="btn btn-primary" id="submitPref" onclick="submitPref()"><svg class="ic sm"><use href="#i-check"/></svg> 提交并标记就绪</button></div>
           </section>
           <!-- ========== 9 · 生成主线 US-031 ========== -->
+
           <section class="screen" id="s9" data-screen="9">
             <div class="appbar"><div class="row">
-              <button class="iconbtn" onclick="go(7)"><svg class="ic"><use href="#i-left"/></svg></button>
-              <div style="flex:1"><div class="title">生成主线方案</div><div class="sub">US-031 · 仅组织者 · 基于就绪成员</div></div>
+              <button class="iconbtn" onclick="go(3)"><svg class="ic"><use href="#i-left"/></svg></button>
+              <div style="flex:1"><div class="title">生成主线方案</div><div class="sub">US-031 · 仅组织者可生成 · 基于就绪成员</div></div>
             </div></div>
             <div class="body">
               <div id="genIdle">
@@ -877,20 +958,24 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
                 <div class="card pad">
                   <div class="label" style="margin-bottom:8px">共同兴趣</div>
                   <div class="chips"><span class="chip on" style="cursor:default">📷 摄影</span><span class="chip on" style="cursor:default">🍜 美食</span><span class="chip on" style="cursor:default">🏞️ 自然风景</span><span class="chip on" style="cursor:default">🌊 水上运动</span></div>
-                  <div class="label" style="margin:14px 0 8px">必做项汇总</div>
-                  <div class="mustdo" style="margin-bottom:0"><span class="md-i"><svg class="ic sm"><use href="#i-waves"/></svg></span><div class="md-b"><div class="md-t">体验一次潜水</div><div class="md-m">阿强 / <span data-account-name>小明</span> · 黄金海岸潜水中心</div></div></div>
+                  <div class="label" style="margin:14px 0 8px"><svg class="ic sm"><use href="#i-target"/></svg> 必做项汇总</div>
+                  <div class="mustdo" style="margin-bottom:0"><span class="md-i"><svg class="ic sm"><use href="#i-flag"/></svg></span><div class="md-b"><div class="md-t">体验一次潜水</div><div class="md-m">阿强 / <span data-account-name>小明</span> · 黄金海岸潜水中心</div></div></div>
                   <div class="label" style="margin:14px 0 8px">约束 / 预算</div>
                   <p class="hint">小红：人均全程 <b>¥600 硬上限</b> · <span data-account-name>小明</span>：¥1200 软上限 · 其余不设预算。</p>
                 </div>
                 <div class="sec-title"><svg class="ic sm"><use href="#i-route"/></svg> 生成规则（可解释）</div>
                 <div class="card pad">
                   <div class="valid">
-                    <div class="valid-item"><span class="valid-ic" style="background:var(--brand-soft);color:var(--brand-ink)">1</span><div><div class="vt">必做项优先</div><div class="vd">先排入全员必做项与固定时间</div></div></div>
-                    <div class="valid-item"><span class="valid-ic" style="background:var(--brand-soft);color:var(--brand-ink)">2</span><div><div class="vt">共同兴趣匹配</div><div class="vd">优先覆盖多数人共享的兴趣</div></div></div>
-                    <div class="valid-item"><span class="valid-ic" style="background:var(--brand-soft);color:var(--brand-ink)">3</span><div><div class="vt">约束 / 预算过滤</div><div class="vd">剔除违反硬约束或超预算的活动</div></div></div>
+                    <div class="valid-item"><span class="valid-ic" style="background:var(--brand-soft);color:var(--brand-ink)">1</span><div><div class="vt">全员就绪才生成</div><div class="vd">只采用已提交的成员；沉默不算同意</div></div></div>
+                    <div class="valid-item"><span class="valid-ic" style="background:var(--brand-soft);color:var(--brand-ink)">2</span><div><div class="vt">必做项优先</div><div class="vd">先排入全员必做项与固定时间</div></div></div>
+                    <div class="valid-item"><span class="valid-ic" style="background:var(--brand-soft);color:var(--brand-ink)">3</span><div><div class="vt">站点之间留出路程</div><div class="vd">相邻站点之间保留交通时间</div></div></div>
+                    <div class="valid-item"><span class="valid-ic" style="background:var(--brand-soft);color:var(--brand-ink)">4</span><div><div class="vt">硬预算过滤</div><div class="vd">剔除会让成员超过硬上限的活动</div></div></div>
+                    <div class="valid-item"><span class="valid-ic" style="background:var(--brand-soft);color:var(--brand-ink)">5</span><div><div class="vt">改动后需重新生成</div><div class="vd">偏好或预算变化会让草稿过期</div></div></div>
+                    <div class="valid-item"><span class="valid-ic" style="background:var(--brand-soft);color:var(--brand-ink)">6</span><div><div class="vt">自动补全出发点</div><div class="vd">生成时补齐出发与返程地点</div></div></div>
                   </div>
                 </div>
                 <button class="btn btn-primary" style="margin-top:18px" onclick="generatePlan()"><svg class="ic sm"><use href="#i-sparkle"/></svg> 一键生成主线方案</button>
+                <p class="hint" style="margin-top:10px">只有组织者可以生成主线方案；其他成员可查看以上汇总，生成后到主线方案页审阅。</p>
               </div>
               <div id="genProgress" style="display:none">
                 <div class="card pad" style="text-align:center">
@@ -911,6 +996,7 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
           </section>
 
           <!-- ========== 10 · 主线审阅与确认 US-037 ========== -->
+
           <section class="screen" id="s10" data-screen="10">
             <div class="appbar"><div class="row">
               <button class="iconbtn" onclick="go(planBackScreen)" title="返回" aria-label="返回"><svg class="ic"><use href="#i-left"/></svg></button>
@@ -922,24 +1008,14 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
                 <svg class="ic sm" style="color:var(--brand)"><use href="#i-info"/></svg>
                 <p class="tiny muted" style="flex:1">基于当前就绪偏好生成。若成员偏好变更，此草稿会标记为<b>过期</b>，需重新生成。</p>
               </div>
-              <div class="sec-title"><svg class="ic sm"><use href="#i-clock"/></svg> Day 1 · 11月14日（周六）</div>
-              <div class="timeline">
-                <div class="tl-item"><div class="tl-rail"><div class="tl-node"></div><div class="tl-line"></div></div><div class="tl-card"><div class="tl-time">09:30 – 10:30</div><div class="act" style="margin-top:5px"><div class="top"><div class="emoji"><svg class="ic"><use href="#i-waves"/></svg></div><div><h4>栈桥 & 海边漫步</h4><div class="meta">全员 · 免费</div></div></div><div class="tags"><span class="pill">📷 摄影</span><span class="pill">🏞️ 自然</span></div></div></div></div>
-                <div class="tl-item"><div class="tl-rail"><div class="tl-node"></div><div class="tl-line"></div></div><div class="tl-card"><div class="tl-time">10:30 – 12:00</div><div class="act" style="margin-top:5px"><div class="top"><div class="emoji"><svg class="ic"><use href="#i-camera"/></svg></div><div><h4>老城天主教堂 & 拍照</h4><div class="meta">全员 · 免费</div></div></div><div class="tags"><span class="pill">🏛️ 人文</span><span class="pill">📷 摄影</span></div></div></div></div>
-                <div class="tl-item"><div class="tl-rail"><div class="tl-node"></div><div class="tl-line"></div></div><div class="tl-card"><div class="tl-time">12:00 – 13:30</div><div class="act" style="margin-top:5px"><div class="top"><div class="emoji"><svg class="ic"><use href="#i-utensils"/></svg></div><div><h4>海鲜午餐 · 渔人码头</h4><div class="meta">全员 · ¥88/人</div></div></div><div class="tags"><span class="pill">🍜 美食</span></div></div></div></div>
-                <div class="tl-item"><div class="tl-rail"><div class="tl-node" style="border-color:var(--brand)"></div><div class="tl-line"></div></div><div class="tl-card"><div class="tl-time">13:30 – 17:00</div><div class="split-cta" style="margin-top:5px"><div class="hd"><svg class="ic sm"><use href="#i-branch"/></svg> 黄金海岸自由活动 · 可分队</div><p style="margin-bottom:8px">含必做项「潜水」。有人想下水、有人想逸老城——可在此发起智能分队。</p><div class="tags"><span class="pill ok"><svg class="ic sm" style="width:12px;height:12px"><use href="#i-check"/></svg> 覆盖必做：潜水</span></div></div></div></div>
-                <div class="tl-item"><div class="tl-rail"><div class="tl-node"></div><div class="tl-line"></div></div><div class="tl-card"><div class="tl-time">17:00 – 18:30</div><div class="act" style="margin-top:5px"><div class="top"><div class="emoji"><svg class="ic"><use href="#i-sun"/></svg></div><div><h4>海崖灯塔 · 看日落</h4><div class="meta"><svg class="ic sm"><use href="#i-pin"/></svg> 会合点 · 全员 · 免费</div></div></div></div></div></div>
-                <div class="tl-item"><div class="tl-rail"><div class="tl-node"></div></div><div class="tl-card"><div class="tl-time">19:00 – 20:30</div><div class="act" style="margin-top:5px"><div class="top"><div class="emoji"><svg class="ic"><use href="#i-utensils"/></svg></div><div><h4>沙滩晚餐 & 篝火</h4><div class="meta">全员 · ¥60/人</div></div></div></div></div></div>
-              </div>
-
-              <div class="sec-title"><svg class="ic sm"><use href="#i-shield"/></svg> 确认前校验</div>
-              <div class="card pad">
-                <div class="valid" id="planValid">
-                  <div class="valid-item" id="pv1"><span class="valid-ic" style="background:var(--surface-3);color:var(--ink-3)"><svg class="ic"><use href="#i-clock"/></svg></span><div><div class="vt">时间顺序无冲突</div><div class="vd">校验中…</div></div></div>
-                  <div class="valid-item" id="pv2"><span class="valid-ic" style="background:var(--surface-3);color:var(--ink-3)"><svg class="ic"><use href="#i-clock"/></svg></span><div><div class="vt">硬约束：小红预算 ¥600</div><div class="vd">校验中…</div></div></div>
-                  <div class="valid-item" id="pv3"><span class="valid-ic" style="background:var(--surface-3);color:var(--ink-3)"><svg class="ic"><use href="#i-clock"/></svg></span><div><div class="vt">必做项与固定时间已覆盖</div><div class="vd">校验中…</div></div></div>
+              <div id="mainPlanTimeline"></div>
+              <section class="card pad" style="margin-top:12px">
+                <div class="valid-item" style="border-bottom:0">
+                  <span class="valid-ic" style="background:var(--brand-soft);color:var(--brand-ink)"><svg class="ic"><use href="#i-shield"/></svg></span>
+                  <div><div class="vt">人均费用 ¥348</div><div class="vd">版本 v1 · 草稿，待组织者确认</div></div>
                 </div>
-              </div>
+              </section>
+              <p class="hint" style="margin-top:12px;color:var(--ink-3)">确认由服务端重新校验（时间顺序、硬预算、必做覆盖）；失败时这里会列出具体原因。</p>
             </div>
             <div class="actionbar">
               <button class="btn btn-ghost" style="flex:1" onclick="go(9)"><svg class="ic sm"><use href="#i-sparkle"/></svg> 重新生成</button>
@@ -947,233 +1023,257 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
             </div>
           </section>
           <!-- ========== 11 · 队伍路线 US-038 ========== -->
+
           <section class="screen" id="s11" data-screen="11">
             <div class="appbar"><div class="row">
-              <button class="iconbtn" onclick="go(10)"><svg class="ic"><use href="#i-left"/></svg></button>
-              <div style="flex:1"><div class="title">队伍路线</div><div class="sub">US-038 · 本次行程仅一次分队</div></div>
-              <button class="btn btn-primary sm" style="padding:8px 12px;font-size:12.5px" onclick="go(12)"><svg class="ic sm"><use href="#i-plus"/></svg> 发起分队</button>
+              <button class="iconbtn" onclick="go(3)" title="返回行程详情" aria-label="返回行程详情"><svg class="ic"><use href="#i-left"/></svg></button>
+              <div style="flex:1"><div class="title">队伍路线</div><div class="sub">本次行程仅一次分队</div></div>
+              <button class="btn btn-primary sm" style="border-radius:12px" id="splitEntryAction" onclick="go(12)">发起分队 <svg class="ic sm"><use href="#i-arrow"/></svg></button>
             </div></div>
             <div class="body">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 2px">
+                <span class="pill warn" id="splitEntryStatus">分队草稿进行中</span>
+                <span class="tiny muted" id="splitEntryHint">点击右上角进入分队</span>
+              </div>
+              <div class="tg-split" style="margin:10px 0 12px">
+                <svg class="ic sm" style="color:var(--brand)"><use href="#i-clock"/></svg>
+                <b>13:30 分头</b><span class="dotline"></span><b>17:00 会合</b><span class="dur">3 小时 30 分</span>
+              </div>
+              <div class="tg-legend">
+                <span><i style="background:var(--brand)"></i>全员主线</span>
+                <span><i style="background:var(--a)"></i>Route A · 沿主线</span>
+                <span><i style="background:var(--b)"></i>Route B · 老城慢游</span>
+              </div>
               <div class="teamgraph">
-                <div class="tg-legend">
-                  <span><i style="background:var(--brand)"></i>全员主线</span>
-                  <span><i style="background:var(--a)"></i>Route A · 海岸冒险</span>
-                  <span><i style="background:var(--b)"></i>Route B · 老城慢游</span>
-                </div>
-                <div class="tg-split">
-                  <b>13:30 分头</b><span class="dotline"></span><b>16:40 会合</b><span class="dur">3 小时 10 分</span>
-                </div>
-                <svg id="teamRouteSvg" class="tg-svg" viewBox="0 0 320 824" role="group" aria-label="队伍路线图"></svg>
-                <div class="tg-hint"><svg class="ic sm"><use href="#i-info"/></svg> 点击任意节点，查看该点需要完成的事项</div>
+                <svg style="display:block;width:100%;height:auto" id="teamRouteSvg" role="img" aria-label="队伍路线图"></svg>
+              </div>
+              <div class="card pad" style="margin-top:12px;background:var(--surface-2)">
+                <div style="font-size:12.5px;font-weight:700;color:var(--ink-2)">待生成两条路线</div>
+                <p class="tiny muted" style="margin-top:3px">保存边界并生成 Route A / B 后，分支会在这里展开活动与时长。</p>
               </div>
             </div>
-
-            <div class="sheet-mask" id="routeSheet" aria-hidden="true" onclick="if(event.target===this)closeRouteSheet()">
-              <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="rsTitle">
-                <div class="sheet-grab"></div>
-                <div class="sheet-head">
-                  <span class="rs-badge all" id="rsBadge">全员</span>
-                  <div style="flex:1;min-width:0"><div class="rs-time" id="rsTime">09:30</div><h3 id="rsTitle">节点</h3></div>
-                  <button class="iconbtn" onclick="closeRouteSheet()" aria-label="关闭"><svg class="ic"><use href="#i-x"/></svg></button>
-                </div>
-                <div class="rs-meta" id="rsMeta"></div>
-                <div class="sec-title" style="margin:18px 0 4px"><svg class="ic sm"><use href="#i-list"/></svg> 需要做的事</div>
-                <div class="valid" id="rsTasks"></div>
-                <button class="btn btn-primary" style="margin-top:18px" onclick="closeRouteSheet()">知道了</button>
-              </div>
-            </div>
+            <div class="tabbar"><button class="tab tabbutton" onclick="go(1)"><svg class="ic"><use href="#i-home"/></svg>仪表盘</button><button class="tab tabbutton" onclick="openSelectedTrip()"><svg class="ic"><use href="#i-list"/></svg>行程</button><button class="tab tabbutton on" aria-current="page" onclick="go(11)"><svg class="ic"><use href="#i-branch"/></svg>分队</button><button class="tab tabbutton" onclick="go(7)"><svg class="ic"><use href="#i-users"/></svg>成员</button><button class="tab tabbutton" onclick="go(21)"><svg class="ic"><use href="#i-user"/></svg>我的</button></div>
           </section>
 
           <!-- ========== 12 · 选择边界 US-039 ========== -->
+
           <section class="screen" id="s12" data-screen="12">
             <div class="appbar"><div class="row">
               <button class="iconbtn" onclick="go(11)"><svg class="ic"><use href="#i-left"/></svg></button>
-              <div style="flex:1"><div class="title">选择分队边界</div><div class="sub">US-039 · 第 1 步 / 共 4 步</div></div>
+              <div style="flex:1"><div class="title">分头与会合边界</div><div class="sub">出发 / 会合 · 仅主线节点</div></div>
             </div><div class="stepbar"><i class="on"></i><i></i><i></i><i></i></div></div>
             <div class="body">
-              <p class="hint" style="margin-bottom:14px">在主线选一个<b>分头节点</b>与<b>会合节点</b>。两条路线地点固定，会合有明确截止时间，中间需为正的可用时间窗。</p>
-              <div class="sec-title"><svg class="ic sm"><use href="#i-nav"/></svg> 分头节点（出发）</div>
-              <div class="chips" id="depChips">
-                <button class="chip on" data-dep="13:30" data-min="810" data-loc="渔人码头">13:30 · 渔人码头</button>
-                <button class="chip" data-dep="14:00" data-min="840" data-loc="黄金海岸">14:00 · 黄金海岸</button>
+              <p class="split-note">出发时刻取所选站点的开始时间（即在该站开始分头），会合时刻取所选站点的开始时间。会合站必须排在出发站之后，窗口 = 会合开始 − 出发开始，由后端校验为正；不满足的选项已置灰。</p>
+              <div class="card pad">
+                <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;margin-bottom:9px"><svg class="ic sm" style="color:var(--a)"><use href="#i-nav"/></svg> 分头节点（出发）</div>
+                <div class="chips" id="depChips">
+                  <button class="chip on a" data-dep="13:30" data-min="810" data-loc="渔人码头">13:30 · 渔人码头</button>
+                  <button class="chip" data-dep="14:30" data-min="870" data-loc="黄金海岸">14:30 · 黄金海岸</button>
+                </div>
               </div>
-              <div class="sec-title"><svg class="ic sm"><use href="#i-flag"/></svg> 会合节点（截止）</div>
-              <div class="chips" id="reuChips">
-                <button class="chip on" data-reu="17:00" data-min="1020" data-loc="海崖灯塔">17:00 · 海崖灯塔</button>
-                <button class="chip" data-reu="17:30" data-min="1050" data-loc="海崖灯塔">17:30 · 海崖灯塔</button>
+              <div class="card pad" style="margin-top:12px">
+                <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;margin-bottom:9px"><svg class="ic sm" style="color:var(--b)"><use href="#i-flag"/></svg> 会合节点（截止）</div>
+                <div class="chips" id="reuChips">
+                  <button class="chip" disabled data-reu="13:00" data-min="780" data-loc="渔人码头">13:00 · 渔人码头</button>
+                  <button class="chip on b" data-reu="17:00" data-min="1020" data-loc="海崖灯塔">17:00 · 海崖灯塔</button>
+                </div>
               </div>
-              <div class="card pad" style="margin-top:18px;border-color:#99f6e4;background:linear-gradient(135deg,#f0fdfa,#fff)">
+              <div class="card pad" style="margin-top:14px;border-color:#99f6e4;background:linear-gradient(135deg,#f0fdfa,#fff)">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
                   <span class="tiny" style="font-weight:700;color:var(--brand-ink)">可用时间窗</span>
                   <span class="pill ok" id="winDur"><svg class="ic sm" style="width:12px;height:12px"><use href="#i-check"/></svg> 3 小时 30 分</span>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px">
-                  <div style="text-align:center"><div class="count" style="font-size:19px" id="winStart">13:30</div><div class="tiny muted" id="winStartLoc">渔人码头</div></div>
+                  <div style="text-align:center"><div class="tiny muted">出发</div><div class="count" style="font-size:19px" id="winStart">13:30</div><div class="tiny muted" id="winStartLoc">渔人码头</div></div>
                   <div style="flex:1;height:2px;background:linear-gradient(90deg,var(--a),var(--b));position:relative"><span style="position:absolute;left:50%;top:-9px;transform:translateX(-50%);background:#fff;padding:0 6px;font-size:10px;color:var(--ink-3)">分头行动</span></div>
-                  <div style="text-align:center"><div class="count" style="font-size:19px;color:var(--ok)" id="winEnd">17:00</div><div class="tiny muted" id="winEndLoc">海崖灯塔</div></div>
+                  <div style="text-align:center"><div class="tiny muted">会合</div><div class="count" style="font-size:19px;color:var(--ok)" id="winEnd">17:00</div><div class="tiny muted" id="winEndLoc">海崖灯塔</div></div>
                 </div>
-                <p class="help" style="margin-top:12px">会合截止 <b id="deadlineTxt">17:00</b> 为硬性时间；两条路线都必须在此前抵达 <b id="meetLocTxt">海崖灯塔</b>。</p>
+                <p class="help" style="margin-top:12px">会合截止 <b id="deadlineTxt">17:00</b> 为硬性时间；两组须在 <b id="meetLocTxt">海崖灯塔</b> 开始时刻前集合。窗口合法性由后端判定，前端不自行落库。</p>
               </div>
             </div>
-            <div class="actionbar"><button class="btn btn-primary" onclick="go(13)">下一步：分组与路线 <svg class="ic sm"><use href="#i-arrow"/></svg></button></div>
+            <div class="actionbar">
+              <button class="btn btn-ghost" style="flex:1" onclick="toast('边界已保存')">保存边界</button>
+              <button class="btn btn-primary" style="flex:1" onclick="go(13)">保存并下一步 <svg class="ic sm"><use href="#i-arrow"/></svg></button>
+            </div>
           </section>
 
           <!-- ========== 13 · 分组与生成路线 US-042 ========== -->
+
           <section class="screen" id="s13" data-screen="13">
             <div class="appbar"><div class="row">
               <button class="iconbtn" onclick="go(12)"><svg class="ic"><use href="#i-left"/></svg></button>
-              <div style="flex:1"><div class="title">分组与生成路线</div><div class="sub">US-042 · 第 2 步 / 共 4 步</div></div>
+              <div style="flex:1"><div class="title">分组与路线</div><div class="sub">成对生成 · 成员可调整分组</div></div>
             </div><div class="stepbar"><i class="on"></i><i class="on"></i><i></i><i></i></div></div>
             <div class="body">
-              <div class="card pad" style="background:var(--surface-2);display:flex;align-items:center;gap:9px">
-                <svg class="ic sm" style="color:var(--brand)"><use href="#i-sparkle"/></svg>
-                <p class="tiny muted" style="flex:1">已按偏好<b>自动分组</b>。点击成员可在两条路线间调整。</p>
+              <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;margin:0 2px 9px"><svg class="ic sm" style="color:var(--brand)"><use href="#i-users"/></svg> 分组</div>
+              <div class="group-grid">
+                <div class="group-card a">
+                  <div class="group-head"><span class="gcode">A</span><span class="ght">A 组</span><span class="gnum">2 人</span></div>
+                  <div class="gbody" id="groupA"><button class="chip on a" data-account-member data-m="小明">小明</button><button class="chip on a" data-m="阿强">阿强</button></div>
+                </div>
+                <div class="group-card b">
+                  <div class="group-head"><span class="gcode">B</span><span class="ght">B 组</span><span class="gnum">2 人</span></div>
+                  <div class="gbody" id="groupB"><button class="chip on b" data-m="小红">小红</button><button class="chip on b" data-m="小美">小美</button></div>
+                </div>
               </div>
-              <div class="two" style="margin-top:14px">
-                <div class="route a"><div class="rhead" style="padding:11px 12px"><span class="rcode">A</span><h3 style="font-size:13.5px">海岸冒险</h3></div><div class="rbody" style="padding:11px 12px"><div class="chips" id="groupA" style="gap:6px"><button class="chip on a" data-account-member data-m="小明" style="padding:5px 9px">明</button><button class="chip on a" data-m="阿强" style="padding:5px 9px">强</button></div><div class="tiny muted" style="margin-top:9px">水上运动 · 潜水</div></div></div>
-                <div class="route b"><div class="rhead" style="padding:11px 12px"><span class="rcode">B</span><h3 style="font-size:13.5px">老城慢游</h3></div><div class="rbody" style="padding:11px 12px"><div class="chips" id="groupB" style="gap:6px"><button class="chip on b" data-m="小红" style="padding:5px 9px">红</button><button class="chip on b" data-m="小美" style="padding:5px 9px">美</button></div><div class="tiny muted" style="margin-top:9px">咖啡 · 美食 · 慢游</div></div></div>
-              </div>
-              <button class="btn btn-primary" style="margin-top:16px" id="genRoutesBtn" onclick="genRoutes()"><svg class="ic sm"><use href="#i-sparkle"/></svg> 生成两条路线</button>
+              <p class="hint" style="margin-top:8px">点击成员头像可把他移到另一组；所有行程成员都可以调整分组。更改分组后路线仍为上次生成的版本，可点「重新生成」。</p>
+              <p class="hint" style="margin-top:6px;color:var(--ink-3)">时间窗 13:30 → 17:00（共 210 分钟），由你在上一步选的出发/会合站决定；两条路线的合计都需不超过它。</p>
 
-              <div id="routesResult" style="display:none">
-                <div class="sec-title"><svg class="ic sm"><use href="#i-route"/></svg> 路线 A · 海岸冒险</div>
-                <div class="route a"><div class="rhead"><span class="rcode">A</span><div style="flex:1"><h3>海岸冒险</h3><div class="rsub"><span data-account-name>小明</span> · 阿强</div></div><div class="avstack"><div class="av sm av-teal">明</div><div class="av sm av-blue">强</div></div></div>
+              <div id="routesResult" style="margin-top:14px">
+                <div class="route a">
+                  <div class="rhead"><span class="rcode">A</span><div style="flex:1"><h3>沿主线 · 黄金海岸段</h3><div class="rsub"><svg class="ic sm" style="width:12px;height:12px"><use href="#i-nav"/></svg> 渔人码头 → 海崖灯塔</div></div><span class="rpill">合计 105 分</span></div>
                   <div class="rbody">
-                    <div class="mini"><span class="mt">13:30</span><div><div class="mn">潜水体验（必做）</div><div class="mm">黄金海岸潜水中心 · ¥200</div></div></div>
-                    <div class="mini"><span class="mt">15:00</span><div><div class="mn">摩托艇 & 水上</div><div class="mm">黄金海岸 · ¥120</div></div></div>
-                    <div class="mini leg"><span class="mt">16:00</span><div><div class="mn">→ 前往海崖灯塔（路程 40分）</div></div></div>
-                    <div class="mini leg"><span class="mt">16:40</span><div><div class="mn">缓冲 20分 · 抵达会合点</div></div></div>
+                    <div class="route-summary"><span class="rs-l">黄金海岸漫步</span><span class="rs-v">活动 · 60 分</span></div>
+                    <div class="route-summary italic"><span class="rs-l">路程（15 + 20）</span><span class="rs-v">35 分</span></div>
+                    <div class="route-summary"><span class="rs-l">缓冲</span><span class="rs-v">10 分</span></div>
+                    <div class="route-summary"><span class="rs-l">合计</span><span class="rs-v">105 分 / 窗口 210 分</span></div>
                   </div>
-                  <div class="rfoot"><svg class="ic sm" style="color:var(--ok)"><use href="#i-flag"/></svg> 17:00 海崖灯塔会合</div>
+                  <div class="rfoot ok"><svg class="ic sm"><use href="#i-flag"/></svg> 17:00 海崖灯塔会合<span class="rtime">105 ≤ 210</span></div>
                 </div>
-                <div class="sec-title"><svg class="ic sm"><use href="#i-route"/></svg> 路线 B · 老城慢游</div>
-                <div class="route b"><div class="rhead"><span class="rcode">B</span><div style="flex:1"><h3>老城慢游</h3><div class="rsub">小红 · 小美</div></div><div class="avstack"><div class="av sm av-amber">红</div><div class="av sm av-rose">美</div></div></div>
+                <div class="route b" style="margin-top:12px">
+                  <div class="rhead"><span class="rcode">B</span><div style="flex:1"><h3>老城慢游</h3><div class="rsub"><svg class="ic sm" style="width:12px;height:12px"><use href="#i-nav"/></svg> 渔人码头 → 海崖灯塔</div></div><span class="rpill">合计 110 分</span></div>
                   <div class="rbody">
-                    <div class="mini"><span class="mt">13:30</span><div><div class="mn">老城咖啡</div><div class="mm">大学路 · ¥45</div></div></div>
-                    <div class="mini"><span class="mt">14:30</span><div><div class="mn">手作店体验</div><div class="mm">老城手作区 · ¥60</div></div></div>
-                    <div class="mini"><span class="mt">15:30</span><div><div class="mn">老城拍照漫步</div><div class="mm">免费</div></div></div>
-                    <div class="mini leg"><span class="mt">16:10</span><div><div class="mn">→ 前往海崖灯塔（路程 35分）</div></div></div>
-                    <div class="mini leg"><span class="mt">16:45</span><div><div class="mn">缓冲 15分 · 抵达会合点</div></div></div>
+                    <div class="route-summary"><span class="rs-l">老城咖啡 & 手作</span><span class="rs-v">活动 · 60 分</span></div>
+                    <div class="route-summary italic"><span class="rs-l">路程（20 + 20）</span><span class="rs-v">40 分</span></div>
+                    <div class="route-summary"><span class="rs-l">缓冲</span><span class="rs-v">10 分</span></div>
+                    <div class="route-summary"><span class="rs-l">合计</span><span class="rs-v">110 分 / 窗口 210 分</span></div>
                   </div>
-                  <div class="rfoot"><svg class="ic sm" style="color:var(--ok)"><use href="#i-flag"/></svg> 17:00 海崖灯塔会合</div>
+                  <div class="rfoot ok"><svg class="ic sm"><use href="#i-flag"/></svg> 17:00 海崖灯塔会合<span class="rtime">110 ≤ 210</span></div>
                 </div>
-                <button class="btn btn-primary" style="margin-top:16px" onclick="go(14)">下一步：会合时间窗校验 <svg class="ic sm"><use href="#i-arrow"/></svg></button>
               </div>
+            </div>
+            <div class="actionbar">
+              <button class="btn btn-ghost" style="flex:1" id="genRoutesBtn" onclick="genRoutes()"><svg class="ic sm"><use href="#i-sparkle"/></svg> 重新生成</button>
+              <button class="btn btn-primary" style="flex:1" onclick="go(14)">下一步 <svg class="ic sm"><use href="#i-arrow"/></svg></button>
             </div>
           </section>
           <!-- ========== 14 · 会合时间窗校验 US-043 ========== -->
+
           <section class="screen" id="s14" data-screen="14">
             <div class="appbar"><div class="row">
               <button class="iconbtn" onclick="go(13)"><svg class="ic"><use href="#i-left"/></svg></button>
-              <div style="flex:1"><div class="title">会合时间窗校验</div><div class="sub">US-043 · 第 3 步 / 共 4 步</div></div>
+              <div style="flex:1"><div class="title">会合时间窗校验</div><div class="sub">基于快照校验 · 只读不写库</div></div>
             </div><div class="stepbar"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div>
             <div class="body">
-              <p class="hint" style="margin-bottom:14px">校验两条路线的<b>活动时间 + 全部路程 + 缓冲</b>是否都在分队时间窗内，确保大家能在截止前抵达会合点。</p>
-              <div class="card pad" style="background:var(--surface-2)">
+              <div class="card pad" style="border-color:#99f6e4;background:linear-gradient(135deg,#f0fdfa,#fff)">
                 <div style="display:flex;align-items:center;justify-content:space-between">
-                  <span class="tiny" style="font-weight:700">时间窗 13:30 → 17:00</span><span class="pill">共 210 分钟</span>
+                  <span style="font-size:13px;font-weight:700">时间窗 13:30 → 17:00</span>
+                  <span class="pill brand"><svg class="ic sm" style="width:12px;height:12px"><use href="#i-clock"/></svg> 共 210 分钟</span>
                 </div>
-                <div style="display:flex;gap:14px;margin-top:11px;font-size:10.5px;color:var(--ink-2);font-weight:600">
-                  <span style="display:flex;align-items:center;gap:5px"><i style="width:11px;height:11px;border-radius:3px;background:var(--a)"></i>活动</span>
-                  <span style="display:flex;align-items:center;gap:5px"><i style="width:11px;height:11px;border-radius:3px;background:repeating-linear-gradient(45deg,#cbd5e1,#cbd5e1 2px,#e2e8f0 2px,#e2e8f0 4px)"></i>路程</span>
-                  <span style="display:flex;align-items:center;gap:5px"><i style="width:11px;height:11px;border-radius:3px;background:var(--a-soft);border:1px solid var(--a-line)"></i>缓冲</span>
+                <div style="display:flex;gap:14px;margin-top:10px;font-size:10.5px;color:var(--ink-2);font-weight:600">
+                  <span style="display:flex;align-items:center;gap:5px"><i class="legend-swatch" style="background:var(--a)"></i>活动</span>
+                  <span style="display:flex;align-items:center;gap:5px"><i class="legend-swatch" style="background:repeating-linear-gradient(45deg,#cbd5e1,#cbd5e1 2px,#e2e8f0 2px,#e2e8f0 4px)"></i>路程</span>
+                  <span style="display:flex;align-items:center;gap:5px"><i class="legend-swatch" style="background:var(--a-soft);border:1px solid var(--a-line)"></i>缓冲</span>
                 </div>
               </div>
 
-              <div class="sec-title"><span class="pill a" style="padding:2px 9px">A</span> 海岸冒险 · 时间构成</div>
-              <div class="card pad">
-                <div style="display:flex;height:26px;border-radius:8px;overflow:hidden;border:1px solid var(--line)">
-                  <div style="width:71.4%;background:linear-gradient(135deg,var(--a),#1d4ed8)"></div>
-                  <div style="width:19%;background:repeating-linear-gradient(45deg,#cbd5e1,#cbd5e1 3px,#e2e8f0 3px,#e2e8f0 6px)"></div>
-                  <div style="width:9.6%;background:var(--a-soft)"></div>
+              <div class="card pad" style="margin-top:12px">
+                <div style="font-size:13px;font-weight:800;color:var(--a);margin-bottom:8px">A 组 · 快捷输入（分钟）</div>
+                <div class="timing-grid">
+                  <div><div class="tf">活动</div><input class="tv" value="60" /></div>
+                  <div><div class="tf">路程1</div><input class="tv" value="15" /></div>
+                  <div><div class="tf">路程2</div><input class="tv" value="20" /></div>
+                  <div><div class="tf">缓冲</div><input class="tv" value="10" /></div>
                 </div>
-                <div class="valid" style="margin-top:10px">
-                  <div class="valid-item"><span class="valid-ic" style="background:var(--a-soft);color:var(--a)"><svg class="ic"><use href="#i-clock"/></svg></span><div style="flex:1"><div class="vt">活动时间</div><div class="vd">潜水 90分 + 摩托艇 60分</div></div><b class="tiny">150分</b></div>
-                  <div class="valid-item"><span class="valid-ic" style="background:var(--surface-3);color:var(--ink-2)"><svg class="ic"><use href="#i-nav"/></svg></span><div style="flex:1"><div class="vt">路程（渔人码头→灯塔）</div><div class="vd">全部路程段合计</div></div><b class="tiny">40分</b></div>
-                  <div class="valid-item"><span class="valid-ic" style="background:var(--ok-soft);color:var(--ok)"><svg class="ic"><use href="#i-shield"/></svg></span><div style="flex:1"><div class="vt">安全缓冲</div><div class="vd">预留抵达余量</div></div><b class="tiny">20分</b></div>
-                </div>
-                <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line-2)"><span class="pill ok"><svg class="ic sm" style="width:12px;height:12px"><use href="#i-check"/></svg> 210 ≤ 210</span><span class="tiny muted">16:40 抵达，17:00 前会合 ✓</span></div>
               </div>
-
-              <div class="sec-title"><span class="pill b" style="padding:2px 9px">B</span> 老城慢游 · 时间构成</div>
-              <div class="card pad">
-                <div style="display:flex;height:26px;border-radius:8px;overflow:hidden;border:1px solid var(--line)">
-                  <div style="width:76.2%;background:linear-gradient(135deg,var(--b),#c2410c)"></div>
-                  <div style="width:16.7%;background:repeating-linear-gradient(45deg,#cbd5e1,#cbd5e1 3px,#e2e8f0 3px,#e2e8f0 6px)"></div>
-                  <div style="width:7.1%;background:var(--b-soft)"></div>
+              <div class="card pad" style="margin-top:10px">
+                <div style="font-size:13px;font-weight:800;color:var(--b);margin-bottom:8px">B 组 · 快捷输入（分钟）</div>
+                <div class="timing-grid">
+                  <div><div class="tf">活动</div><input class="tv" value="60" /></div>
+                  <div><div class="tf">路程1</div><input class="tv" value="20" /></div>
+                  <div><div class="tf">路程2</div><input class="tv" value="20" /></div>
+                  <div><div class="tf">缓冲</div><input class="tv" value="10" /></div>
                 </div>
-                <div class="valid" style="margin-top:10px">
-                  <div class="valid-item"><span class="valid-ic" style="background:var(--b-soft);color:var(--b)"><svg class="ic"><use href="#i-clock"/></svg></span><div style="flex:1"><div class="vt">活动时间</div><div class="vd">咖啡 60 + 手作 60 + 拍照 40</div></div><b class="tiny">160分</b></div>
-                  <div class="valid-item"><span class="valid-ic" style="background:var(--surface-3);color:var(--ink-2)"><svg class="ic"><use href="#i-nav"/></svg></span><div style="flex:1"><div class="vt">路程（老城→灯塔）</div><div class="vd">全部路程段合计</div></div><b class="tiny">35分</b></div>
-                  <div class="valid-item"><span class="valid-ic" style="background:var(--ok-soft);color:var(--ok)"><svg class="ic"><use href="#i-shield"/></svg></span><div style="flex:1"><div class="vt">安全缓冲</div><div class="vd">预留抵达余量</div></div><b class="tiny">15分</b></div>
-                </div>
-                <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line-2)"><span class="pill ok"><svg class="ic sm" style="width:12px;height:12px"><use href="#i-check"/></svg> 210 ≤ 210</span><span class="tiny muted">16:45 抵达，17:00 前会合 ✓</span></div>
               </div>
+              <p class="split-note" style="margin-top:10px">输入预填自保存快照，可调整以观察超窗 / 缺输入态；清空某项即模拟缺输入。可行性由后端判定，前端不自行宣布。</p>
+              <button class="btn btn-ghost" onclick="toast('已按当前输入重新校验时间窗')"><svg class="ic sm"><use href="#i-check"/></svg> 重新校验时间窗</button>
 
-              <div class="card pad" style="margin-top:16px;border-color:#a7f3d0;background:var(--ok-soft)">
+              <div class="card pad" style="margin-top:16px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><b style="font-size:13px;color:var(--a)">A 组</b><span class="pill ok"><svg class="ic sm" style="width:12px;height:12px"><use href="#i-check"/></svg> 105 ≤ 210</span></div>
+                <div class="route-mix"><div style="width:57%;background:linear-gradient(135deg,var(--a),#1d4ed8)"></div><div style="width:19%;background:repeating-linear-gradient(45deg,#cbd5e1,#cbd5e1 3px,#e2e8f0 3px,#e2e8f0 6px)"></div><div style="width:5%;background:var(--a-soft)"></div></div>
+                <div class="valid" style="margin-top:8px">
+                  <div class="valid-item"><span class="valid-ic" style="background:var(--a-soft);color:var(--a)"><svg class="ic"><use href="#i-sparkle"/></svg></span><div style="flex:1"><div class="vt">活动</div><div class="vd">黄金海岸漫步</div></div><b class="tiny">60 分</b></div>
+                  <div class="valid-item"><span class="valid-ic" style="background:var(--surface-3);color:var(--ink-2)"><svg class="ic"><use href="#i-nav"/></svg></span><div style="flex:1"><div class="vt">路程（15 + 20）</div><div class="vd">全部路程段合计</div></div><b class="tiny">35 分</b></div>
+                  <div class="valid-item"><span class="valid-ic" style="background:var(--ok-soft);color:var(--ok)"><svg class="ic"><use href="#i-shield"/></svg></span><div style="flex:1"><div class="vt">缓冲</div><div class="vd">预留抵达余量</div></div><b class="tiny">10 分</b></div>
+                </div>
+              </div>
+              <div class="card pad" style="margin-top:10px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><b style="font-size:13px;color:var(--b)">B 组</b><span class="pill ok"><svg class="ic sm" style="width:12px;height:12px"><use href="#i-check"/></svg> 110 ≤ 210</span></div>
+                <div class="route-mix"><div style="width:57%;background:linear-gradient(135deg,var(--b),#c2410c)"></div><div style="width:19%;background:repeating-linear-gradient(45deg,#cbd5e1,#cbd5e1 3px,#e2e8f0 3px,#e2e8f0 6px)"></div><div style="width:5%;background:var(--b-soft)"></div></div>
+                <div class="valid" style="margin-top:8px">
+                  <div class="valid-item"><span class="valid-ic" style="background:var(--b-soft);color:var(--b)"><svg class="ic"><use href="#i-sparkle"/></svg></span><div style="flex:1"><div class="vt">活动</div><div class="vd">老城咖啡 & 手作</div></div><b class="tiny">60 分</b></div>
+                  <div class="valid-item"><span class="valid-ic" style="background:var(--surface-3);color:var(--ink-2)"><svg class="ic"><use href="#i-nav"/></svg></span><div style="flex:1"><div class="vt">路程（20 + 20）</div><div class="vd">全部路程段合计</div></div><b class="tiny">40 分</b></div>
+                  <div class="valid-item"><span class="valid-ic" style="background:var(--ok-soft);color:var(--ok)"><svg class="ic"><use href="#i-shield"/></svg></span><div style="flex:1"><div class="vt">缓冲</div><div class="vd">预留抵达余量</div></div><b class="tiny">10 分</b></div>
+                </div>
+              </div>
+              <div class="card pad" style="margin-top:14px;border-color:#a7f3d0;background:var(--ok-soft)">
                 <div style="display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:730;color:#047857"><svg class="ic"><use href="#i-check"/></svg> 校验通过：两条路线均可行</div>
-                <p class="tiny" style="color:#047857;opacity:.85;margin-top:5px">都能在 17:00 截止前抵达海崖灯塔（含缓冲）。此校验基于提供的快照，不写入数据库。</p>
+                <p class="tiny" style="color:#047857;opacity:.85;margin-top:5px">都能在 17:00 截止前抵达海崖灯塔（含缓冲）。校验为只读快照，不写入数据库。</p>
               </div>
             </div>
-            <div class="actionbar"><button class="btn btn-primary" onclick="go(15)">下一步：确认分队 <svg class="ic sm"><use href="#i-arrow"/></svg></button></div>
+            <div class="actionbar"><button class="btn btn-primary" onclick="go(15)">前往复核并确认 <svg class="ic sm"><use href="#i-arrow"/></svg></button></div>
           </section>
 
           <!-- ========== 15 · 确认 / 取消分队 US-049 / US-050 ========== -->
+
           <section class="screen" id="s15" data-screen="15">
             <div class="appbar"><div class="row">
               <button class="iconbtn" onclick="go(14)"><svg class="ic"><use href="#i-left"/></svg></button>
-              <div style="flex:1"><div class="title">确认分队</div><div class="sub">US-049 / US-050 · 第 4 步 / 共 4 步</div></div>
+              <div style="flex:1"><div class="title">复核并确认分队</div><div class="sub">服务端重校验通过后成对生效</div></div>
+              <span class="pill brand" id="splitStatus">待确认</span>
             </div><div class="stepbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div></div>
             <div class="body">
-              <div class="card pad">
-                <div style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--ink-2)"><svg class="ic sm" style="color:var(--brand)"><use href="#i-lock"/></svg> 锁定的边界</div>
-                <div style="display:flex;align-items:center;gap:10px;margin-top:11px">
-                  <div style="text-align:center"><div class="count" style="font-size:17px">13:30</div><div class="tiny muted">渔人码头</div></div>
-                  <div style="flex:1;height:2px;background:linear-gradient(90deg,var(--a),var(--b))"></div>
-                  <div style="text-align:center"><div class="count" style="font-size:17px;color:var(--ok)">17:00</div><div class="tiny muted">海崖灯塔</div></div>
+              <div class="card pad meta-card">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                  <div style="font-size:13px;font-weight:700">时间窗 13:30 → 17:00</div>
+                  <span class="pill brand"><svg class="ic sm" style="width:12px;height:12px"><use href="#i-clock"/></svg> 共 210 分钟</span>
                 </div>
-                <div class="two" style="margin-top:14px">
-                  <div style="border:1px solid var(--a-line);background:var(--a-soft);border-radius:12px;padding:10px"><div style="display:flex;align-items:center;gap:7px"><span class="pill a" style="padding:2px 8px">A</span><b class="tiny">海岸冒险</b></div><div class="avstack" style="margin-top:8px"><div class="av sm av-teal">明</div><div class="av sm av-blue">强</div></div></div>
-                  <div style="border:1px solid var(--b-line);background:var(--b-soft);border-radius:12px;padding:10px"><div style="display:flex;align-items:center;gap:7px"><span class="pill b" style="padding:2px 8px">B</span><b class="tiny">老城慢游</b></div><div class="avstack" style="margin-top:8px"><div class="av sm av-amber">红</div><div class="av sm av-rose">美</div></div></div>
+                <dl>
+                  <div><dt>发起人</dt><dd><span data-account-name>小明</span></dd></div>
+                  <div><dt>草稿版本</dt><dd>v5</dd></div>
+                  <div><dt>状态</dt><dd>进行中</dd></div>
+                  <div><dt>A 组</dt><dd><span data-account-name>小明</span> / 阿强</dd></div>
+                  <div><dt>B 组</dt><dd>小红 / 小美</dd></div>
+                </dl>
+              </div>
+
+              <div class="card pad" style="margin-top:12px">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px"><b style="font-size:13px;color:var(--a)">A 组 · 沿主线 · 黄金海岸段</b><span class="pill ok"><svg class="ic sm" style="width:12px;height:12px"><use href="#i-check"/></svg> 105 ≤ 210</span></div>
+                <div class="valid">
+                  <div class="valid-item"><span class="valid-ic" style="background:var(--a-soft);color:var(--a)"><svg class="ic"><use href="#i-sparkle"/></svg></span><div style="flex:1"><div class="vt">活动</div></div><b class="tiny">60 分</b></div>
+                  <div class="valid-item"><span class="valid-ic" style="background:var(--surface-3);color:var(--ink-2)"><svg class="ic"><use href="#i-nav"/></svg></span><div style="flex:1"><div class="vt">路程（15 + 20）</div></div><b class="tiny">35 分</b></div>
+                  <div class="valid-item"><span class="valid-ic" style="background:var(--ok-soft);color:var(--ok)"><svg class="ic"><use href="#i-clock"/></svg></span><div style="flex:1"><div class="vt">缓冲</div></div><b class="tiny">10 分</b></div>
+                  <div class="valid-item"><span class="valid-ic" style="background:var(--ok-soft);color:var(--ok)"><svg class="ic"><use href="#i-flag"/></svg></span><div style="flex:1"><div class="vt">合计</div></div><b class="tiny">105 分</b></div>
+                </div>
+              </div>
+              <div class="card pad" style="margin-top:10px">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px"><b style="font-size:13px;color:var(--b)">B 组 · 老城慢游</b><span class="pill ok"><svg class="ic sm" style="width:12px;height:12px"><use href="#i-check"/></svg> 110 ≤ 210</span></div>
+                <div class="valid">
+                  <div class="valid-item"><span class="valid-ic" style="background:var(--b-soft);color:var(--b)"><svg class="ic"><use href="#i-sparkle"/></svg></span><div style="flex:1"><div class="vt">活动</div></div><b class="tiny">60 分</b></div>
+                  <div class="valid-item"><span class="valid-ic" style="background:var(--surface-3);color:var(--ink-2)"><svg class="ic"><use href="#i-nav"/></svg></span><div style="flex:1"><div class="vt">路程（20 + 20）</div></div><b class="tiny">40 分</b></div>
+                  <div class="valid-item"><span class="valid-ic" style="background:var(--ok-soft);color:var(--ok)"><svg class="ic"><use href="#i-clock"/></svg></span><div style="flex:1"><div class="vt">缓冲</div></div><b class="tiny">10 分</b></div>
+                  <div class="valid-item"><span class="valid-ic" style="background:var(--ok-soft);color:var(--ok)"><svg class="ic"><use href="#i-flag"/></svg></span><div style="flex:1"><div class="vt">合计</div></div><b class="tiny">110 分</b></div>
                 </div>
               </div>
 
-              <div id="splitActions">
-                <div class="card pad" style="margin-top:14px;background:var(--surface-2)">
-                  <p class="hint"><svg class="ic sm" style="vertical-align:-3px;color:var(--brand)"><use href="#i-shield"/></svg> 作为组织者，你将<b>一次性确认路线对与分组</b>。确认前服务端会再次校验，确保两组遵循同一份可行协议、边界锁定。</p>
-                </div>
-                <button class="btn btn-primary" style="margin-top:16px" onclick="confirmSplit()"><svg class="ic sm"><use href="#i-lock"/></svg> 确认分队并锁定边界</button>
-                <button class="btn btn-danger" style="margin-top:10px" onclick="cancelSplit()"><svg class="ic sm"><use href="#i-x"/></svg> 取消未确认草稿（US-050）</button>
-                <p class="help" style="text-align:center">取消仅放弃本次分队提议，<b>不改变主线方案</b>，可重新发起。</p>
+              <div class="card pad" id="splitDone" style="display:none;margin-top:12px;border-color:#a7f3d0;background:var(--ok-soft)">
+                <div style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:730;color:#047857"><svg class="ic"><use href="#i-check"/></svg> 分队已确认</div>
+                <p class="tiny" style="color:#047857;opacity:.85;margin-top:5px">两条路线、分组与边界已作为唯一方案成对生效，草稿不可再编辑或取消。</p>
               </div>
-
-              <div id="splitReval" style="display:none">
-                <div class="card pad" style="margin-top:14px">
-                  <div style="font-size:13px;font-weight:700;margin-bottom:6px">服务端再校验中…</div>
-                  <div class="valid">
-                    <div class="valid-item" id="rv1"><span class="valid-ic" style="background:var(--surface-3);color:var(--ink-3)"><svg class="ic"><use href="#i-clock"/></svg></span><div><div class="vt">路线对与分组一致性</div><div class="vd">校验中…</div></div></div>
-                    <div class="valid-item" id="rv2"><span class="valid-ic" style="background:var(--surface-3);color:var(--ink-3)"><svg class="ic"><use href="#i-clock"/></svg></span><div><div class="vt">边界与时间窗仍可行</div><div class="vd">校验中…</div></div></div>
-                    <div class="valid-item" id="rv3"><span class="valid-ic" style="background:var(--surface-3);color:var(--ink-3)"><svg class="ic"><use href="#i-clock"/></svg></span><div><div class="vt">无 competing split、主线未变</div><div class="vd">校验中…</div></div></div>
-                  </div>
-                </div>
-              </div>
-
-              <div id="splitDone" style="display:none">
-                <div class="success-hero">
-                  <div class="checkring"><svg class="ic"><use href="#i-check"/></svg></div>
-                  <div style="font-size:19px;font-weight:760">分队已生效</div>
-                  <p class="hint" style="margin-top:6px">边界已锁定，两组按各自路线出发。17:00 海崖灯塔会合。</p>
-                </div>
-                <button class="btn btn-primary" onclick="go(16)">进入行程中视图 <svg class="ic sm"><use href="#i-arrow"/></svg></button>
-              </div>
+              <p class="split-note" style="margin-top:10px">确认由服务端从草稿复算时间窗，客户端声明不参与判定；失败时下方明细来自 error.details。</p>
             </div>
+            <div class="actionbar"><div id="splitActions" style="display:flex;gap:10px;width:100%">
+              <button class="btn btn-ghost" style="flex:1" onclick="cancelSplit()">取消草稿</button>
+              <button class="btn btn-primary" style="flex:1" onclick="confirmSplit()">确认分队 <svg class="ic sm"><use href="#i-check"/></svg></button>
+            </div></div>
           </section>
           <!-- ========== 16 · 分队进行中 · 我的路线 ========== -->
+
           <section class="screen" id="s16" data-screen="16">
             <div class="appbar" style="background:linear-gradient(135deg,#1e40af,#2563eb);border-bottom:0">
               <div class="row">
                 <button class="iconbtn" style="background:rgba(255,255,255,.16);border-color:transparent;color:#fff" onclick="go(1)"><svg class="ic"><use href="#i-left"/></svg></button>
-                <div style="flex:1;color:#fff"><div class="title">Route A · 海岸冒险</div><div class="sub" style="color:rgba(255,255,255,.8)"><span data-account-name>小明</span> · 阿强 · 分队进行中</div></div>
+                <div style="flex:1;color:#fff"><div class="title">Route A · 沿主线</div><div class="sub" style="color:rgba(255,255,255,.8)"><span data-account-name>小明</span> · 阿强 · 分队进行中</div></div>
                 <span class="pill" style="background:rgba(255,255,255,.2);color:#fff;border-color:transparent"><span class="dot live"></span> 进行中</span>
               </div>
             </div>
@@ -1195,33 +1295,27 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
               </div>
 
               <div id="viewMine">
-                <div class="sec-title"><svg class="ic sm"><use href="#i-route"/></svg> Route A · 进行中</div>
+                <div class="sec-title"><svg class="ic sm"><use href="#i-route"/></svg> Route A · 沿主线 · 进行中</div>
                 <div class="timeline">
-                  <div class="tl-item done"><div class="tl-rail"><div class="tl-node"></div><div class="tl-line"></div></div><div class="tl-card"><div class="tl-time">13:30 – 15:00</div><div class="act done" style="margin-top:5px"><div class="top"><div class="emoji"><svg class="ic"><use href="#i-waves"/></svg></div><div><h4>潜水体验（必做）</h4><div class="meta">已完成 · 黄金海岸潜水中心</div></div></div></div></div></div>
-                  <div class="tl-item now"><div class="tl-rail"><div class="tl-node"></div><div class="tl-line"></div></div><div class="tl-card"><div class="tl-time">15:00 – 16:00</div><div class="act now" style="margin-top:5px"><div class="top"><div class="emoji"><svg class="ic"><use href="#i-boat"/></svg></div><div><h4>摩托艇 & 水上</h4><div class="meta"><span class="pill brand" style="padding:2px 8px">进行中</span> 黄金海岸</div></div></div></div></div></div>
-                  <div class="tl-item"><div class="tl-rail"><div class="tl-node"></div><div class="tl-line"></div></div><div class="tl-card"><div class="tl-time">16:00 – 16:40</div><div class="act" style="margin-top:5px"><div class="top"><div class="emoji"><svg class="ic"><use href="#i-nav"/></svg></div><div><h4>前往海崖灯塔</h4><div class="meta">路程 40分 · 建议 16:00 出发</div></div></div></div></div></div>
-                  <div class="tl-item"><div class="tl-rail"><div class="tl-node"></div></div><div class="tl-card"><div class="tl-time">17:00</div><div class="act" style="margin-top:5px;border-color:#a7f3d0"><div class="top"><div class="emoji" style="background:var(--ok-soft);color:var(--ok)"><svg class="ic"><use href="#i-flag"/></svg></div><div><h4>海崖灯塔 · 会合</h4><div class="meta">与 Route B 会合 · 继续主线</div></div></div></div></div></div>
+                  <div class="tl-item done"><div class="tl-rail"><div class="tl-node"></div><div class="tl-line"></div></div><div class="tl-card"><div class="tl-time">13:30 – 14:30</div><div class="act-card"><span class="act-ic"><svg class="ic sm"><use href="#i-pin"/></svg></span><div class="act-main"><div class="act-name">渔人码头漫步</div><div class="act-sub">已完成 · A 组</div></div></div></div></div>
+                  <div class="tl-item now"><div class="tl-rail"><div class="tl-node"></div><div class="tl-line"></div></div><div class="tl-card"><div class="tl-time">14:30 – 15:30</div><div class="act-card" style="border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft),var(--sh-1)"><span class="act-ic"><svg class="ic sm"><use href="#i-waves"/></svg></span><div class="act-main"><div class="act-name">黄金海岸漫步</div><div class="act-sub">进行中 · A 组</div></div></div></div></div>
+                  <div class="tl-item"><div class="tl-rail"><div class="tl-node"></div><div class="tl-line"></div></div><div class="tl-card"><div class="tl-time">15:30 – 16:40</div><div class="act-card"><span class="act-ic"><svg class="ic sm"><use href="#i-nav"/></svg></span><div class="act-main"><div class="act-name">海滨栈道 & 灯塔</div><div class="act-sub">A 组 · 路程 20 分钟</div></div></div></div></div>
+                  <div class="tl-item"><div class="tl-rail"><div class="tl-node"></div></div><div class="tl-card"><div class="tl-time">17:00</div><div class="act-card" style="border-color:#a7f3d0"><span class="act-ic" style="background:var(--ok-soft);color:var(--ok)"><svg class="ic sm"><use href="#i-flag"/></svg></span><div class="act-main"><div class="act-name">海崖灯塔 · 会合</div><div class="act-sub">与 Route B 会合 · 继续主线</div></div></div></div></div>
                 </div>
               </div>
               <div id="viewOther" style="display:none">
                 <div class="sec-title"><span class="pill b" style="padding:2px 9px">B</span> 老城慢游 · 小红 / 小美</div>
                 <div class="route b"><div class="rbody">
-                  <div class="mini"><span class="mt">13:30</span><div><div class="mn">老城咖啡</div><div class="mm">大学路</div></div></div>
-                  <div class="mini"><span class="mt">14:30</span><div><div class="mn">手作店体验</div><div class="mm">老城手作区</div></div></div>
-                  <div class="mini"><span class="mt">15:30</span><div><div class="mn">老城拍照漫步</div><div class="mm">进行中</div></div></div>
-                  <div class="mini leg"><span class="mt">16:10</span><div><div class="mn">→ 前往海崖灯塔（路程 35分）</div></div></div>
-                </div><div class="rfoot"><svg class="ic sm" style="color:var(--ok)"><use href="#i-flag"/></svg> 17:00 海崖灯塔会合</div></div>
+                  <div class="route-summary"><span class="rs-l">老城咖啡</span><span class="rs-v">13:30</span></div>
+                  <div class="route-summary"><span class="rs-l">手作市集</span><span class="rs-v">14:30</span></div>
+                  <div class="route-summary"><span class="rs-l">老城拍照漫步</span><span class="rs-v">15:30</span></div>
+                  <div class="route-summary italic"><span class="rs-l">前往海崖灯塔（路程 40 分）</span><span class="rs-v">16:10</span></div>
+                </div><div class="rfoot ok"><svg class="ic sm"><use href="#i-flag"/></svg> 17:00 海崖灯塔会合</div></div>
                 <div class="card pad" style="margin-top:12px;background:var(--surface-2)"><p class="hint"><svg class="ic sm" style="vertical-align:-3px;color:var(--ok)"><use href="#i-shield"/></svg> 仅展示对方的<b>计划路线</b>，不追踪、不显示任何成员的实时位置。</p></div>
               </div>
               <button class="btn btn-primary" style="margin-top:16px" onclick="go(17)"><svg class="ic sm"><use href="#i-nav"/></svg> 查看会合导航</button>
             </div>
-            <div class="tabbar">
-              <div class="tab" onclick="go(1)"><svg class="ic"><use href="#i-home"/></svg>仪表盘</div>
-              <div class="tab on"><svg class="ic"><use href="#i-branch"/></svg>分队</div>
-              <div class="tab" onclick="go(17)"><svg class="ic"><use href="#i-nav"/></svg>会合</div>
-              <div class="tab" onclick="go(7)"><svg class="ic"><use href="#i-users"/></svg>成员</div>
-              <button class="tab tabbutton" onclick="go(21)"><svg class="ic"><use href="#i-user"/></svg>我的</button>
-            </div>
+            <div class="tabbar"><button class="tab tabbutton" onclick="go(1)"><svg class="ic"><use href="#i-home"/></svg>仪表盘</button><button class="tab tabbutton" onclick="openSelectedTrip()"><svg class="ic"><use href="#i-list"/></svg>行程</button><button class="tab tabbutton on" aria-current="page" onclick="go(11)"><svg class="ic"><use href="#i-branch"/></svg>分队</button><button class="tab tabbutton" onclick="go(7)"><svg class="ic"><use href="#i-users"/></svg>成员</button><button class="tab tabbutton" onclick="go(21)"><svg class="ic"><use href="#i-user"/></svg>我的</button></div>
           </section>
 
           <!-- ========== 17 · 会合导航 US-054 ========== -->
@@ -1313,7 +1407,7 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
           <div class="toast" id="toast"><svg class="ic sm"><use href="#i-check"/></svg><span id="toastMsg">已复制</span></div>
         </div>
       </div>
-      <div class="phone-caption"><svg class="ic sm"><use href="#i-info"/></svg> 点击右侧列表或界面内按钮切换屏幕 · <b>共 25 屏覆盖 27 条 story</b></div>
+      <div class="phone-caption"><svg class="ic sm"><use href="#i-info"/></svg> 点击右侧列表或界面内按钮切换屏幕 · <b>共 26 屏覆盖 27 条 story</b></div>
     </div>
 
     <aside class="panel">
@@ -1347,6 +1441,7 @@ const NAV=[
   {n:19,t:'登录',d:'US-066 · 本地模拟'},
   {n:22,t:'注册账号',d:'US-070 · 本地模拟'},
   {n:21,t:'我的',d:'US-068 / 069 · 修改名字 · 退出登录'},
+  {n:26,t:'偏好设置',d:'US-019 · 默认兴趣'},
   {n:1,t:'仪表盘 Dashboard',d:'旅程总览 · 快捷入口'},
   {n:23,t:'我的行程',d:'US-071 · 本地列表'},
   {g:'1 · 行程创建与基础信息'},
@@ -1402,11 +1497,11 @@ function buildNav(){
   box.innerHTML=h;
 }
 function go(n){
-  n=Math.max(1,Math.min(25,n));
+  n=Math.max(1,Math.min(26,n));
   closeRouteSheet();
   if(!signedIn&&![5,6,19,20,22].includes(n)){pendingScreen=n;n=19;}
   if(n===4){invitationBackScreen=cur===3||cur===24?cur:1;$('invitationDemoBody').style.display=cur===24?'none':'';$('invitationNewBody').style.display=cur===24?'':'none';}
-  if(n===3){renderTripTimeline();renderCountdown('demoTripCountdown',demoTrip);}
+  if(n===3){renderPersonalTimeline();renderCountdown('demoTripCountdown',demoTrip,demoStops);}
   if(n===10)planBackScreen=cur===3?3:1;
   if(cur===22&&n!==22){$('registerPassword').value='';$('registerConfirm').value='';}
   if(n!==20)stopCamera();
@@ -1417,6 +1512,7 @@ function go(n){
   const body=sc&&sc.querySelector('.body');if(body)body.scrollTop=0;
   if(n===9)resetGen();
   if(n===10)validatePlan();
+  if(n===11)renderSplitEntry();
   if(n===13)resetRoutes();
   if(n===15)resetSplit();
   if(n===16){duringView('mine',document.querySelector('#duringSeg button'));}
@@ -1424,7 +1520,7 @@ function go(n){
   if(n===21){$('displayName').value=displayName;$('profileMessage').textContent='';$('displayName').removeAttribute('aria-invalid');}
   if(n===23)renderMyTrips();
   if(n===19){$('loginMessage').textContent=pendingScreen===5?'登录后继续查看邀请，不会自动加入。':'';$('loginPassword').value='';}
-  if(n===5){$('joinForm').style.display=membershipJoined?'none':'block';$('joinDone').style.display=membershipJoined?'block':'none';}
+  if(n===5){$('joinPreview').style.display=membershipJoined?'none':'block';$('joinDone').style.display=membershipJoined?'block':'none';}
 }
 function finishLogin(){
   signedIn=true;$('loginPassword').value='';syncProfile();
@@ -1460,7 +1556,7 @@ function registerAccount(event){
 function signOut(){accounts.get(activeEmail).joined=membershipJoined;signedIn=false;pendingScreen=1;go(19);toast('已退出登录');}
 function syncProfile(){
   document.querySelectorAll('[data-account-name]').forEach(label=>{label.textContent=displayName;});
-  $('f-nick').value=displayName;
+  if($('f-nick'))$('f-nick').value=displayName;
   $('profileName').textContent=displayName;
   $('profileEmail').textContent=activeEmail;
   const initial=Array.from(displayName)[0];
@@ -1549,60 +1645,57 @@ function renderMyTrips(){
   const account=accounts.get(activeEmail),trips=account.trips;
   if(trips.length&&!(account.selectedTrip>=0&&account.selectedTrip<trips.length))account.selectedTrip=0;
   $('tripListCount').textContent=trips.length?`${trips.length} 个行程`:'还没有行程';
-  $('myTripList').innerHTML=trips.length?trips.map((trip,index)=>`<label class="qcard trip-choice"><span class="qi"><svg class="ic"><use href="#i-pin"/></svg></span><span style="min-width:0;flex:1"><span class="qt" style="display:block;overflow-wrap:anywhere">${esc(trip.name)}</span><span class="qd" style="display:block;overflow-wrap:anywhere">${esc(trip.destination)} · ${esc(trip.start)} – ${esc(trip.end)}</span></span><input type="radio" name="selectedTrip" value="${index}" ${index===account.selectedTrip?'checked':''} onchange="selectTrip(${index})" aria-label="选择 ${esc(trip.name)}"></label>`).join(''):'<div class="empty"><svg class="ic"><use href="#i-list"/></svg><p>还没有行程</p><p class="hint">创建行程或接受朋友的邀请</p></div>';
+  $('myTripList').innerHTML=trips.length?trips.map((trip,index)=>{
+    const selected=account.selectedTrip===index;
+    return `<button class="qcard${selected?' selected':''}" aria-pressed="${selected}" onclick="selectTrip(${index})"><span class="qi"><svg class="ic"><use href="#i-pin"/></svg></span><span style="min-width:0;flex:1"><span class="qt" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;overflow-wrap:anywhere">${esc(trip.name)}${trip===demoTrip?'<span class="pill brand">我创建的</span>':''}${selected?'<span class="pill ok qtag">已选择</span>':''}</span><span class="qd" style="display:block;overflow-wrap:anywhere">${esc(trip.destination)} · ${esc(trip.start)} – ${esc(trip.end)}</span></span></button>`;
+  }).join(''):'<div class="empty"><svg class="ic"><use href="#i-list"/></svg><p>还没有行程</p><p class="hint">创建行程或接受朋友的邀请</p></div>';
 }
-function selectTrip(index){accounts.get(activeEmail).selectedTrip=index;}
+function selectTrip(index){accounts.get(activeEmail).selectedTrip=index;renderMyTrips();}
 function openSelectedTrip(){
   const account=accounts.get(activeEmail);
   if(!account.trips.length){go(23);return;}
   if(!(account.selectedTrip>=0&&account.selectedTrip<account.trips.length))account.selectedTrip=0;
   openMyTrip(account.selectedTrip);
 }
-function renderTripTimeline(){
-  const timeline=document.querySelector('#s10 .timeline').cloneNode(true),split=demoTrip.confirmedSplit;
-  if(split){
-    const placeholder=timeline.querySelector('.split-cta')?.closest('.tl-item');
-    const group=split.groups.findIndex(members=>members.some(member=>member.email===activeEmail||(!member.email&&member.name===displayName)));
-    if(placeholder&&group>=0){
-      const activities=split.routes[group];
-      const items=activities.map((activity,index)=>{
-        const item=placeholder.cloneNode(true),card=item.querySelector('.tl-card');
-        const time=document.createElement('div'),detail=document.createElement('div'),title=document.createElement('h4'),meta=document.createElement('div');
-        time.className='tl-time';time.textContent=`${activity.time} – ${activities[index+1]?.time||'17:00'}`;
-        detail.className='act';detail.style.marginTop='5px';title.textContent=activity.name;
-        meta.className='meta';meta.textContent=activity.detail;detail.append(title,meta);card.replaceChildren(time,detail);
-        return item;
-      });
-      placeholder.replaceWith(...items);
-    }else if(placeholder){placeholder.remove();}
-  }
-  $('tripMainTimeline').replaceChildren(timeline);
+const demoStops=[
+  {start:'09:30',end:'10:30',name:'栈桥 & 海边漫步',interests:['摄影','自然'],travel:30,group:null},
+  {start:'11:00',end:'12:00',name:'天主教堂 & 拍照',interests:['人文','摄影'],travel:20,group:null},
+  {start:'12:20',end:'13:20',name:'海鲜午餐 · 渔人码头',interests:['美食'],travel:10,group:null},
+  {start:'13:30',end:'14:30',name:'黄金海岸漫步',interests:['水上','自然'],travel:15,group:'A'},
+  {start:'14:45',end:'15:45',name:'潜水体验（必做）',interests:['潜水','冒险'],travel:20,group:'A'},
+  {start:'16:05',end:'16:40',name:'海滨栈道 & 灯塔',interests:['摄影','自然'],travel:20,group:'A'},
+  {start:'17:00',end:'18:30',name:'海崖灯塔 · 会合',interests:[],travel:null,group:null},
+  {start:'19:00',end:'20:30',name:'沙滩晚餐 & 篝火',interests:['美食'],travel:null,group:null}
+];
+function scheduleHTML(items){
+  return items.map((item,index)=>`<div class="tl-item"><div class="tl-rail"><div class="tl-node"></div>${index<items.length-1?'<div class="tl-line"></div>':''}</div><div class="tl-card"><div class="tl-time">${item.start} – ${item.end}</div><div class="act-card"><span class="act-ic"><svg class="ic sm"><use href="#i-${item.group?'route':'pin'}"/></svg></span><div class="act-main"><div class="act-name">${esc(item.name)}</div><div class="act-sub">${item.group?item.group+' 组':'全员'} · 免费</div>${item.interests.length?`<div class="chips" style="margin-top:6px">${item.interests.map(tag=>`<span class="pill">${esc(tag)}</span>`).join('')}</div>`:''}</div></div>${item.travel!=null?`<div class="tl-leg"><svg class="ic sm"><use href="#i-nav"/></svg> 前往下一站 · ${item.travel} 分钟</div>`:''}</div></div>`).join('');
 }
-function renderCountdown(id,trip,now=new Date()){
-  const start=new Date(`${trip.start}T00:00:00`),end=new Date(`${trip.end}T00:00:00`);
-  const dayEnd=new Date(end);dayEnd.setDate(dayEnd.getDate()+1);
-  let label='距离出发',target=start,next='';
-  if(now>=start&&now<dayEnd){
-    const sameDay=now.getFullYear()===start.getFullYear()&&now.getMonth()===start.getMonth()&&now.getDate()===start.getDate();
-    const slots=trip===demoTrip&&sameDay?Array.from(document.querySelectorAll('#tripMainTimeline .tl-item')).map(item=>{
-      const times=item.querySelector('.tl-time').textContent.match(/(\d{2}):(\d{2})\s*–\s*(\d{2}):(\d{2})/);
-      if(!times)return null;
-      const slotStart=new Date(start),slotEnd=new Date(start);
-      slotStart.setHours(+times[1],+times[2]);slotEnd.setHours(+times[3],+times[4]);
-      return {start:slotStart,end:slotEnd,name:item.querySelector('h4, .split-cta .hd').textContent.trim()};
-    }).filter(Boolean):[];
-    const current=slots.findIndex(slot=>now>=slot.start&&now<slot.end);
+function renderMainPlan(){
+  const el=$('mainPlanTimeline');if(!el)return;
+  el.innerHTML=`<div class="sec-title"><svg class="ic sm"><use href="#i-clock"/></svg> Day 1 · 11月14日（周六）</div><div class="timeline">${scheduleHTML(demoStops)}</div>`;
+}
+function renderPersonalTimeline(){
+  const el=$('tripMainTimeline');if(!el)return;
+  const split=demoTrip.confirmedSplit;
+  const items=split?demoStops.filter(item=>item.start>='13:30').map(item=>({...item,group:item.group||'A'})):demoStops;
+  el.innerHTML=`<div class="sec-title"><svg class="ic sm"><use href="#i-list"/></svg> 我的方案</div><div class="sec-title day-tag"><svg class="ic sm"><use href="#i-clock"/></svg> Day 1 · 11月14日（周六）</div><div class="timeline">${scheduleHTML(items)}</div>`;
+}
+function renderCountdown(id,trip,stops){
+  const el=$(id);if(!el)return;
+  const now=new Date();
+  const start=new Date(trip.start+'T00:00:00'),end=new Date(trip.end+'T23:59:59');
+  if(now>end){el.innerHTML='<div class="countdown-label"><svg class="ic sm"><use href="#i-clock"/></svg> 行程状态</div><div class="countdown-text">行程已结束</div>';return;}
+  let label='距离出发',target=start;
+  if(now>=start){
+    const slots=(stops||[]).map(slot=>{const [sh,sm]=slot.start.split(':').map(Number),[eh,em]=slot.end.split(':').map(Number);const a=new Date(trip.start+'T00:00:00'),b=new Date(trip.start+'T00:00:00');a.setHours(sh,sm,0,0);b.setHours(eh,em,0,0);return {start:a,end:b};});
+    const current=slots.find(slot=>now>=slot.start&&now<slot.end);
     const upcoming=slots.find(slot=>now<slot.start);
-    if(current>=0){label='当前活动剩余';target=slots[current].end;next=slots[current+1]?`下一站：${slots[current+1].name}`:'今天没有更多活动';}
-    else if(upcoming){label='距离下一活动';target=upcoming.start;next=`下一站：${upcoming.name}`;}
-    else{label=slots.length?'今天的活动已结束':'今天暂无活动安排';target=now;}
-  }else if(now>=dayEnd){target=now;}
-  const seconds=Math.max(0,Math.floor((target.getTime()-now.getTime())/1000));
-  const days=Math.floor(seconds/86400),hours=Math.floor(seconds%86400/3600),minutes=Math.floor(seconds%3600/60),remaining=seconds%60;
-  const container=$(id),row=document.createElement('div'),caption=document.createElement('span'),clock=document.createElement('strong');
-  row.className='trip-countdown-row';caption.className='hint';caption.textContent=label;
-  clock.textContent=`${days} 天 ${pad(hours)}:${pad(minutes)}:${pad(remaining)}`;row.append(caption,clock);container.replaceChildren(row);
-  if(next){const destination=document.createElement('div');destination.className='trip-countdown-next';destination.textContent=next;container.append(destination);}
+    if(current){label='活动剩余';target=current.end;}
+    else if(upcoming){label='距下一站';target=upcoming.start;}
+    else {el.innerHTML='<div class="countdown-label"><svg class="ic sm"><use href="#i-clock"/></svg> 今日安排</div><div class="countdown-text">今日无安排</div>';return;}
+  }
+  const sec=Math.max(0,Math.floor((target-now)/1000)),d=Math.floor(sec/86400),h=Math.floor(sec%86400/3600),m=Math.floor(sec%3600/60),ss=sec%60;
+  el.innerHTML='<div class="countdown-label"><svg class="ic sm"><use href="#i-clock"/></svg> '+label+'</div><div class="countdown-value">'+(d>0?d+' 天 ':'')+pad(h)+':'+pad(m)+':'+pad(ss)+'</div>';
 }
 function openMyTrip(index){
   const trip=accounts.get(activeEmail).trips[index];if(!trip)return;
@@ -1610,7 +1703,7 @@ function openMyTrip(index){
   $('selectedTripName').textContent=trip.name;$('selectedTripDestination').textContent=trip.destination;
   $('selectedTripDates').textContent=`${trip.start} – ${trip.end}`;
   $('selectedTripAvatar').textContent=Array.from(displayName)[0];
-  renderCountdown('selectedTripCountdown',trip);
+  renderCountdown('selectedTripCountdown',trip,null);
   go(24);
 }
 /* ---------- US-001 创建行程 ---------- */
@@ -1639,12 +1732,10 @@ function buildQR(){
 function joinTrip(){
   if(!signedIn){pendingScreen=5;go(19);return;}
   if(membershipJoined){toast('你已加入此行程');return;}
-  const nick=$('f-nick').value.trim();
-  if(!nick){toast('请先填写昵称');return;}
   membershipJoined=true;
   const trips=accounts.get(activeEmail).trips;if(!trips.includes(demoTrip))trips.push(demoTrip);
-  $('joinForm').style.display='none';$('joinDone').style.display='block';
-  toast('已以「'+nick+'」身份加入（仅一次）');
+  $('joinPreview').style.display='none';$('joinDone').style.display='block';
+  toast('已加入行程（仅一次）');
 }
 /* ---------- US-019~027 偏好 ---------- */
 let editingMD=null;
@@ -1693,10 +1784,9 @@ function generatePlan(){
 }
 /* ---------- US-037 校验与确认 ---------- */
 function validatePlan(){
-  ['pv1','pv2','pv3'].forEach(i=>markWait(i,'校验中…'));$('planConfirmBtn').disabled=true;
-  setTimeout(()=>markPass('pv1','6 个活动顺序无重叠'),350);
-  setTimeout(()=>markPass('pv2','人均¥348 ≤ ¥600 硬上限'),750);
-  setTimeout(()=>{markPass('pv3','潜水必做项已纳入');$('planConfirmBtn').disabled=false;},1150);
+  const btn=$('planConfirmBtn');if(!btn)return;
+  btn.disabled=true;btn.innerHTML='<svg class="ic sm"><use href="#i-clock"/></svg> 校验中…';
+  setTimeout(()=>{btn.disabled=false;btn.innerHTML='<svg class="ic sm"><use href="#i-lock"/></svg> 确认主线方案';},900);
 }
 function confirmPlan(){
   const p=$('planStatus');p.className='pill ok';p.innerHTML='<svg class="ic sm" style="width:12px;height:12px"><use href="#i-check"/></svg> 已确认';
@@ -1717,29 +1807,48 @@ function bindBoundary(){
   ['depChips','reuChips'].forEach(g=>{$(g).addEventListener('click',e=>{const c=e.target.closest('.chip');if(!c)return;$(g).querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');upd();});});
 }
 /* ---------- US-042 分组与路线 ---------- */
-function resetRoutes(){$('genRoutesBtn').style.display='flex';$('routesResult').style.display='none';}
-function genRoutes(){$('genRoutesBtn').style.display='none';$('routesResult').style.display='block';toast('已为两组各生成一条路线');}
+function resetRoutes(){const btn=$('genRoutesBtn');if(btn)btn.style.display='flex';}
+function genRoutes(){toast('已按当前分组重新生成两条路线');}
 function bindGroups(){
-  ['groupA','groupB'].forEach(g=>{$(g).addEventListener('click',e=>{const c=e.target.closest('.chip');if(!c)return;const to=g==='groupA'?'groupB':'groupA';c.classList.remove('a','b');c.classList.add(to==='groupA'?'a':'b');$(to).appendChild(c);toast('已调整 '+c.dataset.m+' 的路线');});});
+  ['groupA','groupB'].forEach(g=>{$(g).addEventListener('click',e=>{const c=e.target.closest('.chip');if(!c)return;const to=g==='groupA'?'groupB':'groupA';c.classList.remove('a','b');c.classList.add(to==='groupA'?'a':'b');$(to).appendChild(c);['groupA','groupB'].forEach(id=>{const head=$(id).closest('.group-card').querySelector('.gnum');if(head)head.textContent=$(id).querySelectorAll('.chip').length+' 人';});toast('已调整 '+c.dataset.m+' 的路线');});});
 }
 /* ---------- US-049 / 050 确认 / 取消 ---------- */
-function resetSplit(){$('splitActions').style.display='block';$('splitReval').style.display='none';$('splitDone').style.display='none';['rv1','rv2','rv3'].forEach(i=>markWait(i,'校验中…'));}
-function confirmSplit(){
-  $('splitActions').style.display='none';$('splitReval').style.display='block';
-  setTimeout(()=>markPass('rv1','路线对与分组一致'),400);
-  setTimeout(()=>markPass('rv2','边界锁定、时间窗可行'),850);
-  setTimeout(()=>markPass('rv3','唯一分队、主线未变'),1300);
-  setTimeout(()=>{
-    demoTrip.confirmedSplit={
-      groups:['groupA','groupB'].map(id=>Array.from($(id).querySelectorAll('[data-m]'),member=>({name:member.dataset.m,email:member.hasAttribute('data-account-member')?activeEmail:null}))),
-      routes:Array.from(document.querySelectorAll('#routesResult .route'),route=>Array.from(route.querySelectorAll('.mini'),item=>({time:item.querySelector('.mt').textContent.trim(),name:item.querySelector('.mn').textContent.trim(),detail:item.querySelector('.mm')?.textContent.trim()||''})))
-    };
-    const trips=accounts.get(activeEmail).trips,index=trips.indexOf(demoTrip);
-    if(index>=0)accounts.get(activeEmail).selectedTrip=index;
-    toast('分队已确认并锁定');go(3);
-  },1750);
+function renderSplitEntry(){
+  const status=$('splitEntryStatus'),hint=$('splitEntryHint'),action=$('splitEntryAction');
+  if(!status)return;
+  if(demoTrip.confirmedSplit){
+    status.className='pill ok';status.textContent='分队已确认';
+    hint.textContent='点击右上角查看分队';
+    action.innerHTML='查看已确认分队 <svg class="ic sm"><use href="#i-arrow"/></svg>';
+    action.setAttribute('onclick','go(15)');
+  }else{
+    status.className='pill warn';status.textContent='分队草稿进行中';
+    hint.textContent='点击右上角进入分队';
+    action.innerHTML='发起分队 <svg class="ic sm"><use href="#i-arrow"/></svg>';
+    action.setAttribute('onclick','go(12)');
+  }
 }
-function cancelSplit(){toast('草稿已取消，主线方案不变');resetSplit();setTimeout(()=>go(10),600);}
+function resetSplit(){
+  const pill=$('splitStatus'),actions=$('splitActions'),done=$('splitDone');
+  if(demoTrip.confirmedSplit){
+    if(actions)actions.style.display='none';
+    if(done)done.style.display='block';
+    if(pill){pill.className='pill ok';pill.innerHTML='<svg class="ic sm" style="width:12px;height:12px"><use href="#i-check"/></svg> 已确认';}
+    return;
+  }
+  if(actions)actions.style.display='flex';
+  if(done)done.style.display='none';
+  if(pill){pill.className='pill brand';pill.textContent='待确认';}
+}
+function confirmSplit(){
+  $('splitActions').style.display='none';$('splitDone').style.display='block';
+  const pill=$('splitStatus');if(pill){pill.className='pill ok';pill.innerHTML='<svg class="ic sm" style="width:12px;height:12px"><use href="#i-check"/></svg> 已确认';}
+  demoTrip.confirmedSplit={groups:['groupA','groupB'].map(id=>Array.from($(id).querySelectorAll('[data-m]'),member=>({name:member.dataset.m,email:member.hasAttribute('data-account-member')?activeEmail:null}))),routes:[]};
+  const trips=accounts.get(activeEmail).trips,index=trips.indexOf(demoTrip);
+  if(index>=0)accounts.get(activeEmail).selectedTrip=index;
+  toast('分队已确认并锁定');setTimeout(()=>go(11),900);
+}
+function cancelSplit(){toast('草稿已取消，主线方案不变');go(11);}
 /* ---------- 行程中 / 会合 / 完成 ---------- */
 function duringView(which,btn){
   document.querySelectorAll('#duringSeg button').forEach((b,i)=>b.classList.toggle('on',i===(which==='mine'?0:1)));
@@ -1763,41 +1872,24 @@ function tick(){
   const a=$('cd16');if(a)a.textContent=`${pad(h)}:${pad(m)}:${pad(s)}`;
   const b=$('cd17');if(b)b.textContent=`${pad(h)}:${pad(m)}`;
   const bar=$('cdBar');if(bar)bar.style.width=((WIN-remain)/WIN*100)+'%';
-  if(cur===3)renderCountdown('demoTripCountdown',demoTrip);
+  if(cur===3)renderCountdown('demoTripCountdown',demoTrip,demoStops);
   if(cur===24){const account=accounts.get(activeEmail),trip=account.trips[account.selectedTrip];if(trip)renderCountdown('selectedTripCountdown',trip);}
 }
 /* ---------- 队伍路线图（screen 11） ---------- */
-const ROUTE_NODES={
-  meet:{kind:'all',range:'09:30 – 10:00',title:'酒店大堂集合',place:'海景酒店 · 大堂',people:'全员 4 人',fee:'免费',tasks:['退房前核对证件、房卡与随身物品','在群聊里发送「已出发」','确认当天天气，带好防晒与外套']},
-  walk:{kind:'all',range:'10:00 – 11:00',title:'栈桥 & 海边漫步',place:'栈桥 · 海滨步道',people:'全员 4 人',fee:'免费',tasks:['沿栈桥走到回澜阁拍照','礁石湿滑，不要下水','11:00 前在栈桥入口集合']},
-  church:{kind:'all',range:'11:00 – 12:00',title:'天主教堂 & 拍照',place:'老城天主教堂',people:'全员 4 人',fee:'免费',tasks:['教堂外观与广场拍照','进入参观时保持安静','预留 10 分钟走到午餐点']},
-  lunch:{kind:'all',range:'12:00 – 13:20',title:'海鲜午餐 · 渔人码头',place:'渔人码头海鲜排档',people:'全员 4 人',fee:'人均 ¥88',tasks:['提前确认 4 人桌','点单控制在人均 ¥88 内','13:20 前结账，准备分头']},
-  fork:{kind:'all',range:'13:30 · 分头点',title:'黄金海岸 · 分头',place:'黄金海岸入口',people:'A 组 2 人 · B 组 2 人',fee:'—',tasks:['核对 A/B 分组名单（各 2 人）','确认 16:40 在海崖灯塔会合','两组分别开启路线导航']},
-  a1:{kind:'a',range:'13:45 – 15:00',title:'潜水体验（必做）',place:'黄金海岸潜水中心',people:'Route A · 2 人',fee:'¥200/人',tasks:['提前 15 分钟到潜水中心报到','带好泳衣、毛巾与换洗衣物','完成必做项后在群里打卡']},
-  b1:{kind:'b',range:'14:00 – 15:00',title:'老城咖啡 & 漫步',place:'大学路咖啡馆',people:'Route B · 2 人',fee:'人均 ¥35',tasks:['挑一家有座位的咖啡馆','沿大学路慢慢逛拍','控制预算，人均 ¥35 内']},
-  a2:{kind:'a',range:'15:00 – 16:00',title:'摩托艇 & 水上项目',place:'黄金海岸水上运动区',people:'Route A · 2 人',fee:'¥120/人',tasks:['全程穿好救生衣','两人一组轮流体验','16:00 前结束并归还装备']},
-  b2:{kind:'b',range:'15:30 – 16:10',title:'手作市集',place:'老城市集广场',people:'Route B · 2 人',fee:'按需消费',tasks:['逛手作摊位，挑一件小纪念品','16:10 前离开市集','在群里同步位置']},
-  a3:{kind:'a',range:'16:00 – 16:40',title:'返程 · 车程 40 分',place:'黄金海岸 → 海崖灯塔',people:'Route A · 2 人',fee:'约 ¥45/车',tasks:['16:00 准时上车出发','留意群里的会合位置','16:40 前抵达灯塔停车场']},
-  b3:{kind:'b',range:'16:10 – 16:40',title:'返程 · 车程 30 分',place:'老城 → 海崖灯塔',people:'Route B · 2 人',fee:'公交约 ¥2',tasks:['16:10 坐公交或打车出发','避开海边拥堵路段','16:40 前抵达灯塔']},
-  join:{kind:'all',range:'16:40 – 17:00',title:'海崖灯塔 · 会合',place:'海崖灯塔观景台',people:'全员 4 人',fee:'免费',tasks:['两组在灯塔观景台集合','核对 A/B 抵达时间，17:00 截止','休息补水，准备看日落']},
-  sunset:{kind:'all',range:'17:15 – 18:30',title:'灯塔看日落',place:'海崖灯塔 · 西侧观景位',people:'全员 4 人',fee:'免费',tasks:['提前占好西侧观景位','风大，记得加外套','拍一张全员合照']},
-  dinner:{kind:'all',range:'19:00 – 20:30',title:'沙滩晚餐 & 篝火',place:'金沙滩 · 篝火区',people:'全员 4 人',fee:'人均 ¥60',tasks:['确认篝火位与 4 人餐','注意用火安全，离开前熄灭火种','结束 Day 1，回酒店休息']}
-};
 const ROUTE_GRAPH_ROWS=[
-  {id:'meet',lane:'m',time:'09:30',title:'酒店大堂集合'},
-  {id:'walk',lane:'m',time:'10:00',title:'栈桥 & 海边漫步'},
-  {id:'church',lane:'m',time:'11:00',title:'天主教堂 & 拍照'},
-  {id:'lunch',lane:'m',time:'12:00',title:'海鲜午餐 · 渔人码头'},
-  {id:'fork',lane:'m',kind:'fork',time:'13:30',title:'黄金海岸 · 分头'},
-  {id:'a1',lane:'a',time:'13:45',title:'潜水体验（必做）'},
-  {id:'b1',lane:'b',time:'14:00',title:'老城咖啡 & 漫步'},
-  {id:'a2',lane:'a',time:'15:00',title:'摩托艇 & 水上项目'},
-  {id:'b2',lane:'b',time:'15:30',title:'手作市集'},
-  {id:'a3',lane:'a',time:'16:00',title:'返程 · 车程 40 分'},
-  {id:'b3',lane:'b',time:'16:10',title:'返程 · 车程 30 分'},
-  {id:'join',lane:'m',kind:'join',time:'16:40',title:'海崖灯塔 · 会合'},
-  {id:'sunset',lane:'m',time:'17:15',title:'灯塔看日落'},
-  {id:'dinner',lane:'m',time:'19:00',title:'沙滩晚餐 & 篝火'}
+  {id:'m1',lane:'m',time:'09:30',title:'栈桥 & 海边漫步',meta:'09:30 · 活动'},
+  {id:'m2',lane:'m',time:'11:00',title:'天主教堂 & 拍照',meta:'11:00 · 活动'},
+  {id:'m3',lane:'m',time:'12:20',title:'海鲜午餐 · 渔人码头',meta:'12:20 · 活动'},
+  {id:'fork',lane:'m',kind:'fork',time:'13:30',title:'渔人码头 · 分头',meta:'13:30 · 分头'},
+  {id:'a1',lane:'a',time:'13:45',title:'黄金海岸漫步',meta:'活动 · 60 分钟'},
+  {id:'b1',lane:'b',time:'14:00',title:'老城咖啡',meta:'活动 · 60 分钟'},
+  {id:'a2',lane:'a',time:'15:00',title:'潜水体验',meta:'活动 · 60 分钟'},
+  {id:'b2',lane:'b',time:'15:30',title:'手作市集',meta:'活动 · 40 分钟'},
+  {id:'a3',lane:'a',time:'16:00',title:'前往会合点',meta:'路程 · 35 分钟'},
+  {id:'b3',lane:'b',time:'16:20',title:'前往会合点',meta:'路程 · 40 分钟'},
+  {id:'a4',lane:'a',time:'16:35',title:'缓冲',meta:'10 分钟'},
+  {id:'b4',lane:'b',time:'16:50',title:'缓冲',meta:'10 分钟'},
+  {id:'join',lane:'m',kind:'join',time:'17:00',title:'海崖灯塔 · 会合',meta:'17:00 · 会合'}
 ];
 const ROUTE_LANE_X={b:132,m:160,a:188};
 function renderTeamRoute(){
@@ -1811,17 +1903,14 @@ function renderTeamRoute(){
   const yf=cy(forkI),yj=cy(joinI),yFirst=cy(forkI+1),BEND=28;
   const line=(d,color,dash)=>`<path d="${d}" stroke="${color}" stroke-width="${dash?2:3}" fill="none" stroke-linecap="round"${dash?` stroke-dasharray="${dash}"`:''}/>`;
   let g='';
-  // 主线：分头前实线 → 分头段淡虚线（主线暂停）→ 会合后实线
   g+=line(`M${X.m} ${cy(0)} V${yf}`,'#0d9488');
   g+=line(`M${X.m} ${yf} V${yj}`,'#cfccc6','4 6');
   g+=line(`M${X.m} ${yj} V${cy(rows.length-1)}`,'#0d9488');
-  // Route A（右）与 Route B（左）：垂直切线岔出、汇回
   g+=line(`M${X.m} ${yf} C${X.m} ${yf+BEND} ${X.a} ${yFirst-BEND} ${X.a} ${yFirst} V${cy(lastA)} C${X.a} ${yj-BEND} ${X.m} ${yj-BEND} ${X.m} ${yj}`,'#2563eb');
   g+=line(`M${X.m} ${yf} C${X.m} ${yf+BEND} ${X.b} ${yFirst-BEND} ${X.b} ${yFirst} V${cy(lastB)} C${X.b} ${yj-BEND} ${X.m} ${yj-BEND} ${X.m} ${yj}`,'#ea580c');
   rows.forEach((r,i)=>{
     const y=cy(i),x=X[r.lane],branch=r.lane!=='m',isMain=!branch;
     const color=r.lane==='a'?'#2563eb':r.lane==='b'?'#ea580c':'#0d9488';
-    // 主线文字左右交替；左分支靠左、右分支靠右
     const toRight=isMain?i%2===0:r.lane==='a';
     const tx=isMain?(toRight?X.m+16:X.m-16):(toRight?X.a+12:X.b-12);
     const anchor=toRight?'start':'end';
@@ -1831,12 +1920,11 @@ function renderTeamRoute(){
     else if(branch)node=`<circle cx="${x}" cy="${y}" r="6.5" fill="${color}" stroke="#fff" stroke-width="2"/>`;
     else if(i<forkI)node=`<circle cx="${x}" cy="${y}" r="6.5" fill="#0d9488" stroke="#fff" stroke-width="2"/><circle cx="${x}" cy="${y}" r="2" fill="#fff"/>`;
     else node=`<circle cx="${x}" cy="${y}" r="6.5" fill="#fff" stroke="#0d9488" stroke-width="2.5"/>`;
-    const meta=branch?`${r.time} · Route ${r.lane.toUpperCase()}`:r.time;
     const cls=['rg-node',r.kind||'',branch?'lane-'+r.lane:'',toRight?'side-r':'side-l'].filter(Boolean).join(' ');
-    g+=`<g class="${cls}" role="button" tabindex="0" aria-label="${r.time} ${r.title}" onclick="openRouteNode('${r.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openRouteNode('${r.id}')}">
+    g+=`<g class="${cls}">
       <rect class="rg-hit" x="2" y="${y-26}" width="316" height="52" rx="10"/>
       ${node}
-      <text class="rg-time" x="${tx}" y="${y-6}" text-anchor="${anchor}">${meta}</text>
+      <text class="rg-time" x="${tx}" y="${y-6}" text-anchor="${anchor}">${esc(r.meta||r.time)}</text>
       <text class="rg-t" x="${tx}" y="${y+11}" text-anchor="${anchor}">${esc(r.title)}</text>
     </g>`;
   });
@@ -1862,8 +1950,9 @@ function closeRouteSheet(){
 }
 /* ---------- 初始化 ---------- */
 function init(){
-  buildNav();buildQR();bindBoundary();bindGroups();renderTeamRoute();
-  $('interestChips').addEventListener('click',e=>{const c=e.target.closest('.chip');if(c)c.classList.toggle('on');});
+  buildNav();buildQR();bindBoundary();bindGroups();renderTeamRoute();renderMainPlan();
+  $('interestChips').addEventListener('click',e=>{const c=e.target.closest('.pick');if(c&&!c.disabled)c.classList.toggle('on');});
+  $('userInterestChips').addEventListener('click',e=>{const c=e.target.closest('.pick');if(!c)return;c.classList.toggle('on');const p=$('userPrefStatus');p.className='pill warn';p.textContent='未保存';});
   $('limitSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;$('limitSeg').querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');});
   document.addEventListener('keydown',e=>{
     if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT')return;

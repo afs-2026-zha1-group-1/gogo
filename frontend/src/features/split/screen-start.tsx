@@ -59,6 +59,7 @@ export function ScreenStart() {
     stops,
     rounds: confirmedRounds.map((round) => ({
       roundIndex: round.roundIndex,
+      splitMode: round.splitMode,
       departureStopId: round.departureStopId,
       reunionStopId: round.reunionStopId,
       routes: round.routes,

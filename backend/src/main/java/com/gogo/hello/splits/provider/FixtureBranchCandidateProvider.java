@@ -50,15 +50,20 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
         List<RouteStep> steps = List.of(new RouteStep(activityName, branch.activityMinutes()));
         List<RouteActivity> activities = List.of(new RouteActivity(activityName, location,
                 branch.costCents(), RouteActivity.SOURCE_AI));
-        return new RouteCandidate(groupLabel, activityName, location, branch.activityMinutes(),
-                branch.travelLegsMinutes(), 0, steps, activities);
+        // US-095 FROM_START: group B starts at its own activity, so there is no outbound leg.
+        List<Integer> legs = departure == null
+                ? branch.travelLegsMinutes().subList(1, branch.travelLegsMinutes().size())
+                : branch.travelLegsMinutes();
+        return new RouteCandidate(groupLabel, activityName, location, branch.activityMinutes(), legs, 0, steps,
+                activities);
     }
 
     // Group A follows the confirmed itinerary: every main-plan stop from the departure (inclusive) to the reunion
-    // (exclusive), with the scheduled gaps as legs. The totals therefore equal the window exactly.
+    // (exclusive), with the scheduled gaps as legs. A null departure starts at the first stop (US-095 FROM_START).
+    // The totals equal the window exactly in every mode.
     private static RouteCandidate mainLineCandidate(String groupLabel, PlanStop departure, PlanStop reunion,
             List<PlanStop> mainPlanStops) {
-        int from = indexOf(mainPlanStops, departure.id());
+        int from = departure == null ? 0 : indexOf(mainPlanStops, departure.id());
         int to = indexOf(mainPlanStops, reunion.id());
         if (from < 0 || to <= from) {
             throw new IllegalArgumentException("boundaries are not an ordered main-plan pair");
@@ -79,9 +84,10 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
         if (!activityName.equals(lastStep)) {
             activityName = activityName + " → " + lastStep;
         }
-        String location = departure.locationName() == null || departure.locationName().isBlank()
-                ? departure.name()
-                : departure.locationName();
+        PlanStop anchor = departure == null ? mainPlanStops.get(from) : departure;
+        String location = anchor.locationName() == null || anchor.locationName().isBlank()
+                ? anchor.name()
+                : anchor.locationName();
         location = RoutePairEdit.cleanStationName(location);
         List<RouteActivity> activities = new ArrayList<>();
         for (int index = from; index < to; index++) {

@@ -76,10 +76,14 @@ public class AiBranchCandidateProvider implements BranchCandidateProvider {
         if ("A".equals(groupLabel)) {
             return fixture.candidateFor("A", departure, reunion, destination, mainPlanStops, context);
         }
+        if (mainPlanStops.isEmpty()) {
+            return fixture.candidateFor("B", departure, reunion, destination, mainPlanStops, context);
+        }
         try {
-            long windowMinutes = windowMinutes(departure, reunion);
+            PlanStop aiDeparture = departure == null ? mainPlanStops.get(0) : departure;
+            long windowMinutes = windowMinutes(aiDeparture, reunion);
             String content = client.complete(SYSTEM_PROMPT,
-                    userJson(departure, reunion, destination, windowMinutes, mainPlanStops, context));
+                    userJson(aiDeparture, reunion, destination, windowMinutes, mainPlanStops, context));
             AiBranchValidator.BranchRoute route = validator.validate(content, windowMinutes, objectMapper);
             return toCandidate(route, destination);
         } catch (PlanAiException cause) {

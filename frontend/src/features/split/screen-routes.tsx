@@ -16,6 +16,7 @@ import { useAuth } from "../auth/AuthProvider"
 import { SplitLayout } from "./split-layout"
 import { EmptyState, ErrorState, LoadingState } from "./states"
 import { RouteCard } from "./route-card"
+import { cardRowOrder, hasEntryLeg } from "./route-rows"
 import { cleanStationName } from "./station-name"
 import type { ActivitySource, GroupRoute, RouteActivity, RouteEditInput, TimingResult } from "./types"
 import type { TripMember } from "../../types"
@@ -223,6 +224,23 @@ export function ScreenRoutes() {
 
   const stopNames = new Map((detail?.mainPlanStops ?? []).map((stop) => [stop.id, cleanStationName(stop.name)]))
   const nameOf = (id: string | null) => (id ? (stopNames.get(id) ?? "未知节点") : "—")
+  const tripStartName = detail?.mainPlanStops[0] ? cleanStationName(detail.mainPlanStops[0].name) : "行程起点"
+  /**
+   * The place a route sets off from. FROM_START has no departure stop id: with no leading leg the first
+   * stop is the start; a stale draft that still leads with a leg is anchored to the trip start instead.
+   */
+  const departureNameFor = (route: GroupRoute) => {
+    if (route.departureStopId) return nameOf(route.departureStopId)
+    const steps = route.steps ?? []
+    const entry = hasEntryLeg(steps.length, route.travelLegsMinutes?.length ?? 0)
+    return !entry && steps[0] ? cleanStationName(steps[0].name) : tripStartName
+  }
+  /** Only a stale FROM_START draft still opens with a travel leg; then the card needs its origin row. */
+  const originNameFor = (route: GroupRoute) => (
+    detail?.splitMode === "FROM_START" && hasEntryLeg((route.steps ?? []).length, route.travelLegsMinutes?.length ?? 0)
+      ? tripStartName
+      : null
+  )
   const routes = detail?.routes ?? []
   const hasPair = routes.length === 2
   const boundariesSaved = detail?.windowMinutes != null
@@ -402,8 +420,10 @@ export function ScreenRoutes() {
 
           {detail.windowMinutes != null && (
             <p className="text-[11.5px] leading-relaxed text-ink-3">
-              时间窗 {formatClock(detail.departureAt, detail.destination)} → {formatClock(detail.reunionAt, detail.destination)}
-              （共 {detail.windowMinutes} 分钟），由你在上一步选的出发/会合站决定；两条路线的合计都需不超过它。
+              {detail.splitMode === "FROM_START" ? "从行程起点开始分头" : `分头 ${formatClock(detail.departureAt, detail.destination)}`}
+              {" → "}
+              会合 {formatClock(detail.reunionAt, detail.destination)}
+              （窗口 {detail.windowMinutes} 分钟）；两条路线的合计都需不超过它。
             </p>
           )}
 
@@ -423,7 +443,8 @@ export function ScreenRoutes() {
                     editable={editable && !pending}
                     canEditCosts={canEditActivities && !pending}
                     destination={detail.destination}
-                    departureName={nameOf(route.departureStopId)}
+                    departureName={departureNameFor(route)}
+                    originName={originNameFor(route)}
                     reunionName={nameOf(route.reunionStopId)}
                     reunionClock={formatClock(detail.reunionAt, detail.destination)}
                     windowMinutes={detail.windowMinutes}
@@ -481,7 +502,8 @@ export function ScreenRoutes() {
                     onRemoveStep={(stepIndex) => {
                       const current = form[index]
                       if (!current || current.steps.length <= 1) return
-                      const legIndex = current.groupLabel === "B" ? stepIndex + 1 : stepIndex
+                      const entry = hasEntryLeg(current.steps.length, current.travelLegsMinutes.length)
+                      const legIndex = entry ? stepIndex + 1 : stepIndex
                       patchRoute(index, {
                         steps: current.steps.filter((_, itemIndex) => itemIndex !== stepIndex),
                         travelLegsMinutes: current.travelLegsMinutes.filter((_, itemIndex) => itemIndex !== legIndex),
@@ -493,7 +515,8 @@ export function ScreenRoutes() {
                     key={route.groupLabel}
                     route={route}
                     tone={route.groupLabel === "B" ? "b" : "a"}
-                    departureName={nameOf(route.departureStopId)}
+                    departureName={departureNameFor(route)}
+                    originName={originNameFor(route)}
                     reunionName={nameOf(route.reunionStopId)}
                     reunionClock={formatClock(detail.reunionAt, detail.destination)}
                     destination={detail.destination}
@@ -563,6 +586,7 @@ function EditableRouteCard({
   canEditCosts,
   destination,
   departureName,
+  originName,
   reunionName,
   reunionClock,
   windowMinutes,
@@ -581,6 +605,7 @@ function EditableRouteCard({
   canEditCosts: boolean
   destination: string | null
   departureName: string
+  originName: string | null
   reunionName: string
   reunionClock: string
   windowMinutes: number | null
@@ -696,12 +721,20 @@ function EditableRouteCard({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          {form.steps.map((step, index) => {
-            const legAfter = form.groupLabel === "B" ? index + 1 : index
+          {cardRowOrder(form.steps.length, form.travelLegsMinutes.length).map((row) => {
+            if (row.kind === "origin") {
+              return originName ? (
+                <div key="origin" className="flex items-center gap-1 px-1 py-1 text-[11px] font-semibold text-ink-3">
+                  <IconNav className="size-3 shrink-0" /> 从 {originName} 出发
+                </div>
+              ) : null
+            }
+            if (row.kind === "leg") return <Fragment key={legKey(row.leg)}>{renderLeg(row.leg)}</Fragment>
+            const index = row.step
+            const step = form.steps[index]
             const key = stationKey(index)
             return (
               <Fragment key={key}>
-                {form.groupLabel === "B" && index === 0 ? renderLeg(0) : null}
                 {editingRow === key ? (
                   <div className="flex items-center gap-2 rounded-[9px] bg-surface-3/70 p-1.5">
                     <input
@@ -776,7 +809,6 @@ function EditableRouteCard({
                     ) : null}
                   </div>
                 )}
-                {renderLeg(legAfter)}
               </Fragment>
             )
           })}

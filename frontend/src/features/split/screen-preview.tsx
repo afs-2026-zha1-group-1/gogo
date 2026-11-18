@@ -40,6 +40,7 @@ export function ScreenPreview() {
         stops,
         rounds: roundDetails.map((round) => ({
           roundIndex: round.roundIndex,
+          splitMode: round.splitMode,
           departureStopId: round.departureStopId,
           reunionStopId: round.reunionStopId,
           routes: round.routes,
@@ -47,6 +48,7 @@ export function ScreenPreview() {
       })
     : buildGraphRows({
         stops,
+        splitMode: detail?.splitMode ?? null,
         departureStopId: detail?.departureStopId ?? null,
         reunionStopId: detail?.reunionStopId ?? null,
         routes,
@@ -115,8 +117,10 @@ export function ScreenPreview() {
               <Badge variant="neutral">B 组 {counts.b} 人</Badge>
             </div>
             <span className="text-[10.5px] text-ink-3">
-              {detail.departureStopId && detail.reunionStopId
-                ? `${formatTime(detail.departureAt, "iso", detail.destination)} 分头 → ${formatTime(detail.reunionAt, "iso", detail.destination)} 会合${
+              {detail.windowMinutes != null
+                ? `${detail.splitMode === "FROM_START"
+                    ? "行程起点"
+                    : formatTime(detail.departureAt, "iso", detail.destination)} 分头 → ${formatTime(detail.reunionAt, "iso", detail.destination)} 会合${
                     detail.windowMinutes != null ? ` · 共 ${detail.windowMinutes} 分` : ""
                   }`
                 : PENDING_LABEL}

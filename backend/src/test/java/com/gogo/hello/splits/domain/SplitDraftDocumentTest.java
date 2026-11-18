@@ -34,8 +34,8 @@ class SplitDraftDocumentTest {
                 SplitDraftDocument.initialGroups(List.of("alice", "ben", "chloe", "daniel"));
         Map<String, SplitDraftDocument.RouteDurations> routes = Map.of(
                 "A", new SplitDraftDocument.RouteDurations(60, List.of(15, 20), 10, null));
-        SplitDraftDocument draft = new SplitDraftDocument("ben", 1, 2, "active", "stop-a", "stop-b", groups, routes,
-                null, "2026-12-05T00:00:00Z", "2026-12-05T00:00:00Z");
+        SplitDraftDocument draft = new SplitDraftDocument("ben", 1, 2, "active", "stop-a", "stop-b", "MIDDLE", groups,
+                routes, null, "2026-12-05T00:00:00Z", "2026-12-05T00:00:00Z");
 
         SplitDraftDocument moved = draft.withAssignment("B", "chloe", "2026-12-05T01:00:00Z");
 
