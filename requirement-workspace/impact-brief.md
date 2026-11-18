@@ -1963,5 +1963,5 @@ V10 已落库 address/lat/lng + place_cache（19 种子）；生成查缓存补�
 
 ### Suggested split boundaries
 
-单 change（建议 `us-079-map-navigation`）：main-itinerary 1 MODIFIED + 1 ADDED、trips 1 MODIFIED；
+单 change（`us-079-map-navigation`，已建）：main-itinerary 2 MODIFIED + 1 ADDED（18 scenarios）、trips 1 MODIFIED + 1 ADDED（20 scenarios）；
 V10 迁移 + 回写端点 + 前端导航/地址/图标一组垂直切片。P3 可拆：① 落库与回写契约；② 前端直链/兜底/地址行；③ 图标与回归。Effort：M。
