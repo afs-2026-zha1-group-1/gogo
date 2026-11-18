@@ -30,6 +30,29 @@ async function login(page: Page, email: string) {
   await expect(page.getByRole('navigation', { name: '主导航' })).toBeVisible()
 }
 
+for (const [email, labels] of [
+  ['alice@example.com', ['建局', '偏好', '邀请', '主线', '分队']],
+  ['ben@example.com', ['偏好', '邀请', '主线', '分队']],
+] as const) {
+  test(`shows only role-specific planning milestones for ${email}`, async ({ page }) => {
+    await login(page, email)
+    await page.goto('/#/dashboard/trips/9001')
+    const nodes = page.getByRole('region', { name: '旅程进度' }).locator('li')
+    await expect(nodes).toHaveCount(labels.length)
+    for (const [index, label] of labels.entries()) {
+      await expect(nodes.nth(index)).toContainText(label)
+    }
+    const invitation = nodes.filter({ hasText: '邀请' })
+    await expect(invitation).toContainText('已有成员加入')
+    await expect(invitation).toHaveAttribute('data-state', 'done')
+    expect(await nodes.first().locator('..').evaluate((list) =>
+      getComputedStyle(list).gridTemplateColumns.split(' ').length)).toBe(labels.length)
+    await expect(page.getByRole('region', { name: '旅程进度' })).not.toContainText('会合')
+    await expect(page.getByRole('region', { name: '旅程进度' })).not.toContainText('完成')
+    await expect(page.getByRole('region', { name: '旅程进度' })).toContainText('草稿已过期')
+  })
+}
+
 test('shows saved summary, readiness, stale plan and absent split', async ({ page }) => {
   await login(page, 'ben@example.com')
   await page.evaluate(() => { window.location.hash = '#/dashboard/trips/9001' })
@@ -57,12 +80,12 @@ test('organizer can prepare the main plan while waiting for member preferences',
     const progress = page.getByRole('region', { name: '旅程进度' }).locator('li')
     await expect(progress.nth(1)).toHaveAttribute('data-state', 'done')
     await expect(progress.nth(1)).toContainText('本人已就绪')
-    await expect(progress.nth(2)).toHaveAttribute('data-state', 'done')
+    await expect(progress.nth(2)).toHaveAttribute('data-state', 'active')
     await expect(progress.nth(3)).toHaveAttribute('data-state', 'active')
     const before = persistedState()
     const next = page.getByRole('region', { name: '下一步' })
     await expect(next).toContainText('还有 1 位成员未提交偏好')
-    await next.getByRole('link', { name: '准备主线方案' }).click()
+    await next.getByRole('link', { name: '生成主线方案' }).click()
     await expect(page).toHaveURL(/#\/dashboard\/trips\/9011\/main-plan\/inputs\?from=dashboard$/)
     await expect(page.getByText('生成主线方案', { exact: true })).toBeVisible()
     await expect(page.getByText('共同兴趣', { exact: true })).toBeVisible()
@@ -133,9 +156,8 @@ for (const email of ['alice@example.com', 'ben@example.com']) {
     await page.goto('/#/dashboard/trips/1')
     const before = persistedState()
     const next = page.getByRole('region', { name: '下一步' })
-    const organizer = email === 'alice@example.com'
-    await expect(next).toContainText(organizer ? '全员偏好已就绪，可以生成主线方案。' : '全员偏好已就绪，等待组织者生成主线方案。')
-    await next.getByRole('link', { name: organizer ? '生成主线方案' : '查看成员偏好' }).click()
+    await expect(next).toContainText('全员偏好已就绪，可以生成主线方案。')
+    await next.getByRole('link', { name: '生成主线方案' }).click()
     await expect(page).toHaveURL(/#\/dashboard\/trips\/1\/main-plan\/inputs\?from=dashboard$/)
     await expect(page.getByText('共同兴趣')).toBeVisible()
     await expect(page.getByText('采用 4 位就绪成员偏好')).toBeVisible()
@@ -147,6 +169,38 @@ for (const email of ['alice@example.com', 'ben@example.com']) {
     expect(persistedState()).toBe(before)
   })
 }
+
+test('invited member can invite and generate a main plan after preferences are ready', async ({ page }) => {
+  const db = new DatabaseSync(process.env.GOGO_E2E_DB_PATH!)
+  db.exec('PRAGMA busy_timeout = 5000')
+  try {
+    db.prepare(`INSERT INTO trip
+      (id, name, destination, start_date, end_date, organizer_id)
+      VALUES (9016, 'Member planning trip', 'Singapore', '2026-12-10', '2026-12-12', 1)`).run()
+    db.prepare('INSERT INTO trip_member (trip_id, user_id, ready) VALUES (9016, 1, 1), (9016, 2, 1)').run()
+    await login(page, 'ben@example.com')
+    await page.goto('/#/dashboard/trips/9016')
+    const progress = page.getByRole('region', { name: '旅程进度' })
+    await expect(progress.locator('li').filter({ hasText: '邀请' })).toHaveAttribute('data-state', 'active')
+    await expect(progress.locator('li').filter({ hasText: '主线' })).toContainText('未生成')
+    const next = page.getByRole('region', { name: '下一步' })
+    await expect(next.getByRole('link', { name: '邀请朋友' })).toHaveAttribute('href', '#/dashboard/trips/9016/invite')
+    await next.getByRole('link', { name: '生成主线方案' }).click()
+    await page.getByRole('button', { name: '一键生成主线方案' }).click()
+    await expect(page.getByText('草稿，待组织者确认')).toBeVisible()
+    await expect(page.getByRole('button', { name: '确认主线方案' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: '重新生成' })).toBeVisible()
+    await page.goto('/#/dashboard/trips/9016')
+    await expect(progress.locator('li').filter({ hasText: '邀请' })).toHaveAttribute('data-state', 'done')
+    await expect(progress.locator('li').filter({ hasText: '主线' })).toContainText('草稿')
+  } finally {
+    db.prepare('DELETE FROM main_plan_stop WHERE draft_id IN (SELECT id FROM main_plan_draft WHERE trip_id = 9016)').run()
+    db.prepare('DELETE FROM main_plan_draft WHERE trip_id = 9016').run()
+    db.prepare('DELETE FROM trip_member WHERE trip_id = 9016').run()
+    db.prepare('DELETE FROM trip WHERE id = 9016').run()
+    db.close()
+  }
+})
 
 test('rejects inconsistent active split and unconfirmed main plan', async ({ page }) => {
   await login(page, 'ben@example.com')
@@ -163,12 +217,14 @@ test('shows independent milestones and suggests a read-only main-plan view', asy
   await login(page, 'ben@example.com')
   await page.goto('/#/dashboard/trips/9001')
   const progress = page.getByRole('region', { name: '旅程进度' })
-  await expect(progress.locator('li')).toHaveCount(5)
+  await expect(progress.locator('li')).toHaveCount(4)
   await expect(progress.locator('li').nth(0)).toContainText('3/4')
-  await expect(progress.locator('li').nth(1)).toContainText('草稿已过期')
-  await expect(progress.locator('li').nth(2)).toContainText('未发起')
-  await expect(progress.locator('li').nth(3)).toContainText('未知')
-  await expect(progress.locator('li').nth(4)).toContainText('未知')
+  await expect(progress.locator('li').nth(1)).toContainText('邀请')
+  await expect(progress.locator('li').nth(1)).toContainText('已有成员加入')
+  await expect(progress.locator('li').nth(2)).toContainText('草稿已过期')
+  await expect(progress.locator('li').nth(3)).toContainText('未发起')
+  await expect(progress).not.toContainText('会合')
+  await expect(progress).not.toContainText('完成')
   const writes: string[] = []
   page.on('request', (request) => {
     if (request.url().includes('/api/trips/') && request.method() !== 'GET') writes.push(request.method())
@@ -184,7 +240,7 @@ test('selected dashboard fits the mobile shell', async ({ page }, testInfo) => {
   await login(page, 'ben@example.com')
   await page.goto('/#/dashboard/trips/9001')
   await expect(page.getByRole('heading', { name: 'Stale draft trip' })).toBeVisible()
-  await expect(page.getByRole('region', { name: '旅程进度' }).locator('li')).toHaveCount(5)
+  await expect(page.getByRole('region', { name: '旅程进度' }).locator('li')).toHaveCount(4)
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link')).toHaveCount(5)
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
   await page.screenshot({ path: testInfo.outputPath('mobile-dashboard.png') })
@@ -196,7 +252,8 @@ test('suggests preferences for an unready member without saving on navigation', 
   const progress = page.getByRole('region', { name: '旅程进度' })
   await expect(progress.locator('li').first()).toContainText('偏好')
   await expect(progress.getByText('建局', { exact: true })).toHaveCount(0)
-  await expect(progress.getByText('邀请', { exact: true })).toHaveCount(0)
+  await expect(progress.locator('li').nth(1)).toContainText('已有成员加入')
+  await expect(progress.locator('li').nth(1)).toHaveAttribute('data-state', 'done')
   const writes: string[] = []
   page.on('request', (request) => {
     if (request.url().includes('/api/trips/') && request.method() !== 'GET') writes.push(request.method())
@@ -270,7 +327,7 @@ test('pending dashboard main-plan deep link does not select an unvalidated trip'
   try {
     await page.goto('/#/dashboard/trips/999999/main-plan')
     await expect(page.getByText('正在加载主线方案…')).toBeVisible()
-    await expect(page.getByRole('link', { name: '分队', exact: true })).toHaveAttribute('href', '#/my-trips')
+    await expect(page.getByRole('link', { name: '分队', exact: true })).toHaveAttribute('href', '#/dashboard/trip-entry')
   } finally {
     release?.()
   }
@@ -289,7 +346,7 @@ test('account change does not restore a saved trip in dashboard-origin context',
   await page.getByLabel('名字').fill('Ben')
   await page.getByRole('button', { name: '保存', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('已保存')
-  await expect(page.getByRole('link', { name: '分队', exact: true })).toHaveAttribute('href', '#/my-trips')
+  await expect(page.getByRole('link', { name: '分队', exact: true })).toHaveAttribute('href', '#/dashboard/trip-entry')
 })
 
 test('does not reuse cached preferences when the authenticated account changes', async ({ page }) => {
@@ -404,7 +461,7 @@ for (const email of ['alice@example.com', 'ben@example.com']) {
     expect(persistedState()).toBe(before)
 
     for (const [tab, visibleText] of [
-      ['行程', '我的行程'],
+      ['行程', '还没有当前行程'],
       ['成员', '成员列表'],
       ['我的', email],
     ]) {
@@ -431,7 +488,7 @@ for (const email of ['alice@example.com', 'ben@example.com']) {
       expect(persistedState()).toBe(before)
     }
     await navigation.getByRole('link', { name: '行程', exact: true }).click()
-    await page.getByRole('link', { name: '创建行程' }).click()
+    await page.goto('/#/create')
     await expect(navigation.getByRole('link', { name: '行程', exact: true })).toHaveAttribute('aria-current', 'page')
     await page.getByRole('link', { name: 'Back' }).click()
     await expect(page).toHaveURL(/#\/trips$/)

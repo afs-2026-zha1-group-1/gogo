@@ -16,7 +16,7 @@ import type {
 } from '../types/mainPlan'
 
 // Screen 10 (US-037, design D11): draft review and validation-gated confirm.
-// Members read the shared timeline; only the organizer regenerates/confirms.
+// Members can generate drafts; only the organizer confirms them.
 // Blocked confirms render both error lists from the 422 detail payload.
 const ERROR_LABELS: Record<string, string> = {
   OUT_OF_ORDER: '时间顺序冲突',
@@ -250,7 +250,6 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
   }
 
   if (state.kind === 'empty') {
-    const isOrganizer = state.trip.organizerId === account?.id
     return (
       <div className="screen">
         {appbar}
@@ -260,18 +259,14 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
               <div className="checkring"><Icon name="cal" className="lg" /></div>
               <h2>还没有主线方案</h2>
               <p className="hint">
-                {isOrganizer
-                  ? '全员就绪后，即可基于成员偏好生成主线方案草稿。'
-                  : '组织者还没有生成主线方案。生成后你可以在这里审阅。'}
+                全员就绪后，即可基于成员偏好生成主线方案草稿。
               </p>
             </div>
-            {isOrganizer && (
-              <a className="btn btn-primary" href={dashboardOrigin
+            <a className="btn btn-primary" href={dashboardOrigin
                 ? `#/dashboard/trips/${tripId}/main-plan/inputs`
                 : `#/trips/${tripId}/main-plan/inputs`}>
                 <Icon name="sparkle" className="sm" /> 去生成主线方案
-              </a>
-            )}
+            </a>
           </section>
         </div>
       </div>
@@ -478,7 +473,7 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
 
         {actionError && <p role="alert" className="error" style={{ marginTop: 12 }}>{actionError}</p>}
 
-        {isOrganizer && !plan.confirmed && (
+        {!plan.confirmed && (
           <p className="tiny muted" style={{ marginTop: 12 }}>
             重新生成会整份替换草稿，并丢弃手动修改的活动地点与时间。
           </p>
@@ -486,7 +481,7 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
 
         {!isOrganizer && !plan.confirmed && (
           <p className="hint" style={{ marginTop: 12 }}>
-            你可以审阅草稿；确认与重新生成由组织者操作。
+            你可以审阅或重新生成草稿；确认由组织者操作。
           </p>
         )}
       </div>
@@ -515,7 +510,7 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
             </p>
           )}
         </div>
-      ) : isOrganizer ? (
+      ) : (
         <>
           {busy === 'regen' && <AiGeneratingNotice />}
           <div className="actionbar" style={{ display: 'flex', gap: 10 }}>
@@ -528,7 +523,7 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
           >
             <Icon name="sparkle" className="sm" /> {busy === 'regen' ? '正在生成…' : '重新生成'}
           </button>
-          <button
+          {isOrganizer && <button
             className="btn btn-primary"
             type="button"
             style={{ flex: 1.4 }}
@@ -536,10 +531,10 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
             onClick={confirm}
           >
             <Icon name="lock" className="sm" /> {busy === 'confirm' ? '正在校验…' : '确认主线方案'}
-          </button>
+          </button>}
           </div>
         </>
-      ) : null}
+      )}
 
       <ConfirmDialog
         open={stalePrompt}

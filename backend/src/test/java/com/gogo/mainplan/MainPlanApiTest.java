@@ -248,12 +248,26 @@ class MainPlanApiTest {
                 .andExpect(jsonPath("$.endLocation").value("Merlion Park"));
     }
 
-    // M4/G4: a member who is not the organizer cannot generate.
     @Test
-    void nonOrganizerCannotGenerate() throws Exception {
+    void memberCanGenerateAndRegenerateWithoutConfirmPermission() throws Exception {
         mockMvc.perform(post("/api/trips/" + tripId + "/main-plan").with(TestAuth.asUser("2")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.version").value(1));
+        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan").with(TestAuth.asUser("2")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.version").value(2));
+        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan/confirm").with(TestAuth.asUser("2")))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("NOT_ORGANIZER"));
+        org.junit.jupiter.api.Assertions.assertEquals(2, draftCount());
+    }
+
+    @Test
+    void memberGenerationStillRequiresAllMembersReady() throws Exception {
+        setReady(4, false);
+        mockMvc.perform(post("/api/trips/" + tripId + "/main-plan").with(TestAuth.asUser("2")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("MEMBERS_NOT_READY"));
         org.junit.jupiter.api.Assertions.assertEquals(0, draftCount());
     }
 

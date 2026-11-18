@@ -7,7 +7,6 @@ import { useAuth } from '../features/auth/AuthProvider'
 
 interface InvitationPanelProps {
   tripId: number
-  isOrganizer: boolean
   /** US-083: the full-screen invitation page owns the heading; embedded callers keep it. */
   showTitle?: boolean
   /** US-083: lets the invitation page drive its 生效中 pill from the issuance state. */
@@ -40,9 +39,9 @@ async function copyText(text: string, fallbackField: HTMLInputElement | null): P
   }
 }
 
-export default function InvitationPanel({ tripId, isOrganizer, joiningClosed, showTitle = true, onReadyChange }: InvitationPanelProps) {
+export default function InvitationPanel({ tripId, joiningClosed, showTitle = true, onReadyChange }: InvitationPanelProps) {
   const { account } = useAuth()
-  const [state, setState] = useState<InvitationState>({ kind: isOrganizer ? 'loading' : 'denied' })
+  const [state, setState] = useState<InvitationState>({ kind: 'loading' })
   const [copied, setCopied] = useState<boolean>(false)
   const [qrFailed, setQrFailed] = useState<boolean>(false)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -69,15 +68,11 @@ export default function InvitationPanel({ tripId, isOrganizer, joiningClosed, sh
     return () => {
       active = false
     }
-  }, [tripId])
+  }, [tripId, account?.id])
 
   useEffect(() => {
-    if (!isOrganizer) {
-      setState({ kind: 'denied' })
-      return undefined
-    }
     return load()
-  }, [isOrganizer, load])
+  }, [load])
 
   useEffect(() => {
     onReadyChange?.(state.kind === 'ready')
@@ -117,9 +112,9 @@ export default function InvitationPanel({ tripId, isOrganizer, joiningClosed, sh
           <div className="valid-item" style={{ borderBottom: 0 }}>
             <span className="valid-ic"><Icon name="shield" className="sm" /></span>
             <div>
-              <div className="vt">只有组织者可以分享邀请链接</div>
+              <div className="vt">没有权限分享邀请链接</div>
               <div className="vd">
-                当前身份是 {account?.name ?? '成员'}。只有组织者可以生成链接和二维码。
+                只有行程成员可以生成链接和二维码。
               </div>
             </div>
           </div>

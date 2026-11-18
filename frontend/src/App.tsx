@@ -247,9 +247,7 @@ export default function App() {
     }
   }, [status, account?.id, route.page, dashboardSelectionAttempted, pickerReadBlocked])
 
-  // US-071: the bottom "行程" tab opens the caller's trip list in both shells; the dashboard's old
-  // trip-number entry page is kept only as a deep link for existing bookmarks.
-  const tripsHref = dashboardContext ? '#/my-trips' : '#/trips'
+  const tripsHref = '#/trips'
   const tripHref = lastTripId != null
     ? dashboardContext ? `#/dashboard/trips/${lastTripId}` : `#/trips/${lastTripId}`
     : tripsHref
@@ -257,7 +255,7 @@ export default function App() {
   // fall back to the trip list so the member can pick one first.
   const splitHref = lastTripId != null
     ? `/trips/${lastTripId}/split${dashboardContext ? '?from=dashboard' : ''}`
-    : tripsHref
+    : dashboardContext ? '#/dashboard/trip-entry' : tripsHref
 
   if (route.page === 'login') return <LoginPage />
   if (route.page === 'register') return <RegisterPage />

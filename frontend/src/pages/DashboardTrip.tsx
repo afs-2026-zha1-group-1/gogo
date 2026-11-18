@@ -16,6 +16,7 @@ interface TripSummary {
   endLocation: string | null
   organizerId: number
   mainPlanConfirmed: boolean
+  joiningClosed: boolean
 }
 
 interface Readiness {
@@ -74,7 +75,7 @@ function parseTrip(value: unknown, tripId: number): TripSummary {
     || value.startDate > value.endDate || !positiveInteger(value.organizerId)
     || !(value.startLocation === null || nonemptyString(value.startLocation))
     || !(value.endLocation === null || nonemptyString(value.endLocation))
-    || typeof value.mainPlanConfirmed !== 'boolean') {
+    || typeof value.mainPlanConfirmed !== 'boolean' || typeof value.joiningClosed !== 'boolean') {
     throw new Error('行程数据无效')
   }
   return {
@@ -87,6 +88,7 @@ function parseTrip(value: unknown, tripId: number): TripSummary {
     endLocation: value.endLocation,
     organizerId: value.organizerId,
     mainPlanConfirmed: value.mainPlanConfirmed,
+    joiningClosed: value.joiningClosed,
   }
 }
 
@@ -221,6 +223,7 @@ export default function DashboardTrip({ tripId, onTripReady }: {
   const splitLabel = split === null ? '未发起' : split === 'active' ? '进行中' : split === 'confirmed' ? '已确认' : '已取消'
   const sources: ProgressSources = {
     mainPlanConfirmed: trip.mainPlanConfirmed,
+    joiningClosed: trip.joiningClosed,
     isOrganizer: trip.organizerId === account?.id,
     ...readiness,
     plan: !plan ? 'absent' : plan.confirmed ? 'confirmed' : plan.stale ? 'stale' : 'draft',
@@ -229,7 +232,7 @@ export default function DashboardTrip({ tripId, onTripReady }: {
   const nextStep = dashboardNextStep(sources)
   const milestoneIcons: Record<string, IconName> = {
     建局: 'check', 偏好: 'star', 邀请: 'link', 主线: 'list',
-    分队: 'branch', 会合: 'users', 完成: 'flag',
+    分队: 'branch',
   }
 
   return (
@@ -286,14 +289,22 @@ export default function DashboardTrip({ tripId, onTripReady }: {
         <p>{nextStep.hint}</p>
         <a className="btn btn-primary" href={nextStep.destination === 'split'
           ? `/trips/${trip.id}/split?from=dashboard`
-          : nextStep.destination === 'invite' ? `#/dashboard/trips/${trip.id}/invite`
           : `#/dashboard/trips/${trip.id}/${nextStep.destination}${nextStep.destination === 'main-plan/inputs' ? '?from=dashboard' : ''}`}>
           {nextStep.label}
         </a>
+        {sources.viewerReady && !sources.joiningClosed && sources.plan === 'absent' && (
+          <a className="btn btn-ghost" style={{ marginTop: 10 }} href={`#/dashboard/trips/${trip.id}/invite`}>
+            邀请朋友
+          </a>
+        )}
       </section>
       <section aria-label="快捷入口">
         <div className="sec-title"><Icon name="list" className="sm" /> 快捷入口</div>
         <div className="dashboard-quick">
+          <a className="qcard" href="#/create">
+            <span className="qi"><Icon name="plus" /></span>
+            <span><span className="qt">创建行程</span><span className="qd">开启新的旅程</span></span>
+          </a>
           <a className="qcard" href={`#/dashboard/trips/${trip.id}/invite`}>
             <span className="qi"><Icon name="link" /></span>
             <span><span className="qt">邀请朋友</span><span className="qd">分享邀请链接</span></span>

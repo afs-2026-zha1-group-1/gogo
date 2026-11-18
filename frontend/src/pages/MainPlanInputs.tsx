@@ -1,14 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api'
-import { useAuth } from '../features/auth/AuthProvider'
 import Icon from '../Icons'
 import { AiGeneratingNotice } from '../components/AiGeneratingNotice'
 import { INTEREST_OPTIONS } from '../types/preferences'
 import type { MainPlan, MainPlanError, MainPlanInputs, TripSummary } from '../types/mainPlan'
 
-// Screen 9 (US-031, design D11): generation inputs summary. Members read,
-// only the organizer sees the generate action. Display wording is free per
-// the fixtures ruling; the six rule identifiers come from the API.
+// Screen 9: generation inputs summary; the rule identifiers come from the API.
 const RULE_TEXT: Record<string, { title: string; detail: string }> = {
   ALL_MEMBERS_READY: { title: '全员就绪才生成', detail: '只采用已提交的成员；沉默不算同意' },
   SUPPLIED_ACTIVITY_TIMES: { title: '必做项优先', detail: '先排入全员必做项与固定时间' },
@@ -59,7 +56,6 @@ interface MainPlanInputsProps {
 }
 
 export default function MainPlanInputs({ tripId, dashboardOrigin = false, backToDashboard = false }: MainPlanInputsProps) {
-  const { account } = useAuth()
   const [state, setState] = useState<InputsState>({ kind: 'loading' })
   const [generating, setGenerating] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -134,7 +130,7 @@ export default function MainPlanInputs({ tripId, dashboardOrigin = false, backTo
         : `#/trips/${tripId}/main-plan`} aria-label="Back"><Icon name="left" /></a>
       <div className="grow">
         <div className="title">生成主线方案</div>
-        <div className="sub">US-031 · 仅组织者可生成 · 基于就绪成员</div>
+        <div className="sub">行程成员可生成 · 基于就绪成员</div>
       </div>
     </header>
   )
@@ -178,7 +174,6 @@ export default function MainPlanInputs({ tripId, dashboardOrigin = false, backTo
   }
 
   const { trip, inputs } = state
-  const isOrganizer = trip.organizerId === account?.id
   const confirmed = trip.mainPlanConfirmed === true
   const allReady = inputs.memberCount > 0 && inputs.readyCount === inputs.memberCount
   const readyMembers = inputs.members.filter((member) => member.ready)
@@ -304,8 +299,7 @@ export default function MainPlanInputs({ tripId, dashboardOrigin = false, backTo
 
         {generating && <AiGeneratingNotice />}
 
-        {isOrganizer ? (
-          <>
+        <>
             <button
               className="btn btn-primary"
               type="button"
@@ -322,12 +316,7 @@ export default function MainPlanInputs({ tripId, dashboardOrigin = false, backTo
                 <a href={`#/trips/${tripId}/main-plan`}>主线方案</a>页查看已确认版本。
               </p>
             )}
-          </>
-        ) : (
-          <p className="hint" style={{ marginTop: 14 }}>
-            只有组织者可以生成主线方案。你可以查看以上汇总，生成后到主线方案页审阅。
-          </p>
-        )}
+        </>
       </div>
     </div>
   )

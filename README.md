@@ -68,24 +68,23 @@ details page generates an invitation as described below. Dashboard quick
 entries link to existing invitation, preference and main-plan pages; reunion
 navigation and trip completion do not have dashboard entries.
 The invitation entry opens `#/dashboard/trips/<id>/invite`, which reuses the
-trip invitation panel and returns to that trip's dashboard. Only the organizer
-can generate an invitation; other members see the existing access notice.
+trip invitation panel and returns to that trip's dashboard. Any trip member
+can share its invitation; non-members cannot access the link.
 The preference milestone reflects the viewer's readiness and also shows the
 group's ready count. Main-plan guidance distinguishes preparing while members
-are pending from generating once everyone is ready, and only the organizer can
-generate. Milestone colors reflect saved readiness, plan confirmation and split status;
-reunion and completion stay unknown until their data is available. The next
-step links to personal preferences, member preference inputs, the main plan or
-split planning according to those saved states. An organizer who has completed
-their preferences and has no other members is prompted to invite friends;
-invited members start at preferences rather than creation or invitation.
+are pending from generating once everyone is ready. Any trip member can
+generate a draft; only the organizer can confirm it. The invitation milestone
+remains active after the viewer is ready until a main-plan draft is generated.
+The next step offers both invitation and main-plan generation while no draft
+exists, then links to the main plan or split planning as appropriate.
 
-REQ-004 adds the invitation flow. On `#/trips/<id>` the organizer sees a panel
+REQ-004 adds the invitation flow. On `#/trips/<id>` a trip member sees a panel
 with the invitation link, a copy action and a QR encoding the same absolute URL
 (`/api/trips/{id}/invitation`). Guests open `#/join/<token>` to preview the five
 public fields and accept once (`/api/invitations/{token}` and
 `/api/invitations/{token}/accept`); joining closes once the trip's main plan is
-confirmed, and unknown links render a generic unusable page. The only product
+confirmed and remains closed if confirmation is later cancelled; unknown links
+render a generic unusable page. The only product
 path that sets `main_plan_confirmed` is the US-037
 `/api/trips/{id}/main-plan/confirm` endpoint, so the invitation tests still write
 the flag directly in SQLite.
@@ -128,12 +127,12 @@ for the main-plan reader and never appears on the wire. The `GET` answers
 
 US-031-037 adds main itinerary planning. `GET /api/trips/{id}/main-plan/inputs`
 aggregates ready members, common interests, the deduplicated must-do union, hard
-budgets and the six fixed generation rules for any member. The organizer
+budgets and the six fixed generation rules for any member. Any member
 generates a timed draft with `POST /api/trips/{id}/main-plan` (201; 409
 `MEMBERS_NOT_READY` while members are pending, 409 `ALREADY_CONFIRMED` after
 confirmation); any member reads it with `GET /api/trips/{id}/main-plan` (404
 `NO_DRAFT` before the first generation, computed `stale` against preference
-revisions). `POST /api/trips/{id}/main-plan/confirm` (200) validates the schedule
+revisions). The organizer's `POST /api/trips/{id}/main-plan/confirm` (200) validates the schedule
 and hard budgets first (422 `VALIDATION_FAILED` with both error lists, 409
 `STALE_DRAFT`), then freezes the draft and closes joining. The frontend adds
 `#/trips/<id>/main-plan/inputs` (Screen 9) and `#/trips/<id>/main-plan`

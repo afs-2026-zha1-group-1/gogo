@@ -115,13 +115,34 @@ class InvitationApiTest {
         org.junit.jupiter.api.Assertions.assertEquals(1, invitationCount());
     }
 
-    // I3: a member who is not the organizer is denied and nothing is created.
     @Test
-    void nonOrganizerIsDenied() throws Exception {
-        mockMvc.perform(post("/api/trips/" + tripId + "/invitation").with(TestAuth.asUser("2")))
+    void memberCanIssueFirstAndOrganizerAndMemberReuseTheToken() throws Exception {
+        MvcResult first = issue("2");
+        org.junit.jupiter.api.Assertions.assertEquals(200, first.getResponse().getStatus());
+        JsonNode body = objectMapper.readTree(first.getResponse().getContentAsString());
+        String token = body.get("token").asText();
+        org.junit.jupiter.api.Assertions.assertFalse(token.isBlank());
+        org.junit.jupiter.api.Assertions.assertEquals("/join/" + token, body.get("joinPath").asText());
+        org.junit.jupiter.api.Assertions.assertEquals(token, issueToken());
+        MvcResult repeated = issue("2");
+        org.junit.jupiter.api.Assertions.assertEquals(200, repeated.getResponse().getStatus());
+        org.junit.jupiter.api.Assertions.assertEquals(token,
+                objectMapper.readTree(repeated.getResponse().getContentAsString()).get("token").asText());
+        org.junit.jupiter.api.Assertions.assertEquals(1, invitationCount());
+    }
+
+    @Test
+    void nonMemberCannotCreateOrReadAnInvitation() throws Exception {
+        mockMvc.perform(post("/api/trips/" + tripId + "/invitation").with(TestAuth.asUser("5")))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("NOT_ORGANIZER"));
+                .andExpect(jsonPath("$.token").doesNotExist());
         org.junit.jupiter.api.Assertions.assertEquals(0, invitationCount());
+        String token = issueToken();
+        mockMvc.perform(post("/api/trips/" + tripId + "/invitation").with(TestAuth.asUser("5")))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.token").doesNotExist())
+                .andExpect(content().string(not(containsString(token))));
+        org.junit.jupiter.api.Assertions.assertEquals(1, invitationCount());
     }
 
     // I4-N: missing or unknown caller identity creates nothing.

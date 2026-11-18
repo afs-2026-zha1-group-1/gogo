@@ -16,7 +16,7 @@ type TripState =
   | { kind: 'missing'; message?: string }
   | { kind: 'failed'; message: string | undefined }
 
-// Pre-plan detail page kept verbatim from main (US-002): trip info, preference
+// Pre-plan detail page (US-002): trip info, preference
 // entry, embedded invitation panel and the main-plan link. TripDetails renders
 // this until a main plan exists; the compact overview (US-083/084/085) takes
 // over only after generation.
@@ -57,6 +57,11 @@ export default function TripDetailsLegacy({ tripId }: TripDetailsProps) {
         <div className="title">行程详情</div>
         <div className="sub">US-002 · 全员可见</div>
       </div>
+      {state.kind === 'ready' && (
+        <a className="iconbtn" href={`#/trips/${state.trip.id}/invitation`} aria-label="邀请朋友">
+          <Icon name="user" />
+        </a>
+      )}
     </header>
   )
 
@@ -96,7 +101,6 @@ export default function TripDetailsLegacy({ tripId }: TripDetailsProps) {
   }
 
   const trip = state.trip
-  const isOrganizer = trip.organizerId === account?.id
 
   return (
     <div className="screen">
@@ -170,7 +174,6 @@ export default function TripDetailsLegacy({ tripId }: TripDetailsProps) {
 
         <InvitationPanel
           tripId={trip.id}
-          isOrganizer={isOrganizer}
           joiningClosed={trip.joiningClosed === true}
         />
 

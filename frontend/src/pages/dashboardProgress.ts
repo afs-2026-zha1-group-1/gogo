@@ -1,5 +1,6 @@
 export interface ProgressSources {
   mainPlanConfirmed: boolean
+  joiningClosed: boolean
   readyCount: number
   memberCount: number
   viewerReady: boolean
@@ -9,7 +10,7 @@ export interface ProgressSources {
 }
 
 type MilestoneState = 'done' | 'active' | 'pending'
-type MilestoneLabel = '建局' | '偏好' | '邀请' | '主线' | '分队' | '会合' | '完成'
+type MilestoneLabel = '建局' | '偏好' | '邀请' | '主线' | '分队'
 type Milestone = { label: MilestoneLabel; detail: string; state: MilestoneState }
 
 export function dashboardMilestones(sources: ProgressSources): Milestone[] {
@@ -30,34 +31,30 @@ export function dashboardMilestones(sources: ProgressSources): Milestone[] {
     detail: `本人${sources.viewerReady ? '已就绪' : '待填写'} · ${sources.readyCount}/${sources.memberCount}`,
     state: sources.viewerReady ? 'done' : sources.mainPlanConfirmed ? 'pending' : 'active',
   }
-  const inviting = sources.isOrganizer && sources.memberCount === 1 && sources.plan === 'absent'
+  const invitation: Milestone = {
+    label: '邀请',
+    detail: sources.joiningClosed ? '已关闭' : sources.memberCount > 1 ? '已有成员加入' : '等待成员加入',
+    state: sources.joiningClosed || sources.plan !== 'absent'
+      ? 'done'
+      : sources.viewerReady ? 'active' : 'pending',
+  }
   const beginning: Milestone[] = sources.isOrganizer
-    ? [
-        { label: '建局', detail: '已创建', state: 'done' },
-        preference,
-        {
-          label: '邀请',
-          detail: sources.mainPlanConfirmed ? '已关闭' : sources.memberCount > 1 ? '已有成员加入' : '等待成员加入',
-          state: sources.mainPlanConfirmed || sources.memberCount > 1
-            ? 'done'
-            : sources.viewerReady && inviting ? 'active' : 'pending',
-        },
-      ]
-    : [preference]
+    ? [{ label: '建局', detail: '已创建', state: 'done' }]
+    : []
   return [
     ...beginning,
+    preference,
+    invitation,
     {
       label: '主线', detail: plan,
-      state: sources.plan === 'confirmed' ? 'done' : sources.viewerReady && !inviting ? 'active' : 'pending',
+      state: sources.plan === 'confirmed' ? 'done' : sources.viewerReady ? 'active' : 'pending',
     },
     { label: '分队', detail: split, state: sources.split === 'confirmed' ? 'done' : sources.split === 'active' ? 'active' : 'pending' },
-    { label: '会合', detail: '未知', state: 'pending' },
-    { label: '完成', detail: '未知', state: 'pending' },
   ]
 }
 
 export function dashboardNextStep(sources: ProgressSources): {
-  destination: 'preferences' | 'invite' | 'main-plan' | 'main-plan/inputs' | 'split'
+  destination: 'preferences' | 'main-plan' | 'main-plan/inputs' | 'split'
   label: string
   hint: string
 } {
@@ -73,26 +70,19 @@ export function dashboardNextStep(sources: ProgressSources): {
   if (!sources.viewerReady) {
     return { destination: 'preferences', label: '查看我的偏好', hint: '先查看并完善你的兴趣偏好。' }
   }
-  if (sources.isOrganizer && sources.memberCount === 1 && sources.plan === 'absent') {
-    return { destination: 'invite', label: '邀请朋友', hint: '偏好已完成，邀请朋友加入行程。' }
-  }
   if (sources.plan === 'absent') {
     const pending = sources.memberCount - sources.readyCount
     return {
       destination: 'main-plan/inputs',
-      label: sources.isOrganizer ? pending ? '准备主线方案' : '生成主线方案' : '查看成员偏好',
+      label: '生成主线方案',
       hint: pending
-        ? sources.isOrganizer
-          ? `还有 ${pending} 位成员未提交偏好；可先查看成员偏好，为生成主线做准备。`
-          : `还有 ${pending} 位成员未提交偏好；全员就绪后由组织者生成主线方案。`
-        : sources.isOrganizer
-          ? '全员偏好已就绪，可以生成主线方案。'
-          : '全员偏好已就绪，等待组织者生成主线方案。',
+        ? `还有 ${pending} 位成员未提交偏好；全员就绪后可生成主线方案。`
+        : '全员偏好已就绪，可以生成主线方案。',
     }
   }
   const hint = {
     draft: '主线草稿已生成，可以查看并审阅方案。',
-    stale: '主线草稿已过期，请查看并联系组织者重新生成。',
+    stale: '主线草稿已过期，请查看并重新生成。',
     confirmed: '主线方案已确认，可以查看分队规划。',
   }[sources.plan]
   return { destination: 'main-plan', label: '查看主线方案', hint }

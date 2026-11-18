@@ -30,6 +30,7 @@ export default function TripsList({
 }: TripsListProps) {
   const [state, setState] = useState<ListState>({ kind: 'loading' })
   const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [currentTripLoading, setCurrentTripLoading] = useState(true)
   const [selectError, setSelectError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
   const [selecting, setSelecting] = useState(false)
@@ -60,14 +61,19 @@ export default function TripsList({
   useEffect(() => {
     if (!selectable || selectionInFlight) return
     let active = true
+    setCurrentTripLoading(true)
     api<unknown>('/api/trips/current')
       .then((result) => {
         if (!active) return
         if (result.ok && isCurrentTripResponse(result.data)) setSelectedId(result.data.tripId)
         else setSelectError('无法读取当前行程')
+        setCurrentTripLoading(false)
       })
       .catch((cause: unknown) => {
-        if (active) setSelectError(`无法读取当前行程：${errorMessage(cause)}`)
+        if (active) {
+          setSelectError(`无法读取当前行程：${errorMessage(cause)}`)
+          setCurrentTripLoading(false)
+        }
       })
     return () => {
       active = false
@@ -112,7 +118,7 @@ export default function TripsList({
     </header>
   )
 
-  if (state.kind === 'loading') {
+  if (state.kind === 'loading' || (state.kind === 'ready' && selectable && !selectionInFlight && currentTripLoading)) {
     return (
       <div className="screen">
         {appbar}
@@ -144,6 +150,7 @@ export default function TripsList({
       <div className="screen">
         {appbar}
         <div className="body">
+          {selectError && <p role="alert" className="error" style={{ marginBottom: 10 }}>{selectError}</p>}
           <div className="empty">
             <Icon name="list" />
             <p>还没有行程</p>
