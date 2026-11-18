@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api'
 import { useAuth } from '../features/auth/AuthProvider'
 import Icon from '../Icons'
+import { AiGeneratingNotice } from '../components/AiGeneratingNotice'
 import type {
   BudgetOverrun,
   MainPlan,
@@ -373,7 +374,9 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
           )}
         </div>
       ) : isOrganizer ? (
-        <div className="actionbar" style={{ display: 'flex', gap: 10 }}>
+        <>
+          {busy === 'regen' && <AiGeneratingNotice />}
+          <div className="actionbar" style={{ display: 'flex', gap: 10 }}>
           <button
             className="btn btn-ghost"
             type="button"
@@ -392,7 +395,8 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
           >
             <Icon name="lock" className="sm" /> {busy === 'confirm' ? '正在校验…' : '确认主线方案'}
           </button>
-        </div>
+          </div>
+        </>
       ) : null}
     </div>
   )
