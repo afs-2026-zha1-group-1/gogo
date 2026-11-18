@@ -2047,3 +2047,43 @@ No critical blocker invalidates US-040; split may proceed.
 3. **预览页与流转**：`screen-preview.tsx`、`TeamRouteGraph` 复用、路由与重定向、Screen 15 `backTo`、E2E 与回归。
 
 Effort：L（跨前后端，回归面含 6 个 splits 测试类与分队 E2E）。
+## §US-079 地图导航（P1，2026-11-18）
+
+### As-is
+
+站点卡片右侧与倒计时卡"下一站"行的"高德"真链接按钮：坐标直链开新标签页高德电脑版路线页
+（起点=上一站、首站只带终点）；无坐标退搜索页直链；地址/复制在倒计时卡下一站行；
+V10 已落库 address/lat/lng + place_cache（19 种子）；生成查缓存补全 + stop-locations 回写沉淀；
+确认投影抄坐标进 plan_node；语义图标 7 新增。后端 379/379、前端 64/64 + typecheck + build。
+
+### Direction
+
+**extend + add**：`main-itinerary` MODIFIED（生成落库补坐标、读带三字段）+ ADDED（stop-locations 回写端点）；
+`trips` MODIFIED（概览下一站地址/复制/导航 + 时间轴图标/按钮）；`splits` 只读消费投影坐标、契约不变。
+
+### Affected surfaces
+
+| 面 | 变更 | 备注 |
+|---|---|---|
+| DB | V10：main_plan_stop +address/lat/lng 可空列；place_cache 新表 | 只加不改；迁移序 V9→V10 |
+| API | POST /api/trips/{id}/main-plan/stop-locations（组织者门）；PlanResponse.Stop +address/lat/lng（null 省略） | 错误码 NO_DRAFT 404 / NOT_ORGANIZER 403 / UNKNOWN_STOP、INVALID_COORDS 422 |
+| 前端 | StopMapButton/MyPlanTimeline/CountdownCard/TripOverview/MainPlanInputs + lib{amap,amap-geocode,coord,place-book,stop-icon} | 无 iframe；无新 UI 库 |
+| 外部 | 高德 JS API（浏览器查坐标回写，JS Key+安全密钥 .env）；高德电脑版网页（新标签页 dir/search） | REST 地理编码需 Web-service Key，本轮不启用 |
+| 脚本 | demo-seed.py 三列回填能力 | 本轮只改未跑（保护已确认方案） |
+
+### Risk register
+
+| id | Risk | Severity | Mitigation |
+|---|---|---|---|
+| R1 | 海外地址高德查不了 → 坐标留空 | 范围限制 | 兜底链（地址簿/搜索页）；海外全自动另立项（OQ-5 deferred） |
+| R2 | JS Key 前端暴露 | 安全 | JS Key 设计即公开 + 建议域名白名单；.env 不入库；安全密钥同属前端配套 |
+| R3 | demo-seed 会清已确认草稿（用户曾见"确认后没有方案"） | 流程 | 本轮只改未跑；护栏待 OQ-8 deferred |
+| R4 | 存量已确认草稿坐标 NULL | 观感 | 地址簿兜底观感不变；回填 SQL 可选（OQ-6 deferred） |
+| R5 | 分队快照不带坐标 → 个人路线态只用地址簿 | 一致性 | as-built 限制；W1 deferred（动 splits 契约倾向另立项） |
+
+无 critical blocker 使需求失效；blocking OQ = 0、DoR BLOCKER = 0，可进入 `/sdd:proposal-split`。
+
+### Suggested split boundaries
+
+单 change（`us-079-map-navigation`，已建）：main-itinerary 2 MODIFIED + 1 ADDED（18 scenarios）、trips 1 MODIFIED + 1 ADDED（20 scenarios）；
+V10 迁移 + 回写端点 + 前端导航/地址/图标一组垂直切片。P3 可拆：① 落库与回写契约；② 前端直链/兜底/地址行；③ 图标与回归。Effort：M。

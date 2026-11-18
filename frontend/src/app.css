@@ -390,6 +390,11 @@ body {
   margin-top: 14px;
 }
 
+/* US-079: 概览页 hero 卡非 .card，不命中通用间隔规则，单独补与倒计时卡的间距 */
+.hero + .countdown {
+  margin-top: 14px;
+}
+
 .sec-title {
   display: flex;
   align-items: center;
@@ -2179,4 +2184,100 @@ body {
   margin-top: 1px;
   font-size: 11.5px;
   color: var(--ink-3);
+}
+
+/* US-079: 地址文字（弹窗地址行/下一站行共用） */
+.act-addr-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.addr-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: 0.16s;
+}
+
+.addr-copy:hover {
+  background: var(--surface-3);
+  color: var(--ink);
+}
+
+.addr-copy:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* US-079: 复制成功瞬时反馈（图标变勾+变色，1.2s 复原）；文案/尺寸恒定 */
+.addr-copy.copied {
+  color: var(--ok);
+  border-color: var(--ok);
+  background: var(--ok-soft);
+}
+
+.act-map-error {
+  flex-basis: 100%;
+  color: var(--warn);
+}
+
+/* US-079: 站点卡右列：高德按钮顶对齐左侧图标，其下逐站复制地址 */
+.stop-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: none;
+  align-self: flex-start;
+}
+
+.stop-actions .map-btn {
+  align-self: stretch;
+  justify-content: center;
+}
+
+.stop-actions .addr-copy {
+  justify-content: center;
+}
+
+/* US-079: 站点卡片右侧高德按钮（薄荷底 + 描边 + 小定位图标，参照原型样式） */
+.map-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  border: 1px solid #99f6e4;
+  border-radius: 12px;
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  text-decoration: none;
+  transition: 0.16s;
+}
+
+.map-btn:hover {
+  border-color: var(--brand);
+}
+
+/* US-079: 倒计时卡下一站地址行右侧的高德按钮列 */
+.next-stop-addr .stop-actions {
+  margin-left: auto;
+  align-self: center;
+}
+
+/* US-079: 地址行内文字+复制按钮排布（倒计时卡下一站地址） */
+.addr-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
 }

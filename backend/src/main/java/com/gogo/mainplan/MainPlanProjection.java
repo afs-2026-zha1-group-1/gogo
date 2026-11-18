@@ -63,17 +63,18 @@ public class MainPlanProjection {
             Instant startAt = instant(startDate, stop.startLocal(), zone);
             Instant endAt = instant(startDate, stop.endLocal(), zone);
             if (ids == null || ids.isEmpty()) {
+                // US-079：确认投影把站点坐标抄进 plan_node 预留列（分队地图直接用）。
                 jdbc.update("INSERT INTO plan_node (id, trip_id, plan_version, parent_id, branch_id, node_type, title, "
                                 + "start_at, end_at, location_name, lat, lng, sort_order, created_at, cost_cents) "
-                                + "VALUES (?, ?, ?, NULL, 'main', 'stop', ?, ?, ?, ?, NULL, NULL, ?, ?, ?)",
+                                + "VALUES (?, ?, ?, NULL, 'main', 'stop', ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                         stableId(tripId, draft.version(), stop.seq()), tripId, draft.version(), stop.name(),
-                        startAt, endAt, locationOf(stop), stop.seq(), now, stop.costCents());
+                        startAt, endAt, locationOf(stop), stop.lat(), stop.lng(), stop.seq(), now, stop.costCents());
                 continue;
             }
             // The row already occupying this order keeps its id, so split drafts that stored it stay valid.
-            jdbc.update("UPDATE plan_node SET title = ?, start_at = ?, end_at = ?, location_name = ?, cost_cents = ? "
-                            + "WHERE id = ?",
-                    stop.name(), startAt, endAt, locationOf(stop), stop.costCents(), ids.get(0));
+            jdbc.update("UPDATE plan_node SET title = ?, start_at = ?, end_at = ?, location_name = ?, "
+                            + "lat = ?, lng = ?, cost_cents = ? WHERE id = ?",
+                    stop.name(), startAt, endAt, locationOf(stop), stop.lat(), stop.lng(), stop.costCents(), ids.get(0));
             for (String duplicate : ids.subList(1, ids.size())) {
                 jdbc.update("DELETE FROM plan_node WHERE id = ?", duplicate);
             }

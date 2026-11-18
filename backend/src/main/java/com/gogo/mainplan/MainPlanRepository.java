@@ -20,19 +20,34 @@ public class MainPlanRepository {
     }
 
     public record StopRow(long id, int seq, String name, String startLocal, String endLocal,
-            String locationName, Integer travelMinutesToNext, String interestsJson, int costCents) {
+            String locationName, Integer travelMinutesToNext, String interestsJson,
+            String address, Double lat, Double lng, int costCents) {
 
         /** Cost-less convenience for schedule-only fixtures (US-045 adds the cost column). */
         public StopRow(int seq, String name, String startLocal, String endLocal,
                 Integer travelMinutesToNext, String interestsJson) {
-            this(0L, seq, name, startLocal, endLocal, null, travelMinutesToNext, interestsJson, 0);
+            this(0L, seq, name, startLocal, endLocal, null, travelMinutesToNext, interestsJson,
+                    null, null, null, 0);
         }
 
         /** US-045 fixtures keep the cost slot while staying id-less and location-less. */
         public StopRow(int seq, String name, String startLocal, String endLocal,
                 Integer travelMinutesToNext, String interestsJson, int costCents) {
-            this(0L, seq, name, startLocal, endLocal, null, travelMinutesToNext, interestsJson, costCents);
+            this(0L, seq, name, startLocal, endLocal, null, travelMinutesToNext, interestsJson,
+                    null, null, null, costCents);
         }
+
+        /** US-079 fixtures keep the cost and coordinate slots while staying id-less and location-less. */
+        public StopRow(int seq, String name, String startLocal, String endLocal,
+                Integer travelMinutesToNext, String interestsJson, String address, Double lat, Double lng,
+                int costCents) {
+            this(0L, seq, name, startLocal, endLocal, null, travelMinutesToNext, interestsJson,
+                    address, lat, lng, costCents);
+        }
+    }
+
+    /** place_cache 行：地址簿缓存（种子/程序查/人工补）。 */
+    public record PlaceRow(String address, Double lat, Double lng) {
     }
 
     public record MemberRow(long userId, String displayName, boolean ready, int preferenceRevision,
@@ -83,11 +98,36 @@ public class MainPlanRepository {
                 tripId);
     }
 
-    public void insertStop(long draftId, MainPlanResult.PlannedStop stop, String interestsJson) {
+    public void insertStop(long draftId, MainPlanResult.PlannedStop stop, String interestsJson,
+            String address, Double lat, Double lng) {
         jdbc.update("INSERT INTO main_plan_stop (draft_id, seq, name, start_local, end_local, "
-                + "travel_minutes_to_next, interests_json, cost_cents) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                + "travel_minutes_to_next, interests_json, address, lat, lng, cost_cents) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 draftId, stop.seq(), stop.name(), stop.startTime(), stop.endTime(),
-                stop.travelMinutesToNext(), interestsJson, stop.costCents());
+                stop.travelMinutesToNext(), interestsJson, address, lat, lng, stop.costCents());
+    }
+
+    /** US-079 路线1：程序查坐标回写当前草稿站点。 */
+    public void updateStopLocation(long draftId, int seq, double lat, double lng) {
+        jdbc.update("UPDATE main_plan_stop SET lat = ?, lng = ? WHERE draft_id = ? AND seq = ?",
+                lat, lng, draftId, seq);
+    }
+
+    public Optional<PlaceRow> cacheLookup(String name, String city) {
+        List<PlaceRow> rows = jdbc.query(
+                "SELECT address, lat, lng FROM place_cache WHERE name = ? AND city = ?",
+                (rs, rowNum) -> new PlaceRow(rs.getString("address"),
+                        (Double) rs.getObject("lat"), (Double) rs.getObject("lng")),
+                name, city);
+        return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
+    }
+
+    /** 查坐标成功后沉淀进地址簿，跨行程复用。 */
+    public void cacheUpsert(String name, String city, String address, double lat, double lng, String source) {
+        jdbc.update("INSERT INTO place_cache (name, city, address, lat, lng, source) VALUES (?, ?, ?, ?, ?, ?) "
+                + "ON CONFLICT(name, city) DO UPDATE SET address = excluded.address, lat = excluded.lat, "
+                + "lng = excluded.lng, source = excluded.source",
+                name, city, address, lat, lng, source);
     }
 
     public Optional<DraftRow> findDraftByStatus(long tripId, String status) {
@@ -104,7 +144,7 @@ public class MainPlanRepository {
     public List<StopRow> stopsForDraft(long draftId) {
         return jdbc.query(
                 "SELECT id, seq, name, start_local, end_local, location_name, travel_minutes_to_next, "
-                        + "interests_json, cost_cents FROM main_plan_stop WHERE draft_id = ? ORDER BY seq",
+                        + "interests_json, address, lat, lng, cost_cents FROM main_plan_stop WHERE draft_id = ? ORDER BY seq",
                 MainPlanRepository::toStopRow,
                 draftId);
     }
@@ -122,7 +162,7 @@ public class MainPlanRepository {
     public Optional<StopRow> findStop(long tripId, long stopId) {
         List<StopRow> rows = jdbc.query(
                 "SELECT s.id, s.seq, s.name, s.start_local, s.end_local, s.location_name, "
-                        + "s.travel_minutes_to_next, s.interests_json, s.cost_cents "
+                        + "s.travel_minutes_to_next, s.interests_json, s.address, s.lat, s.lng, s.cost_cents "
                         + "FROM main_plan_stop s JOIN main_plan_draft d ON d.id = s.draft_id "
                         + "WHERE s.id = ? AND d.trip_id = ?",
                 MainPlanRepository::toStopRow,
@@ -173,6 +213,7 @@ public class MainPlanRepository {
         return new StopRow(rs.getLong("id"), rs.getInt("seq"), rs.getString("name"),
                 rs.getString("start_local"), rs.getString("end_local"), rs.getString("location_name"),
                 (Integer) rs.getObject("travel_minutes_to_next"), rs.getString("interests_json"),
+                rs.getString("address"), (Double) rs.getObject("lat"), (Double) rs.getObject("lng"),
                 rs.getInt("cost_cents"));
     }
 

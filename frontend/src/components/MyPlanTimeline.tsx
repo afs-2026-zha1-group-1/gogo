@@ -4,9 +4,14 @@
  * tl-* markup pattern; an empty schedule shows the no-plan state, never another
  * trip's or another group's route. US-090: a main-plan stop carries an edit entry
  * (pencil) that opens the time/location dialog; split route items stay read-only.
+ * US-079: every stop card carries a mint Amap button on its right opening the
+ * embedded map modal; the address + navigation live on the countdown card's
+ * next-stop row, not on the timeline; map failures never blank the trip.
  */
 import Icon from '../Icons'
+import StopMapButton from './StopMapButton'
 import { formatClock, type ScheduleItem } from '../lib/countdown'
+import { stopIcon } from '../lib/stop-icon'
 
 interface MyPlanTimelineProps {
   schedule: ScheduleItem[]
@@ -20,6 +25,8 @@ interface MyPlanTimelineProps {
   onAddStop?: () => void
   /** A stop mutation is in flight: the entry buttons are disabled so a double click cannot post twice. */
   busy?: boolean
+  /** US-079: trip destination passed to the embedded Amap modal. */
+  destination: string
 }
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
@@ -43,6 +50,7 @@ export default function MyPlanTimeline({
   onDeleteStop,
   onAddStop,
   busy = false,
+  destination,
 }: MyPlanTimelineProps) {
   return (
     <>
@@ -70,7 +78,7 @@ export default function MyPlanTimeline({
                   <div className="tl-time">{timeLabel(item)}</div>
                   <div className="act-card">
                     <span className="act-ic">
-                      <Icon name={item.groupLabel ? 'route' : 'pin'} className="sm" />
+                      <Icon name={stopIcon(item)} className="sm" />
                     </span>
                     <div className="act-main">
                       <div className="act-name">{item.name}</div>
@@ -108,6 +116,7 @@ export default function MyPlanTimeline({
                         <Icon name="trash" className="sm" />
                       </button>
                     ) : null}
+                    <StopMapButton item={item} destination={destination} from={index > 0 ? schedule[index - 1] : null} />
                   </div>
                   {item.travelMinutesToNext != null && (
                     <div className="tl-leg">

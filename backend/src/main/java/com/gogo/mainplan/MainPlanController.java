@@ -14,8 +14,13 @@ import com.gogo.auth.AccountPrincipal;
 import com.gogo.trip.TripResponse;
 
 // Contractual main-plan routes; identity is the authenticated session principal.
+// US-079 adds stop-locations: programmatic geocode write-back at generation time.
 @RestController
 public class MainPlanController {
+
+    /** US-079 路线1：前端 JS API 查坐标后的回写请求体。 */
+    public record StopLocationsRequest(java.util.List<MainPlanService.StopLocation> stops) {
+    }
 
     private final MainPlanService service;
 
@@ -82,5 +87,14 @@ public class MainPlanController {
             @PathVariable long id,
             @PathVariable long stopId) {
         return service.deleteStop(id, principal.id(), stopId);
+    }
+
+    /** US-079 路线1：前端 JS API 查坐标后的回写请求体。 */
+    @PostMapping("/api/trips/{id}/main-plan/stop-locations")
+    public PlanResponse stopLocations(
+            @AuthenticationPrincipal AccountPrincipal principal,
+            @PathVariable long id,
+            @RequestBody StopLocationsRequest request) {
+        return service.completeStopLocations(id, principal.id(), request.stops());
     }
 }

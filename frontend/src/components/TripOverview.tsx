@@ -193,7 +193,7 @@ export default function TripOverview({ state }: { state: ReadyState }) {
           </div>
         </section>
 
-        <CountdownCard state={countdown} schedule={state.schedule} />
+        <CountdownCard state={countdown} schedule={state.schedule} destination={state.trip.destination} />
 
         {state.members.length > 0 && (
           <>
@@ -226,6 +226,7 @@ export default function TripOverview({ state }: { state: ReadyState }) {
           onDeleteStop={state.plan && state.plan.stops.length > 1 ? removeStop : undefined}
           onAddStop={state.plan ? openAdd : undefined}
           busy={saving}
+          destination={state.trip.destination}
         />
         {mutateError && !adding && (
           <p role="alert" className="error" style={{ marginTop: 8 }}>{mutateError}</p>

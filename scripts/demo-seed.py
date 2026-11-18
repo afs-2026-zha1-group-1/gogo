@@ -21,24 +21,24 @@ from uuid import uuid4
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_DB = ROOT / "backend" / "data" / "gogo.db"
 
-# (名称, 开始, 结束, 到下一站分钟, 兴趣标签)
+# (名称, 开始, 结束, 到下一站分钟, 兴趣标签, 地址, 纬度, 经度)——US-079 路线1 回填三列
 HONG_KONG_MAIN = [
-    ("西九文化区 M+ 博物馆", "09:00", "10:20", 20, ["heritage", "photo"]),
-    ("天星小轮（尖沙咀 → 中环）", "10:40", "11:10", 15, ["slow", "photo"]),
-    ("中环街市与半山扶梯", "11:25", "12:45", 20, ["food", "craft"]),
-    ("太平山顶与凌霄阁", "13:05", "14:35", 40, ["nature", "photo"]),
-    ("铜锣湾时代广场", "15:15", "16:30", 25, ["food", "craft"]),
-    ("尖沙咀海滨长廊与星光大道", "16:55", "18:10", None, ["photo", "slow"]),
+    ("西九文化区 M+ 博物馆", "09:00", "10:20", 20, ["heritage", "photo"], "香港西九文化区博物馆道 38 号 M+ 博物馆", 22.3009, 114.1595),
+    ("天星小轮（尖沙咀 → 中环）", "10:40", "11:10", 15, ["slow", "photo"], "香港尖沙咀天星码头（乘船往中环天星码头）", 22.2936, 114.1696),
+    ("中环街市与半山扶梯", "11:25", "12:45", 20, ["food", "craft"], "香港中环皇后大道中 93 号中环街市 / 中环半山扶梯", 22.2837, 114.1555),
+    ("太平山顶与凌霄阁", "13:05", "14:35", 40, ["nature", "photo"], "香港山顶山顶道 128 号凌霄阁", 22.2714, 114.1499),
+    ("铜锣湾时代广场", "15:15", "16:30", 25, ["food", "craft"], "香港铜锣湾勿地臣街 1 号时代广场", 22.2783, 114.1822),
+    ("尖沙咀海滨长廊与星光大道", "16:55", "18:10", None, ["photo", "slow"], "香港尖沙咀海滨长廊 / 星光大道", 22.293, 114.174),
 ]
 
 LONDON_MAIN = [
-    ("大英博物馆", "09:00", "10:30", 20, ["heritage", "photo"]),
-    ("考文特花园", "10:50", "11:50", 15, ["food", "craft"]),
-    ("国家美术馆与特拉法加广场", "12:05", "13:05", 20, ["heritage", "photo"]),
-    ("博罗市场午餐", "13:25", "14:25", 20, ["food", "coffee"]),
-    ("伦敦塔与塔桥", "14:45", "16:15", 25, ["heritage", "photo"]),
-    ("泰晤士河游船（塔桥 → 威斯敏斯特）", "16:40", "17:40", 20, ["slow", "photo"]),
-    ("伦敦眼与南岸夜景", "18:00", "19:15", None, ["photo", "slow"]),
+    ("大英博物馆", "09:00", "10:30", 20, ["heritage", "photo"], "伦敦大罗素街大英博物馆（Great Russell St, WC1B 3DG）", 51.5194, -0.127),
+    ("考文特花园", "10:50", "11:50", 15, ["food", "craft"], "伦敦考文特花园市集（Covent Garden, WC2E 8RF）", 51.512, -0.122),
+    ("国家美术馆与特拉法加广场", "12:05", "13:05", 20, ["heritage", "photo"], "伦敦特拉法加广场国家美术馆（WC2N 5DN）", 51.5089, -0.1283),
+    ("博罗市场午餐", "13:25", "14:25", 20, ["food", "coffee"], "伦敦南华克街 8 号博罗市场（8 Southwark St, SE1 1TL）", 51.5055, -0.091),
+    ("伦敦塔与塔桥", "14:45", "16:15", 25, ["heritage", "photo"], "伦敦塔桥路伦敦塔（Tower Bridge Rd, SE1 2UP）", 51.5081, -0.0759),
+    ("泰晤士河游船（塔桥 → 威斯敏斯特）", "16:40", "17:40", 20, ["slow", "photo"], "伦敦塔桥千禧码头（Tower Millennium Pier, SE1 2UP）", 51.5053, -0.0753),
+    ("伦敦眼与南岸夜景", "18:00", "19:15", None, ["photo", "slow"], "伦敦南岸郡政厅伦敦眼（County Hall, SE1 7PB）", 51.5033, -0.1196),
 ]
 
 ORGANIZER_ID = 2  # Ben
@@ -196,17 +196,17 @@ def seed_trip(conn: sqlite3.Connection, trip, city, trip_cols, draft_cols) -> No
     )
     draft_id = cursor.lastrowid
 
-    for seq, (name, start, end, leg, interests) in enumerate(city["stops"], start=1):
+    for seq, (name, start, end, leg, interests, address, lat, lng) in enumerate(city["stops"], start=1):
         conn.execute(
             "INSERT INTO main_plan_stop (draft_id, seq, name, start_local, end_local, "
-            "travel_minutes_to_next, interests_json) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "travel_minutes_to_next, interests_json, address, lat, lng) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (draft_id, seq, name, start, end, leg,
-             json.dumps(interests, separators=(",", ":"))),
+             json.dumps(interests, separators=(",", ":")), address, lat, lng),
         )
         conn.execute(
             "INSERT INTO plan_node (id, trip_id, plan_version, parent_id, branch_id, node_type, "
             "title, start_at, end_at, location_name, lat, lng, sort_order, created_at) "
-            "VALUES (?, ?, 1, NULL, 'main', 'stop', ?, ?, ?, ?, NULL, NULL, ?, ?)",
+            "VALUES (?, ?, 1, NULL, 'main', 'stop', ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 str(uuid4()),
                 trip_id,
@@ -214,6 +214,8 @@ def seed_trip(conn: sqlite3.Connection, trip, city, trip_cols, draft_cols) -> No
                 utc_instant(trip[3], start, city["utc_offset_hours"]),
                 utc_instant(trip[3], end, city["utc_offset_hours"]),
                 name,
+                lat,
+                lng,
                 seq,
                 now_iso,
             ),
