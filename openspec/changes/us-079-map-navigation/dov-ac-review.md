@@ -26,5 +26,5 @@ MODIFIED 块已逐字重基线 Living Spec 全部场景（main-itinerary 4+5、t
 
 ## 结论
 
-无 blocking Fail；**G1-ready 待人工署名**（本 skill 不写 Gate 决定）。
-下一步：`/sdd:g1-decision-record`（IO + SA）。design.md / tasks.md 属 P3，不在本轮生成。
+无 blocking Fail；**G1 = Pass（2026-11-18，IO Emily + SA Lumi，用户转达署名）**，见 `g1-decision.md`。
+下一步：P3（`/sdd:atdd-design` + `/sdd:task-plan`）。design.md / tasks.md 属 P3，不在 P2 生成。
