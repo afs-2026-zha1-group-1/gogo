@@ -2,6 +2,7 @@ package com.gogo.hello.splits.provider;
 
 import com.gogo.hello.splits.domain.PlanStop;
 import com.gogo.hello.splits.domain.RouteCandidate;
+import com.gogo.hello.splits.domain.RoutePairEdit;
 import com.gogo.hello.splits.domain.RouteStep;
 import java.time.Duration;
 import java.time.Instant;
@@ -34,8 +35,11 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
             return mainLineCandidate(groupLabel, departure, reunion, mainPlanStops);
         }
         Branch branch = branchFor(cityOf(destination), groupLabel);
-        return new RouteCandidate(groupLabel, branch.activityName(), branch.activityMinutes(),
-                branch.travelLegsMinutes(), branch.bufferMinutes(), List.of());
+        String activityName = RoutePairEdit.cleanStationName(branch.activityName());
+        String location = destination == null || destination.isBlank() ? activityName : destination.trim();
+        List<RouteStep> steps = List.of(new RouteStep(activityName, branch.activityMinutes()));
+        return new RouteCandidate(groupLabel, activityName, location, branch.activityMinutes(),
+                branch.travelLegsMinutes(), 0, steps);
     }
 
     // Group A follows the confirmed itinerary: every main-plan stop from the departure (inclusive) to the reunion
@@ -53,12 +57,21 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
         for (int index = from; index < to; index++) {
             PlanStop stop = mainPlanStops.get(index);
             int stayMinutes = minutes(stop.startAt(), stop.endAt());
-            steps.add(new RouteStep(stop.name(), stayMinutes));
+            steps.add(new RouteStep(RoutePairEdit.cleanStationName(stop.name()), stayMinutes));
             activityMinutes += stayMinutes;
             PlanStop next = index + 1 < to ? mainPlanStops.get(index + 1) : reunion;
             legs.add(Math.max(0, minutes(stop.endAt(), next.startAt())));
         }
-        return new RouteCandidate(groupLabel, "沿主线方案", activityMinutes, legs, 0, steps);
+        String activityName = steps.get(0).name();
+        String lastStep = steps.get(steps.size() - 1).name();
+        if (!activityName.equals(lastStep)) {
+            activityName = activityName + " → " + lastStep;
+        }
+        String location = departure.locationName() == null || departure.locationName().isBlank()
+                ? departure.name()
+                : departure.locationName();
+        location = RoutePairEdit.cleanStationName(location);
+        return new RouteCandidate(groupLabel, activityName, location, activityMinutes, legs, 0, steps);
     }
 
     private static int indexOf(List<PlanStop> stops, String id) {

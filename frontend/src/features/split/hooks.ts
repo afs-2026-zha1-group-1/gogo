@@ -2,8 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "../../api"
 import type { TripMemberList } from "../../types"
 import type { MainPlan } from "../../types/mainPlan"
-import { SplitApiError, assignGroup, cancelSplitDraft, checkTiming, confirmSplitDraft, fetchDraftDetail, generateRoutes, saveBoundaries, startDraft } from "./api"
-import type { AssignmentRequest, CheckTimingRequest, GenerateRoutesRequest, SaveBoundariesRequest } from "./types"
+import { SplitApiError, assignGroup, cancelSplitDraft, checkTiming, confirmSplitDraft, fetchDraftDetail, generateRoutes, saveBoundaries, saveRoutes, startDraft } from "./api"
+import type { AssignmentRequest, CheckTimingRequest, GenerateRoutesRequest, SaveBoundariesRequest, SaveRoutesRequest } from "./types"
 
 /**
  * TanStack Query v5 data hooks. The member-only GET detail snapshot is polled so a concurrent
@@ -85,6 +85,15 @@ export function useGenerateRoutes(tripId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (body: GenerateRoutesRequest) => generateRoutes(tripId, body),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [DETAIL_KEY, tripId] }),
+  })
+}
+
+/** Saves the full A/B route pair (US-087 S2); any trip member may edit while the draft is active. */
+export function useSaveRoutes(tripId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: SaveRoutesRequest) => saveRoutes(tripId, body),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [DETAIL_KEY, tripId] }),
   })
 }

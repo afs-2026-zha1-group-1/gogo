@@ -69,7 +69,7 @@ class SplitConfirmApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.error.details.routes[0].overrunMinutes").value(65))
                 .andExpect(jsonPath("$.error.details.routes[0].missingInputs.length()").value(0))
                 .andExpect(jsonPath("$.error.details.routes[1].groupLabel").value("B"))
-                .andExpect(jsonPath("$.error.details.routes[1].totalMinutes").value(110))
+                .andExpect(jsonPath("$.error.details.routes[1].totalMinutes").value(100))
                 .andExpect(jsonPath("$.error.details.routes[1].overrunMinutes").value(0));
         assertThat(objectMapper.readTree(draftJson()).get("status").asText()).isEqualTo("active");
         assertThat(draftVersionColumn()).isEqualTo(version);
@@ -221,6 +221,32 @@ class SplitConfirmApiTest extends AbstractSplitApiTest {
     }
 
     @Test
+    @DisplayName("confirmDraft_afterRouteEdit_usesEditedDerivedTotals")
+    void confirmDraft_afterRouteEdit_usesEditedDerivedTotals() throws Exception {
+        int version = prepareConfirmableDraftAs("Ben");
+        int edited = saveRoutesAs("Ben", version, 20, 15);
+        confirm(memberId("Alice"), edited)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("confirmed"))
+                .andExpect(jsonPath("$.data.routes[0].activityMinutes").value(65))
+                .andExpect(jsonPath("$.data.routes[0].steps[1].minutes").value(20));
+        assertThat(objectMapper.readTree(draftJson()).get("status").asText()).isEqualTo("confirmed");
+    }
+
+    @Test
+    @DisplayName("confirmDraft_editedRouteOverWindow_returns409WithEditedTotals")
+    void confirmDraft_editedRouteOverWindow_returns409WithEditedTotals() throws Exception {
+        int version = prepareConfirmableDraftAs("Ben");
+        int edited = saveRoutesAs("Ben", version, 30, 40);
+        confirm(memberId("Alice"), edited)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("SPLIT_TIMING_INFEASIBLE"))
+                .andExpect(jsonPath("$.error.details.routes[0].totalMinutes").value(175))
+                .andExpect(jsonPath("$.error.details.routes[0].overrunMinutes").value(25));
+        assertThat(objectMapper.readTree(draftJson()).get("status").asText()).isEqualTo("active");
+    }
+
+    @Test
     @DisplayName("confirmDraft_slashFormPath_isNotRouted")
     void confirmDraft_slashFormPath_isNotRouted() throws Exception {
         int status = mockMvc.perform(post("/api/trips/{tripId}/split-draft/confirm", sgfTripId())
@@ -230,6 +256,32 @@ class SplitConfirmApiTest extends AbstractSplitApiTest {
                 .andReturn().getResponse().getStatus();
         assertThat(status).isIn(404, 405);
         assertThat(activeDraftCount()).isZero();
+    }
+
+    /** Saves an A step-minute edit and returns the resulting draft version (CF9). */
+    private int saveRoutesAs(String actor, int draftVersion, int secondStay, int thirdStay) throws Exception {
+        Map<String, Object> routeA = new java.util.LinkedHashMap<>();
+        routeA.put("groupLabel", "A");
+        routeA.put("steps", java.util.List.of(
+                java.util.Map.of("name", "City Hall MRT", "minutes", 30),
+                java.util.Map.of("name", "National Gallery Singapore", "minutes", secondStay),
+                java.util.Map.of("name", "Gardens by the Bay", "minutes", thirdStay)));
+        routeA.put("travelLegsMinutes", java.util.List.of(30, 30, 15));
+        Map<String, Object> routeB = new java.util.LinkedHashMap<>();
+        routeB.put("groupLabel", "B");
+        routeB.put("steps", java.util.List.of(java.util.Map.of("name", "Gardens by the Bay", "minutes", 60)));
+        routeB.put("travelLegsMinutes", java.util.List.of(20, 20));
+        var result = mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .put("/api/trips/{tripId}/split-draft/routes", sgfTripId())
+                        .with(TestAuth.asUser(memberId(actor)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "draftVersion", draftVersion,
+                                "routes", java.util.List.of(routeA, routeB)))))
+                .andExpect(status().isOk())
+                .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString())
+                .path("data").path("draftVersion").asInt();
     }
 
     /** Confirm call helper: POST .../split-draft:confirm as the given actor with the given draft version. */

@@ -1,4 +1,5 @@
 import type { GroupRoute } from "./types"
+import { cleanRouteName, cleanStationName } from "./station-name"
 import { Card } from "@/components/ui/card"
 import { IconFlag, IconNav } from "@/components/icons"
 import { cn } from "@/lib/utils"
@@ -43,7 +44,7 @@ export function RouteCard({
           {route.groupLabel}
         </span>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[14px] font-bold">{route.activityName ?? "未命名活动"}</div>
+          <div className="truncate text-[14px] font-bold">{cleanRouteName(route.activityName) || "未命名活动"}</div>
           <div className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-white/85">
             <IconNav className="size-3" /> {departureName} → {reunionName}
           </div>
@@ -65,13 +66,20 @@ export function RouteCard({
       <div className="flex flex-col gap-1.5 px-4 py-3 text-[12px]">
         {route.steps && route.steps.length > 0 ? (
           route.steps.map((step, index) => (
-            <Row key={`${route.groupLabel}-${index}-${step.name}`} label={step.name} value={`${step.minutes} 分`} />
+            <Row key={`${route.groupLabel}-step-${index}`} label={cleanStationName(step.name)} value={`${step.minutes} 分`} />
           ))
         ) : (
           <Row label="活动" value={`${route.activityMinutes} 分`} />
         )}
-        <Row label={`路程（${route.travelLegsMinutes.join(" + ")}）`} value={`${legsTotal} 分`} italic />
-        <Row label="缓冲" value={`${route.bufferMinutes} 分`} />
+        {route.travelLegsMinutes.map((minutes, index) => (
+          <Row
+            key={`${route.groupLabel}-leg-${index}`}
+            label="路程"
+            value={`${minutes} 分`}
+            italic
+          />
+        ))}
+        {route.bufferMinutes ? <Row label="缓冲" value={`${route.bufferMinutes} 分`} /> : null}
         {total != null && (
           <Row label="合计" value={`${total} 分${windowMinutes != null ? ` / 窗口 ${windowMinutes} 分` : ""}`} />
         )}
