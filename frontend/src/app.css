@@ -2126,6 +2126,13 @@ body {
   cursor: not-allowed;
 }
 
+/* US-079: 复制成功瞬时反馈（图标变勾+变色，1.2s 复原）；文案/尺寸恒定 */
+.addr-copy.copied {
+  color: var(--ok);
+  border-color: var(--ok);
+  background: var(--ok-soft);
+}
+
 .act-map-error {
   flex-basis: 100%;
   color: var(--warn);

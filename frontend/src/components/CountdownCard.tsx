@@ -5,7 +5,7 @@
  * 没有更多活动. US-079: the next-stop address falls back to the demo address book,
  * is copyable (AC5), and carries an Amap link opening navigation in a new tab.
  */
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Icon from '../Icons'
 import StopMapButton from './StopMapButton'
 import { copyText } from '../lib/clipboard'
@@ -50,11 +50,19 @@ function NextStopDetail({ next, travelMinutes, destination, from }: { next: Sche
   const address = next.address?.trim() || lookupPlaceAddress(next.name)
   const [copied, setCopied] = useState(false)
   const [copyFailed, setCopyFailed] = useState(false)
+  const copyTimer = useRef<number | null>(null)
+  useEffect(() => () => {
+    if (copyTimer.current != null) window.clearTimeout(copyTimer.current)
+  }, [])
   const copy = () => {
     if (address == null) return
     setCopyFailed(false)
     copyText(address)
-      .then(() => setCopied(true))
+      .then(() => {
+        setCopied(true)
+        if (copyTimer.current != null) window.clearTimeout(copyTimer.current)
+        copyTimer.current = window.setTimeout(() => setCopied(false), 1200)
+      })
       .catch(() => setCopyFailed(true))
   }
   return (
@@ -77,8 +85,8 @@ function NextStopDetail({ next, travelMinutes, destination, from }: { next: Sche
             <div className="vd addr-line">
               <span className="act-addr-text">{address ?? '地址待确认'}</span>
               {address != null && (
-                <button type="button" className="addr-copy" onClick={copy}>
-                  <Icon name="copy" className="sm" /> {copied ? '已复制' : '复制地址'}
+                <button type="button" className={`addr-copy${copied ? ' copied' : ''}`} onClick={copy}>
+                  <Icon name={copied ? 'check' : 'copy'} className="sm" /> 复制地址
                 </button>
               )}
             </div>

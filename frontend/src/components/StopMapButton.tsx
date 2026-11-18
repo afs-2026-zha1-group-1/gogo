@@ -4,7 +4,7 @@
  * 未收录站退回搜索页（目的地自动带出、起点手填）。当前标签页停留在行程详情，返回即回到上一级行程。
  * 右列布局：高德按钮顶对齐左侧站点图标，其下为逐站"复制地址"按钮（showCopy 可控）。
  */
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Icon from '../Icons'
 import { buildAmapDirUrl, buildAmapSearchUrl, type DirEnd } from '../lib/amap'
 import { copyText } from '../lib/clipboard'
@@ -23,6 +23,10 @@ interface StopMapButtonProps {
 export default function StopMapButton({ item, destination, from = null, showCopy = true }: StopMapButtonProps) {
   const [copied, setCopied] = useState(false)
   const [copyFailed, setCopyFailed] = useState(false)
+  const copyTimer = useRef<number | null>(null)
+  useEffect(() => () => {
+    if (copyTimer.current != null) window.clearTimeout(copyTimer.current)
+  }, [])
 
   const endOf = (stop: ScheduleItem, book: BookedPlace | null): DirEnd | null => {
     if (stop.lat != null && stop.lon != null) return { name: stop.name, lat: stop.lat, lon: stop.lon }
@@ -48,7 +52,12 @@ export default function StopMapButton({ item, destination, from = null, showCopy
     if (address == null) return
     setCopyFailed(false)
     copyText(address)
-      .then(() => setCopied(true))
+      .then(() => {
+        // 瞬时反馈：图标变勾+变色，1.2s 后复原；文案与尺寸恒定。
+        setCopied(true)
+        if (copyTimer.current != null) window.clearTimeout(copyTimer.current)
+        copyTimer.current = window.setTimeout(() => setCopied(false), 1200)
+      })
       .catch(() => setCopyFailed(true))
   }
 
@@ -67,12 +76,12 @@ export default function StopMapButton({ item, destination, from = null, showCopy
       {showCopy && (
         <button
           type="button"
-          className="addr-copy"
+          className={`addr-copy${copied ? ' copied' : ''}`}
           onClick={copy}
           disabled={address == null}
           title={address == null ? '地址待确认' : `复制 ${item.name} 的地址`}
         >
-          <Icon name="copy" className="sm" /> {copied ? '已复制' : '复制地址'}
+          <Icon name={copied ? 'check' : 'copy'} className="sm" /> 复制地址
         </button>
       )}
       {showCopy && copyFailed && <span className="act-map-error">复制失败</span>}
