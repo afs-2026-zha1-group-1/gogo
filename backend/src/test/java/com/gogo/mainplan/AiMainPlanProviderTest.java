@@ -2,6 +2,7 @@ package com.gogo.mainplan;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -38,6 +39,30 @@ class AiMainPlanProviderTest {
         assertEquals(2, result.stops().size());
         assertEquals("Museum", result.stops().get(0).name());
         assertEquals(4200, result.costPerPersonCents());
+    }
+
+    @Test
+    void persistsAiAddressAtGenerationTime() {
+        AiMainPlanProvider provider = provider(request -> """
+                {"stops":[
+                  {"seq":1,"name":"南山植物园","address":" 重庆市南岸区南山植物园路101号 ",
+                   "startTime":"09:00","endTime":"10:00",
+                   "travelMinutesToNext":15,"interests":["nature"]},
+                  {"seq":2,"name":"午餐","startTime":"10:15","endTime":"11:15",
+                   "travelMinutesToNext":null,"interests":["food"]}],
+                 "costPerPersonCents":4200}
+                """);
+
+        MainPlanResult result = provider.plan(trip, members);
+
+        assertEquals("重庆市南岸区南山植物园路101号", result.stops().get(0).address());
+        assertNull(result.stops().get(1).address());
+    }
+
+    @Test
+    void promptRequiresAddressInsideDestinationCity() {
+        assertTrue(AiMainPlanProvider.SYSTEM_PROMPT.contains("\"address\""));
+        assertTrue(AiMainPlanProvider.SYSTEM_PROMPT.contains("destination city"));
     }
 
     @Test
