@@ -47,6 +47,18 @@ class FixtureBranchCandidateProviderTest {
     }
 
     @Test
+    @DisplayName("candidateFor_groupA_nullDepartureStartsAtFirstStop")
+    void candidateFor_groupA_nullDepartureStartsAtFirstStop() {
+        RouteCandidate candidate = provider.candidateFor("A", null, reunion, "Singapore", mainPlanStops);
+        assertThat(candidate.activityName()).isEqualTo("City Hall MRT → Gardens by the Bay");
+        assertThat(candidate.locationName()).isEqualTo("City Hall MRT");
+        assertThat(candidate.activityMinutes()).isEqualTo(75);
+        assertThat(candidate.travelLegsMinutes()).containsExactly(30, 30, 15);
+        assertThat(candidate.steps()).extracting("name")
+                .containsExactly("City Hall MRT", "National Gallery Singapore", "Gardens by the Bay");
+    }
+
+    @Test
     @DisplayName("candidateFor_groupB_keepsSingaporeFixture")
     void candidateFor_groupB_keepsSingaporeFixture() {
         RouteCandidate candidate = provider.candidateFor("B", departure, reunion, "Singapore", mainPlanStops);
@@ -56,6 +68,16 @@ class FixtureBranchCandidateProviderTest {
         assertThat(candidate.activityMinutes()).isEqualTo(60);
         assertThat(candidate.travelLegsMinutes()).containsExactly(20, 20);
         assertThat(candidate.bufferMinutes()).isZero();
+        assertThat(candidate.steps()).extracting("name").containsExactly("Gardens by the Bay");
+        assertThat(candidate.steps()).extracting("minutes").containsExactly(60);
+    }
+
+    @Test
+    @DisplayName("candidateFor_groupB_nullDepartureKeepsOnlyTheReturnLeg")
+    void candidateFor_groupB_nullDepartureKeepsOnlyTheReturnLeg() {
+        RouteCandidate candidate = provider.candidateFor("B", null, reunion, "Singapore", mainPlanStops);
+        assertThat(candidate.activityName()).isEqualTo("Gardens by the Bay");
+        assertThat(candidate.travelLegsMinutes()).containsExactly(20);
         assertThat(candidate.steps()).extracting("name").containsExactly("Gardens by the Bay");
         assertThat(candidate.steps()).extracting("minutes").containsExactly(60);
     }

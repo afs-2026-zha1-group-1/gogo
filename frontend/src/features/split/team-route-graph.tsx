@@ -1,4 +1,10 @@
-import { truncateLabel, type GraphModel, type GraphRow } from "./graph-model"
+import {
+  truncateLabel,
+  type BranchRow,
+  type GraphModel,
+  type GraphRow,
+  type RouteKey,
+} from "./graph-model"
 
 /**
  * Team-route graph (US-086, ui-design-reference Screen 11). Three lanes: Route B on the left, the
@@ -14,18 +20,21 @@ const LANE = { b: 132, m: 160, a: 188 } as const
 
 const rowCenter = (index: number) => PAD + ROW * index + ROW / 2
 
-function laneX(row: GraphRow): number {
-  if (row.kind === "branch") return LANE[row.route]
-  return LANE.m
-}
-
 function labelAnchor(row: GraphRow): { x: number; anchor: "start" | "end" } {
+  if (row.kind === "branch-pair") return { x: LANE.m, anchor: "start" }
   if (row.kind === "branch") {
     return row.route === "a" ? { x: LANE.a + 12, anchor: "start" } : { x: LANE.b - 12, anchor: "end" }
   }
   if (row.kind === "fork") return { x: LANE.m + 16, anchor: "start" }
   if (row.kind === "join") return { x: LANE.m - 16, anchor: "end" }
   return row.side === "right" ? { x: LANE.m + 16, anchor: "start" } : { x: LANE.m - 16, anchor: "end" }
+}
+
+/** The node a lane draws at this row, or null when that lane's line runs through an empty cell. */
+function laneCell(row: GraphRow, key: RouteKey): BranchRow | null {
+  if (row.kind === "branch-pair") return row[key]
+  if (row.kind === "branch") return row.route === key ? row : null
+  return null
 }
 
 function nodeFill(row: GraphRow): string {
@@ -42,24 +51,39 @@ export function TeamRouteGraph({
   model: GraphModel
   onNodeClick?: (row: GraphRow) => void
 }) {
-  const { rows, forkRow, joinRow, routeLabels } = model
-  const showRoutes = rows.some((row) => row.kind === "branch")
+  const { rows, forkRow, joinRow, routeLabels, fromStart } = model
+  const showRoutes = rows.some((row) => row.kind === "branch" || row.kind === "branch-pair")
   const height = PAD * 2 + ROW * rows.length
   const last = rows.length - 1
   const y = (index: number) => rowCenter(index)
 
   const mainPaths: string[] = []
-  if (forkRow != null && joinRow != null) {
-    mainPaths.push(`M${LANE.m} ${y(0)} V${y(forkRow)}`)
-    mainPaths.push(`M${LANE.m} ${y(joinRow)} V${y(last)}`)
+  if (fromStart) {
+    // Both lanes start at their own origin node; the middle line only appears after the reunion.
+    if (joinRow != null) mainPaths.push(`M${LANE.m} ${y(joinRow)} V${y(last)}`)
+  } else if (forkRow != null) {
+    if (forkRow > 0) mainPaths.push(`M${LANE.m} ${y(0)} V${y(forkRow)}`)
+    if (joinRow != null) mainPaths.push(`M${LANE.m} ${y(joinRow)} V${y(last)}`)
   } else {
     mainPaths.push(`M${LANE.m} ${y(0)} V${y(last)}`)
   }
 
   const firstBranch = forkRow == null ? -1 : forkRow + 1
-  const lastA = rows.reduce((acc, row, index) => (row.kind === "branch" && row.route === "a" ? index : acc), firstBranch)
-  const lastB = rows.reduce((acc, row, index) => (row.kind === "branch" && row.route === "b" ? index : acc), firstBranch)
-  const hasBranches = forkRow != null && joinRow != null && lastA > forkRow && lastB > forkRow
+  const laneSpan = (key: RouteKey) => {
+    const hits = rows.reduce<number[]>((acc, row, index) => (laneCell(row, key) ? [...acc, index] : acc), [])
+    return { first: hits[0] ?? 0, last: hits[hits.length - 1] ?? 0, any: hits.length > 0 }
+  }
+  const spanA = laneSpan("a")
+  const spanB = laneSpan("b")
+  const hasBranches = fromStart
+    ? spanA.any && spanB.any
+    : forkRow != null && spanA.last > forkRow && spanB.last > forkRow
+  const branchTail = (lane: number, lastRow: number) => joinRow != null
+    ? `V${y(lastRow)} C${lane} ${y(joinRow) - 28} ${LANE.m} ${y(joinRow) - 28} ${LANE.m} ${y(joinRow)}`
+    : `V${y(lastRow)}`
+  const branchPath = (lane: number, span: { first: number; last: number }) => fromStart
+    ? `M${lane} ${y(span.first)} ${branchTail(lane, span.last)}`
+    : `M${LANE.m} ${y(forkRow ?? 0)} C${LANE.m} ${y(forkRow ?? 0) + 28} ${lane} ${y(firstBranch) - 28} ${lane} ${y(firstBranch)} ${branchTail(lane, span.last)}`
 
   return (
     <div className="relative isolate -mx-1 px-2 pb-1">
@@ -101,7 +125,7 @@ export function TeamRouteGraph({
         {mainPaths.map((path) => (
           <path key={path} d={path} stroke="#0d9488" strokeWidth={3} fill="none" strokeLinecap="round" />
         ))}
-        {forkRow != null && joinRow != null ? (
+        {!fromStart && forkRow != null && joinRow != null ? (
           <path
             d={`M${LANE.m} ${y(forkRow)} V${y(joinRow)}`}
             stroke="#cfccc6"
@@ -111,17 +135,17 @@ export function TeamRouteGraph({
             strokeLinecap="round"
           />
         ) : null}
-        {hasBranches && forkRow != null && joinRow != null ? (
+        {hasBranches ? (
           <>
             <path
-              d={`M${LANE.m} ${y(forkRow)} C${LANE.m} ${y(forkRow) + 28} ${LANE.a} ${y(firstBranch) - 28} ${LANE.a} ${y(firstBranch)} V${y(lastA)} C${LANE.a} ${y(joinRow) - 28} ${LANE.m} ${y(joinRow) - 28} ${LANE.m} ${y(joinRow)}`}
+              d={branchPath(LANE.a, spanA)}
               stroke="#2563eb"
               strokeWidth={3}
               fill="none"
               strokeLinecap="round"
             />
             <path
-              d={`M${LANE.m} ${y(forkRow)} C${LANE.m} ${y(forkRow) + 28} ${LANE.b} ${y(firstBranch) - 28} ${LANE.b} ${y(firstBranch)} V${y(lastB)} C${LANE.b} ${y(joinRow) - 28} ${LANE.m} ${y(joinRow) - 28} ${LANE.m} ${y(joinRow)}`}
+              d={branchPath(LANE.b, spanB)}
               stroke="#ea580c"
               strokeWidth={3}
               fill="none"
@@ -132,13 +156,23 @@ export function TeamRouteGraph({
 
         {rows.map((row, index) => {
           const cy = y(index)
-          const cx = laneX(row)
+          if (row.kind === "branch") {
+            return <BranchNode key={row.id} row={row} cy={cy} onNodeClick={onNodeClick} />
+          }
+          if (row.kind === "branch-pair") {
+            return (
+              <g key={row.id}>
+                {row.a ? <BranchNode key={row.a.id} row={row.a} cy={cy} onNodeClick={onNodeClick} /> : null}
+                {row.b ? <BranchNode key={row.b.id} row={row.b} cy={cy} onNodeClick={onNodeClick} /> : null}
+              </g>
+            )
+          }
+          const cx = LANE.m
           const label = labelAnchor(row)
           const isJunction = row.kind === "fork" || row.kind === "join"
-          const isBranch = row.kind === "branch"
-          const titleSize = isJunction ? 13 : isBranch ? 11.5 : 12.5
-          const titleWeight = isJunction ? 750 : isBranch ? 620 : 650
-          const title = truncateLabel(row.title, isBranch ? 9 : isJunction ? 10 : 11)
+          const titleSize = isJunction ? 13 : 12.5
+          const titleWeight = isJunction ? 750 : 650
+          const title = truncateLabel(row.title, isJunction ? 10 : 11)
           return (
             <g
               key={row.id}
@@ -183,7 +217,7 @@ export function TeamRouteGraph({
                 x={label.x}
                 y={cy - 6}
                 textAnchor={label.anchor}
-                fontSize={isBranch ? 9 : 9.5}
+                fontSize={9.5}
                 fontWeight={700}
                 fill="#a8a29e"
               >
@@ -204,5 +238,81 @@ export function TeamRouteGraph({
         })}
       </svg>
     </div>
+  )
+}
+
+/** One branch node on its lane; pair rows render two of these at the same height. */function BranchNode({
+  row,
+  cy,
+  onNodeClick,
+}: {
+  row: BranchRow
+  cy: number
+  onNodeClick?: (row: GraphRow) => void
+}) {
+  const cx = LANE[row.route]
+  const label = row.route === "a"
+    ? { x: LANE.a + 12, anchor: "start" as const }
+    : { x: LANE.b - 12, anchor: "end" as const }
+  const hit = row.route === "a" ? { x: 176, width: 142 } : { x: 2, width: 142 }
+  return (
+    <g
+      onClick={onNodeClick ? () => onNodeClick(row) : undefined}
+      onKeyDown={
+        onNodeClick
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault()
+                onNodeClick(row)
+              }
+            }
+          : undefined
+      }
+      role={onNodeClick ? "button" : undefined}
+      tabIndex={onNodeClick ? 0 : undefined}
+      aria-label={`${row.meta} ${row.title}`}
+      className={onNodeClick ? "cursor-pointer outline-none" : undefined}
+    >
+      <title>{row.title}</title>
+      {onNodeClick ? (
+        <rect
+          x={hit.x}
+          y={cy - 26}
+          width={hit.width}
+          height={52}
+          rx={10}
+          fill="transparent"
+          className="hover:fill-black/5"
+        />
+      ) : null}
+      <circle
+        cx={cx}
+        cy={cy}
+        r={6.5}
+        fill={row.route === "a" ? "#2563eb" : "#ea580c"}
+        stroke="#fff"
+        strokeWidth={2}
+      />
+      <text
+        x={label.x}
+        y={cy - 6}
+        textAnchor={label.anchor}
+        fontSize={9}
+        fontWeight={700}
+        fill="#a8a29e"
+      >
+        {row.meta}
+      </text>
+      <text
+        x={label.x}
+        y={cy + 11}
+        textAnchor={label.anchor}
+        fontSize={11.5}
+        fontWeight={620}
+        fill="#1c1917"
+      >
+        {truncateLabel(row.title, 9)}
+      </text>
+    </g>
   )
 }

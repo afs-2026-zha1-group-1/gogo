@@ -70,9 +70,12 @@ export function derivePersonalRoute(
   if (!myRoute) return null
 
   const stops = detail.mainPlanStops
-  const departureIndex = stops.findIndex((stop) => stop.id === detail.departureStopId)
+  // US-095: FROM_START has no shared first stop.
+  const departureIndex = detail.splitMode === "FROM_START"
+    ? 0
+    : stops.findIndex((stop) => stop.id === detail.departureStopId)
   const reunionIndex = stops.findIndex((stop) => stop.id === detail.reunionStopId)
-  // departureAt/reunionAt are the two stops' start times (backend BoundaryResponse). The group that keeps
+  // departureAt/reunionAt are the two window ends (backend BoundaryResponse). The group that keeps
   // the confirmed plan walks its scheduled stops inside the window; the other group is away from them.
   const steps = myRoute.steps ?? []
   const keepsMainLine =
@@ -83,9 +86,11 @@ export function derivePersonalRoute(
         groupLabel: myGroupLabel,
       }))
     : null
-  const before = departureIndex >= 0
-    ? stops.slice(0, keepsMainLine ? departureIndex : departureIndex + 1)
-    : stops
+  const before = detail.splitMode === "FROM_START"
+    ? []
+    : departureIndex >= 0
+      ? stops.slice(0, keepsMainLine ? departureIndex : departureIndex + 1)
+      : stops
   const after = reunionIndex >= 0 ? stops.slice(reunionIndex) : []
 
   const departureMs = toMs(detail.departureAt)

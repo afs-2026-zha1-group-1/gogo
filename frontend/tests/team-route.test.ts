@@ -138,3 +138,83 @@ test('status action branches: start, continue, confirm, blocked', () => {
   assert.deepEqual(actionForStatus('confirmed', true), { kind: 'confirm', label: '查看已确认分队' })
   assert.deepEqual(actionForStatus(null, false), { kind: 'blocked', label: '发起分队' })
 })
+
+test('US-095 FROM_START: both lanes open on their own first place', () => {
+  const model = buildGraphRows({
+    stops,
+    splitMode: 'FROM_START',
+    departureStopId: null,
+    reunionStopId: 's3',
+    routes: [
+      {
+        groupLabel: 'A',
+        activityName: '主线',
+        activityMinutes: 60,
+        travelLegsMinutes: [20, 20],
+        bufferMinutes: 0,
+        steps: [
+          { name: 'City Hall MRT', minutes: 30 },
+          { name: 'Merlion Park', minutes: 30 },
+        ],
+      },
+      {
+        groupLabel: 'B',
+        activityName: '咖啡',
+        activityMinutes: 45,
+        travelLegsMinutes: [20],
+        bufferMinutes: 0,
+        steps: [{ name: '咖啡', minutes: 45 }],
+      },
+    ],
+  })
+  assert.equal(model.hasBoundaries, true)
+  assert.equal(model.fromStart, true)
+  assert.equal(model.forkRow, null)
+
+  const firstStage = model.rows[0]
+  assert.equal(firstStage.kind, 'branch-pair')
+  assert.equal(firstStage.kind === 'branch-pair' ? firstStage.a?.title : null, 'City Hall MRT')
+  assert.equal(firstStage.kind === 'branch-pair' ? firstStage.a?.meta : null, '活动 · 30 分钟')
+  assert.equal(firstStage.kind === 'branch-pair' ? firstStage.b?.title : null, '咖啡')
+  assert.equal(firstStage.kind === 'branch-pair' ? firstStage.b?.meta : null, '活动 · 45 分钟')
+
+  const secondStage = model.rows[1]
+  assert.equal(secondStage.kind === 'branch-pair' ? secondStage.a?.title : null, '路程')
+  assert.equal(secondStage.kind === 'branch-pair' ? secondStage.b?.title : null, '路程')
+  assert.equal(model.rows[model.joinRow ?? -1].kind, 'join')
+  assert.equal(model.rows[model.rows.length - 1].kind, 'main')
+})
+
+test('US-095 MIDDLE: the fork absorbs A first activity instead of repeating it', () => {
+  const model = buildGraphRows({
+    stops,
+    departureStopId: 's2',
+    reunionStopId: 's3',
+    routes: [
+      {
+        groupLabel: 'A',
+        activityName: '主线',
+        activityMinutes: 30,
+        travelLegsMinutes: [15],
+        bufferMinutes: 0,
+        steps: [{ name: 'Merlion Park', minutes: 30 }],
+      },
+      {
+        groupLabel: 'B',
+        activityName: '咖啡',
+        activityMinutes: 45,
+        travelLegsMinutes: [10, 20],
+        bufferMinutes: 0,
+        steps: [{ name: '咖啡', minutes: 45 }],
+      },
+    ],
+  })
+  const fork = model.rows[model.forkRow ?? -1]
+  assert.equal(fork.kind, 'fork')
+  assert.equal(fork.kind === 'fork' ? fork.title : null, 'Merlion Park')
+  assert.equal(fork.kind === 'fork' ? fork.meta : null, '10:00 · 分头 · A 组活动 · 30 分钟')
+  const repeated = model.rows.filter(
+    (row) => row.kind === 'branch' && row.route === 'a' && row.title === 'Merlion Park',
+  )
+  assert.equal(repeated.length, 0)
+})

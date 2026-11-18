@@ -88,6 +88,37 @@ class SplitRouteGenerationApiTest extends AbstractSplitApiTest {
     }
 
     @Test
+    @DisplayName("generateRoutes_fromStart_keepsEveryStopBeforeReunion")
+    void generateRoutes_fromStart_keepsEveryStopBeforeReunion() throws Exception {
+        startDraft();
+        saveBoundaries(null, "Merlion Park", 1);
+        assignAs("Chloe", "B", 2);
+        postGenerate(memberId("Ben"), 3)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.error").doesNotExist())
+                .andExpect(jsonPath("$.data.routes[0].groupLabel").value("A"))
+                .andExpect(jsonPath("$.data.routes[0].departureStopId").isEmpty())
+                .andExpect(jsonPath("$.data.routes[0].reunionStopId").value(stopId("Merlion Park")))
+                .andExpect(jsonPath("$.data.routes[0].steps.length()").value(3))
+                .andExpect(jsonPath("$.data.routes[0].steps[0].name").value("City Hall MRT"))
+                .andExpect(jsonPath("$.data.routes[0].activityMinutes").value(75))
+                .andExpect(jsonPath("$.data.routes[0].travelLegsMinutes[2]").value(15))
+                .andExpect(jsonPath("$.data.routes[1].groupLabel").value("B"))
+                .andExpect(jsonPath("$.data.routes[1].steps.length()").value(1))
+                .andExpect(jsonPath("$.data.routes[1].travelLegsMinutes.length()").value(1))
+                .andExpect(jsonPath("$.data.routes[1].travelLegsMinutes[0]").value(20));
+        assertThat(splitRouteCount()).isEqualTo(2);
+        String startAt = jdbc.queryForObject(
+                "SELECT start_at FROM plan_node WHERE trip_id = ? AND branch_id = 'split-a'",
+                String.class, sgfTripId());
+        String endAt = jdbc.queryForObject(
+                "SELECT end_at FROM plan_node WHERE trip_id = ? AND branch_id = 'split-a'",
+                String.class, sgfTripId());
+        assertThat(startAt).isEqualTo("2026-12-05T01:00:00Z");
+        assertThat(endAt).isEqualTo("2026-12-05T03:30:00Z");
+    }
+
+    @Test
     @DisplayName("generateRoutes_providerFailsForB_returns500AndKeepsPreviousPairAndMain")
     void generateRoutes_providerFailsForB_returns500AndKeepsPreviousPairAndMain() throws Exception {
         startDraft();
@@ -199,9 +230,13 @@ class SplitRouteGenerationApiTest extends AbstractSplitApiTest {
     }
 
     private void saveBoundaries(int draftVersion) throws Exception {
+        saveBoundaries("City Hall MRT", "Merlion Park", draftVersion);
+    }
+
+    private void saveBoundaries(String departureName, String reunionName, int draftVersion) throws Exception {
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("departureStopId", stopId("City Hall MRT"));
-        body.put("reunionStopId", stopId("Merlion Park"));
+        body.put("departureStopId", departureName == null ? null : stopId(departureName));
+        body.put("reunionStopId", reunionName == null ? null : stopId(reunionName));
         body.put("draftVersion", draftVersion);
         mockMvc.perform(put("/api/trips/{tripId}/split-draft/boundaries", sgfTripId())
                         .with(TestAuth.asUser(memberId("Ben")))

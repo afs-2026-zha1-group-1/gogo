@@ -38,6 +38,9 @@ function routePeople(route: RouteKey, count: number): string {
 }
 
 export function buildNodeDetail(row: GraphRow, context: NodeDetailContext): NodeDetailView {
+  if (row.kind === "branch-pair") {
+    throw new Error(`${row.kind} rows are not direct node targets`)
+  }
   const base = { id: row.id, time: row.meta, title: row.title }
 
   if (row.kind === "branch") {

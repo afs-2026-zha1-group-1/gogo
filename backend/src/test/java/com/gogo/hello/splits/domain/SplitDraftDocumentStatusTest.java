@@ -34,7 +34,7 @@ class SplitDraftDocumentStatusTest {
     @DisplayName("withBoundaries_andWithRoutes_bumpDocumentVersion")
     void withBoundaries_andWithRoutes_bumpDocumentVersion() {
         SplitDraftDocument draft = SplitDraftDocument.initial("2", 1, groups(), NOW)
-                .withBoundaries("stop-a", "stop-b", NOW)
+                .withBoundaries("MIDDLE", "stop-a", "stop-b", NOW)
                 .withRoutes(routes(), NOW);
         assertThat(draft.draftVersion()).isEqualTo(3);
         assertThat(draft.status()).isEqualTo("active");
@@ -80,7 +80,7 @@ class SplitDraftDocumentStatusTest {
     @DisplayName("nullableDurations_roundTripThroughJsonKeepingNulls")
     void nullableDurations_roundTripThroughJsonKeepingNulls() throws Exception {
         ObjectMapper mapper = new ObjectMapper();
-        SplitDraftDocument draft = new SplitDraftDocument("2", 1, 3, "active", "stop-a", "stop-b", groups(),
+        SplitDraftDocument draft = new SplitDraftDocument("2", 1, 3, "active", "stop-a", "stop-b", "MIDDLE", groups(),
                 Map.of("A", new RouteDurations(null, List.of(15, 20), null, null),
                         "B", new RouteDurations(60, List.of(20, 20), 10, null)),
                 NOW, NOW);
@@ -93,7 +93,7 @@ class SplitDraftDocumentStatusTest {
 
     private SplitDraftDocument activeWithRoutes() {
         return SplitDraftDocument.initial("2", 1, groups(), NOW)
-                .withBoundaries("stop-a", "stop-b", NOW)
+                .withBoundaries("MIDDLE", "stop-a", "stop-b", NOW)
                 .withRoutes(routes(), NOW);
     }
 

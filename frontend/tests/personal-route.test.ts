@@ -40,6 +40,7 @@ function detail(overrides: Partial<SplitDraftDetail> = {}): SplitDraftDetail {
     mainPlanVersion: 1,
     draftVersion: 1,
     status: 'confirmed',
+    splitMode: 'MIDDLE',
     groups: { A: ['1', '2'], B: ['3', '4'] },
     createdAt: iso(8, 0),
     updatedAt: iso(8, 0),
@@ -191,4 +192,23 @@ test('P10 selectSchedule priority: personal route > main plan > empty', () => {
   assert.deepEqual(selectSchedule(null, '1', plan, START_DATE), scheduleFromMainPlan(plan, START_DATE))
   assert.deepEqual(selectSchedule(detail(), '9', null, START_DATE), [])
   assert.deepEqual(selectSchedule(null, null, null, START_DATE), [])
+})
+test('P12 FROM_START: group B leaves from the first stop without a shared departure', () => {
+  const d = detail({ splitMode: 'FROM_START', departureStopId: null, departureAt: iso(9, 0) })
+  const names = derivePersonalRoute(d, '3', plan)?.map((item) => item.name)
+  assert.deepEqual(names, ['B 组活动', '会合站', '晚餐'])
+})
+
+test('P13 FROM_START: group A walks every main stop before the reunion once', () => {
+  const d = detail({
+    splitMode: 'FROM_START',
+    departureStopId: null,
+    departureAt: iso(9, 0),
+    routes: [
+      route('A', { steps: [{ name: '早餐', minutes: 30 }, { name: '出发站', minutes: 30 }] }),
+      route('B'),
+    ],
+  })
+  const names = derivePersonalRoute(d, '1', plan)?.map((item) => item.name)
+  assert.deepEqual(names, ['早餐', '出发站', '会合站', '晚餐'])
 })

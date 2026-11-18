@@ -28,6 +28,9 @@ export interface ApiErrorPayload {
 /** Draft lifecycle status (US-049/050): only `active` accepts edits/confirm/cancel. */
 export type SplitDraftStatus = "active" | "confirmed" | "cancelled"
 
+/** Saved boundary shape (US-095): stop→stop, or trip start→stop. */
+export type SplitBoundaryMode = "MIDDLE" | "FROM_START"
+
 /** Unified {data,error} envelope (backend ApiResponse<T>). */
 export interface Envelope<T> {
   data: T | null
@@ -91,6 +94,8 @@ export interface SplitDraftDetail {
   mainPlanVersion: number
   draftVersion: number
   status: SplitDraftStatus
+  /** Saved boundary shape; null before boundaries are selected (US-095). */
+  splitMode: SplitBoundaryMode | null
   groups: Record<string, string[]>
   createdAt: string
   updatedAt: string
@@ -107,8 +112,9 @@ export interface SplitDraftDetail {
 
 /** Boundary save response (backend BoundaryResponse). */
 export interface BoundaryResult {
-  departureStopId: string
-  reunionStopId: string
+  splitMode: SplitBoundaryMode
+  departureStopId: string | null
+  reunionStopId: string | null
   departureAt: string
   reunionAt: string
   windowMinutes: number

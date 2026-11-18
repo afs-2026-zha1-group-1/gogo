@@ -57,10 +57,11 @@ export function ScreenStart() {
         }))
 
   const withDraft = detail != null && status !== "cancelled"
+  const splitMode = withDraft ? detail.splitMode : null
   const departureStopId = withDraft ? detail.departureStopId : null
   const reunionStopId = withDraft ? detail.reunionStopId : null
   const routes = withDraft ? detail.routes ?? [] : []
-  const model = buildGraphRows({ stops, departureStopId, reunionStopId, routes })
+  const model = buildGraphRows({ stops, splitMode, departureStopId, reunionStopId, routes })
 
   const groupCounts = {
     a: detail?.groups.A?.length ?? 0,
@@ -71,7 +72,7 @@ export function ScreenStart() {
     ? buildNodeDetail(selectedNode, { groupCounts, totalMembers })
     : null
 
-  const hasBoundaries = model.forkRow != null && model.joinRow != null
+  const hasBoundaries = model.hasBoundaries
   const awaitingBoundaries = status === "active" && !hasBoundaries
   const awaitingRoutes = status === "active" && hasBoundaries && routes.length === 0
 

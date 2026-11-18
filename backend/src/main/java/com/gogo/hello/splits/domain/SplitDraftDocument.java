@@ -8,8 +8,9 @@ import java.util.Map;
 /**
  * The split draft JSON document persisted in the {@code split_draft.document} column (design D5/D6). A record so
  * Jackson maps component names directly to the document fields. {@code routes} carries the per-group duration
- * breakdown only after generation (null before); boundary stop ids are null before selection. Pure domain model,
- * no HTTP/DB.
+ * breakdown only after generation (null before); boundary stop ids are null before selection. {@code splitMode}
+ * records which window shape was saved (US-095): null before selection, with legacy saved pairs treated as MIDDLE
+ * when the field is absent. Pure domain model, no HTTP/DB.
  */
 public record SplitDraftDocument(
         String initiatorMemberId,
@@ -18,6 +19,7 @@ public record SplitDraftDocument(
         String status,
         String departureStopId,
         String reunionStopId,
+        String splitMode,
         Map<String, List<String>> groups,
         Map<String, RouteDurations> routes,
         String createdAt,
@@ -39,7 +41,7 @@ public record SplitDraftDocument(
     public static SplitDraftDocument initial(
             String initiatorMemberId, int mainPlanVersion, Map<String, List<String>> groups, String now) {
         return new SplitDraftDocument(
-                initiatorMemberId, mainPlanVersion, 1, "active", null, null, groups, null, now, now);
+                initiatorMemberId, mainPlanVersion, 1, "active", null, null, null, groups, null, now, now);
     }
 
     /**
@@ -69,7 +71,7 @@ public record SplitDraftDocument(
         updated.computeIfAbsent(groupLabel, key -> new ArrayList<>()).add(memberId);
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion + 1, status,
-                departureStopId, reunionStopId, updated, routes, createdAt, now);
+                departureStopId, reunionStopId, splitMode, updated, routes, createdAt, now);
     }
 
     /**
@@ -77,10 +79,11 @@ public record SplitDraftDocument(
      * draft change bumps the version. Route durations are cleared because they were computed against the
      * previous window; the pair must be regenerated for the new boundaries.
      */
-    public SplitDraftDocument withBoundaries(String departureStopId, String reunionStopId, String now) {
+    public SplitDraftDocument withBoundaries(String splitMode, String departureStopId, String reunionStopId,
+            String now) {
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion + 1, status,
-                departureStopId, reunionStopId, groups, null, createdAt, now);
+                departureStopId, reunionStopId, splitMode, groups, null, createdAt, now);
     }
 
     /**
@@ -90,7 +93,7 @@ public record SplitDraftDocument(
     public SplitDraftDocument withRoutes(Map<String, RouteDurations> routes, String now) {
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion + 1, status,
-                departureStopId, reunionStopId, groups, routes, createdAt, now);
+                departureStopId, reunionStopId, splitMode, groups, routes, createdAt, now);
     }
 
     /**
@@ -100,7 +103,7 @@ public record SplitDraftDocument(
     public SplitDraftDocument confirmed(String now) {
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion, "confirmed",
-                departureStopId, reunionStopId, groups, routes, createdAt, now);
+                departureStopId, reunionStopId, splitMode, groups, routes, createdAt, now);
     }
 
     /**
@@ -111,7 +114,7 @@ public record SplitDraftDocument(
     public SplitDraftDocument cancelled(String now) {
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion, "cancelled",
-                departureStopId, reunionStopId, groups, null, createdAt, now);
+                departureStopId, reunionStopId, splitMode, groups, null, createdAt, now);
     }
 
     /**
@@ -121,6 +124,6 @@ public record SplitDraftDocument(
     public static SplitDraftDocument initialRebuilt(
             String initiatorMemberId, int mainPlanVersion, Map<String, List<String>> groups, String now) {
         return new SplitDraftDocument(
-                initiatorMemberId, mainPlanVersion, 1, "active", null, null, groups, null, now, now);
+                initiatorMemberId, mainPlanVersion, 1, "active", null, null, null, groups, null, now, now);
     }
 }

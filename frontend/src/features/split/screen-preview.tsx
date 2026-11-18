@@ -31,6 +31,7 @@ export function ScreenPreview() {
   }))
   const model = buildGraphRows({
     stops,
+    splitMode: detail?.splitMode ?? null,
     departureStopId: detail?.departureStopId ?? null,
     reunionStopId: detail?.reunionStopId ?? null,
     routes,
@@ -84,8 +85,10 @@ export function ScreenPreview() {
               {status === "cancelled" ? <Badge variant="warn">已取消</Badge> : null}
             </div>
             <span className="text-[10.5px] text-ink-3">
-              {detail.departureStopId && detail.reunionStopId
-                ? `${formatTime(detail.departureAt, "iso", detail.destination)} 分头 → ${formatTime(detail.reunionAt, "iso", detail.destination)} 会合${
+              {detail.windowMinutes != null
+                ? `${detail.splitMode === "FROM_START"
+                    ? "行程起点"
+                    : formatTime(detail.departureAt, "iso", detail.destination)} 分头 → ${formatTime(detail.reunionAt, "iso", detail.destination)} 会合${
                     detail.windowMinutes != null ? ` · 共 ${detail.windowMinutes} 分` : ""
                   }`
                 : PENDING_LABEL}

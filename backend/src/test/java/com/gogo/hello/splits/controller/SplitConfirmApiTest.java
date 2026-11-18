@@ -112,6 +112,23 @@ class SplitConfirmApiTest extends AbstractSplitApiTest {
     }
 
     @Test
+    @DisplayName("confirmDraft_fromStartWindow_usesFirstStopStart")
+    void confirmDraft_fromStartWindow_usesFirstStopStart() throws Exception {
+        int version = prepareConfirmableDraftAs("Ben");
+        com.fasterxml.jackson.databind.node.ObjectNode draft =
+                (com.fasterxml.jackson.databind.node.ObjectNode) objectMapper.readTree(draftJson());
+        draft.put("splitMode", "FROM_START");
+        draft.putNull("departureStopId");
+        jdbc.update("UPDATE split_draft SET document = ? WHERE trip_id = ?",
+                objectMapper.writeValueAsString(draft), sgfTripId());
+        confirm(memberId("Alice"), version)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("confirmed"))
+                .andExpect(jsonPath("$.data.splitMode").value("FROM_START"))
+                .andExpect(jsonPath("$.data.windowMinutes").value(150));
+    }
+
+    @Test
     @DisplayName("confirmDraft_staleVersion_returns409StaleDraftVersion")
     void confirmDraft_staleVersion_returns409StaleDraftVersion() throws Exception {
         int version = prepareConfirmableDraftAs("Ben");

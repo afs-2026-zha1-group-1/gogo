@@ -1,4 +1,5 @@
 import type { GroupRoute } from "./types"
+import { cardRowOrder } from "./route-rows"
 import { cleanRouteName, cleanStationName } from "./station-name"
 import { Card } from "@/components/ui/card"
 import { IconFlag, IconNav } from "@/components/icons"
@@ -16,6 +17,7 @@ export function RouteCard({
   route,
   tone,
   departureName,
+  originName = null,
   reunionName,
   reunionClock,
   stale = false,
@@ -24,6 +26,7 @@ export function RouteCard({
   route: GroupRoute
   tone: "a" | "b"
   departureName: string
+  originName?: string | null
   reunionName: string
   reunionClock: string
   stale?: boolean
@@ -65,20 +68,37 @@ export function RouteCard({
 
       <div className="flex flex-col gap-1.5 px-4 py-3 text-[12px]">
         {route.steps && route.steps.length > 0 ? (
-          route.steps.map((step, index) => (
-            <Row key={`${route.groupLabel}-step-${index}`} label={cleanStationName(step.name)} value={`${step.minutes} 分`} />
-          ))
+          cardRowOrder(route.steps.length, route.travelLegsMinutes.length).map((row) => {
+            if (row.kind === "origin") {
+              return originName ? <OriginRow key="origin" name={originName} /> : null
+            }
+            if (row.kind === "leg") {
+              return (
+                <Row
+                  key={`${route.groupLabel}-leg-${row.leg}`}
+                  label="路程"
+                  value={`${route.travelLegsMinutes[row.leg]} 分`}
+                  italic
+                />
+              )
+            }
+            const step = route.steps?.[row.step]
+            return (
+              <Row
+                key={`${route.groupLabel}-step-${row.step}`}
+                label={cleanStationName(step?.name)}
+                value={`${step?.minutes} 分`}
+              />
+            )
+          })
         ) : (
-          <Row label="活动" value={`${route.activityMinutes} 分`} />
+          <>
+            <Row label="活动" value={`${route.activityMinutes} 分`} />
+            {route.travelLegsMinutes.map((minutes, index) => (
+              <Row key={`${route.groupLabel}-leg-${index}`} label="路程" value={`${minutes} 分`} italic />
+            ))}
+          </>
         )}
-        {route.travelLegsMinutes.map((minutes, index) => (
-          <Row
-            key={`${route.groupLabel}-leg-${index}`}
-            label="路程"
-            value={`${minutes} 分`}
-            italic
-          />
-        ))}
         {route.bufferMinutes ? <Row label="缓冲" value={`${route.bufferMinutes} 分`} /> : null}
         {total != null && (
           <Row label="合计" value={`${total} 分${windowMinutes != null ? ` / 窗口 ${windowMinutes} 分` : ""}`} />
@@ -97,6 +117,15 @@ function Row({ label, value, italic }: { label: string; value: string; italic?: 
     <div className="flex items-center justify-between gap-2">
       <span className={cn("text-ink-2", italic && "italic")}>{label}</span>
       <span className="shrink-0 font-bold text-ink">{value}</span>
+    </div>
+  )
+}
+
+/** Where this group sets off from; shown only when its first row is a travel leg (US-095). */
+function OriginRow({ name }: { name: string }) {
+  return (
+    <div className="flex items-center gap-1 text-[11px] font-semibold text-ink-3">
+      <IconNav className="size-3 shrink-0" /> 从 {name} 出发
     </div>
   )
 }

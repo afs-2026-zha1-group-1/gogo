@@ -17,6 +17,7 @@ public record SplitDraftDetailResponse(
         int mainPlanVersion,
         int draftVersion,
         String status,
+        String splitMode,
         Map<String, List<String>> groups,
         String createdAt,
         String updatedAt,

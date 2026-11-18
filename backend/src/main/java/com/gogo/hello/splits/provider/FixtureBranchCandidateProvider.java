@@ -38,15 +38,20 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
         String activityName = RoutePairEdit.cleanStationName(branch.activityName());
         String location = destination == null || destination.isBlank() ? activityName : destination.trim();
         List<RouteStep> steps = List.of(new RouteStep(activityName, branch.activityMinutes()));
-        return new RouteCandidate(groupLabel, activityName, location, branch.activityMinutes(),
-                branch.travelLegsMinutes(), 0, steps);
+        // A null departure means the groups never travel together (US-095 FROM_START): group B is already
+        // at its own activity when the window opens, so it has no outbound leg, only the trip back.
+        List<Integer> legs = departure == null
+                ? branch.travelLegsMinutes().subList(1, branch.travelLegsMinutes().size())
+                : branch.travelLegsMinutes();
+        return new RouteCandidate(groupLabel, activityName, location, branch.activityMinutes(), legs, 0, steps);
     }
 
     // Group A follows the confirmed itinerary: every main-plan stop from the departure (inclusive) to the reunion
-    // (exclusive), with the scheduled gaps as legs. The totals therefore equal the window exactly.
+    // (exclusive), with the scheduled gaps as legs. A null departure starts at the first stop (US-095 FROM_START).
+    // The totals equal the window exactly in every mode.
     private static RouteCandidate mainLineCandidate(String groupLabel, PlanStop departure, PlanStop reunion,
             List<PlanStop> mainPlanStops) {
-        int from = indexOf(mainPlanStops, departure.id());
+        int from = departure == null ? 0 : indexOf(mainPlanStops, departure.id());
         int to = indexOf(mainPlanStops, reunion.id());
         if (from < 0 || to <= from) {
             throw new IllegalArgumentException("boundaries are not an ordered main-plan pair");
@@ -67,9 +72,10 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
         if (!activityName.equals(lastStep)) {
             activityName = activityName + " → " + lastStep;
         }
-        String location = departure.locationName() == null || departure.locationName().isBlank()
-                ? departure.name()
-                : departure.locationName();
+        PlanStop anchor = departure == null ? mainPlanStops.get(from) : departure;
+        String location = anchor.locationName() == null || anchor.locationName().isBlank()
+                ? anchor.name()
+                : anchor.locationName();
         location = RoutePairEdit.cleanStationName(location);
         return new RouteCandidate(groupLabel, activityName, location, activityMinutes, legs, 0, steps);
     }
