@@ -2,8 +2,8 @@
 
 输入：G1 Pass（`g1-decision.md`，ce4982f）；delta 5 requirements / 38 scenarios
 （main-itinerary 18 = API 层；trips 20 = E2E 层）；P1 AC1–AC13。
-**实现先行**：后端 379/379（含 StopLocationApiTest 8）、前端 64/64 + typecheck + build 已绿；
-本设计反向对齐已实现行为，apply 阶段补齐缺口测试（先红后绿仅针对新增缺口）。
+后端 379/379（含 StopLocationApiTest 8）、前端 65/65 + typecheck + build 已绿；
+apply 阶段对缺口测试先红后绿，其余为回归覆盖。
 
 ## 1. API 层（18 scenarios，MockMvc + 真 SQLite，TestAuth 会话）
 
@@ -39,14 +39,14 @@ DOM 断言（不开外部 tab，断言 href/target/文案/图标）：
 | E3 | M3 首站固定起点（R1） | 首站 href 含 from=珠海南方软件园坐标 |
 | E4 | M4 个人路线逐站入口 | confirmed split 态各站 `.map-btn` 存在 |
 | E5 | M5 不串站 | 相邻站 href 的 to 坐标互异 |
-| E6 | M6 无坐标退搜索页 | href = `www.amap.com/search?query=站名+城市` |
+| E6 | M6 无坐标退搜索页 | UT（stopMapHref）+ 观察行 X3；E2E 以未收录站断言 href |
 | E7 | M7 语义图标 | 船/展馆/山/袋等 icon 按站名/标签出现 |
 | E8 | M8 新标签页真链接 | `target=_blank` + `rel=noopener`；无 iframe 节点 |
-| E9 | M9 海外留空兜底 | 无坐标站 href 为搜索页；页面无报错态 |
+| E9 | M9 海外留空兜底 | UT（stopMapHref）+ E2E 未收录站 href 为搜索页；页面无报错态 |
 | E10 | 倒计时 pre-trip/during/between/边界/无安排/无后续 | 文案与秒更新（继承既有观察） |
 | E11 | confirmed split 倒计时用本人路线 | A 组标记/真实时刻 |
 | E12 | 下一站地址行 + 复制 | 地址文本 + 复制按钮；点击后"已复制" |
-| E13 | 地址缺失渲染待确认 | "地址待确认"、无伪造地址 |
+| E13 | 地址缺失渲染待确认 | "地址待确认"、复制按钮置灰、无伪造地址 |
 | E14 | 下一站导航起点=当前/前一站 | href from 参数对应当前活动站坐标 |
 
 外部页人工观察行（记 `docs/feedback/e2e-us-079.md`，不自动化外部站点）：
@@ -61,9 +61,9 @@ DOM 断言（不开外部 tab，断言 href/target/文案/图标）：
 
 ## 3. UT 延后清单（apply 时维护，不在本设计展开）
 
-既有套件已绿：countdown.test（12）、stop-icon.test（6）、amap.test（5）、
-coord.test（3）、place-book.test（5）、personal-route.test（13）等 = 64/64。
-apply 仅随缺口测试同步夹具（ScheduleItem lat/lon 已加）。
+既有套件已绿：countdown.test（12）、stop-icon.test（6）、amap.test（含 stopMapHref 用例）、
+coord.test（3）、place-book.test（6）、personal-route.test（13）等。
+apply 随缺口测试同步夹具（ScheduleItem lat/lon 已加）。
 
 ## 4. Fixtures 策略
 

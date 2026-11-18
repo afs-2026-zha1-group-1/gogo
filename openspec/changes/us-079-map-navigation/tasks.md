@@ -1,8 +1,8 @@
 # Tasks — us-079-map-navigation（P3，2026-11-18）
 
 链接：Delta specs（main-itinerary / trips）、`atdd-design.md`、`design.md`、`g1-decision.md`。
-实现先行：组 1–5、8 已落地并验证（后端 379/379、前端 64/64 + typecheck + build）；
-apply 阶段执行组 6–7、9–10（缺口测试先红后绿 + 验收证据 + 门禁）。
+组 1–5、8 已完成并验证（后端 379/379、前端 65/65 + typecheck + build）；
+apply 执行组 6–7、9–10（缺口测试先红后绿 + 验收证据 + 门禁）。
 
 ## 组 1 存储与生成补全（DD1/DD2）— done
 
@@ -41,15 +41,15 @@ apply 阶段执行组 6–7、9–10（缺口测试先红后绿 + 验收证据 +
 
 ## 组 6 缺口 API 测试（先红后绿）— open
 
-- [ ] 6.1 A6/G8：test-only 删 place_cache 行后生成 → 三字段 null 且不阻塞（StopLocationApiTest 新增）
-- [ ] 6.2 A18/W6：第二行程同名站生成命中 geocode 沉淀行（StopLocationApiTest 新增）
-- [ ] 6.3 mvn -B test 全绿复跑（381/381 预期）
+- [x] 6.1 A6/G8：test-only 删 place_cache 行后生成 → 坐标 null 且不阻塞、保留 provider 地址（StopLocationApiTest）
+- [x] 6.2 A18/W6：第二行程同名站生成命中 geocode 沉淀行（StopLocationApiTest）
+- [x] 6.3 mvn -B test 全绿复跑（381/381）
 
 ## 组 7 E2E 与观察行 — open
 
-- [ ] 7.1 Playwright DOM spec：E1–E14（href/target/图标/地址行/复制/无 iframe），进 frontend/tests/e2e/
-- [ ] 7.2 人工观察行 X1–X5 记 docs/feedback/e2e-us-079.md（外部高德页不自动化）
-- [ ] 7.3 npm run typecheck + test:unit + build 复跑绿
+- [x] 7.1 Playwright DOM spec：E1–E3/E5–E10/E12–E14（6 用例全过；E4/E11 观察行覆盖）
+- [x] 7.2 观察行 X1–X5 + E4/E11 记 docs/feedback/e2e-us-079.md（X1/X2/X5/E11 待真实浏览器复测）
+- [x] 7.3 npm run typecheck + test:unit（71/71）+ build 复跑绿
 
 ## 组 8 演示回填能力（DD13）— done（只改未跑）
 

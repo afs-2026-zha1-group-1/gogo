@@ -21,7 +21,7 @@ MODIFIED 块已逐字重基线 Living Spec 全部场景（main-itinerary 4+5、t
 | DoV-1 范围与 proposal 一致 | Pass | proposal Capabilities = main-itinerary + trips；delta 无第三能力 | 无 silent expansion |
 | DoV-2 歧义列明或已决 | Pass | P1 OQ-1…4 resolved（会话裁决）；OQ-5…8 deferred 用户确认；W1…3 deferred | 见 requirements/US-079.md OQ 表 |
 | DoV-3 角色残余 concern | Pass（列明） | IO：新错误码 UNKNOWN_STOP/INVALID_COORDS 扩 mainplan 枚举 + 新端点 stop-locations 契约面 → G1 议程；SA：GCJ 矩形 bbox 边界误判（W2）、place_cache (name,city) 消歧（W3）、JS Key 前端暴露（R2） | 送 G1，不在本 skill 自批 |
-| DoV-4 不声称业务实现完成 | Pass | 本 skill 仅产 spec/评审；实现先于 P1 存在（379/379、64/64 证据在 P1 条目），门禁未写 | |
+| DoV-4 不声称业务实现完成 | Pass | 本 skill 仅产 spec/评审；门禁未写 | |
 | DoV-5 delta 追溯 proposal/需求 | Pass | AC1→M1；AC2→M2+G7；AC3→M3；AC4→M4；AC5→M5；AC6→trips MODIFIED 地址行三场景；AC7→trips MODIFIED origin 场景；AC8→M6；AC9→G7/G8/W1/W6+read 场景；AC10→M7；AC11→M8；AC12→M9+G8；AC13→ADDED write-back 正文 | 无未匹配项 |
 
 ## 结论

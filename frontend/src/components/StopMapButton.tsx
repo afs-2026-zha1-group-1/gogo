@@ -6,10 +6,10 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import Icon from '../Icons'
-import { buildAmapDirUrl, buildAmapSearchUrl, type DirEnd } from '../lib/amap'
+import { stopMapHref } from '../lib/amap'
 import { copyText } from '../lib/clipboard'
 import type { ScheduleItem } from '../lib/countdown'
-import { lookupPlaceAddress, lookupPlaceBook, FIRST_STOP_ORIGIN, type BookedPlace } from '../lib/place-book'
+import { lookupPlaceAddress } from '../lib/place-book'
 
 interface StopMapButtonProps {
   item: ScheduleItem
@@ -28,24 +28,8 @@ export default function StopMapButton({ item, destination, from = null, showCopy
     if (copyTimer.current != null) window.clearTimeout(copyTimer.current)
   }, [])
 
-  const endOf = (stop: ScheduleItem, book: BookedPlace | null): DirEnd | null => {
-    if (stop.lat != null && stop.lon != null) return { name: stop.name, lat: stop.lat, lon: stop.lon }
-    if (book != null) return { name: stop.name, lat: book.lat, lon: book.lon }
-    return null
-  }
-  const toEnd = endOf(item, lookupPlaceBook(item.name))
-  // R1：无上一站（首站）时统一固定出发点=珠海南方软件园；地址簿缺该行才退空起点。
-  const originBook = lookupPlaceBook(FIRST_STOP_ORIGIN)
-  const defaultOrigin: DirEnd | null = originBook != null
-    ? { name: FIRST_STOP_ORIGIN, lat: originBook.lat, lon: originBook.lon }
-    : null
-  const fromEnd = from != null ? endOf(from, lookupPlaceBook(from.name)) : defaultOrigin
-  const href = toEnd != null
-    ? buildAmapDirUrl(fromEnd, toEnd)
-    : buildAmapSearchUrl([item.name, destination].filter(Boolean).join(' '))
-  const title = toEnd == null
-    ? '高德导航（起点手填）'
-    : fromEnd != null ? `从 ${fromEnd.name} 出发` : '高德导航（起点手填）'
+  const { href, originName } = stopMapHref(item, from, destination)
+  const title = originName != null ? `从 ${originName} 出发` : '高德导航（起点手填）'
 
   const address = item.address?.trim() || lookupPlaceAddress(item.name)
   const copy = () => {
@@ -68,7 +52,7 @@ export default function StopMapButton({ item, destination, from = null, showCopy
         href={href}
         target="_blank"
         rel="noopener"
-        aria-label={fromEnd != null ? `在高德中规划 ${fromEnd.name} 到 ${item.name} 的路线` : `在高德中打开 ${item.name} 导航`}
+        aria-label={originName != null ? `在高德中规划 ${originName} 到 ${item.name} 的路线` : `在高德中打开 ${item.name} 导航`}
         title={title}
       >
         <Icon name="pin" className="sm" /> 高德

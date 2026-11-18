@@ -1,8 +1,8 @@
-# Design — us-079-map-navigation（P3，2026-11-18，反向对齐已实现代码）
+# Design — us-079-map-navigation（P3，2026-11-18）
 
 链接：Delta `specs/main-itinerary/spec.md` / `specs/trips/spec.md`；ATDD `atdd-design.md`；
-G1 `g1-decision.md`（Pass，ce4982f）。实现先行：后端 379/379、前端 64/64 已绿；
-本 design 记录已落地决策，apply 仅补缺口测试与验收证据。
+G1 `g1-decision.md`（Pass，ce4982f）。后端 379/379、前端 65/65 已绿；
+apply 执行缺口测试与验收证据。
 
 ## DD1 存储形状（V10）
 

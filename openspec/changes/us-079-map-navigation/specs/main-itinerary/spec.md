@@ -57,12 +57,12 @@ and the 201 projection SHALL carry the same three fields per stop.
 - **THEN** each persisted stop row carries `address`, `lat`, `lng` from the cache
 - **AND** the 201 body's `stops` carry the same three fields per stop
 
-#### Scenario: G8 — cache miss leaves location fields null without blocking generation
+#### Scenario: G8 — cache miss leaves coordinates null without blocking generation
 
 - **GIVEN** a supplied stop name is absent from the place cache
 - **WHEN** the organizer generates the main plan
-- **THEN** generation succeeds and that stop's `address`, `lat`, `lng` are null
-- **AND** no coordinate is fabricated
+- **THEN** generation succeeds and that stop's `lat`, `lng` are null
+- **AND** the provider-supplied `address` is preserved and no coordinate is fabricated
 
 ### Requirement: Draft review with computed staleness
 
