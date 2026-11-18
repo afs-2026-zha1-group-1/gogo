@@ -285,8 +285,9 @@ test('account change does not restore a saved trip in dashboard-origin context',
     ? route.fulfill({ json: { id: 2, name: 'Ben', email: 'ben@example.com' } })
     : route.continue())
   await page.route('**/api/trips/current', (route) => route.fulfill({ json: { tripId: 9002 } }))
+  await page.getByRole('button', { name: '编辑名字' }).click()
   await page.getByLabel('名字').fill('Ben')
-  await page.getByRole('button', { name: '保存名字' }).click()
+  await page.getByRole('button', { name: '保存', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('已保存')
   await expect(page.getByRole('link', { name: '分队', exact: true })).toHaveAttribute('href', '#/dashboard/trip-entry')
 })
@@ -314,8 +315,9 @@ test('does not reuse cached preferences when the authenticated account changes',
     }
     return route.continue()
   })
+  await page.getByRole('button', { name: '编辑名字' }).click()
   await page.getByLabel('名字').fill('Other')
-  await page.getByRole('button', { name: '保存名字' }).click()
+  await page.getByRole('button', { name: '保存', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('已保存')
   try {
     await page.evaluate(() => { window.location.hash = '#/dashboard/trips/9001/preferences' })
@@ -584,8 +586,9 @@ test('a late response cannot expose a previous account trip after an identity ch
     })
     if (!response.ok) throw new Error(`Account switch failed: HTTP ${response.status}`)
   })
+  await page.getByRole('button', { name: '编辑名字' }).click()
   await page.getByLabel('名字').fill('Eve')
-  await page.getByRole('button', { name: '保存名字' }).click()
+  await page.getByRole('button', { name: '保存', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('已保存')
   release?.()
   await delivered

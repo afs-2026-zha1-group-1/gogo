@@ -12,6 +12,7 @@ interface InvitationPanelProps {
   showTitle?: boolean
   /** US-083: lets the invitation page drive its 生效中 pill from the issuance state. */
   onReadyChange?: (ready: boolean) => void
+  joiningClosed: boolean
 }
 
 type InvitationState =
@@ -39,7 +40,7 @@ async function copyText(text: string, fallbackField: HTMLInputElement | null): P
   }
 }
 
-export default function InvitationPanel({ tripId, isOrganizer, showTitle = true, onReadyChange }: InvitationPanelProps) {
+export default function InvitationPanel({ tripId, isOrganizer, joiningClosed, showTitle = true, onReadyChange }: InvitationPanelProps) {
   const { account } = useAuth()
   const [state, setState] = useState<InvitationState>({ kind: isOrganizer ? 'loading' : 'denied' })
   const [copied, setCopied] = useState<boolean>(false)
@@ -144,7 +145,9 @@ export default function InvitationPanel({ tripId, isOrganizer, showTitle = true,
             )}
             <div style={{ fontSize: 14, fontWeight: 680 }}>扫码或分享链接加入</div>
             <p className="tiny muted" style={{ marginTop: 4 }}>
-              朋友需在<b>主线方案确认前</b>加入 · 每人仅加入一次
+              {joiningClosed
+                ? '加入已关闭：新成员不能再通过邀请链接加入。'
+                : '朋友需在主线方案首次确认前加入 · 每人仅加入一次'}
             </p>
           </section>
 

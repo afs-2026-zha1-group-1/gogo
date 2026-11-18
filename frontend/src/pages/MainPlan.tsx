@@ -2,11 +2,13 @@ import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api'
 import { useAuth } from '../features/auth/AuthProvider'
 import Icon from '../Icons'
+import ConfirmDialog from '../components/ui/confirm-dialog'
 import { AiGeneratingNotice } from '../components/AiGeneratingNotice'
 import type {
   BudgetOverrun,
   MainPlan,
   MainPlanError,
+  PlanStop,
   ScheduleError,
   TripSummary,
 } from '../types/mainPlan'
@@ -63,6 +65,11 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
   const [busy, setBusy] = useState<'regen' | 'confirm' | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [blocked, setBlocked] = useState<BlockedConfirm | null>(null)
+  const [editingSeq, setEditingSeq] = useState<number | null>(null)
+  const [stopForm, setStopForm] = useState({ name: '', startTime: '', endTime: '' })
+  const [stopBusy, setStopBusy] = useState(false)
+  const [stopError, setStopError] = useState<string | null>(null)
+  const [stalePrompt, setStalePrompt] = useState(false)
 
   const load = useCallback(() => {
     let active = true
@@ -130,6 +137,11 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
   }
 
   async function confirm() {
+    // US-003 D15: a stale draft gets a blocking prompt; cancelling sends no confirm.
+    if (state.kind === 'ready' && state.plan.stale) {
+      setStalePrompt(true)
+      return
+    }
     setBusy('confirm')
     setActionError(null)
     setBlocked(null)
@@ -154,6 +166,37 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
       setActionError(`无法连接服务器：${errorMessage(cause)}`)
     } finally {
       setBusy(null)
+    }
+  }
+
+  function beginStopEdit(stop: PlanStop) {
+    setEditingSeq(stop.seq)
+    setStopForm({ name: stop.name, startTime: stop.startTime, endTime: stop.endTime })
+    setStopError(null)
+  }
+
+  async function saveStop() {
+    if (editingSeq == null) return
+    setStopBusy(true)
+    setStopError(null)
+    try {
+      const { ok, status, data } = await api<MainPlan & MainPlanError>(
+        `/api/trips/${tripId}/main-plan/stops/${editingSeq}`,
+        { method: 'PUT', body: stopForm },
+      )
+      if (ok && data) {
+        setState((current) => current.kind === 'ready' ? { ...current, plan: data } : current)
+        setEditingSeq(null)
+      } else if (status === 409 && data?.code === 'ALREADY_CONFIRMED') {
+        setStopError('主线方案已确认，不能再编辑。')
+        await refreshPlan()
+      } else {
+        setStopError(data?.message ? `${data.code}: ${data.message}` : `保存失败（HTTP ${status}）`)
+      }
+    } catch (cause) {
+      setStopError(`无法连接服务器：${errorMessage(cause)}`)
+    } finally {
+      setStopBusy(false)
     }
   }
 
@@ -275,7 +318,7 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
               <Icon name="alert" className="sm" /> 此草稿已过期
             </div>
             <p className="tiny" style={{ color: 'var(--warn)', marginTop: 4 }}>
-              有成员的偏好修订号发生了变化。请重新生成后再确认。
+              行程信息或成员偏好已变化。请重新生成后再确认。
             </p>
           </section>
         )}
@@ -300,6 +343,52 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
                   <div className="tl-leg">
                     <Icon name="nav" className="sm" /> 前往下一站 · {stop.travelMinutesToNext} 分钟
                   </div>
+                )}
+                {isOrganizer && !plan.confirmed && (
+                  editingSeq === stop.seq ? (
+                    <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <input
+                        className="input"
+                        value={stopForm.name}
+                        onChange={(event) => setStopForm({ ...stopForm, name: event.target.value })}
+                        aria-label="活动地点名称"
+                      />
+                      <div className="two">
+                        <input
+                          className="input"
+                          value={stopForm.startTime}
+                          onChange={(event) => setStopForm({ ...stopForm, startTime: event.target.value })}
+                          placeholder="09:00"
+                          aria-label="开始时间"
+                        />
+                        <input
+                          className="input"
+                          value={stopForm.endTime}
+                          onChange={(event) => setStopForm({ ...stopForm, endTime: event.target.value })}
+                          placeholder="09:30"
+                          aria-label="结束时间"
+                        />
+                      </div>
+                      {stopError && <p role="alert" className="error">{stopError}</p>}
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button className="btn btn-primary" type="button" disabled={stopBusy} onClick={saveStop}>
+                          {stopBusy ? '保存中…' : '保存'}
+                        </button>
+                        <button
+                          className="btn btn-ghost"
+                          type="button"
+                          disabled={stopBusy}
+                          onClick={() => { setEditingSeq(null); setStopError(null) }}
+                        >
+                          取消
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button className="btn btn-ghost" type="button" style={{ marginTop: 8 }} onClick={() => beginStopEdit(stop)}>
+                      <Icon name="edit" className="sm" /> 编辑地点与时间
+                    </button>
+                  )
                 )}
               </div>
             </div>
@@ -356,6 +445,12 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
 
         {actionError && <p role="alert" className="error" style={{ marginTop: 12 }}>{actionError}</p>}
 
+        {isOrganizer && !plan.confirmed && (
+          <p className="tiny muted" style={{ marginTop: 12 }}>
+            重新生成会整份替换草稿，并丢弃手动修改的活动地点与时间。
+          </p>
+        )}
+
         {!isOrganizer && !plan.confirmed && (
           <p className="hint" style={{ marginTop: 12 }}>
             你可以审阅草稿；确认与重新生成由组织者操作。
@@ -404,6 +499,23 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
           </div>
         </>
       ) : null}
+
+      <ConfirmDialog
+        open={stalePrompt}
+        title="方案已过期"
+        lines={[
+          '行程信息或成员偏好已变化，当前草稿不能直接确认。',
+          '请重新生成后再确认；重新生成会整份替换草稿，并丢弃手动修改的活动地点与时间。',
+        ]}
+        confirmLabel="立即重新生成"
+        cancelLabel="取消"
+        tone="warn"
+        onConfirm={() => {
+          setStalePrompt(false)
+          void regenerate()
+        }}
+        onCancel={() => setStalePrompt(false)}
+      />
     </div>
   )
 }

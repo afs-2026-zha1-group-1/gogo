@@ -12,6 +12,7 @@ function nameLength(value: string): number {
 export default function AccountPage() {
   const { account, updateName, logout } = useAuth()
   const [name, setName] = useState(account?.name ?? '')
+  const [editing, setEditing] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -45,6 +46,7 @@ export default function AccountPage() {
         return
       }
       setSaved(true)
+      setEditing(false)
     } catch {
       setSaveError('无法连接服务器，请稍后重试。')
     } finally {
@@ -82,7 +84,24 @@ export default function AccountPage() {
         <div className="account-profile">
           <div className="account-avatar" aria-hidden="true">{initial}</div>
           <div>
-            <div className="account-name">{displayName}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div className="account-name">{displayName}</div>
+              {!editing && (
+                <button
+                  className="iconbtn"
+                  type="button"
+                  aria-label="编辑名字"
+                  onClick={() => {
+                    setName(account?.name ?? '')
+                    setSaveError('')
+                    setSaved(false)
+                    setEditing(true)
+                  }}
+                >
+                  <Icon name="edit" className="sm" />
+                </button>
+              )}
+            </div>
             <div className="account-email">{account?.email ?? ''}</div>
           </div>
         </div>
@@ -105,27 +124,45 @@ export default function AccountPage() {
           <Icon name="arrow" className="sm" />
         </a>
 
-        <form onSubmit={save}>
-          <label className="label" htmlFor="account-name">名字</label>
-          <input
-            id="account-name"
-            className={`input${saveError ? ' invalid' : ''}`}
-            value={name}
-            maxLength={NAME_MAX}
-            autoComplete="nickname"
-            onChange={(event) => {
-              setName(event.target.value)
-              setSaved(false)
-              setSaveError('')
-            }}
-          />
-          {saveError && <p role="alert" className="error">{saveError}</p>}
-          {saved && <p role="status" className="hint">已保存。</p>}
-          <button className="btn btn-primary account-save" type="submit" disabled={saving}>
-            <Icon name="check" className="sm" />
-            {saving ? '正在保存…' : '保存名字'}
-          </button>
-        </form>
+        {editing && (
+          <form onSubmit={save}>
+            <label className="label" htmlFor="account-name">名字</label>
+            <input
+              id="account-name"
+              className={`input${saveError ? ' invalid' : ''}`}
+              value={name}
+              maxLength={NAME_MAX}
+              autoComplete="nickname"
+              onChange={(event) => {
+                setName(event.target.value)
+                setSaved(false)
+                setSaveError('')
+              }}
+            />
+            {saveError && <p role="alert" className="error">{saveError}</p>}
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <button className="btn btn-primary" type="submit" disabled={saving}>
+                <Icon name="check" className="sm" />
+                {saving ? '正在保存…' : '保存'}
+              </button>
+              <button
+                className="btn btn-ghost"
+                type="button"
+                disabled={saving}
+                onClick={() => {
+                  setEditing(false)
+                  setName(account?.name ?? '')
+                  setSaveError('')
+                  setSaved(false)
+                }}
+              >
+                取消
+              </button>
+            </div>
+          </form>
+        )}
+
+        {saved && !editing && <p role="status" className="hint">已保存。</p>}
 
         {logoutError && <p role="alert" className="error">{logoutError}</p>}
         <button className="btn account-logout" type="button" onClick={signOut} disabled={loggingOut}>

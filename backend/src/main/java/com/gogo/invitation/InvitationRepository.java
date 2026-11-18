@@ -49,12 +49,13 @@ public class InvitationRepository {
 
     public InvitationPreview preview(String token, Long viewerId) {
         List<InvitationPreview> rows = jdbc.query(
-                "SELECT t.id, t.name, t.destination, t.start_date, t.end_date, t.main_plan_confirmed, t.organizer_id "
+                "SELECT t.id, t.name, t.destination, t.start_date, t.end_date, t.main_plan_confirmed, "
+                        + "t.joining_closed, t.organizer_id "
                         + "FROM trip_invitation i JOIN trip t ON t.id = i.trip_id WHERE i.token = ?",
                 (rs, rowNum) -> new InvitationPreview(rs.getString("name"), rs.getString("destination"),
                         rs.getString("start_date"), rs.getString("end_date"),
-                        rs.getInt("main_plan_confirmed") != 0, rs.getLong("organizer_id"),
-                        rs.getLong("id"), false),
+                        rs.getInt("main_plan_confirmed") != 0, rs.getInt("joining_closed") != 0,
+                        rs.getLong("organizer_id"), rs.getLong("id"), false),
                 token);
         InvitationPreview base = rows.stream().findFirst()
                 .orElseThrow(() -> new InvitationApiException(404, "INVITATION_NOT_FOUND",
@@ -65,7 +66,8 @@ public class InvitationRepository {
             return base;
         }
         return new InvitationPreview(base.tripName(), base.destination(), base.startDate(),
-                base.endDate(), base.mainPlanConfirmed(), base.organizerId(), base.tripId(), true);
+                base.endDate(), base.mainPlanConfirmed(), base.joiningClosed(),
+                base.organizerId(), base.tripId(), true);
     }
 
     @Transactional
@@ -76,7 +78,7 @@ public class InvitationRepository {
         if (trips.isMember(tripId, userId)) {
             return new JoinResult(true, true, tripId);
         }
-        if (isMainPlanConfirmed(tripId)) {
+        if (isJoiningClosed(tripId)) {
             throw new InvitationApiException(403, "JOINING_CLOSED",
                     "Joining is closed after the main plan is confirmed");
         }
@@ -97,10 +99,10 @@ public class InvitationRepository {
         return ids.stream().findFirst();
     }
 
-    private boolean isMainPlanConfirmed(long tripId) {
-        Integer confirmed = jdbc.queryForObject(
-                "SELECT main_plan_confirmed FROM trip WHERE id = ?", Integer.class, tripId);
-        return confirmed != null && confirmed != 0;
+    private boolean isJoiningClosed(long tripId) {
+        Integer closed = jdbc.queryForObject(
+                "SELECT joining_closed FROM trip WHERE id = ?", Integer.class, tripId);
+        return closed != null && closed != 0;
     }
 
     private static IssuedInvitation issued(String token, TripResponse trip) {

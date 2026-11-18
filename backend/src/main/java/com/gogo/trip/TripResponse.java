@@ -9,5 +9,6 @@ public record TripResponse(
         String startLocation,
         String endLocation,
         long organizerId,
-        boolean mainPlanConfirmed) {
+        boolean mainPlanConfirmed,
+        boolean joiningClosed) {
 }
