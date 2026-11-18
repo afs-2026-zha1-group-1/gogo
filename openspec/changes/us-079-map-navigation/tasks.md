@@ -59,7 +59,7 @@ apply 执行组 6–7、9–10（缺口测试先红后绿 + 验收证据 + 门�
 ## 组 9 验证与门禁 — open
 
 - [x] 9.1 /sdd:local-verify-report（V1–V8；Overall Partial 无 CRITICAL；20261118-155859）
-- [ ] 9.2 建分支/PR（禁直推 main）→ CI 双绿（G2 输入）
+- [x] 9.2 建分支/PR（禁直推 main）→ CI 双绿（G2 输入）：PR #157，Backend tests / Frontend build / Browser acceptance 全绿
 - [ ] 9.3 /sdd:g2-decision-record（VL 签）→ 合并 → /sdd:living-merge → /sdd:g3-decision-record（SA 签）
 
 ## 组 10 归档对账 — open
