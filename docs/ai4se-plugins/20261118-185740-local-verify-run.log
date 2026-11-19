@@ -1,0 +1,38 @@
+===== CMD: ! grep -rn "Hello World" frontend/src =====
+cwd: /mnt/d/NGSA5/OneDrive - Orient Overseas Container Line Ltd/Documents/TATP/Bootcamp/Group Project/gogo_prod
+started: 2026-11-18T18:57:40+0800
+exit: 0
+ended: 2026-11-18T18:57:41+0800
+
+===== CMD: ! grep -inE "jpa|hibernate" backend/pom.xml =====
+cwd: /mnt/d/NGSA5/OneDrive - Orient Overseas Container Line Ltd/Documents/TATP/Bootcamp/Group Project/gogo_prod
+started: 2026-11-18T18:57:41+0800
+exit: 0
+ended: 2026-11-18T18:57:42+0800
+
+===== CMD: ! grep -rinE "h2database|org\.h2|jdbc:h2" backend/pom.xml backend/src =====
+cwd: /mnt/d/NGSA5/OneDrive - Orient Overseas Container Line Ltd/Documents/TATP/Bootcamp/Group Project/gogo_prod
+started: 2026-11-18T18:57:42+0800
+exit: 0
+ended: 2026-11-18T18:57:44+0800
+
+===== CMD: ! grep -q "artifact.oocl.com" frontend/package-lock.json =====
+cwd: /mnt/d/NGSA5/OneDrive - Orient Overseas Container Line Ltd/Documents/TATP/Bootcamp/Group Project/gogo_prod
+started: 2026-11-18T18:57:44+0800
+exit: 0
+ended: 2026-11-18T18:57:45+0800
+
+===== CMD: python3 -c "import yaml; d=yaml.safe_load(open('.github/workflows/ci.yml')); j=sorted(d['jobs']); assert j==['backend','browser-acceptance','frontend'], j; print('ci jobs:', j)" =====
+cwd: /mnt/d/NGSA5/OneDrive - Orient Overseas Container Line Ltd/Documents/TATP/Bootcamp/Group Project/gogo_prod
+started: 2026-11-18T18:57:45+0800
+ci jobs: ['backend', 'browser-acceptance', 'frontend']
+exit: 0
+ended: 2026-11-18T18:57:46+0800
+
+===== CMD: python3 -c "import yaml; d=yaml.load(open('.github/workflows/ci.yml'), Loader=yaml.BaseLoader); p=d['on']['push']; assert p is None or 'branches' not in p, p; assert 'main' in d['on']['pull_request']['branches']; print('ci triggers: any-branch push + pull request to main')" =====
+cwd: /mnt/d/NGSA5/OneDrive - Orient Overseas Container Line Ltd/Documents/TATP/Bootcamp/Group Project/gogo_prod
+started: 2026-11-18T18:57:46+0800
+ci triggers: any-branch push + pull request to main
+exit: 0
+ended: 2026-11-18T18:57:47+0800
+

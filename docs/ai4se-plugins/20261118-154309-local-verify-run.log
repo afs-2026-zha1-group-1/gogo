@@ -1,0 +1,17 @@
+===== CMD: ! grep -rn "Hello World" frontend/src =====
+cwd: /mnt/d/NGSA5/OneDrive - Orient Overseas Container Line Ltd/Documents/TATP/Bootcamp/Group Project/gogo_prod
+started: 2026-11-18T15:43:09+0800
+-bash: line 1: $'\r': command not found
+grep: backend/pom.xml: No such file or directory
+-bash: line 3: $'\r': command not found
+grep: backend/pom.xml: No such file or directory
+grep: backend/src: No such file or directory
+-bash: line 5: $'\r': command not found
+grep: frontend/package-lock.json: No such file or directory
+-bash: line 7: $'\r': command not found
+-bash: line 8: python: command not found
+-bash: line 9: $'\r': command not found
+-bash: line 10: python: command not found
+exit: 0
+ended: 2026-11-18T15:43:11+0800
+
