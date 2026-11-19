@@ -153,6 +153,13 @@ test('P13 B group with generated steps still renders its own activity, not the m
   assert.ok(!departure || departure.groupLabel !== 'B')
 })
 
+test('split step nodes carry their round so the timeline can edit them', () => {
+  const d = detail({ routes: [route('A'), route('B', { steps: [{ name: '滨海湾花园', minutes: 60 }] })] })
+  const step = derivePersonalRoute(d, '3', plan)?.find((item) => item.groupLabel === 'B')
+  assert.ok(step)
+  assert.deepEqual(step.splitStep, { roundIndex: 1, groupLabel: 'B', stepIndex: 0, minutes: 60 })
+})
+
 test('P3 unassigned member gets no personal route', () => {
   assert.equal(derivePersonalRoute(detail(), '9', plan), null)
 })

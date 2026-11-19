@@ -9,6 +9,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.gogo.auth.TestAuth;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -305,6 +308,51 @@ class SplitRoundApiTest extends AbstractSplitApiTest {
                 .andExpect(jsonPath("$.data.roundIndex").value(1))
                 .andExpect(jsonPath("$.data.draft.status").value("active"));
         assertThat(roundDocument(1).path("status").asText()).isEqualTo("active");
+    }
+
+    @Test
+    @DisplayName("a confirmed round still accepts a node edit so the timeline and graph follow")
+    void confirmedRound_routesRemainEditable() throws Exception {
+        prepareConfirmedRoundOne();
+        JsonNode doc = roundDocument(1);
+        int version = doc.path("draftVersion").asInt();
+        List<Map<String, Object>> routes = new ArrayList<>();
+        routes.add(routeBody("A", doc.path("routes").path("A"), 0, "City Hall MRT (edited)"));
+        routes.add(routeBody("B", doc.path("routes").path("B"), 0, "B 组改过的节点"));
+
+        mockMvc.perform(put("/api/trips/{tripId}/split-draft/rounds/1/routes", sgfTripId())
+                        .with(TestAuth.asUser(memberId("Ben")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("draftVersion", version, "routes", routes))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.routes.length()").value(2));
+
+        JsonNode updated = roundDocument(1);
+        assertThat(updated.path("status").asText()).isEqualTo("confirmed");
+        assertThat(updated.path("draftVersion").asInt()).isGreaterThan(version);
+        assertThat(updated.path("routes").path("A").path("steps").get(0).path("name").asText())
+                .isEqualTo("City Hall MRT (edited)");
+    }
+
+    /** Rebuilds one route body with the step at {@code index} renamed (minutes/legs preserved). */
+    private Map<String, Object> routeBody(String label, JsonNode route, int index, String name) {
+        List<Map<String, Object>> steps = new ArrayList<>();
+        int position = 0;
+        for (JsonNode step : route.path("steps")) {
+            steps.add(Map.of(
+                    "name", position == index ? name : step.path("name").asText(),
+                    "minutes", step.path("minutes").asInt()));
+            position += 1;
+        }
+        List<Integer> legs = new ArrayList<>();
+        for (JsonNode leg : route.path("travelLegsMinutes")) {
+            legs.add(leg.isNull() ? null : leg.asInt());
+        }
+        Map<String, Object> body = new HashMap<>();
+        body.put("groupLabel", label);
+        body.put("steps", steps);
+        body.put("travelLegsMinutes", legs);
+        return body;
     }
 
     @Test
