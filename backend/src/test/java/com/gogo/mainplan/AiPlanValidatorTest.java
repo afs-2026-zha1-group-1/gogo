@@ -15,22 +15,22 @@ class AiPlanValidatorTest {
 
     private static final String VALID = """
             {"stops":[
-              {"seq":1,"name":"Museum","startTime":"09:00","endTime":"10:00",
+              {"seq":1,"name":"Museum","startTime":"14:00","endTime":"15:00",
                "travelMinutesToNext":15,"interests":["culture"]},
-              {"seq":2,"name":"Lunch","startTime":"10:15","endTime":"11:15",
+              {"seq":2,"name":"Lunch","startTime":"15:15","endTime":"16:15",
                "travelMinutesToNext":null,"interests":["food"]}],
              "costPerPersonCents":4200}
             """;
 
     private static final String MULTI_DAY = """
             {"stops":[
-              {"seq":1,"dayIndex":1,"name":"Museum","startTime":"09:00","endTime":"10:00",
+              {"seq":1,"dayIndex":1,"name":"Museum","startTime":"14:00","endTime":"15:00",
                "travelMinutesToNext":15,"interests":["culture"]},
-              {"seq":2,"dayIndex":1,"name":"Lunch","startTime":"10:15","endTime":"11:15",
+              {"seq":2,"dayIndex":1,"name":"Lunch","startTime":"15:15","endTime":"16:15",
                "travelMinutesToNext":null,"interests":["food"]},
-              {"seq":3,"dayIndex":2,"name":"Park","startTime":"09:00","endTime":"10:00",
+              {"seq":3,"dayIndex":2,"name":"Park","startTime":"14:00","endTime":"15:00",
                "travelMinutesToNext":15,"interests":["nature"]},
-              {"seq":4,"dayIndex":2,"name":"Dinner","startTime":"10:15","endTime":"11:15",
+              {"seq":4,"dayIndex":2,"name":"Dinner","startTime":"15:15","endTime":"16:15",
                "travelMinutesToNext":null,"interests":["food"]}],
              "costPerPersonCents":8400}
             """;
@@ -68,8 +68,26 @@ class AiPlanValidatorTest {
     @Test
     void rejectsOneStop() {
         assertInvalid("""
-                {"stops":[{"seq":1,"name":"Museum","startTime":"09:00","endTime":"10:00",
+                {"stops":[{"seq":1,"name":"Museum","startTime":"14:00","endTime":"15:00",
                 "travelMinutesToNext":null}],"costPerPersonCents":0}
+                """);
+    }
+
+    @Test
+    void rejectsAStartBeforeTwoPm() {
+        assertInvalid(VALID.replace("\"startTime\":\"14:00\"", "\"startTime\":\"13:30\""));
+    }
+
+    @Test
+    void rejectsMoreThanFourStopsInADay() {
+        assertInvalid("""
+                {"stops":[
+                  {"seq":1,"name":"A","startTime":"14:00","endTime":"14:30","travelMinutesToNext":15},
+                  {"seq":2,"name":"B","startTime":"14:45","endTime":"15:15","travelMinutesToNext":15},
+                  {"seq":3,"name":"C","startTime":"15:30","endTime":"16:00","travelMinutesToNext":15},
+                  {"seq":4,"name":"D","startTime":"16:15","endTime":"16:45","travelMinutesToNext":15},
+                  {"seq":5,"name":"E","startTime":"17:00","endTime":"17:30","travelMinutesToNext":null}],
+                 "costPerPersonCents":0}
                 """);
     }
 
@@ -80,12 +98,12 @@ class AiPlanValidatorTest {
 
     @Test
     void rejectsBadClockFormat() {
-        assertInvalid(VALID.replace("\"09:00\"", "\"9:00\""));
+        assertInvalid(VALID.replace("\"startTime\":\"14:00\"", "\"startTime\":\"4:00\""));
     }
 
     @Test
     void rejectsEndNotAfterStart() {
-        assertInvalid(VALID.replace("\"10:00\"", "\"09:00\""));
+        assertInvalid(VALID.replace("\"endTime\":\"15:00\"", "\"endTime\":\"14:00\""));
     }
 
     @Test

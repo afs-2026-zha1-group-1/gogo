@@ -18,14 +18,14 @@ class MinimalFallbackPlanTest {
         MainPlanResult.PlannedStop first = result.stops().get(0);
         assertEquals(1, first.seq());
         assertEquals("City Hall MRT", first.name());
-        assertEquals("09:00", first.startTime());
-        assertEquals("09:30", first.endTime());
+        assertEquals("14:00", first.startTime());
+        assertEquals("14:30", first.endTime());
         assertEquals(30, first.travelMinutesToNext());
         MainPlanResult.PlannedStop last = result.stops().get(1);
         assertEquals(2, last.seq());
         assertEquals("Merlion Park", last.name());
-        assertEquals("17:00", last.startTime());
-        assertEquals("17:30", last.endTime());
+        assertEquals("19:00", last.startTime());
+        assertEquals("19:30", last.endTime());
         assertNull(last.travelMinutesToNext());
         assertEquals(0, result.costPerPersonCents());
     }

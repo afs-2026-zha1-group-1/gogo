@@ -17,9 +17,9 @@ class AiMainPlanProviderTest {
 
     private static final String VALID_PLAN = """
             {"stops":[
-              {"seq":1,"name":"Museum","startTime":"09:00","endTime":"10:00",
+              {"seq":1,"name":"Museum","startTime":"14:00","endTime":"15:00",
                "travelMinutesToNext":15,"interests":["culture"]},
-              {"seq":2,"name":"Lunch","startTime":"10:15","endTime":"11:15",
+              {"seq":2,"name":"Lunch","startTime":"15:15","endTime":"16:15",
                "travelMinutesToNext":null,"interests":["food"]}],
              "costPerPersonCents":4200}
             """;
@@ -46,9 +46,9 @@ class AiMainPlanProviderTest {
         AiMainPlanProvider provider = provider(request -> """
                 {"stops":[
                   {"seq":1,"name":"南山植物园","address":" 重庆市南岸区南山植物园路101号 ",
-                   "startTime":"09:00","endTime":"10:00",
+                   "startTime":"14:00","endTime":"15:00",
                    "travelMinutesToNext":15,"interests":["nature"]},
-                  {"seq":2,"name":"午餐","startTime":"10:15","endTime":"11:15",
+                  {"seq":2,"name":"午餐","startTime":"15:15","endTime":"16:15",
                    "travelMinutesToNext":null,"interests":["food"]}],
                  "costPerPersonCents":4200}
                 """);
@@ -63,15 +63,17 @@ class AiMainPlanProviderTest {
     void promptRequiresAddressInsideDestinationCity() {
         assertTrue(AiMainPlanProvider.SYSTEM_PROMPT.contains("\"address\""));
         assertTrue(AiMainPlanProvider.SYSTEM_PROMPT.contains("destination city"));
+        assertTrue(AiMainPlanProvider.SYSTEM_PROMPT.contains("2 to 4 stops"));
+        assertTrue(AiMainPlanProvider.SYSTEM_PROMPT.contains("14:00"));
     }
 
     @Test
     void stripsTheGeneratedMainlineMarkerFromStopNames() {
         AiMainPlanProvider provider = provider(request -> """
                 {"stops":[
-                  {"seq":1,"name":"主线·旧城早餐","startTime":"09:00","endTime":"10:00",
+                  {"seq":1,"name":"主线·旧城早餐","startTime":"14:00","endTime":"15:00",
                    "travelMinutesToNext":15,"interests":["food"]},
-                  {"seq":2,"name":"主线：灯塔会合","startTime":"10:15","endTime":"11:15",
+                  {"seq":2,"name":"主线：灯塔会合","startTime":"15:15","endTime":"16:15",
                    "travelMinutesToNext":null,"interests":["nature"]}],
                  "costPerPersonCents":4200}
                 """);
@@ -115,7 +117,7 @@ class AiMainPlanProviderTest {
     @Test
     void fallsBackToTheMinimalPlanOnInvalidOutput() {
         AiMainPlanProvider provider = provider(request -> """
-                {"stops":[{"seq":2,"name":"Museum","startTime":"09:00","endTime":"10:00",
+                {"stops":[{"seq":2,"name":"Museum","startTime":"14:00","endTime":"15:00",
                 "travelMinutesToNext":null}],"costPerPersonCents":0}
                 """);
 

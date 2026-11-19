@@ -39,11 +39,11 @@ class AiMainPlanApiTest {
 
     private static final String VALID_PLAN = """
             {"stops":[
-              {"seq":1,"name":"Museum","startTime":"09:00","endTime":"10:00",
+              {"seq":1,"name":"Museum","startTime":"14:00","endTime":"15:00",
                "travelMinutesToNext":15,"interests":["culture"]},
-              {"seq":2,"name":"Lunch","startTime":"10:15","endTime":"11:15",
+              {"seq":2,"name":"Lunch","startTime":"15:15","endTime":"16:15",
                "travelMinutesToNext":10,"interests":["food"]},
-              {"seq":3,"name":"Park","startTime":"11:25","endTime":"12:30",
+              {"seq":3,"name":"Park","startTime":"16:25","endTime":"17:30",
                "travelMinutesToNext":null,"interests":["nature"]}],
              "costPerPersonCents":4200}
             """;
@@ -110,12 +110,12 @@ class AiMainPlanApiTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.stops.length()").value(2))
                 .andExpect(jsonPath("$.stops[0].name").value("City Hall MRT"))
-                .andExpect(jsonPath("$.stops[0].startTime").value("09:00"))
-                .andExpect(jsonPath("$.stops[0].endTime").value("09:30"))
+                .andExpect(jsonPath("$.stops[0].startTime").value("14:00"))
+                .andExpect(jsonPath("$.stops[0].endTime").value("14:30"))
                 .andExpect(jsonPath("$.stops[0].travelMinutesToNext").value(30))
                 .andExpect(jsonPath("$.stops[1].name").value("Merlion Park"))
-                .andExpect(jsonPath("$.stops[1].startTime").value("17:00"))
-                .andExpect(jsonPath("$.stops[1].endTime").value("17:30"))
+                .andExpect(jsonPath("$.stops[1].startTime").value("19:00"))
+                .andExpect(jsonPath("$.stops[1].endTime").value("19:30"))
                 .andExpect(jsonPath("$.stops[1].travelMinutesToNext").doesNotExist())
                 .andExpect(jsonPath("$.costPerPersonCents").value(0));
     }

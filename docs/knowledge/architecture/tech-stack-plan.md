@@ -632,11 +632,13 @@ opencode (not a new stack).
   `PLAN_AI_TIMEOUT`. A blank key keeps `FakeMainPlanProvider` (city fixtures)
   for tests, CI and offline demos.
 - **Validation + fallback:** AI output must cover every trip day
-  (`dayIndex` 1..N, 2–10 stops each), keep `seq` contiguous across the plan,
-  use `HH:mm` times with end > start, valid travel legs and nonnegative cost.
+  (`dayIndex` 1..N, 2–4 stops each), start each day at 14:00 or later, keep
+  `seq` contiguous across the plan, use `HH:mm` times with end > start, valid
+  travel legs and nonnegative cost. The prompt asks for a realistic, relaxed
+  day: meal stops and an end-of-day hotel/rest stop when they fit.
   Any timeout/HTTP/empty/invalid output persists `MinimalFallbackPlan` instead:
-  every trip day gets start location 09:00–09:30 (30-minute leg) → end location
-  17:00–17:30 (null leg), per-person cost 0, using the already-completed trip
+  every trip day gets start location 14:00–14:30 (30-minute leg) → end location
+  19:00–19:30 (null leg), per-person cost 0, using the already-completed trip
   locations.
 - **API / data:** no endpoint, error-code, schema or migration change.
 - **Frontend:** `AiGeneratingNotice` shows a non-blocking “AI 正在生成中…”
