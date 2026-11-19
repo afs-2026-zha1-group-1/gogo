@@ -201,6 +201,10 @@ export default function TripOverview({ state }: { state: ReadyState }) {
 
   async function removeStop(item: ScheduleItem) {
     if (saving) return
+    if (item.splitStep != null) {
+      await removeSplitNode(item, item.splitStep)
+      return
+    }
     if (state.plan == null || item.stopId == null) return
     if (!window.confirm(`删除「${item.name}」这一站？删除后已生成的分队路线会作废。`)) return
     setSaving(true)
@@ -216,6 +220,41 @@ export default function TripOverview({ state }: { state: ReadyState }) {
       state.reload()
     } catch {
       setMutateError('无法连接服务器，请稍后再试')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  /** Removes one step from that round's route pair (and the leg leaving it), then refreshes timeline + graph. */
+  async function removeSplitNode(item: ScheduleItem, step: NonNullable<ScheduleItem['splitStep']>) {
+    if (!window.confirm(`删除分队节点「${item.name}」？删除后会更新这一轮的路线与路线图。`)) return
+    setSaving(true)
+    setMutateError(null)
+    const tripId = String(state.trip.id)
+    try {
+      const detail = await fetchDraftDetail(tripId, step.roundIndex)
+      if (detail == null) {
+        setMutateError('该轮分队草稿不存在或已取消。')
+        return
+      }
+      const routes = detail.routes.map((route) => {
+        const label = route.groupLabel as 'A' | 'B'
+        const steps = (route.steps ?? []).map((routeStep) => ({ name: routeStep.name, minutes: routeStep.minutes }))
+        const legs = route.travelLegsMinutes ?? []
+        if (label !== step.groupLabel) return { groupLabel: label, steps, travelLegsMinutes: legs }
+        const remainingSteps = steps.filter((_, index) => index !== step.stepIndex)
+        // Legs run steps + 1: dropping the step also drops the leg that leaves it.
+        const remainingLegs = legs.slice(0, step.stepIndex + 1).concat(legs.slice(step.stepIndex + 2))
+        return { groupLabel: label, steps: remainingSteps, travelLegsMinutes: remainingLegs }
+      })
+      await saveRoutes(tripId, step.roundIndex, { draftVersion: detail.draftVersion, routes })
+      state.reload()
+    } catch (cause) {
+      setMutateError(
+        cause instanceof SplitApiError
+          ? `${cause.code}: ${cause.message}`
+          : `删除失败：${errorMessage(cause) ?? '请稍后再试'}`,
+      )
     } finally {
       setSaving(false)
     }
@@ -282,7 +321,9 @@ export default function TripOverview({ state }: { state: ReadyState }) {
           startDate={state.trip.startDate}
           isOrganizer={isOrganizer}
           onEditStop={state.plan ? openEdit : undefined}
-          onDeleteStop={state.plan && state.plan.stops.length > 1 ? removeStop : undefined}
+          onDeleteStop={
+            state.plan || state.schedule.some((item) => item.splitStep != null) ? removeStop : undefined
+          }
           onAddStop={state.plan ? openAdd : undefined}
           busy={saving}
           destination={state.trip.destination}
