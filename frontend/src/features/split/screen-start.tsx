@@ -88,7 +88,7 @@ export function ScreenStart() {
   const totalMembers = Object.values(lastRound?.groups ?? {}).reduce((sum, ids) => sum + ids.length, 0)
   const selectedDetail = selectedNode
     ? buildNodeDetail(selectedNode, {
-        rounds: confirmedRounds,
+        rounds: rounds.filter((round) => round.status !== "cancelled"),
         stopsById,
         destination: lastRound?.destination ?? null,
         groupCounts,

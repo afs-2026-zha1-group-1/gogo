@@ -140,6 +140,8 @@ export interface SplitDraftDetail {
   reunionAt: string | null
   windowMinutes: number | null
   routes: GroupRoute[]
+  /** US-092: persisted per-node ordered todos keyed by graph node; absent on older snapshots. */
+  nodeTasks?: Record<string, string[]>
   /** Trip destination; the screens use it to render instants in the trip's own zone. */
   destination: string | null
 }

@@ -61,6 +61,14 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Service
 public class SplitDraftService {
 
+    // US-092 lightweight node todos: product default copy persisted per node key in the draft JSON.
+    private static final List<String> MAIN_TASKS = List.of("按计划时间到达", "在群里同步位置", "预留 10 分钟缓冲");
+    private static final List<String> FORK_TASKS = List.of("核对 A/B 分组名单", "确认会合时间与地点", "两组分别开启导航");
+    private static final List<String> JOIN_TASKS = List.of("在会合点集合", "核对两组抵达时间", "休息补水，准备继续行程");
+    private static final List<String> ACTIVITY_TASKS = List.of("提前 10 分钟到达", "完成活动后在群里打卡", "留意下一个节点时间");
+    private static final List<String> TRAVEL_TASKS = List.of("按导航前往会合点", "预留路程时间，不晚于会合时刻", "抵达后在群里报平安");
+    private static final List<String> BUFFER_TASKS = List.of("原地休整补水", "检查随身物品", "按计划继续行程");
+
     private final MemberGuard guard;
     private final SplitDraftRepository repository;
     private final ObjectMapper objectMapper;
@@ -562,7 +570,8 @@ public class SplitDraftService {
                     draft.departureStopId(), reunion.id(), candidate.activityMinutes(), candidate.travelLegsMinutes(),
                     candidate.bufferMinutes(), candidate.steps(), candidate.activities()));
         }
-        SplitDraftDocument updated = draft.withRoutes(durations, activities, now);
+        Map<String, List<String>> nodeTasks = nodeTasks(roundIndex, mainPlanStops, departure, reunion, durations);
+        SplitDraftDocument updated = draft.withRoutes(durations, activities, nodeTasks, now);
         String updatedJson = toJson(updated);
         transactionTemplate.executeWithoutResult(status -> {
             repository.deleteSplitRoutes(tripId, roundIndex);
@@ -647,8 +656,14 @@ public class SplitDraftService {
                     draft.reunionStopId(), durations.activityMinutes(), durations.travelLegsMinutes(),
                     durations.bufferMinutes(), durations.steps(), archivedActivities(draft, label)));
         }
+        List<PlanStop> mainPlanStops = repository.findMainPlanStops(tripId, draft.mainPlanVersion());
+        PlanStop departure = draft.departureStopId() == null ? null
+                : repository.findMainPlanStop(tripId, draft.departureStopId(), draft.mainPlanVersion()).orElse(null);
+        PlanStop reunion = draft.reunionStopId() == null ? null
+                : repository.findMainPlanStop(tripId, draft.reunionStopId(), draft.mainPlanVersion()).orElse(null);
         String now = Instant.now().toString();
-        SplitDraftDocument updated = draft.withRoutes(updatedRoutes, draft.activities(), now);
+        Map<String, List<String>> nodeTasks = nodeTasks(roundIndex, mainPlanStops, departure, reunion, updatedRoutes);
+        SplitDraftDocument updated = draft.withRoutes(updatedRoutes, draft.activities(), nodeTasks, now);
         String updatedJson = toJson(updated);
         transactionTemplate.executeWithoutResult(status -> {
             for (String label : List.of("A", "B")) {
@@ -673,6 +688,60 @@ public class SplitDraftService {
         } catch (IllegalArgumentException ex) {
             throw new ApiException(ErrorCode.INVALID_ROUTE_INPUT, ex.getMessage());
         }
+    }
+
+    /**
+     * US-092: each rendered node gets an ordered task list stored in the draft document. Activity/leg/buffer keys
+     * mirror the graph row ids; stop ids cover main and junction rows, so the sheet can look everything up without
+     * a new table or endpoint.
+     */
+    private Map<String, List<String>> nodeTasks(int roundIndex, List<PlanStop> stops, PlanStop departure,
+            PlanStop reunion, Map<String, RouteDurations> routes) {
+        Map<String, List<String>> tasks = new LinkedHashMap<>();
+        for (PlanStop stop : stops) {
+            tasks.put("stop:" + stop.id(), MAIN_TASKS);
+        }
+        PlanStop forkStop = departure != null ? departure : stops.isEmpty() ? null : stops.get(0);
+        if (forkStop != null) {
+            tasks.put(roundNodeKey(roundIndex, "fork", forkStop.id()), FORK_TASKS);
+        }
+        if (reunion != null) {
+            tasks.put(roundNodeKey(roundIndex, "join", reunion.id()), JOIN_TASKS);
+        }
+        if (routes != null) {
+            for (Map.Entry<String, RouteDurations> entry : routes.entrySet()) {
+                branchTasks(tasks, roundIndex, entry.getKey(), entry.getValue());
+            }
+        }
+        return tasks;
+    }
+
+    private static void branchTasks(Map<String, List<String>> tasks, int roundIndex, String groupLabel,
+            RouteDurations durations) {
+        String route = groupLabel.trim().toLowerCase(Locale.ROOT);
+        List<RouteStep> steps = durations.steps() == null ? List.of() : durations.steps();
+        if (steps.isEmpty()) {
+            tasks.put(roundNodeKey(roundIndex, route, "activity"), ACTIVITY_TASKS);
+        } else {
+            for (int index = 0; index < steps.size(); index++) {
+                tasks.put(roundNodeKey(roundIndex, route, "step:" + index), ACTIVITY_TASKS);
+            }
+        }
+        List<Integer> legs = durations.travelLegsMinutes();
+        if (legs != null) {
+            for (int index = 0; index < legs.size(); index++) {
+                if (legs.get(index) != null) {
+                    tasks.put(roundNodeKey(roundIndex, route, "leg:" + index), TRAVEL_TASKS);
+                }
+            }
+        }
+        if (durations.bufferMinutes() != null && durations.bufferMinutes() != 0) {
+            tasks.put(roundNodeKey(roundIndex, route, "buffer"), BUFFER_TASKS);
+        }
+    }
+
+    private static String roundNodeKey(int roundIndex, String kind, String id) {
+        return "r" + roundIndex + ":" + kind + ":" + id;
     }
 
     /**
@@ -780,7 +849,7 @@ public class SplitDraftService {
                 roundIndex, draft.initiatorMemberId(), draft.mainPlanVersion(), draft.draftVersion(), draft.status(),
                 draft.splitMode(), draft.groups(), draft.createdAt(), draft.updatedAt(), mainPlanStops,
                 departureStopId, reunionStopId, departureAt, reunionAt, windowMinutes, routes,
-                repository.findDestination(tripId).orElse(null));
+                draft.nodeTasks(), repository.findDestination(tripId).orElse(null));
     }
 
     private String aggregateStatus(List<SplitDraftDetailResponse> rounds) {

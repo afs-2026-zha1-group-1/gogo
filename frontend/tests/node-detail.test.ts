@@ -37,6 +37,11 @@ const round: SplitDraftDetail = {
   departureAt: '2026-11-19T01:00:00Z',
   reunionAt: '2026-11-19T03:00:00Z',
   windowMinutes: 120,
+  nodeTasks: {
+    'stop:s2': ['带伞', '提前确认集合点'],
+    'r1:a:step:0': ['提前到达', '完成活动后打卡'],
+    'r1:b:leg:0': ['按导航出发'],
+  },
   routes: [
     {
       groupLabel: 'A',
@@ -101,7 +106,7 @@ test('US-092 branch activity uses the round route location, cost and group count
   assert.equal(detail.location, 'National Gallery')
   assert.equal(detail.people, 'Route A · 2 人')
   assert.equal(detail.fee, '人均 S$25')
-  assert.deepEqual(detail.tasks, [])
+  assert.deepEqual(detail.tasks, ['提前到达', '完成活动后打卡'])
 })
 
 test('US-092 missing activity details and todos are omitted, never invented', () => {
@@ -166,6 +171,7 @@ test('US-092 main stops use the snapshot location and per-person cost', () => {
   assert.equal(detail.location, 'Merlion Park')
   assert.equal(detail.people, '全员 · 3 人')
   assert.equal(detail.fee, '人均 S$12')
+  assert.deepEqual(detail.tasks, ['带伞', '提前确认集合点'])
 })
 
 test('US-092 a zero cost is free while an unknown stop stays empty', () => {
