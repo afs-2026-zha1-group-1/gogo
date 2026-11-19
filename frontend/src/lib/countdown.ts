@@ -23,6 +23,8 @@ export interface ScheduleItem {
   end: number | null
   /** null = shared activity for every member. */
   groupLabel: string | null
+  /** 单人费用（分）；null = 未知，时间线不展示金额（不伪造「免费」）。 */
+  costCents?: number | null
   /** US-096: split round this entry belongs to; absent for shared/main entries. */
   roundIndex?: number
   interests: string[]

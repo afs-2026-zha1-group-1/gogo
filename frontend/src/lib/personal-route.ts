@@ -8,6 +8,7 @@ import type { ScheduleItem } from './countdown'
 import type { SplitDraftDetail, PlanStop as SplitPlanStop } from '../features/split/types'
 import type { MainPlan } from '../types/mainPlan'
 import { cleanStationName } from '../features/split/station-name.ts'
+import { activityCostCents } from './activity-cost.ts'
 
 /** Combine main-plan `HH:mm` stops with the trip start date in the device-local timezone. */
 export function scheduleFromMainPlan(plan: MainPlan | null, startDate: string): ScheduleItem[] {
@@ -23,6 +24,7 @@ export function scheduleFromMainPlan(plan: MainPlan | null, startDate: string): 
       start: localClock(startDate, stop.startTime, dayIndex - 1),
       end: localClock(startDate, stop.endTime, dayIndex - 1),
       groupLabel: null,
+      costCents: activityCostCents(stop.name),
       interests: stop.interests,
       address: stop.address ?? null,
       lat: stop.lat ?? null,
@@ -69,6 +71,8 @@ function sharedItem(stop: SplitPlanStop, plan: MainPlan | null, roundIndex?: num
     end: toMs(stop.endAt),
     groupLabel: null,
     roundIndex,
+    // 快照里的单站费用优先；缺失时演示城市回退到 mock 价目表。
+    costCents: activityCostCents(cleanStationName(stop.name), stop.costCents),
     interests: matched?.interests ?? [],
     address: matched?.address ?? null,
     lat: matched?.lat ?? null,
@@ -148,6 +152,7 @@ export function derivePersonalRoute(
         end,
         groupLabel: myGroupLabel,
         splitStep: { roundIndex: detail.roundIndex, groupLabel: myGroupLabel, stepIndex: index, minutes: step.minutes },
+        costCents: activityCostCents(name, activity?.costCents),
         interests: mainStop?.interests ?? [],
         address: activity?.location ?? mainStop?.address ?? null,
         lat: mainStop?.lat ?? null,
@@ -189,6 +194,7 @@ export function derivePersonalRoute(
     start: activityStart,
     end: activityEnd,
     groupLabel: myGroupLabel,
+    costCents: activityCostCents(myRoute.activityName ?? '', groupActivity?.costCents),
     interests: mainStop?.interests ?? [],
     address: groupActivity?.location ?? mainStop?.address ?? null,
     lat: mainStop?.lat ?? null,

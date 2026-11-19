@@ -57,5 +57,9 @@ test-results/
 # Browser acceptance screenshots (local evidence only, not committed)
 ui-design-reference/screenshots/us-083-085-acceptance/
 
+# Source photos for the stop artwork; the compressed copies live in
+# frontend/public/images/stops/ and are the only ones served to the browser.
+/png/
+
 # Local toolchain binaries (PlantUML JAR etc.); reinstall with scripts or docs, never committed
 .tools/

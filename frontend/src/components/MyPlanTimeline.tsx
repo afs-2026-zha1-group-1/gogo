@@ -14,6 +14,8 @@ import { useState } from 'react'
 import Icon from '../Icons'
 import StopMapButton from './StopMapButton'
 import { formatClock, stopVisualState, type CountdownState, type ScheduleItem, type StopState } from '../lib/countdown'
+import { activityCostCents, formatActivityCost } from '../lib/activity-cost'
+import { stopPhoto } from '../lib/stop-photo'
 import {
   dayIndexOfInstant,
   dayLabel,
@@ -143,7 +145,12 @@ export default function MyPlanTimeline({
             role={showPager && showTabs ? 'tabpanel' : undefined}
             aria-labelledby={showPager && showTabs ? `day-tab-${activeGroup.dayIndex}` : undefined}
           >
-            {activeGroup.items.map((item, index) => (
+            {activeGroup.items.map((item, index) => {
+              // 金额按行实时算：有存库金额用存库，演示城市回退 mock，未知则不报价（不再一律写「免费」）。
+              const costLabel = formatActivityCost(activityCostCents(item.name, item.costCents), destination)
+              // 珠海 / 香港的活动有实景图；AI 生成的其他目的地返回 null，仍用图标块。
+              const photo = stopPhoto(item.name, destination)
+              return (
               <div
                 className="tl-item"
                 key={item.key}
@@ -169,15 +176,28 @@ export default function MyPlanTimeline({
                     })()}
                   </div>
                   <div className="act-card">
-                    <span className="act-ic">
-                      <Icon name={stopIcon(item)} className="sm" />
-                    </span>
+                    {photo ? (
+                      <img
+                        className="stop-photo"
+                        src={photo.src}
+                        alt={photo.alt}
+                        loading="lazy"
+                        width={420}
+                        height={315}
+                      />
+                    ) : (
+                      <span className="act-ic">
+                        <Icon name={stopIcon(item)} className="sm" />
+                      </span>
+                    )}
                     <div className="act-main">
                       <div className="act-name">{item.name}</div>
                       <div className="act-sub">
                         {item.kind === 'split-departure'
                           ? '全员 · 分头'
-                          : `${item.note ? `${item.note} · ` : ''}${item.groupLabel ? `${item.groupLabel} 组` : '全员'} · 免费`}
+                          : [item.note, item.groupLabel ? `${item.groupLabel} 组` : '全员', costLabel]
+                              .filter(Boolean)
+                              .join(' · ')}
                       </div>
                     </div>
                     {(item.stopId != null || item.splitStep != null) && onEditStop ? (
@@ -222,7 +242,8 @@ export default function MyPlanTimeline({
                   )}
                 </div>
               </div>
-            ))}
+              )
+            })}
           </div>
           {onAddStop ? (
             <button type="button" className="tl-add" disabled={busy} onClick={onAddStop}>
