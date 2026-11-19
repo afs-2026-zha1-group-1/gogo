@@ -76,6 +76,8 @@ export interface PlanInputRevision {
 export interface PlanStop {
   // Persisted main_plan_stop row id (US-090 「我的方案」edit target).
   id?: number
+  // Multi-day plan: 1 = trip start date. Omitted by older plans, defaults to 1.
+  dayIndex?: number
   seq: number
   name: string
   startTime: string

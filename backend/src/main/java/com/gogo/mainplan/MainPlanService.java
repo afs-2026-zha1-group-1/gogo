@@ -136,8 +136,9 @@ public class MainPlanService {
             Double lat = cached.map(MainPlanRepository.PlaceRow::lat).orElse(null);
             Double lng = cached.map(MainPlanRepository.PlaceRow::lng).orElse(null);
             plans.insertStop(draftId, stop, writeJson(stop.interests()), address, lat, lng);
-            completedStops.add(new PlanResponse.Stop(0L, stop.seq(), stop.name(), stop.startTime(),
-                    stop.endTime(), null, null, stop.travelMinutesToNext(), stop.interests(), address, lat, lng));
+            completedStops.add(new PlanResponse.Stop(0L, stop.seq(), stop.dayIndex(), stop.name(),
+                    stop.startTime(), stop.endTime(), null, null, stop.travelMinutesToNext(),
+                    stop.interests(), address, lat, lng));
         }
         return new PlanResponse(tripId, version, false, false,
                 result.costPerPersonCents(), revisions, completedStops);
@@ -265,6 +266,9 @@ public class MainPlanService {
             throw stopTimeError("END_BEFORE_START", stop.seq(), "结束时间必须晚于开始时间");
         }
         for (MainPlanRepository.StopRow sibling : siblings) {
+            if (sibling.dayIndex() != stop.dayIndex()) {
+                continue;
+            }
             if (sibling.seq() < stop.seq() && start.compareTo(sibling.endLocal()) < 0) {
                 throw stopTimeError("NEIGHBOUR_CONFLICT", stop.seq(), "开始时间早于上一站结束时间");
             }
@@ -326,7 +330,8 @@ public class MainPlanService {
         if (last != null) {
             plans.updateTravelMinutesToNext(last.id(), clockMinutes(start) - clockMinutes(last.endLocal()));
         }
-        plans.insertStopRow(draft.id(), seq, name, start, end, blankToNull(request.locationName()),
+        int dayIndex = last == null ? 1 : last.dayIndex();
+        plans.insertStopRow(draft.id(), seq, dayIndex, name, start, end, blankToNull(request.locationName()),
                 requireNoteFits(blankToNull(request.note())));
         requireSchedulable(draft.id());
         projection.projectConfirmed(tripId);
@@ -432,9 +437,10 @@ public class MainPlanService {
         List<PlanResponse.InputRevision> revisions = readRevisions(draft.inputRevisionsJson());
         boolean stale = !confirmed && isStale(tripId, revisions, draft);
         List<PlanResponse.Stop> stops = plans.stopsForDraft(draft.id()).stream()
-                .map(stop -> new PlanResponse.Stop(stop.id(), stop.seq(), stop.name(), stop.startLocal(),
-                        stop.endLocal(), stop.locationName(), stop.note(), stop.travelMinutesToNext(),
-                        readInterests(stop.interestsJson()), stop.address(), stop.lat(), stop.lng()))
+                .map(stop -> new PlanResponse.Stop(stop.id(), stop.seq(), stop.dayIndex(), stop.name(),
+                        stop.startLocal(), stop.endLocal(), stop.locationName(), stop.note(),
+                        stop.travelMinutesToNext(), readInterests(stop.interestsJson()), stop.address(),
+                        stop.lat(), stop.lng()))
                 .toList();
         return new PlanResponse(tripId, draft.version(), confirmed, stale,
                 draft.costPerPersonCents(), revisions, stops);
@@ -658,8 +664,9 @@ public class MainPlanService {
 
     private List<PlanResponse.Stop> toStops(List<MainPlanResult.PlannedStop> stops) {
         return stops.stream()
-                .map(stop -> new PlanResponse.Stop(0L, stop.seq(), stop.name(), stop.startTime(),
-                        stop.endTime(), null, null, stop.travelMinutesToNext(), stop.interests(), null, null, null))
+                .map(stop -> new PlanResponse.Stop(0L, stop.seq(), stop.dayIndex(), stop.name(),
+                        stop.startTime(), stop.endTime(), null, null, stop.travelMinutesToNext(),
+                        stop.interests(), null, null, null))
                 .toList();
     }
 

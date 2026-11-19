@@ -25,9 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
  * plan_node rows: the splits capability reads them instead of synthesizing boundary stops, so a trip's split
  * boundaries always come from the plan its members actually confirmed.
  *
- * Local HH:MM stop times are placed on the trip start date in the trip's own zone (香港/伦敦/新加坡 default, see
- * {@link TripZones}), so ISO consumers need no locale knowledge. Rows of other versions
- * are left untouched (history stays readable); only the confirmed version is rewritten, which makes the
+ * Local HH:MM stop times are placed on the stop's own trip day (start_date + day_index - 1) in the trip's own zone
+ * (香港/伦敦/新加坡 default, see {@link TripZones}), so ISO consumers need no locale knowledge. Rows of other
+ * versions are left untouched (history stays readable); only the confirmed version is rewritten, which makes the
  * projection idempotent and self-healing for plans confirmed before the projection existed.
  */
 @Component
@@ -60,8 +60,9 @@ public class MainPlanProjection {
         Map<Integer, List<String>> existing = existingMainRows(tripId, draft.version());
         for (MainPlanRepository.StopRow stop : stops) {
             List<String> ids = existing.remove(stop.seq());
-            Instant startAt = instant(startDate, stop.startLocal(), zone);
-            Instant endAt = instant(startDate, stop.endLocal(), zone);
+            String dayDate = dateOf(startDate, stop.dayIndex());
+            Instant startAt = instant(dayDate, stop.startLocal(), zone);
+            Instant endAt = instant(dayDate, stop.endLocal(), zone);
             if (ids == null || ids.isEmpty()) {
                 // US-079：确认投影把站点坐标抄进 plan_node 预留列（分队地图直接用）。
                 jdbc.update("INSERT INTO plan_node (id, trip_id, plan_version, parent_id, branch_id, node_type, title, "
@@ -119,7 +120,19 @@ public class MainPlanProjection {
         return trips.isEmpty() ? Map.of() : trips.get(0);
     }
 
-    /** Local HH:MM on the trip start date in the given zone -> ISO-8601 instant (null when unparseable). */
+    /** Trip day → calendar date; unparseable input keeps the trip start date (single-day fallback). */
+    static String dateOf(String startDate, int dayIndex) {
+        if (startDate == null) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(startDate).plusDays(Math.max(0, dayIndex - 1)).toString();
+        } catch (DateTimeParseException ex) {
+            return startDate;
+        }
+    }
+
+    /** Local HH:MM on the given date in the given zone -> ISO-8601 instant (null when unparseable). */
     static Instant instant(String startDate, String clock, ZoneId zone) {
         if (startDate == null || clock == null) {
             return null;

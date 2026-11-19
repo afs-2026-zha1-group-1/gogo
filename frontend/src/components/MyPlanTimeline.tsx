@@ -8,9 +8,11 @@
  * embedded map modal; the address + navigation live on the countdown card's
  * next-stop row, not on the timeline; map failures never blank the trip.
  */
+import { useState } from 'react'
 import Icon from '../Icons'
 import StopMapButton from './StopMapButton'
 import { formatClock, type ScheduleItem } from '../lib/countdown'
+import { dayIndexOfInstant, dayLabel, groupByDay } from '../lib/day-groups'
 import { stopIcon } from '../lib/stop-icon'
 
 interface MyPlanTimelineProps {
@@ -29,14 +31,6 @@ interface MyPlanTimelineProps {
   destination: string
 }
 
-const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
-
-function dayLabel(startDate: string): string {
-  const [year, month, day] = startDate.split('-').map(Number)
-  const date = new Date(year, month - 1, day)
-  return `DAY 1 · ${month}月${day}日（周${WEEKDAYS[date.getDay()]}）`
-}
-
 function timeLabel(item: ScheduleItem): string {
   if (item.start == null || item.end == null) return '时间待确认'
   if (item.kind === 'split-departure') return `${formatClock(item.start)} · 分头`
@@ -53,6 +47,10 @@ export default function MyPlanTimeline({
   busy = false,
   destination,
 }: MyPlanTimelineProps) {
+  const [expanded, setExpanded] = useState<Record<number, boolean>>({})
+  const groups = groupByDay(schedule, (item) => item.dayIndex ?? dayIndexOfInstant(item.start, startDate))
+  const firstDay = groups[0]?.dayIndex
+
   return (
     <>
       <div className="sec-title"><Icon name="list" className="sm" /> 我的方案</div>
@@ -67,68 +65,93 @@ export default function MyPlanTimeline({
         </section>
       ) : (
         <>
-          <div className="sec-title day-tag"><Icon name="clock" className="sm" /> {dayLabel(startDate)}</div>
-          <div className="timeline">
-            {schedule.map((item, index) => (
-              <div className="tl-item" key={item.key}>
-                <div className="tl-rail">
-                  <div className="tl-node" />
-                  {index < schedule.length - 1 && <div className="tl-line" />}
+          {groups.map((group) => {
+            const open = expanded[group.dayIndex] ?? group.dayIndex === firstDay
+            return (
+              <section className="day-group" key={group.dayIndex}>
+                <div className="sec-title day-tag">
+                  <button
+                    type="button"
+                    className="day-toggle"
+                    aria-expanded={open}
+                    aria-controls={`day-panel-${group.dayIndex}`}
+                    onClick={() => setExpanded((current) => ({ ...current, [group.dayIndex]: !open }))}
+                  >
+                    <Icon name="right" className="sm day-chevron" />
+                    {dayLabel(startDate, group.dayIndex)}
+                    <span className="day-count">{group.items.length} 站</span>
+                  </button>
                 </div>
-                <div className="tl-card">
-                  <div className="tl-time">{timeLabel(item)}</div>
-                  <div className="act-card">
-                    <span className="act-ic">
-                      <Icon name={stopIcon(item)} className="sm" />
-                    </span>
-                    <div className="act-main">
-                      <div className="act-name">{item.name}</div>
-<div className="act-sub">
-                        {item.kind === 'split-departure'
-                          ? '全员 · 分头'
-                          : `${item.note ? `${item.note} · ` : ''}${item.groupLabel ? `${item.groupLabel} 组` : '全员'} · 免费`}
-                      </div>
-                      {item.interests.length > 0 && (
-                        <div className="chips" style={{ marginTop: 6 }}>
-                          {item.interests.map((tag) => (
-                            <span className="pill" key={tag}><Icon name="star" className="sm" /> {tag}</span>
-                          ))}
+                {open && (
+                  <div className="timeline" id={`day-panel-${group.dayIndex}`}>
+                    {group.items.map((item, index) => (
+                      <div className="tl-item" key={item.key}>
+                        <div className="tl-rail">
+                          <div className="tl-node" />
+                          {index < group.items.length - 1 && <div className="tl-line" />}
                         </div>
-                      )}
-                    </div>
-                    {item.stopId != null && onEditStop ? (
-                      <button
-                        type="button"
-                        className="tl-edit"
-                        disabled={busy}
-                        aria-label={`编辑 ${item.name}`}
-                        onClick={() => onEditStop(item)}
-                      >
-                        <Icon name="edit" className="sm" />
-                      </button>
-                    ) : null}
-                    {item.stopId != null && onDeleteStop ? (
-                      <button
-                        type="button"
-                        className="tl-edit tl-edit-danger"
-                        disabled={busy}
-                        aria-label={`删除 ${item.name}`}
-                        onClick={() => onDeleteStop(item)}
-                      >
-                        <Icon name="trash" className="sm" />
-                      </button>
-                    ) : null}
-                    <StopMapButton item={item} destination={destination} from={index > 0 ? schedule[index - 1] : null} />
+                        <div className="tl-card">
+                          <div className="tl-time">{timeLabel(item)}</div>
+                          <div className="act-card">
+                            <span className="act-ic">
+                              <Icon name={stopIcon(item)} className="sm" />
+                            </span>
+                            <div className="act-main">
+                              <div className="act-name">{item.name}</div>
+                              <div className="act-sub">
+                                {item.kind === 'split-departure'
+                                  ? '全员 · 分头'
+                                  : `${item.note ? `${item.note} · ` : ''}${item.groupLabel ? `${item.groupLabel} 组` : '全员'} · 免费`}
+                              </div>
+                              {item.interests.length > 0 && (
+                                <div className="chips" style={{ marginTop: 6 }}>
+                                  {item.interests.map((tag) => (
+                                    <span className="pill" key={tag}><Icon name="star" className="sm" /> {tag}</span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            {item.stopId != null && onEditStop ? (
+                              <button
+                                type="button"
+                                className="tl-edit"
+                                disabled={busy}
+                                aria-label={`编辑 ${item.name}`}
+                                onClick={() => onEditStop(item)}
+                              >
+                                <Icon name="edit" className="sm" />
+                              </button>
+                            ) : null}
+                            {item.stopId != null && onDeleteStop ? (
+                              <button
+                                type="button"
+                                className="tl-edit tl-edit-danger"
+                                disabled={busy}
+                                aria-label={`删除 ${item.name}`}
+                                onClick={() => onDeleteStop(item)}
+                              >
+                                <Icon name="trash" className="sm" />
+                              </button>
+                            ) : null}
+                            <StopMapButton
+                              item={item}
+                              destination={destination}
+                              from={index > 0 ? group.items[index - 1] : null}
+                            />
+                          </div>
+                          {item.travelMinutesToNext != null && (
+                            <div className="tl-leg">
+                              <Icon name="nav" className="sm" /> 前往下一站 · {item.travelMinutesToNext} 分钟
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  {item.travelMinutesToNext != null && (
-                    <div className="tl-leg">
-                      <Icon name="nav" className="sm" /> 前往下一站 · {item.travelMinutesToNext} 分钟
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+                )}
+              </section>
+            )
+          })}
           {onAddStop ? (
             <button type="button" className="tl-add" disabled={busy} onClick={onAddStop}>
               <Icon name="plus" className="sm" /> 添加节点

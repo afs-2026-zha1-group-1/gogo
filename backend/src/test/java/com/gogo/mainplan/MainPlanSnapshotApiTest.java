@@ -25,7 +25,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 // confirmation shortcut that delegates to the validated confirmation.
 @SpringBootTest(classes = com.gogo.hello.HelloApplication.class, properties = {
         "spring.datasource.url=jdbc:sqlite:file:main-plan-snapshot-test?mode=memory&cache=shared",
-        "spring.datasource.hikari.maximum-pool-size=1"
+        "spring.datasource.hikari.maximum-pool-size=1",
+        "gogo.plan.ai.api-key="
 })
 @AutoConfigureMockMvc
 class MainPlanSnapshotApiTest {

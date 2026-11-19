@@ -26,6 +26,13 @@ class MainPlanProjectionTest {
     }
 
     @Test
+    void dateOf_offsetsTheTripStartByDayIndex() {
+        assertThat(MainPlanProjection.dateOf("2026-11-19", 1)).isEqualTo("2026-11-19");
+        assertThat(MainPlanProjection.dateOf("2026-11-19", 3)).isEqualTo("2026-11-21");
+        assertThat(MainPlanProjection.dateOf(null, 2)).isNull();
+    }
+
+    @Test
     void instant_missingOrUnparseableInputsStayNull() {
         ZoneId zone = ZoneId.of("Asia/Singapore");
         assertThat(MainPlanProjection.instant(null, "09:00", zone)).isNull();

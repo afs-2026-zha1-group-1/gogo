@@ -19,6 +19,7 @@ public record PlanResponse(
     public record Stop(
             long id,
             int seq,
+            int dayIndex,
             String name,
             String startTime,
             String endTime,
@@ -29,5 +30,13 @@ public record PlanResponse(
             String address,
             Double lat,
             Double lng) {
+
+        /** Single-day callers keep day 1. */
+        public Stop(long id, int seq, String name, String startTime, String endTime, String locationName,
+                String note, Integer travelMinutesToNext, List<String> interests, String address,
+                Double lat, Double lng) {
+            this(id, seq, 1, name, startTime, endTime, locationName, note, travelMinutesToNext, interests,
+                    address, lat, lng);
+        }
     }
 }

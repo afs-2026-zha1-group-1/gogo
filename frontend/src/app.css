@@ -2332,3 +2332,33 @@ body {
   flex-wrap: wrap;
   gap: 6px;
 }
+
+/* Multi-day 我的方案: per-day collapsible header */
+.day-toggle {
+  all: unset;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  cursor: pointer;
+}
+
+.day-toggle .day-count {
+  margin-left: auto;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.day-toggle .day-chevron {
+  transition: transform 0.15s ease;
+}
+
+.day-toggle[aria-expanded='true'] .day-chevron {
+  transform: rotate(90deg);
+}
+
+.day-toggle:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+  border-radius: 6px;
+}

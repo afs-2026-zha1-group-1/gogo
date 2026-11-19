@@ -27,7 +27,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 // 坐标并沉淀缓存；确认投影把坐标抄进 plan_node。存量 MainPlanApiTest 不改动。
 @SpringBootTest(classes = com.gogo.hello.HelloApplication.class, properties = {
         "spring.datasource.url=jdbc:sqlite:file:stop-location-test?mode=memory&cache=shared",
-        "spring.datasource.hikari.maximum-pool-size=1"
+        "spring.datasource.hikari.maximum-pool-size=1",
+        "gogo.plan.ai.api-key="
 })
 @AutoConfigureMockMvc
 class StopLocationApiTest {

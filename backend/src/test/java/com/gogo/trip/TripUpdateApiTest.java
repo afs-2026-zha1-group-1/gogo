@@ -27,7 +27,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 // name organizer-only, split gate, plan invalidation and the joiningClosed split.
 @SpringBootTest(classes = com.gogo.hello.HelloApplication.class, properties = {
         "spring.datasource.url=jdbc:sqlite:file:trip-update-test?mode=memory&cache=shared",
-        "spring.datasource.hikari.maximum-pool-size=1"
+        "spring.datasource.hikari.maximum-pool-size=1",
+        "gogo.plan.ai.api-key="
 })
 @AutoConfigureMockMvc
 class TripUpdateApiTest {

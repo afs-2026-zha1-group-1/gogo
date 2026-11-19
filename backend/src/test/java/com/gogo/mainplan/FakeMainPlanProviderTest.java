@@ -62,21 +62,25 @@ class FakeMainPlanProviderTest {
     }
 
     @Test
-    void hongKongDestinationReturnsCityFixtures() {
+    void hongKongDestinationReturnsCityFixturesForEveryDay() {
         MainPlanResult result = planFor("香港", "2026-11-21", "2026-11-22");
-        assertEquals(6, result.stops().size());
+        assertEquals(12, result.stops().size());
         assertEquals("西九文化区 M+ 博物馆", result.stops().get(0).name());
         assertEquals("尖沙咀海滨长廊与星光大道", result.stops().get(5).name());
-        assertEquals(68000, result.costPerPersonCents());
+        assertEquals(1, result.stops().get(0).dayIndex());
+        assertEquals(2, result.stops().get(6).dayIndex());
+        assertEquals("尖沙咀海滨长廊与星光大道", result.stops().get(11).name());
+        assertEquals(68000 * 2, result.costPerPersonCents());
     }
 
     @Test
-    void londonDestinationReturnsCityFixtures() {
+    void londonDestinationReturnsCityFixturesForEveryDay() {
         MainPlanResult result = planFor("伦敦", "2026-11-23", "2026-11-29");
-        assertEquals(7, result.stops().size());
+        assertEquals(7 * 7, result.stops().size());
         assertEquals("大英博物馆", result.stops().get(0).name());
-        assertEquals("伦敦眼与南岸夜景", result.stops().get(6).name());
-        assertEquals(9500, result.costPerPersonCents());
+        assertEquals(7, result.stops().get(6 * 7).dayIndex());
+        assertEquals("伦敦眼与南岸夜景", result.stops().get(48).name());
+        assertEquals(9500 * 7, result.costPerPersonCents());
     }
 
     @Test

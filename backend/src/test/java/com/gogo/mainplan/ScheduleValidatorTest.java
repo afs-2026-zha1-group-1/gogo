@@ -28,6 +28,24 @@ class ScheduleValidatorTest {
     }
 
     @Test
+    void crossDayBoundaryNeedsNoTravelLeg() {
+        List<MainPlanRepository.StopRow> stops = List.of(
+                new MainPlanRepository.StopRow(1, "Day one", "09:00", "10:00", null, null, null, null, null, 0, 1),
+                new MainPlanRepository.StopRow(2, "Day two", "09:00", "10:00", null, null, null, null, null, 0, 2));
+
+        assertTrue(validator.validate(stops).isEmpty());
+    }
+
+    @Test
+    void withinDayStopsStillNeedATravelLeg() {
+        List<MainPlanRepository.StopRow> stops = List.of(
+                new MainPlanRepository.StopRow(1, "First", "09:00", "10:00", null, null, null, null, null, 0, 1),
+                new MainPlanRepository.StopRow(2, "Second", "11:00", "12:00", null, null, null, null, null, 0, 1));
+
+        assertTrue(hasError(validator.validate(stops), "MISSING_LEG", 1));
+    }
+
+    @Test
     void fixtureSchedulePassesWithTravelFitEquality() {
         // legs 30/30/15 land exactly on the next starts — equality passes.
         assertTrue(validator.validate(fixtureStops()).isEmpty());
