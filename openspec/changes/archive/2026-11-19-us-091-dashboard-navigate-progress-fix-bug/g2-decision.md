@@ -11,9 +11,9 @@
 
 ## 输入
 
-- [本地验证报告](../../../docs/ai4se-plugins/20261118-230431-local-verify-report.md)：历史结果为 Fail；报告注明其后请求者转述了扩展范围的 G1 批准，但其他验证缺口和报告结果未改变。
-- [流水线报告](../../../docs/ai4se-plugins/20261119-003615-pipeline-report.md)：包含 CI 和 CD 检查，整体为 Partial；CI 仅对应提交 `335663e90c23e89a9a8ddf7590a7c3732284c11c`，未找到 CD 执行证据。
-- [最新 CI 流水线报告](../../../docs/ai4se-plugins/20261119-091851-pipeline-report.md)及 [E1 副本](ci-report.md)：PR head `88a09053f4afcd175e69cead8a04f4f3f29c2a8c` 与合并后提交 `d534eb728218c7c61b408b6ea84149927d8bcb05` 的 CI 均通过；未覆盖 CD。
+- [本地验证报告](../../../../docs/ai4se-plugins/20261118-230431-local-verify-report.md)：历史结果为 Fail；报告注明其后请求者转述了扩展范围的 G1 批准，但其他验证缺口和报告结果未改变。
+- [流水线报告](../../../../docs/ai4se-plugins/20261119-003615-pipeline-report.md)：包含 CI 和 CD 检查，整体为 Partial；CI 仅对应提交 `335663e90c23e89a9a8ddf7590a7c3732284c11c`，未找到 CD 执行证据。
+- [最新 CI 流水线报告](../../../../docs/ai4se-plugins/20261119-091851-pipeline-report.md)及 [E1 副本](ci-report.md)：PR head `88a09053f4afcd175e69cead8a04f4f3f29c2a8c` 与合并后提交 `d534eb728218c7c61b408b6ea84149927d8bcb05` 的 CI 均通过；未覆盖 CD。
 - [G1 决策](g1-decision.md)及[任务](tasks.md)：扩展范围 G1 批准已按请求者转述记录；后续验收、CI/CD 证据和 G2 任务仍未完成。
 
 ## 验证维度
@@ -42,3 +42,7 @@
 | 按 P4 流程取得并记录所需 CD 证据。 | Sammi Ng | 待完成 |
 
 未提供截止日期。没有记录豁免；Conditional 不是豁免，也不解除本地验证 Fail 的 PR 阻断。完成条件后须取得新的具名 VL 决策，才能记录 G2 Pass。
+
+## P5 继续记录
+
+2026-11-19 09:39:58 +08:00，请求者确认接受未完成事项及 G2 Conditional 并继续归档检查，随后转述 VL Evelyn Huang 和 SA Sammi Ng 均批准继续下一步。此记录并非直接签名、G2 Pass、条件解除或 G3 决策。请求者另转述 SA 决定采用已就绪且无方案时推荐生成的行为；对应规范冲突已纳入变更增量。

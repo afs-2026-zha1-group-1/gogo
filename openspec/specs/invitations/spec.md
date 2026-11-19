@@ -10,11 +10,11 @@ fail closed without exposing private trip data.
 
 The system SHALL expose `POST /api/trips/{id}/invitation` under the trip
 caller-identity contract, with the caller derived from the authenticated session.
-It SHALL hold at most one invitation per trip, created by the organizer's first
-call with an opaque token and returned unchanged to later organizer calls. The
-response SHALL carry the token and the join path. A non-organizer SHALL be denied
-with no invitation created. A request without a valid session SHALL return 401
-`USER_REQUIRED` and create nothing.
+It SHALL hold at most one invitation per trip, created by a member's first call
+with an opaque token and returned unchanged to later member calls. The response
+SHALL carry the token and the join path. A non-member SHALL be denied without
+receiving a token or creating an invitation. A request without a valid session
+SHALL return 401 `USER_REQUIRED` and create nothing.
 
 #### Scenario: Organizer obtains an invitation
 
@@ -34,11 +34,18 @@ with no invitation created. A request without a valid session SHALL return 401
 
 #### Scenario: A member who is not the organizer is denied
 
+场景名称保留历史命名；非组织者成员现已获授权。
+
 - **WHEN** Ben, authenticated as a member but not the organizer, requests an
   invitation for the trip
-- **THEN** the response status is 403
-- **AND** the response body carries `code` equal to `NOT_ORGANIZER`
-- **AND** no invitation is created
+- **THEN** the response status is 200 with the existing token, or creates the only invitation if none exists
+- **AND** subsequent organizer and member requests return the same token
+
+#### Scenario: A non-member is denied
+
+- **WHEN** 已认证的非成员请求邀请
+- **THEN** 返回 403 且不返回令牌
+- **AND** 不创建邀请
 
 #### Scenario: Caller identity is missing or unknown
 
@@ -49,7 +56,7 @@ with no invitation created. A request without a valid session SHALL return 401
 
 #### Scenario: An unknown trip id is reported
 
-- **WHEN** the authenticated organizer requests an invitation for a trip id that
+- **WHEN** an authenticated caller requests an invitation for a trip id that
   does not exist
 - **THEN** the response status is 404
 - **AND** the response body carries `code` equal to `TRIP_NOT_FOUND`
@@ -181,10 +188,10 @@ SHALL remain identity-free.
 
 The trip detail page SHALL expose an invitation entry as a person-shaped icon
 in the top-right of its app bar, navigating to a dedicated full-screen
-invitation page at `#/trips/<id>/invitation` without the bottom dock. For the
-organizer, the page SHALL show the trip's invitation QR code and join link with
-a copy control, reusing the existing issuance contract, and a back control
-returning to the same trip's detail page. A non-organizer SHALL see a
+invitation page at `#/trips/<id>/invitation` without the bottom dock. Trip
+members SHALL see the trip's invitation QR code and join link with a copy
+control, reusing the existing issuance contract, and a back control returning
+to the same trip's detail page. A non-member SHALL see a
 permission or unavailable state without the invitation link or QR payload. No
 backend endpoint, expiry, revocation or share-channel behavior is added
 (deviation D-1: prototype extras are out of scope).
@@ -200,25 +207,33 @@ backend endpoint, expiry, revocation or share-channel behavior is added
 
 #### Scenario: Repeated entry shows the same invitation
 
-- **WHEN** the organizer leaves and re-enters the invitation page
+- **WHEN** a member leaves and re-enters the invitation page
 - **THEN** the same invitation token and link are shown
 - **AND** no additional invitation is created
 
 #### Scenario: Back returns to the same trip detail
 
-- **WHEN** the organizer activates the back control on the invitation page
+- **WHEN** a member activates the back control on the invitation page
 - **THEN** the route returns to the same trip's detail page
 - **AND** the detail page renders its ready state
 
 #### Scenario: Non-organizer sees a permission state without the link
 
-- **WHEN** Ben, a member but not the organizer, opens the invitation page
-- **THEN** the page shows a permission or unavailable state
-- **AND** no invitation link, token or QR payload is displayed
+场景名称保留历史命名；非组织者成员现已可分享邀请。
+
+- **WHEN** Ben 是成员但不是组织者，并打开邀请页或嵌入式邀请面板
+- **THEN** 可以使用邀请链接、二维码和复制控件
+- **AND** 令牌与组织者可用的令牌相同
+
+#### Scenario: Non-member sees a permission state without the link
+
+- **WHEN** 非成员打开邀请页
+- **THEN** 页面显示无权限或不可用状态
+- **AND** 不显示邀请链接、令牌或二维码内容
 
 #### Scenario: Copy control copies the join link
 
-- **WHEN** the organizer activates the copy control on the invitation page
+- **WHEN** a member activates the copy control on the invitation page
 - **THEN** the join link is copied to the clipboard
 - **AND** no server-side mutation beyond the existing issuance contract occurs
 
@@ -332,4 +347,3 @@ when no in-app history exists.
   `ui-design-reference` prototype or screenshots
 - **AND** an error state replaces the preview with a recoverable message, a
   retry action and the same invitation-link input
-

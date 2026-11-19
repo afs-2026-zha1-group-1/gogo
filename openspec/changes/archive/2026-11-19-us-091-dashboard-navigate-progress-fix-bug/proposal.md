@@ -37,5 +37,5 @@ None.
 React navigation, dashboard, invitation and main-plan views; Spring invitation
 and main-plan generation authorization; existing API and browser tests. No new endpoint, table or
 dependency is anticipated. One full-stack change; estimated size: small to
-medium. Source: [US-091 requirement](../../../requirement-workspace/requirements/us-091-dashboard-navigate-progress-fix-bug.md)
-and [impact brief](../../../requirement-workspace/analysis/us-091-impact-brief.md).
+medium. Source: [US-091 requirement](../../../../requirement-workspace/requirements/us-091-dashboard-navigate-progress-fix-bug.md)
+and [impact brief](../../../../requirement-workspace/analysis/us-091-impact-brief.md).

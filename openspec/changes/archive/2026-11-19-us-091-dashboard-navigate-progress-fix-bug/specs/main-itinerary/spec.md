@@ -122,3 +122,38 @@ preserved for later coordinate backfill. The 201 projection SHALL include
 - **WHEN** a member generates the main plan
 - **THEN** generation succeeds with null `lat` and `lng` for that stop
 - **AND** the provider-supplied address is preserved and no coordinate is fabricated
+
+### Requirement: Authorization and identity for main-plan operations
+
+主线方案生成、草稿查看和生成输入读取 SHALL 要求行程成员身份；确认和站点编辑
+SHALL 要求组织者身份。请求使用既有错误码：身份缺失或未知返回 401
+`USER_REQUIRED`，行程不存在返回 404 `TRIP_NOT_FOUND`，非成员返回 403
+`NOT_A_MEMBER`，非组织者成员确认或编辑站点返回 403 `NOT_ORGANIZER`。
+仅 `code` 字段是契约，消息文案不受约束。
+
+#### Scenario: G4/C5 — non-organizer member writes
+
+- **GIVEN** Ben 是行程成员但不是组织者
+- **WHEN** Ben 生成主线方案，且所有成员均已就绪、方案尚未确认
+- **THEN** 生成请求成功并创建草稿
+- **WHEN** Ben 确认主线方案或编辑草稿站点
+- **THEN** 请求返回 403 和 `NOT_ORGANIZER`
+- **AND** 确认状态和站点不变
+
+#### Scenario: Non-member access
+
+- **GIVEN** Eve 不是行程成员
+- **WHEN** Eve 生成、确认、编辑站点或读取主线方案
+- **THEN** 请求返回 403 和 `NOT_A_MEMBER`
+
+#### Scenario: Missing or unknown identity
+
+- **GIVEN** 目标行程存在
+- **WHEN** 主线方案请求没有有效认证身份或身份未知
+- **THEN** 请求返回 401 和 `USER_REQUIRED`
+
+#### Scenario: Unknown trip
+
+- **GIVEN** 调用者已认证
+- **WHEN** 主线方案请求的行程不存在
+- **THEN** 请求返回 404 和 `TRIP_NOT_FOUND`

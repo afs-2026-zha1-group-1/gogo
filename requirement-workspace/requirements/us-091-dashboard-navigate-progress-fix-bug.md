@@ -66,4 +66,4 @@ and changing the join deadline.
 current-trip contract; invitation issuance and acceptance share the existing
 per-trip token. The requester reported renewed IO and SA G1 approval for the
 expanded scope; the earlier approval did not cover it. See the
-[G1 decision](../../openspec/changes/us-091-dashboard-navigate-progress-fix-bug/g1-decision.md).
+[G1 decision](../../openspec/changes/archive/2026-11-19-us-091-dashboard-navigate-progress-fix-bug/g1-decision.md).

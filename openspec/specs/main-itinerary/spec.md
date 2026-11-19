@@ -7,12 +7,12 @@ closing joining so the group follows a single feasible plan.
 ## Requirements
 ### Requirement: Readiness-gated main plan generation
 
-系统必须只允许行程组织者通过 `POST /api/trips/{id}/main-plan` 生成主线方案草稿，
+系统必须允许任意行程成员通过 `POST /api/trips/{id}/main-plan` 生成主线方案草稿，
 且仅在每位行程成员都在已记录的偏好修订号上就绪时，返回 201 与草稿投影。生成必须
 使用已配置的方案提供者：配置了 API key 时使用外部 AI 模型服务，否则使用确定性夹具
 提供者。生成必须持久化一个新的草稿版本（有序站点、时间、车程、输入修订号、人均
 费用），不得自动确认；重新生成必须取代先前的当前草稿。一旦已有已确认版本，必须
-拒绝生成（G6）。
+拒绝生成（G6）。非成员必须被拒绝；确认仍仅由组织者执行。
 
 使用 AI 提供者时，生成必须把行程事实以及每位就绪成员的兴趣、必做项与硬预算作为
 数据处理，不得把成员提供的文本当作指令。AI 输出在入库前必须校验：至少 2 站、
@@ -43,10 +43,22 @@ US-079：生成落库时必须按站名+城市查 `place_cache` 补全每站地�
 - **AND** `stops` 按提供顺序列出四个夹具站点，包含 `seq`、`name`、`startTime`、`endTime` 与 `travelMinutesToNext` 30/30/15（末站为 null）
 - **AND** 行程未被标记为主线方案已确认
 
+#### Scenario: Member generates and regenerates a draft
+
+- **GIVEN** 所有成员均已就绪且主线方案尚未确认
+- **WHEN** 非组织者成员生成或重新生成主线方案
+- **THEN** 请求成功并创建新的当前草稿版本
+- **AND** 仅组织者可确认该方案
+
+#### Scenario: Non-member cannot generate
+
+- **WHEN** 已认证的非成员请求生成主线方案
+- **THEN** 请求被拒绝，且不创建草稿
+
 #### Scenario: G2 — pending member blocks generation (US-031 AC2)
 
 - **GIVEN** Daniel（id 4）未就绪
-- **WHEN** 组织者生成主线方案
+- **WHEN** 成员生成主线方案
 - **THEN** 请求被拒绝，返回 409 与错误码 `MEMBERS_NOT_READY`
 - **AND** `pendingMembers` 指出 Daniel（`userId` 4、`displayName` Daniel）需要响应
 - **AND** 不持久化任何草稿
@@ -54,14 +66,14 @@ US-079：生成落库时必须按站名+城市查 `place_cache` 补全每站地�
 #### Scenario: G5 — regeneration creates a new version
 
 - **GIVEN** 已存在当前草稿版本 1
-- **WHEN** 组织者再次生成主线方案
+- **WHEN** 成员再次生成主线方案
 - **THEN** 响应状态为 201，`version` 2 成为当前草稿
 - **AND** 版本 1 被取代，不再由草稿读取返回
 
 #### Scenario: G6 — generation after confirmation rejected
 
 - **GIVEN** 主线方案已在版本 1 确认
-- **WHEN** 组织者再次生成主线方案
+- **WHEN** 成员再次生成主线方案
 - **THEN** 请求被拒绝，返回 409 与错误码 `ALREADY_CONFIRMED`
 - **AND** 不持久化新草稿，已确认版本不变
   （用户 2026-11-15 产品评审明确接受；Emily IO 审批另行记录；重规划延后到 R2 —
@@ -70,14 +82,14 @@ US-079：生成落库时必须按站名+城市查 `place_cache` 补全每站地�
 #### Scenario: AI 提供者产出草稿
 
 - **GIVEN** 已配置 AI API key，且 AI 提供者返回一份站点都落在行程日内的合法行程
-- **WHEN** 组织者生成主线方案
+- **WHEN** 成员生成主线方案
 - **THEN** 响应状态为 201，持久化草稿携带 AI 提供的有序站点、车程与人均费用
 - **AND** `inputRevisions` 仍将每位成员与生成时记录的修订号配对
 
 #### Scenario: AI 失败时降级为最小两站行程
 
 - **GIVEN** 已配置 AI API key，行程出发地为 “City Hall MRT”、返程地为 “Merlion Park”，且 AI 调用超时、返回非 2xx 或输出校验失败
-- **WHEN** 组织者生成主线方案
+- **WHEN** 成员生成主线方案
 - **THEN** 响应状态为 201，草稿恰好包含两站：“City Hall MRT” 09:00–09:30、到下一站车程 30 分钟，“Merlion Park” 17:00–17:30、末站车程为 null
 - **AND** `costPerPersonCents` 为 0
 - **AND** 不返回 AI 专属错误码或状态码，且不会持久化任何解析到一半的 AI 输出
@@ -85,12 +97,12 @@ US-079：生成落库时必须按站名+城市查 `place_cache` 补全每站地�
 #### Scenario: 未填写地点时降级使用补全后的地点
 
 - **GIVEN** 已配置 AI API key，行程出发地与返程地为空，且 AI 调用失败
-- **WHEN** 组织者生成主线方案
+- **WHEN** 成员生成主线方案
 - **THEN** 先完成行程地点补全，两个降级站点使用补全后的出发地与返程地
 
 #### Scenario: 生成期间显示非阻塞的 AI 进度提示
 
-- **GIVEN** 组织者在输入页发起生成，或在方案页发起重新生成
+- **GIVEN** 成员在输入页发起生成，或在方案页发起重新生成
 - **WHEN** 生成请求仍在进行
 - **THEN** 页面内可见常驻提示“AI 正在生成中…”，触发操作保持禁用，页面其余内容仍可阅读与导航
 - **AND** 请求成功或失败后提示关闭，失败随后由现有行内操作错误展示
@@ -98,21 +110,21 @@ US-079：生成落库时必须按站名+城市查 `place_cache` 补全每站地�
 #### Scenario: AI 输出在入库前被校验
 
 - **GIVEN** AI 返回的站点存在 `seq` 不连续、时间不是合法 `HH:mm`、结束不晚于开始、车程非法或费用为负
-- **WHEN** 组织者生成主线方案
+- **WHEN** 成员生成主线方案
 - **THEN** 该输出被拒绝，改为持久化最小两站降级行程
 - **AND** 响应状态为 201
 
 #### Scenario: G7 — generation persists stop address and coordinates from the place cache
 
 - **GIVEN** the place cache holds the fixture stops' addresses and WGS-84 coordinates
-- **WHEN** the organizer generates the main plan
+- **WHEN** a member generates the main plan
 - **THEN** each persisted stop row carries `address`, `lat`, `lng` from the cache
 - **AND** the 201 body's `stops` carry the same three fields per stop
 
 #### Scenario: G8 — cache miss leaves coordinates null without blocking generation
 
 - **GIVEN** a supplied stop name is absent from the place cache
-- **WHEN** the organizer generates the main plan
+- **WHEN** a member generates the main plan
 - **THEN** generation succeeds and that stop's `lat`, `lng` are null
 - **AND** the provider-supplied `address` is preserved and no coordinate is fabricated
 
@@ -377,20 +389,20 @@ accepted by user 2026-11-15; Emily IO approval recorded, overall G1 Pass).
 
 ### Requirement: Authorization and identity for main-plan operations
 
-Main-plan generation, confirmation and stop editing SHALL require the trip
-organizer's identity; draft review and generation-inputs read SHALL require
-trip membership. Requests SHALL be rejected with the established error codes:
-missing or unknown identity 401 `USER_REQUIRED`, unknown trip 404
-`TRIP_NOT_FOUND`, non-member 403 `NOT_A_MEMBER`, non-organizer member on writes
-403 `NOT_ORGANIZER`. Only the `code` field is contractual; message wording is
-free.
+主线方案生成、草稿查看和生成输入读取 SHALL 要求行程成员身份；确认和站点编辑
+SHALL 要求组织者身份。请求使用既有错误码：身份缺失或未知返回 401
+`USER_REQUIRED`，行程不存在返回 404 `TRIP_NOT_FOUND`，非成员返回 403
+`NOT_A_MEMBER`，非组织者成员确认或编辑站点返回 403 `NOT_ORGANIZER`。
+仅 `code` 字段是契约，消息文案不受约束。
 
 #### Scenario: G4/C5 — non-organizer member writes
 
-- **GIVEN** Ben is a trip member but not the organizer
-- **WHEN** Ben (member, non-organizer, authenticated as Ben) generates or confirms the main plan, or edits a draft stop
-- **THEN** the request is rejected with 403 with code `NOT_ORGANIZER`
-- **AND** no draft, stop or confirmation state changes
+- **GIVEN** Ben 是行程成员但不是组织者
+- **WHEN** Ben 生成主线方案，且所有成员均已就绪、方案尚未确认
+- **THEN** 生成请求成功并创建草稿
+- **WHEN** Ben 确认主线方案或编辑草稿站点
+- **THEN** 请求返回 403 和 `NOT_ORGANIZER`
+- **AND** 确认状态和站点不变
 
 #### Scenario: Non-member access
 
