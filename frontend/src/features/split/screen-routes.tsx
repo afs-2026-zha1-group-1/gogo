@@ -627,55 +627,65 @@ function EditableRouteCard({
   const overrun = total != null && windowMinutes != null ? Math.max(0, total - windowMinutes) : null
   const inputClass =
     "w-full rounded-control border border-line bg-surface px-2 py-1.5 text-[12px] text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft disabled:bg-surface-3 disabled:text-ink-3"
-  const numberClass =
-    "w-14 shrink-0 rounded-control border border-line bg-surface px-2 py-1 text-[12px] text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft disabled:bg-surface-3 disabled:text-ink-3"
-  const costClass = cn(numberClass, "w-16")
+  // 固定列宽让「停留」「人均」两列上下对齐，行不再散开；操作区也预留同样宽度，展示态与编辑态不会错位。
+  const rowGrid = "grid grid-cols-[minmax(0,1fr)_52px_64px_60px] items-center gap-2"
+  const editGrid = rowGrid
+  const cellInput =
+    "h-8 w-full rounded-[7px] border border-line bg-surface px-1.5 text-center text-[11.5px] tabular-nums text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft disabled:bg-surface-3 disabled:text-ink-3"
+  const stayPill = "justify-self-center rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-ink-2"
+  const legPill = "justify-self-center text-[11px] tabular-nums text-ink-3"
+  const iconButton =
+    "grid size-7 shrink-0 place-items-center justify-self-end rounded-[8px] text-ink-3 transition-colors hover:bg-surface-3 hover:text-ink [&_svg]:size-3.5"
   const renderLeg = (legIndex: number) => {
     const minutes = form.travelLegsMinutes[legIndex]
     if (minutes === undefined) return null
     const key = legKey(legIndex)
     if (editingRow !== key) {
       return (
-        <div key={key} className="flex items-center justify-between gap-2 px-1 py-1">
-          <span className="text-[12px] text-ink-2">路程</span>
-          <div className="flex items-center gap-2">
-            <span className="text-[12px] tabular-nums text-ink-2">{displayMinutes(minutes)}</span>
-            {editable ? (
-              <button
-                type="button"
-                aria-label={`${form.groupLabel} 组 编辑路程 ${legIndex + 1}`}
-                onClick={() => setEditingRow(key)}
-                className="grid size-7 place-items-center rounded-[8px] text-ink-3 transition-colors hover:bg-surface-3 hover:text-ink [&_svg]:size-3.5"
-              >
-                <IconEdit />
-              </button>
-            ) : null}
-          </div>
+        <div key={key} className={cn(rowGrid, "px-1 py-1")}>
+          <span className="flex items-center gap-1 text-[11.5px] italic text-ink-3">
+            <IconNav className="size-3" /> 路程
+          </span>
+          <span className={legPill}>{displayMinutes(minutes)}</span>
+          <span />
+          {editable ? (
+            <button
+              type="button"
+              aria-label={`${form.groupLabel} 组 编辑路程 ${legIndex + 1}`}
+              onClick={() => setEditingRow(key)}
+              className={iconButton}
+            >
+              <IconEdit />
+            </button>
+          ) : <span />}
         </div>
       )
     }
     return (
-      <div key={key} className="flex items-center justify-between gap-2 rounded-[9px] bg-surface-3/70 px-2 py-1.5">
-        <span className="text-[12px] text-ink-2">路程</span>
-        <div className="flex items-center gap-1.5">
-          <input
-            aria-label={`${form.groupLabel} 组 路程 ${legIndex + 1}`}
-            type="number"
-            min={0}
-            className={numberClass}
-            value={minutes}
-            disabled={!editable}
-            onChange={(event) => onLegChange(legIndex, event.target.value)}
-          />
+      <div key={key} className={cn(editGrid, "rounded-[9px] bg-surface-3/70 p-1.5")}>
+        <span className="flex items-center gap-1 text-[11.5px] italic text-ink-3">
+          <IconNav className="size-3" /> 路程
+        </span>
+        <input
+          aria-label={`${form.groupLabel} 组 路程 ${legIndex + 1}`}
+          type="number"
+          min={0}
+          className={cellInput}
+          value={minutes}
+          disabled={!editable}
+          onChange={(event) => onLegChange(legIndex, event.target.value)}
+        />
+        <span />
+        <span className="flex justify-end">
           <button
             type="button"
             aria-label={`${form.groupLabel} 组 完成编辑路程 ${legIndex + 1}`}
             onClick={() => setEditingRow(null)}
-            className="grid size-7 place-items-center rounded-[8px] bg-white text-ink-2 shadow-sm transition-colors hover:text-ink [&_svg]:size-3.5"
+            className="grid size-7 shrink-0 place-items-center rounded-[8px] bg-white text-ink-2 shadow-sm transition-colors hover:text-ink [&_svg]:size-3.5"
           >
             <IconCheck />
           </button>
-        </div>
+        </span>
       </div>
     )
   }
@@ -692,21 +702,16 @@ function EditableRouteCard({
             <IconNav className="size-3" /> {departureName} → {reunionName}
           </div>
         </div>
-        {overrun != null ? (
-          <span
-            className={cn(
-              "shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-bold",
-              overrun > 0 ? "bg-white text-[#b91c1c]" : "bg-white/20 text-white",
-            )}
-          >
-            {overrun > 0 ? `超窗 ${overrun} 分` : `合计 ${total} 分`}
+        {overrun != null && overrun > 0 ? (
+          <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[10.5px] font-bold text-[#b91c1c]">
+            超窗 {overrun} 分
           </span>
         ) : null}
       </div>
 
       <div className="flex flex-col gap-2.5 px-4 py-3">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[10px] font-semibold text-ink-3">站点（站名、停留与人均费用可改）</span>
+          <span className="text-[10px] font-semibold text-ink-3">停留与人均费用按站点填写</span>
           <Button
             size="sm"
             variant="outline"
@@ -720,7 +725,14 @@ function EditableRouteCard({
           </Button>
         </div>
 
-        <div className="flex flex-col gap-1.5">
+        <div className={cn(rowGrid, "px-1 text-[10px] font-semibold text-ink-3")}>
+          <span>活动</span>
+          <span className="justify-self-center">停留</span>
+          <span className="justify-self-end">人均</span>
+          <span />
+        </div>
+
+        <div className="flex flex-col gap-1">
           {cardRowOrder(form.steps.length, form.travelLegsMinutes.length).map((row) => {
             if (row.kind === "origin") {
               return originName ? (
@@ -736,7 +748,7 @@ function EditableRouteCard({
             return (
               <Fragment key={key}>
                 {editingRow === key ? (
-                  <div className="flex items-center gap-2 rounded-[9px] bg-surface-3/70 p-1.5">
+                  <div className={cn(editGrid, "rounded-[9px] bg-surface-3/70 p-1.5")}>
                     <input
                       aria-label={`${form.groupLabel} 组 第 ${index + 1} 站名称`}
                       className={cn(inputClass, "h-8 py-1", !step.name.trim() && "bg-brand-soft/50 placeholder:text-ink-3")}
@@ -750,7 +762,7 @@ function EditableRouteCard({
                       aria-label={`${form.groupLabel} 组 第 ${index + 1} 站停留分钟`}
                       type="number"
                       min={0}
-                      className={cn(numberClass, "h-8 py-1")}
+                      className={cellInput}
                       value={step.minutes}
                       disabled={!editable}
                       onChange={(event) => onStepMinutesChange(index, event.target.value)}
@@ -760,41 +772,50 @@ function EditableRouteCard({
                       type="number"
                       min={0}
                       step="0.01"
-                      placeholder="人均费用"
-                      className={cn(costClass, "h-8 py-1")}
+                      placeholder="人均"
+                      className={cellInput}
                       value={step.cost}
                       disabled={!editable || !canEditCosts}
                       onChange={(event) => onStepCostChange(index, event.target.value)}
                     />
-                    <button
-                      type="button"
-                      aria-label={`${form.groupLabel} 组 完成编辑第 ${index + 1} 站`}
-                      onClick={() => setEditingRow(null)}
-                      className="grid size-7 shrink-0 place-items-center rounded-[8px] bg-white text-ink-2 shadow-sm transition-colors hover:text-ink [&_svg]:size-3.5"
-                    >
-                      <IconCheck />
-                    </button>
-                    {form.steps.length > 1 ? (
+                    <span className="flex justify-end gap-1">
                       <button
                         type="button"
-                        aria-label={`${form.groupLabel} 组 删除第 ${index + 1} 站`}
-                        onClick={() => {
-                          onRemoveStep(index)
-                          setEditingRow(null)
-                        }}
-                        className="grid size-7 shrink-0 place-items-center rounded-[8px] text-ink-3 transition-colors hover:bg-white hover:text-ink [&_svg]:size-3.5"
+                        aria-label={`${form.groupLabel} 组 完成编辑第 ${index + 1} 站`}
+                        onClick={() => setEditingRow(null)}
+                        className="grid size-7 shrink-0 place-items-center rounded-[8px] bg-white text-ink-2 shadow-sm transition-colors hover:text-ink [&_svg]:size-3.5"
                       >
-                        <IconX />
+                        <IconCheck />
                       </button>
-                    ) : null}
+                      {form.steps.length > 1 ? (
+                        <button
+                          type="button"
+                          aria-label={`${form.groupLabel} 组 删除第 ${index + 1} 站`}
+                          onClick={() => {
+                            onRemoveStep(index)
+                            setEditingRow(null)
+                          }}
+                          className="grid size-7 shrink-0 place-items-center rounded-[8px] text-ink-3 transition-colors hover:bg-white hover:text-ink [&_svg]:size-3.5"
+                        >
+                          <IconX />
+                        </button>
+                      ) : null}
+                    </span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 rounded-[9px] px-1 py-1">
-                    <span className="min-w-0 flex-1 truncate text-[12px] text-ink">
+                  <div className={cn(rowGrid, "rounded-[9px] px-1 py-1.5")}>
+                    <span className="min-w-0 truncate text-[12.5px] text-ink">
                       {cleanStationName(step.name) || "未命名站点"}
                     </span>
-                    <span className="text-[12px] tabular-nums text-ink-2">{displayMinutes(step.minutes)}</span>
-                    <span className="w-16 shrink-0 text-right text-[12px] tabular-nums font-semibold text-ink">
+                    <span className={stayPill}>{displayMinutes(step.minutes)}</span>
+                    <span
+                      className={cn(
+                        "justify-self-end text-[12px] tabular-nums",
+                        step.cost.trim() === "" || parseCostCents(step.cost) === 0
+                          ? "font-medium text-ink-3"
+                          : "font-bold text-ink",
+                      )}
+                    >
                       {step.cost.trim() === "" ? "—" : formatCost(parseCostCents(step.cost), destination)}
                     </span>
                     {editable ? (
@@ -802,11 +823,11 @@ function EditableRouteCard({
                         type="button"
                         aria-label={`${form.groupLabel} 组 编辑第 ${index + 1} 站`}
                         onClick={() => setEditingRow(key)}
-                        className="grid size-7 place-items-center rounded-[8px] text-ink-3 transition-colors hover:bg-surface-3 hover:text-ink [&_svg]:size-3.5"
+                        className={iconButton}
                       >
                         <IconEdit />
                       </button>
-                    ) : null}
+                    ) : <span />}
                   </div>
                 )}
               </Fragment>
@@ -815,48 +836,102 @@ function EditableRouteCard({
         </div>
 
         {form.extras.length > 0 ? (
-          <div className="flex flex-col gap-1.5 border-t border-line-2 pt-2">
-            <span className="text-[10px] font-semibold text-ink-3">其他费用（不占时间）</span>
-            {form.extras.map((extra, extraIndex) => (
-              <div
-                key={`${form.groupLabel}-extra-${extraIndex}`}
-                className="flex items-center gap-2 rounded-[9px] px-1 py-1"
-              >
-                <span className="min-w-0 flex-1 truncate text-[12px] text-ink">
-                  {cleanStationName(extra.name) || "未命名活动"}
-                </span>
-                <input
-                  aria-label={`${form.groupLabel} 组 其他费用 ${extraIndex + 1} 人均费用`}
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  className={cn(costClass, "h-8 py-1")}
-                  value={extra.cost}
-                  disabled={!editable || !canEditCosts}
-                  onChange={(event) => onExtraCostChange(extraIndex, event.target.value)}
-                />
-                {canEditCosts ? (
-                  <button
-                    type="button"
-                    aria-label={`${form.groupLabel} 组 删除其他费用 ${extraIndex + 1}`}
-                    onClick={() => onRemoveExtra(extraIndex)}
-                    className="grid size-7 shrink-0 place-items-center rounded-[8px] text-ink-3 transition-colors hover:bg-white hover:text-ink [&_svg]:size-3.5"
+          <div className="flex flex-col gap-1 border-t border-line-2 pt-2">
+            <span className="px-1 text-[10px] font-semibold text-ink-3">其他费用（不占时间）</span>
+            {form.extras.map((extra, extraIndex) => {
+              const key = `${form.groupLabel}-extra-${extraIndex}`
+              if (editingRow === key) {
+                return (
+                  <div key={key} className={cn(editGrid, "rounded-[9px] bg-surface-3/70 p-1.5")}>
+                    <span className="min-w-0 truncate text-[12px] text-ink">
+                      {cleanStationName(extra.name) || "未命名活动"}
+                    </span>
+                    <span />
+                    <input
+                      aria-label={`${form.groupLabel} 组 其他费用 ${extraIndex + 1} 人均费用`}
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      placeholder="人均"
+                      className={cellInput}
+                      value={extra.cost}
+                      disabled={!canEditCosts}
+                      onChange={(event) => onExtraCostChange(extraIndex, event.target.value)}
+                    />
+                    <span className="flex justify-end gap-1">
+                      <button
+                        type="button"
+                        aria-label={`${form.groupLabel} 组 完成编辑其他费用 ${extraIndex + 1}`}
+                        onClick={() => setEditingRow(null)}
+                        className="grid size-7 shrink-0 place-items-center rounded-[8px] bg-white text-ink-2 shadow-sm transition-colors hover:text-ink [&_svg]:size-3.5"
+                      >
+                        <IconCheck />
+                      </button>
+                      {canEditCosts ? (
+                        <button
+                          type="button"
+                          aria-label={`${form.groupLabel} 组 删除其他费用 ${extraIndex + 1}`}
+                          onClick={() => {
+                            onRemoveExtra(extraIndex)
+                            setEditingRow(null)
+                          }}
+                          className="grid size-7 shrink-0 place-items-center rounded-[8px] text-ink-3 transition-colors hover:bg-white hover:text-ink [&_svg]:size-3.5"
+                        >
+                          <IconX />
+                        </button>
+                      ) : null}
+                    </span>
+                  </div>
+                )
+              }
+              return (
+                <div key={key} className={cn(rowGrid, "rounded-[9px] px-1 py-1")}>
+                  <span className="min-w-0 truncate text-[12px] text-ink">
+                    {cleanStationName(extra.name) || "未命名活动"}
+                  </span>
+                  <span className={legPill}>—</span>
+                  <span
+                    className={cn(
+                      "justify-self-end text-[12px] tabular-nums",
+                      parseCostCents(extra.cost) === 0 ? "font-medium text-ink-3" : "font-bold text-ink",
+                    )}
                   >
-                    <IconX />
-                  </button>
-                ) : null}
-              </div>
-            ))}
+                    {formatCost(parseCostCents(extra.cost), destination)}
+                  </span>
+                  {canEditCosts ? (
+                    <button
+                      type="button"
+                      aria-label={`${form.groupLabel} 组 编辑其他费用 ${extraIndex + 1}`}
+                      onClick={() => setEditingRow(key)}
+                      className={iconButton}
+                    >
+                      <IconEdit />
+                    </button>
+                  ) : <span />}
+                </div>
+              )
+            })}
           </div>
         ) : null}
 
-        <div className="flex items-center justify-between gap-2 border-t border-line-2 pt-2 text-[12px]">
-          <span className="font-bold text-ink">合计 {total != null ? `${total} 分` : "—"}</span>
-          <span className="flex items-center gap-2 text-ink-3">
-            <span className="rounded-full bg-brand-soft px-2 py-0.5 font-semibold text-brand-ink">
-              人均 {formatCost(costTotal, destination)}
+        <div className="mt-0.5 flex items-end justify-between gap-2 border-t border-line-2 pt-2.5">
+          <div className="flex items-baseline gap-0">
+            <span className="mr-1.5 text-[11px] font-semibold text-ink-3">合计{" "}</span>
+            <span className="text-[17px] font-extrabold leading-none tabular-nums text-ink">
+              {total ?? "—"}
             </span>
-            {windowMinutes != null ? `窗口 ${windowMinutes} 分` : "窗口未知"}
+            <span className="ml-1 text-[11px] font-semibold text-ink-3">{" "}分</span>
+            <span className="ml-1.5 text-[11px] text-ink-3">
+              {" "}/ 窗口 {windowMinutes != null ? `${windowMinutes} 分` : "未知"}
+            </span>
+          </div>
+          <span
+            className={cn(
+              "shrink-0 rounded-full px-2.5 py-1 text-[11.5px] font-bold tabular-nums",
+              costTotal > 0 ? "bg-brand-soft text-brand-ink" : "bg-surface-2 text-ink-3",
+            )}
+          >
+            人均 {formatCost(costTotal, destination)}
           </span>
         </div>
         {!editable ? (
