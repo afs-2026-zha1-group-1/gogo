@@ -64,10 +64,11 @@ class FakeMainPlanProviderTest {
     @Test
     void zhuhaiDestinationReturnsTheFixedTwoDayPlan() {
         MainPlanResult result = planFor("珠海", "2026-11-21", "2026-11-22");
-        assertEquals(4, result.stops().size());
-        assertEquals(List.of("日月贝（珠海大剧院）", "爱情邮局", "情侣路", "圆明新园"),
+        assertEquals(8, result.stops().size());
+        assertEquals(List.of("日月贝（珠海大剧院）", "午餐", "回酒店午休", "爱情邮局",
+                        "情侣路", "午餐", "回酒店午休", "圆明新园"),
                 result.stops().stream().map(MainPlanResult.PlannedStop::name).toList());
-        assertEquals(List.of(1, 1, 2, 2),
+        assertEquals(List.of(1, 1, 1, 1, 2, 2, 2, 2),
                 result.stops().stream().map(MainPlanResult.PlannedStop::dayIndex).toList());
         assertEquals(0, result.costPerPersonCents());
     }
@@ -75,10 +76,11 @@ class FakeMainPlanProviderTest {
     @Test
     void hongKongDestinationReturnsTheFixedTwoDayPlan() {
         MainPlanResult result = planFor("香港", "2026-11-21", "2026-11-22");
-        assertEquals(4, result.stops().size());
-        assertEquals(List.of("维多利亚港", "太平山顶", "旺角", "尖沙咀"),
+        assertEquals(8, result.stops().size());
+        assertEquals(List.of("维多利亚港", "午餐", "回酒店午休", "太平山顶",
+                        "旺角", "午餐", "回酒店午休", "尖沙咀"),
                 result.stops().stream().map(MainPlanResult.PlannedStop::name).toList());
-        assertEquals(List.of(1, 1, 2, 2),
+        assertEquals(List.of(1, 1, 1, 1, 2, 2, 2, 2),
                 result.stops().stream().map(MainPlanResult.PlannedStop::dayIndex).toList());
         assertEquals(0, result.costPerPersonCents());
     }
@@ -86,8 +88,8 @@ class FakeMainPlanProviderTest {
     @Test
     void mockDestinationsAreCappedAtTwoDays() {
         MainPlanResult result = planFor("珠海", "2026-11-21", "2026-11-25");
-        assertEquals(4, result.stops().size());
-        assertEquals(2, result.stops().get(3).dayIndex());
+        assertEquals(8, result.stops().size());
+        assertEquals(2, result.stops().get(7).dayIndex());
     }
 
     @Test

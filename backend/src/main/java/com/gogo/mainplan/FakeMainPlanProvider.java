@@ -29,26 +29,42 @@ public class FakeMainPlanProvider implements MainPlanProvider {
     // The remaining two places are added to group B by FixtureBranchCandidateProvider.
     private static final List<List<MainPlanResult.PlannedStop>> ZHUHAI_DAYS = List.of(
             List.of(
-                    new MainPlanResult.PlannedStop(1, "日月贝（珠海大剧院）", "09:00", "10:30", 30,
+                    new MainPlanResult.PlannedStop(1, "日月贝（珠海大剧院）", "09:00", "10:30", 20,
                             List.of("photo", "culture"), null, "珠海", 0),
-                    new MainPlanResult.PlannedStop(2, "爱情邮局", "14:00", "16:00", null,
+                    new MainPlanResult.PlannedStop(2, "午餐", "10:50", "11:50", 15,
+                            List.of("food"), null, "珠海", 0),
+                    new MainPlanResult.PlannedStop(3, "回酒店午休", "12:05", "13:45", 30,
+                            List.of("slow"), null, "珠海", 0),
+                    new MainPlanResult.PlannedStop(4, "爱情邮局", "14:15", "16:00", null,
                             List.of("photo", "slow"), null, "珠海", 0)),
             List.of(
-                    new MainPlanResult.PlannedStop(1, "情侣路", "09:00", "11:00", 30,
+                    new MainPlanResult.PlannedStop(1, "情侣路", "09:00", "11:00", 20,
                             List.of("slow", "nature"), null, "珠海", 0),
-                    new MainPlanResult.PlannedStop(2, "圆明新园", "14:00", "16:30", null,
+                    new MainPlanResult.PlannedStop(2, "午餐", "11:20", "12:20", 15,
+                            List.of("food"), null, "珠海", 0),
+                    new MainPlanResult.PlannedStop(3, "回酒店午休", "12:35", "14:15", 30,
+                            List.of("slow"), null, "珠海", 0),
+                    new MainPlanResult.PlannedStop(4, "圆明新园", "14:45", "16:30", null,
                             List.of("culture", "heritage"), null, "珠海", 0)));
 
     private static final List<List<MainPlanResult.PlannedStop>> HONG_KONG_DAYS = List.of(
             List.of(
                     new MainPlanResult.PlannedStop(1, "维多利亚港", "09:00", "10:30", 20,
                             List.of("photo", "slow"), null, "香港", 0),
-                    new MainPlanResult.PlannedStop(2, "太平山顶", "14:00", "16:00", null,
+                    new MainPlanResult.PlannedStop(2, "午餐", "10:50", "11:50", 15,
+                            List.of("food"), null, "香港", 0),
+                    new MainPlanResult.PlannedStop(3, "回酒店午休", "12:05", "13:45", 30,
+                            List.of("slow"), null, "香港", 0),
+                    new MainPlanResult.PlannedStop(4, "太平山顶", "14:15", "16:00", null,
                             List.of("nature", "photo"), null, "香港", 0)),
             List.of(
                     new MainPlanResult.PlannedStop(1, "旺角", "09:00", "11:00", 20,
                             List.of("food", "craft"), null, "香港", 0),
-                    new MainPlanResult.PlannedStop(2, "尖沙咀", "14:00", "16:30", null,
+                    new MainPlanResult.PlannedStop(2, "午餐", "11:20", "12:20", 15,
+                            List.of("food"), null, "香港", 0),
+                    new MainPlanResult.PlannedStop(3, "回酒店午休", "12:35", "14:15", 30,
+                            List.of("slow"), null, "香港", 0),
+                    new MainPlanResult.PlannedStop(4, "尖沙咀", "14:45", "16:30", null,
                             List.of("food", "photo"), null, "香港", 0)));
 
     private static final List<MainPlanResult.PlannedStop> LONDON = List.of(
