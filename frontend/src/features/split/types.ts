@@ -60,6 +60,8 @@ export interface PlanStop {
   endAt: string | null
   /** US-045 per-person cost of the shared stop in cents (0 = free). */
   costCents?: number
+  /** Saved display location from the main plan (US-090/US-092); null/absent = not recorded. */
+  locationName?: string | null
 }
 
 /** Per-group duration breakdown (backend SplitDraftDocument.RouteDurations); nullable estimates. */

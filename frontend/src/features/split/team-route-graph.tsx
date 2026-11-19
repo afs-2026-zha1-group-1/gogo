@@ -11,7 +11,8 @@ import {
  * shared main line in the middle and Route A on the right. Main labels alternate sides; branch
  * labels stay outside their lane. Travel rows are connectors, not nodes: they render as a small
  * minutes tag on the lane line (so a split can start with two lines instead of a 路程 dot). Rows are
- * clickable when an `onNodeClick` handler is supplied; the sheet content itself lives in the screen.
+ * clickable when an `onNodeClick` handler is supplied; the screen derives the sheet content from the
+ * same split snapshot (US-092).
  */
 
 const WIDTH = 320
@@ -73,9 +74,12 @@ function spanBranchBounds(rows: GraphRow[], span: RoundSpan) {
 export function TeamRouteGraph({
   model,
   onNodeClick,
+  selectedId,
 }: {
   model: GraphModel
   onNodeClick?: (row: GraphRow) => void
+  /** US-092: row whose detail sheet is open, marked in place without leaving the graph. */
+  selectedId?: string
 }) {
   const { rows, routeLabels } = model
   const spans = spansFor(model)
@@ -223,6 +227,7 @@ export function TeamRouteGraph({
           const titleWeight = isJunction ? 750 : isBranch ? 620 : 650
           const title = truncateLabel(row.title, isBranch ? 9 : isJunction ? 10 : 11)
           const meta = truncateLabel(row.meta, isBranch ? 14 : isJoinFork ? 18 : 16)
+          const selected = row.id === selectedId
           return (
             <g
               key={row.id}
@@ -240,9 +245,22 @@ export function TeamRouteGraph({
               role={onNodeClick ? "button" : undefined}
               tabIndex={onNodeClick ? 0 : undefined}
               aria-label={`${row.meta} ${row.title}`}
+              aria-current={selected ? "true" : undefined}
               className={onNodeClick ? "cursor-pointer outline-none" : undefined}
             >
               <title>{`${row.meta} · ${row.title}`}</title>
+              {selected ? (
+                <rect
+                  x={2}
+                  y={cy - 26}
+                  width={316}
+                  height={52}
+                  rx={10}
+                  fill="#f0fdfa"
+                  stroke="#5eead4"
+                  strokeWidth={1.5}
+                />
+              ) : null}
               {onNodeClick ? (
                 <rect
                   x={2}
