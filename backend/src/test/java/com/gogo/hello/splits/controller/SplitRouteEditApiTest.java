@@ -147,10 +147,19 @@ class SplitRouteEditApiTest extends AbstractSplitApiTest {
     }
 
     @Test
-    @DisplayName("saveRoutes_terminalDraft_returns409NotActive")
-    void saveRoutes_terminalDraft_returns409NotActive() throws Exception {
+    @DisplayName("saveRoutes_confirmedDraft_stillSavesSoTimelineEditsLand")
+    void saveRoutes_confirmedDraft_stillSavesSoTimelineEditsLand() throws Exception {
         int version = prepareConfirmableDraftAs("Alice");
         setDraftStatus("confirmed");
+        putRoutes(memberId("Alice"), version, editedRoutes(20, 30, "海湾"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("saveRoutes_cancelledDraft_returns409NotActive")
+    void saveRoutes_cancelledDraft_returns409NotActive() throws Exception {
+        int version = prepareConfirmableDraftAs("Alice");
+        setDraftStatus("cancelled");
         putRoutes(memberId("Alice"), version, editedRoutes(20, 30, "海湾"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("SPLIT_DRAFT_NOT_ACTIVE"));

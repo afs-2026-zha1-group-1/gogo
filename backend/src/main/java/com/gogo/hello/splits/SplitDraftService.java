@@ -596,7 +596,7 @@ public class SplitDraftService {
     public RouteGenerationResponse saveRoutes(String tripId, int roundIndex, String memberId,
             SaveRoutesRequest request) {
         guard.requireMember(memberId, tripId);
-        SplitDraftDocument draft = requireActiveDraft(tripId, roundIndex);
+        SplitDraftDocument draft = requireRouteEditableDraft(tripId, roundIndex);
         if (request == null || request.routes() == null || request.routes().size() != 2) {
             throw new ApiException(ErrorCode.INVALID_ROUTE_PAIR, "exactly two group routes are required");
         }
@@ -976,6 +976,18 @@ public class SplitDraftService {
         SplitDraftDocument draft = currentDraft(tripId, roundIndex);
         if (draft == null || !"active".equals(draft.status())) {
             throw new ApiException(ErrorCode.SPLIT_DRAFT_NOT_ACTIVE, "no active split draft");
+        }
+        return draft;
+    }
+
+    /**
+     * Route edits are also allowed on a confirmed round: the trip timeline lets a member adjust a group node after
+     * the split was confirmed, and the route pair/graph must follow that edit. Only cancelled rounds stay locked.
+     */
+    private SplitDraftDocument requireRouteEditableDraft(String tripId, int roundIndex) {
+        SplitDraftDocument draft = currentDraft(tripId, roundIndex);
+        if (draft == null || (!"active".equals(draft.status()) && !"confirmed".equals(draft.status()))) {
+            throw new ApiException(ErrorCode.SPLIT_DRAFT_NOT_ACTIVE, "no editable split draft");
         }
         return draft;
     }

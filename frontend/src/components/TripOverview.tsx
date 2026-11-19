@@ -4,7 +4,8 @@ import CountdownCard from './CountdownCard'
 import MyPlanTimeline from './MyPlanTimeline'
 import { Button } from './ui/button'
 import { Dialog } from './ui/dialog'
-import { api } from '../api'
+import { api, errorMessage } from '../api'
+import { fetchDraftDetail, saveRoutes, SplitApiError } from '../features/split/api'
 import { cleanStationName } from '../features/split/station-name'
 import { useCountdown } from '../hooks/useCountdown'
 import { localEndOfDay, localMidnight, type ScheduleItem } from '../lib/countdown'
@@ -58,6 +59,13 @@ export default function TripOverview({ state }: { state: ReadyState }) {
   const [saveError, setSaveError] = useState<string | null>(null)
   const nameRef = useRef<HTMLInputElement>(null)
 
+  const [splitEditing, setSplitEditing] = useState<ScheduleItem['splitStep'] | null>(null)
+  const [splitName, setSplitName] = useState('')
+  const [splitMinutes, setSplitMinutes] = useState('')
+  const [splitError, setSplitError] = useState<string | null>(null)
+  const [splitSaving, setSplitSaving] = useState(false)
+  const splitNameRef = useRef<HTMLInputElement>(null)
+
   const [adding, setAdding] = useState(false)
   const [newName, setNewName] = useState('')
   const [newStart, setNewStart] = useState('09:00')
@@ -66,8 +74,15 @@ export default function TripOverview({ state }: { state: ReadyState }) {
   const [mutateError, setMutateError] = useState<string | null>(null)
   const addNameRef = useRef<HTMLInputElement>(null)
 
-  // US-090: only main-plan stops carry a stopId, so a confirmed personal route stays read-only.
+  // US-090: main-plan stops edit through the stop endpoint; split nodes edit their round's route step.
   function openEdit(item: ScheduleItem) {
+    if (item.splitStep != null) {
+      setSplitEditing(item.splitStep)
+      setSplitName(item.name)
+      setSplitMinutes(String(item.splitStep.minutes))
+      setSplitError(null)
+      return
+    }
     if (item.stopId == null || state.plan == null) return
     const stop = state.plan.stops.find((candidate) => candidate.id === item.stopId)
     if (!stop) return
@@ -78,6 +93,46 @@ export default function TripOverview({ state }: { state: ReadyState }) {
     setEnd(stop.endTime)
     setNote(stop.note ?? '')
     setSaveError(null)
+  }
+
+  /** A split node edit rewrites that round's route pair, so the timeline and the route graph both follow. */
+  async function saveSplitNode() {
+    if (splitEditing == null) return
+    const minutes = Number(splitMinutes)
+    if (splitName.trim() === '' || !Number.isFinite(minutes) || minutes < 0) {
+      setSplitError('请填写节点名称与不小于 0 的停留分钟。')
+      return
+    }
+    setSplitSaving(true)
+    setSplitError(null)
+    const tripId = String(state.trip.id)
+    try {
+      const detail = await fetchDraftDetail(tripId, splitEditing.roundIndex)
+      if (detail == null) {
+        setSplitError('该轮分队草稿不存在或已取消。')
+        return
+      }
+      const routes = detail.routes.map((route) => ({
+        groupLabel: route.groupLabel as 'A' | 'B',
+        steps: (route.steps ?? []).map((step, index) =>
+          route.groupLabel === splitEditing.groupLabel && index === splitEditing.stepIndex
+            ? { name: splitName.trim(), minutes }
+            : { name: step.name, minutes: step.minutes },
+        ),
+        travelLegsMinutes: route.travelLegsMinutes,
+      }))
+      await saveRoutes(tripId, splitEditing.roundIndex, { draftVersion: detail.draftVersion, routes })
+      setSplitEditing(null)
+      state.reload()
+    } catch (cause) {
+      setSplitError(
+        cause instanceof SplitApiError
+          ? `${cause.code}: ${cause.message}`
+          : `保存失败：${errorMessage(cause) ?? '请稍后再试'}`,
+      )
+    } finally {
+      setSplitSaving(false)
+    }
   }
 
   async function saveStop() {
@@ -301,6 +356,56 @@ export default function TripOverview({ state }: { state: ReadyState }) {
             />
           </label>
           {saveError && <p role="alert" className="text-[11.5px] text-[#b91c1c]">{saveError}</p>}
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={splitEditing != null}
+        title="编辑分队节点"
+        onClose={() => setSplitEditing(null)}
+        initialFocus={splitNameRef}
+        footer={
+          <div className="flex gap-2">
+            <Button variant="outline" className="flex-1" disabled={splitSaving} onClick={() => setSplitEditing(null)}>
+              取消
+            </Button>
+            <Button
+              className="flex-1"
+              disabled={splitSaving || splitName.trim() === '' || splitMinutes === ''}
+              onClick={saveSplitNode}
+            >
+              {splitSaving ? '保存中…' : '保存'}
+            </Button>
+          </div>
+        }
+      >
+        <div className="flex flex-col gap-2.5">
+          <p className="text-[11.5px] text-ink-3">
+            当前为分队节点：第 {splitEditing?.roundIndex} 轮 · {splitEditing?.groupLabel} 组；保存后会更新这一轮的路线与路线图。
+          </p>
+          <label className="flex flex-col gap-1 text-[11.5px] text-ink-2">
+            名称
+            <input
+              ref={splitNameRef}
+              type="text"
+              value={splitName}
+              placeholder="节点名称"
+              onChange={(event) => setSplitName(event.target.value)}
+              className="rounded-control border border-line bg-surface px-2 py-1.5 text-[13px] text-ink"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-[11.5px] text-ink-2">
+            停留分钟
+            <input
+              type="number"
+              min={0}
+              value={splitMinutes}
+              placeholder="停留分钟"
+              onChange={(event) => setSplitMinutes(event.target.value)}
+              className="rounded-control border border-line bg-surface px-2 py-1.5 text-[13px] text-ink"
+            />
+          </label>
+          {splitError && <p role="alert" className="text-[11.5px] text-[#b91c1c]">{splitError}</p>}
         </div>
       </Dialog>
 
