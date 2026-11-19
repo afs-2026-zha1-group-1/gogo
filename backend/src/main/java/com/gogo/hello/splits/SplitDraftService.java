@@ -113,12 +113,20 @@ public class SplitDraftService {
         if (roundIndex > MAX_ROUNDS) {
             throw new ApiException(ErrorCode.SPLIT_ROUND_LIMIT_REACHED, "only two split rounds are supported");
         }
+        SplitDraftDocument existing = currentDraft(tripId, roundIndex);
+        if (roundIndex == 1) {
+            // Round 1 has no predecessor: a cancelled first round is rebuilt in place instead of requiring a "previous"
+            // confirmation that can never exist (users hit a dead "发起分队" button before this guard).
+            if (existing == null || "cancelled".equals(existing.status())) {
+                startRound(tripId, memberId, 1);
+                return new SplitRoundCreatedResponse(1, getDraftDetail(tripId, 1, memberId));
+            }
+        }
         SplitDraftDocument previous = currentDraft(tripId, roundIndex - 1);
         if (previous == null || !"confirmed".equals(previous.status())) {
             throw new ApiException(ErrorCode.SPLIT_PREVIOUS_ROUND_NOT_CONFIRMED,
                     "the previous round must be confirmed first");
         }
-        SplitDraftDocument existing = currentDraft(tripId, roundIndex);
         if (existing != null && !"cancelled".equals(existing.status())) {
             throw new ApiException(ErrorCode.SPLIT_DRAFT_CONFLICT, "that split round already exists");
         }
@@ -803,9 +811,12 @@ public class SplitDraftService {
         if (roundIndex > MAX_ROUNDS) {
             return new StartGate(false, "ROUND_LIMIT_REACHED");
         }
-        SplitDraftDocument previous = currentDraft(tripId, roundIndex - 1);
-        if (previous == null || !"confirmed".equals(previous.status())) {
-            return new StartGate(false, "PREVIOUS_ROUND_NOT_CONFIRMED");
+        // Round 1 has no previous round to confirm; a cancelled round 1 can be started again right away.
+        if (roundIndex > 1) {
+            SplitDraftDocument previous = currentDraft(tripId, roundIndex - 1);
+            if (previous == null || !"confirmed".equals(previous.status())) {
+                return new StartGate(false, "PREVIOUS_ROUND_NOT_CONFIRMED");
+            }
         }
         SplitDraftDocument existing = currentDraft(tripId, roundIndex);
         if (existing != null && !"cancelled".equals(existing.status())) {

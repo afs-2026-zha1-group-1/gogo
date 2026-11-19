@@ -82,6 +82,9 @@ export function ScreenStart() {
     : null
 
   const pending = startDraft.isPending || startNext.isPending
+  // No round to resume or view, and the server gate refuses a new one: the action would be a silent no-op.
+  const noActionTarget = !activeRound && !confirmedRound && gate != null && !gate.canStartNextRound
+  const actionDisabled = blocked || pending || noActionTarget
   const actionLabel = tooFewMembers
     ? "成员不足"
     : !hasConfirmedMainPlan
@@ -136,7 +139,7 @@ export function ScreenStart() {
           <Button
             size="sm"
             onClick={handleAction}
-            disabled={blocked || pending}
+            disabled={actionDisabled}
             className="shrink-0"
           >
             {pending ? "处理中…" : actionLabel}
@@ -165,7 +168,9 @@ export function ScreenStart() {
                     ? "先确认主线方案"
                     : gate?.nextRoundBlockedReason === "ROUND_LIMIT_REACHED"
                       ? "已达到 2 轮上限"
-                      : `点击右上角${activeRound ? "继续" : confirmedRound ? "查看" : "进入"}分队`}
+                      : gate?.nextRoundBlockedReason === "PREVIOUS_ROUND_NOT_CONFIRMED"
+                        ? "需先确认上一轮才能再次分队"
+                        : `点击右上角${activeRound ? "继续" : confirmedRound ? "查看" : "进入"}分队`}
               </span>
             </div>
 
