@@ -71,6 +71,13 @@ export default function AccountPage() {
     }
   }
 
+  function cancelEdit() {
+    setEditing(false)
+    setName(account?.name ?? '')
+    setSaveError('')
+    setSaved(false)
+  }
+
   return (
     <div className="screen account-page">
       <header className="account-top">
@@ -83,26 +90,67 @@ export default function AccountPage() {
       <div className="account-body">
         <div className="account-profile">
           <div className="account-avatar" aria-hidden="true">{initial}</div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div className="account-name">{displayName}</div>
-              {!editing && (
-                <button
-                  className="iconbtn"
-                  type="button"
-                  aria-label="编辑名字"
-                  onClick={() => {
-                    setName(account?.name ?? '')
-                    setSaveError('')
-                    setSaved(false)
-                    setEditing(true)
-                  }}
-                >
-                  <Icon name="edit" className="sm" />
-                </button>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div className="account-name-row">
+              {editing ? (
+                <form className="account-name-editor" onSubmit={save}>
+                  <input
+                    id="account-name"
+                    className={`account-name-input${saveError ? ' invalid' : ''}`}
+                    value={name}
+                    maxLength={NAME_MAX}
+                    autoComplete="nickname"
+                    aria-label="名字"
+                    autoFocus
+                    onChange={(event) => {
+                      setName(event.target.value)
+                      setSaved(false)
+                      setSaveError('')
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Escape') cancelEdit()
+                    }}
+                  />
+                  <button
+                    className="iconbtn account-name-action"
+                    type="submit"
+                    aria-label="保存名字"
+                    disabled={saving}
+                  >
+                    <Icon name={saving ? 'clock' : 'check'} className="sm" />
+                  </button>
+                  <button
+                    className="iconbtn"
+                    type="button"
+                    aria-label="取消编辑名字"
+                    disabled={saving}
+                    onClick={cancelEdit}
+                  >
+                    <Icon name="x" className="sm" />
+                  </button>
+                </form>
+              ) : (
+                <>
+                  <div className="account-name">{displayName}</div>
+                  <button
+                    className="iconbtn"
+                    type="button"
+                    aria-label="编辑名字"
+                    onClick={() => {
+                      setName(account?.name ?? '')
+                      setSaveError('')
+                      setSaved(false)
+                      setEditing(true)
+                    }}
+                  >
+                    <Icon name="edit" className="sm" />
+                  </button>
+                </>
               )}
             </div>
             <div className="account-email">{account?.email ?? ''}</div>
+            {saveError && <p role="alert" className="error account-name-error">{saveError}</p>}
+            {saved && !editing && <p role="status" className="hint account-name-status">已保存。</p>}
           </div>
         </div>
 
@@ -123,46 +171,6 @@ export default function AccountPage() {
           </span>
           <Icon name="arrow" className="sm" />
         </a>
-
-        {editing && (
-          <form onSubmit={save}>
-            <label className="label" htmlFor="account-name">名字</label>
-            <input
-              id="account-name"
-              className={`input${saveError ? ' invalid' : ''}`}
-              value={name}
-              maxLength={NAME_MAX}
-              autoComplete="nickname"
-              onChange={(event) => {
-                setName(event.target.value)
-                setSaved(false)
-                setSaveError('')
-              }}
-            />
-            {saveError && <p role="alert" className="error">{saveError}</p>}
-            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              <button className="btn btn-primary" type="submit" disabled={saving}>
-                <Icon name="check" className="sm" />
-                {saving ? '正在保存…' : '保存'}
-              </button>
-              <button
-                className="btn btn-ghost"
-                type="button"
-                disabled={saving}
-                onClick={() => {
-                  setEditing(false)
-                  setName(account?.name ?? '')
-                  setSaveError('')
-                  setSaved(false)
-                }}
-              >
-                取消
-              </button>
-            </div>
-          </form>
-        )}
-
-        {saved && !editing && <p role="status" className="hint">已保存。</p>}
 
         {logoutError && <p role="alert" className="error">{logoutError}</p>}
         <button className="btn account-logout" type="button" onClick={signOut} disabled={loggingOut}>

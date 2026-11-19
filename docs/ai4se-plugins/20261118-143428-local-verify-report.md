@@ -44,7 +44,7 @@ Playwright 驱动真实浏览器，种子账号 Alice（组织者）/ Ben（成�
 
 | # | 场景 | 结果 | 证据 |
 |---|---|---|---|
-| B1 | 我的页名字按钮化 | Pass | `#/account` 初始 `#account-name` 数量 0、`.account-profile button.iconbtn` 数量 1；点击后输入框出现且预填 `Alice`；保存 `Alice G2` 后输入框收起、头部更新；已改回 `Alice` |
+| B1 | 我的页名字原位编辑 | Pass | `#/account` 初始 `#account-name` 数量 0、`.account-profile button.iconbtn` 数量 1；点击后名字原位变为输入框并预填 `Alice`；保存 `Alice G2` 后恢复文本、头部更新并显示「已保存」；已改回 `Alice` |
 | B2 | 行程编辑入口与预填 | Pass | `#/trips/1` 存在 `a[href="#/trips/1/edit"]`；编辑页六字段 = Singapore Friends Day / Singapore / 2026-12-05 / 2026-12-05 / City Hall MRT / Merlion Park |
 | B3 | 规划变更保存前弹窗 | Pass | 改目的地 → 提交后 `.dialog[role=dialog]` 出现、hash 仍为 `#/trips/1/edit`、输入保留；点取消后弹窗关闭且未发 PUT |
 | B4 | stop 编辑（组织者、未确认） | Pass | 4 个 stop 均有编辑入口；`City Hall G2` 09:00–09:30 保存成功，表单收起，GET 返回新值 |
