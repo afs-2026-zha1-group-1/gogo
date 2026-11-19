@@ -3,6 +3,7 @@ import { api, errorMessage } from '../api'
 import Icon from '../Icons'
 import { persistCurrentTrip } from '../lib/current-trip'
 import { queueNotice } from '../lib/notice'
+import { CITIES, cityForDestination, type CityOption } from './city-options'
 import type { Trip, TripCreatePayload } from '../types'
 
 interface CreateTripProps {
@@ -23,6 +24,7 @@ export default function CreateTrip({ backHref }: CreateTripProps) {
   const [busy, setBusy] = useState<boolean>(false)
   const [error, setError] = useState<string>('')
   const [dateError, setDateError] = useState<boolean>(false)
+  const selectedCity = cityForDestination(form.destination)
 
   const set = (field: keyof TripCreatePayload) => (event: ChangeEvent<HTMLInputElement>) => {
     const next = { ...form, [field]: event.target.value }
@@ -32,6 +34,35 @@ export default function CreateTrip({ backHref }: CreateTripProps) {
     } else {
       setDateError(false)
     }
+  }
+
+  /**
+   * Choosing a city writes the real `destination` value (which drives the hero photo) and
+   * pre-fills the optional start/end landmarks, unless the member already typed their own.
+   */
+  function pickCity(city: CityOption) {
+    setError('')
+    setForm((current) => {
+      const sameCity = current.destination === city.destination
+      return {
+        ...current,
+        destination: sameCity ? '' : city.destination,
+        startLocation: sameCity
+          ? ''
+          : current.startLocation.trim() === '' || isCityDefault(current.startLocation)
+            ? city.defaultStart
+            : current.startLocation,
+        endLocation: sameCity
+          ? ''
+          : current.endLocation.trim() === '' || isCityDefault(current.endLocation)
+            ? city.defaultEnd
+            : current.endLocation,
+      }
+    })
+  }
+
+  function isCityDefault(value: string): boolean {
+    return CITIES.some((city) => city.defaultStart === value || city.defaultEnd === value)
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -59,16 +90,73 @@ export default function CreateTrip({ backHref }: CreateTripProps) {
   }
 
   return (
-    <div className="screen">
-      <header className="appbar">
+    <div className="screen create-page">
+      <header className="appbar create-appbar">
         <a className="iconbtn" href={backHref} aria-label="Back"><Icon name="left" /></a>
         <div className="grow">
           <div className="title">创建行程</div>
-          <div className="sub">US-001 · 建立一个共享空间</div>
+          <div className="sub">建立一个共享空间</div>
         </div>
       </header>
       <form className="screen" onSubmit={submit}>
         <div className="body">
+          <section
+            className={`create-hero${selectedCity ? ' has-photo' : ''}`}
+            style={selectedCity
+              ? { ['--create-photo' as string]: selectedCity.photo }
+              : undefined}
+          >
+            <div className="create-hero-shade" aria-hidden="true" />
+            <div className="create-hero-top">
+              <span className="create-kicker">
+                <Icon name="sparkle" className="sm" /> NEW JOURNEY
+              </span>
+            </div>
+            <div className="create-hero-copy">
+              <h1>发起一趟<br />新旅行。</h1>
+              <p>选个目的地，邀请朋友，一起商量怎么玩。</p>
+            </div>
+          </section>
+
+          <div className="dest-picker">
+            <div className="dest-picker-head">
+              <span className="dest-picker-title">想去哪里？</span>
+            </div>
+            <div className="dest-chips" role="radiogroup" aria-label="选择目的地城市">
+              {CITIES.map((city) => {
+                const active = form.destination === city.destination
+                return (
+                  <button
+                    key={city.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    className={`dest-chip${active ? ' on' : ''}`}
+                    onClick={() => pickCity(city)}
+                  >
+                    {city.label}
+                  </button>
+                )
+              })}
+              <span className={`dest-chip dest-chip-other${form.destination.trim() !== '' && !selectedCity ? ' on' : ''}`}>
+                其他城市
+                <Icon name="right" className="sm" />
+              </span>
+            </div>
+
+            <div className="inp-ic create-dest-input">
+              <Icon name="pin" />
+              <input
+                id="trip-destination"
+                className="input"
+                value={form.destination}
+                onChange={set('destination')}
+                placeholder="也可以直接输入城市 / 景区"
+                aria-label="目的地"
+              />
+            </div>
+          </div>
+
           <div className="field">
             <label className="label" htmlFor="trip-name">
               <Icon name="edit" className="sm" /> 行程名称
@@ -80,22 +168,6 @@ export default function CreateTrip({ backHref }: CreateTripProps) {
               onChange={set('name')}
               placeholder="给这次旅行起个名字"
             />
-          </div>
-
-          <div className="field">
-            <label className="label" htmlFor="trip-destination">
-              <Icon name="pin" className="sm" /> 目的地
-            </label>
-            <div className="inp-ic">
-              <Icon name="pin" />
-              <input
-                id="trip-destination"
-                className="input"
-                value={form.destination}
-                onChange={set('destination')}
-                placeholder="城市 / 景区"
-              />
-            </div>
           </div>
 
           <div className="two">
@@ -168,9 +240,13 @@ export default function CreateTrip({ backHref }: CreateTripProps) {
           {error && <p role="alert" className="error">{error}</p>}
         </div>
         <div className="actionbar">
-          <button className="btn btn-primary" type="submit" disabled={busy || dateError}>
+          <button
+            className="btn btn-primary create-submit"
+            type="submit"
+            disabled={busy || dateError || form.destination.trim() === ''}
+          >
             <Icon name="plus" className="sm" />
-            {busy ? '创建中…' : '创建行程'}
+            {busy ? '创建中…' : '发起一趟新旅行'}
           </button>
         </div>
       </form>

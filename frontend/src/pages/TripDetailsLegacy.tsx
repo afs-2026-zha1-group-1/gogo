@@ -56,7 +56,7 @@ export default function TripDetailsLegacy({ tripId }: TripDetailsProps) {
       <a className="iconbtn" href="#/" aria-label="Back"><Icon name="left" /></a>
       <div className="grow">
         <div className="title">行程详情</div>
-        <div className="sub">US-002 · 全员可见</div>
+        <div className="sub">全员可见</div>
       </div>
       {state.kind === 'ready' && (
         <a className="iconbtn" href={`#/trips/${state.trip.id}/invitation`} aria-label="邀请朋友">

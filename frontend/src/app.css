@@ -35,6 +35,9 @@
   --photo-meadow: url("/images/trip-meadow.webp");
   --photo-river: url("/images/trip-river.webp");
   --photo-architecture: url("/images/trip-architecture.webp");
+  /* Real destination photos: one per simulated city, so the hero matches the trip data. */
+  --photo-zhuhai: url("/images/trip-zhuhai.jpg");
+  --photo-hongkong: url("/images/trip-hongkong.jpg");
 }
 
 /* Global reset placed in the base cascade layer so Tailwind utilities (utilities layer)
@@ -1223,6 +1226,208 @@ body {
 
 .reg-alt a:hover {
   text-decoration: underline;
+}
+
+/* ---------- Create trip: photo hero that reacts to the chosen city ---------- */
+.create-page {
+  background: #f6f8f3;
+}
+
+.create-appbar {
+  background: #fafbf7;
+}
+
+.create-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 214px;
+  margin-bottom: 4px;
+  padding: 18px 19px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  border-radius: var(--r-xl);
+  color: #fff;
+  background: #245b46;
+  box-shadow: 0 14px 30px rgb(29 87 65 / 0.18);
+  transition: background-image 0.35s ease;
+}
+
+.create-hero.has-photo {
+  background-image: var(--create-photo);
+  background-size: cover;
+  background-position: center;
+}
+
+.create-hero-shade {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(180deg, rgb(10 32 21 / 0.4), transparent 38%, rgb(9 30 20 / 0.74)),
+    radial-gradient(120% 70% at 84% 14%, rgb(255 255 255 / 0.12), transparent 60%);
+}
+
+.create-hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.create-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 10px;
+  border: 1px solid rgb(255 255 255 / 0.42);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.2);
+  backdrop-filter: blur(12px);
+  font-size: 8.5px;
+  font-weight: 790;
+  letter-spacing: 0.14em;
+}
+
+.create-kicker .icon {
+  width: 11px;
+  height: 11px;
+}
+
+.create-hero-copy h1 {
+  margin: 0 0 7px;
+  font-size: 26px;
+  line-height: 1.24;
+  font-weight: 810;
+  letter-spacing: -0.9px;
+  text-shadow: 0 2px 12px rgb(8 28 18 / 0.34);
+}
+
+.create-hero-copy p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.6;
+  color: rgb(240 249 238 / 0.92);
+}
+
+.create-city-hint {
+  margin: -4px 2px 11px;
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+/* Destination chips: one small pill per city, matching the reference ("想去哪里？").
+   Only珠海 / 香港 are real simulated cities; "其他城市" is a hint, not a fake button. */
+.dest-picker {
+  margin-bottom: 15px;
+}
+
+.dest-picker-head {
+  margin: 0 2px 10px;
+}
+
+.dest-picker-title {
+  font-size: 13px;
+  font-weight: 780;
+  color: #243e30;
+  letter-spacing: -0.01em;
+}
+
+.dest-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.dest-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 9px 16px;
+  border: 1px solid #dbe7d8;
+  border-radius: 999px;
+  background: #fff;
+  color: #3f6650;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: transform 0.18s, background 0.18s, border-color 0.18s, color 0.18s;
+}
+
+.dest-chip:hover {
+  background: #f0f6ed;
+  border-color: #b5d2b8;
+  transform: translateY(-1px);
+}
+
+.dest-chip.on {
+  background: #245b46;
+  border-color: #245b46;
+  color: #fff;
+  box-shadow: 0 6px 14px rgb(36 91 70 / 0.18);
+}
+
+.dest-chip .icon {
+  width: 11px;
+  height: 11px;
+}
+
+.dest-chip-other {
+  color: #8ba295;
+  cursor: default;
+}
+
+.dest-chip-other:hover {
+  background: #fff;
+  border-color: #dbe7d8;
+  transform: none;
+}
+
+.dest-chip-other.on {
+  background: #f0f6ed;
+  border-color: #b5d2b8;
+  color: #3f6650;
+  box-shadow: none;
+}
+
+/* The free-text destination stays available under the chips for any other city. */
+.create-dest-input .input {
+  min-height: 44px;
+  border-radius: 13px;
+  background: #fbfcfa;
+  font-size: 12.5px;
+}
+
+.create-dest-input .icon {
+  color: #9db2a2;
+}
+
+.create-field {
+  margin-bottom: 15px;
+}
+
+/* Primary CTA mirrors the register page interaction: lift, deeper shadow, arrow-free. */
+.create-submit {
+  min-height: 50px;
+  border-radius: 15px;
+  font-size: 13px;
+  font-weight: 780;
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.create-submit:hover:not(:disabled),
+.create-submit:focus-visible:not(:disabled) {
+  background: #1c4d3a;
+  border-color: #1c4d3a;
+  box-shadow: 0 16px 30px rgb(36 91 70 / 0.28);
+  transform: translateY(-2px);
+}
+
+.create-submit:active:not(:disabled) {
+  transform: translateY(0) scale(0.99);
 }
 
 /* Trip state chips under the hero: main-plan state, split state and my group.

@@ -72,7 +72,7 @@ export default function UserPreferencesPage() {
         </a>
         <div className="grow">
           <div className="title">偏好设置</div>
-          <div className="sub">我的默认兴趣 · US-019</div>
+          <div className="sub">我的默认兴趣</div>
         </div>
         {!query.isError && <span className={!busy && !dirty ? 'pill ok' : 'pill'}>{statusLabel}</span>}
       </div>

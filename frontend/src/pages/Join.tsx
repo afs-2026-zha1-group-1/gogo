@@ -25,7 +25,7 @@ function Screen({ children }: { children: ReactNode }) {
         <div className="logo"><Icon name="branch" /></div>
         <div className="grow">
           <div className="title">你被邀请加入行程</div>
-          <div className="sub">US-010 · 接受邀请前仅显示公开信息</div>
+          <div className="sub">接受邀请前仅显示公开信息</div>
         </div>
       </header>
       <div className="body">{children}</div>
@@ -141,7 +141,7 @@ export default function Join({ token }: JoinProps) {
         <header className="appbar">
           <div className="grow">
             <div className="title">邀请无法使用</div>
-            <div className="sub">US-012 · 不泄露任何行程隐私</div>
+            <div className="sub">不泄露任何行程隐私</div>
           </div>
         </header>
         <div className="body">
