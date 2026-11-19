@@ -1,5 +1,6 @@
 package com.gogo.mainplan;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -69,16 +70,26 @@ public class FakeMainPlanProvider implements MainPlanProvider {
     @Override
     public MainPlanResult plan(TripContext trip, List<MemberInput> inputs) {
         String destination = trip.destination() == null ? "" : trip.destination().trim();
-        if (isHongKong(destination)) {
-            return new MainPlanResult(HONG_KONG, MainPlanResult.totalCost(HONG_KONG));
+        List<MainPlanResult.PlannedStop> day = isHongKong(destination) ? HONG_KONG
+                : isLondon(destination) ? LONDON
+                : isHefei(destination) ? HEFEI
+                : SINGAPORE;
+        List<MainPlanResult.PlannedStop> stops = repeatForDays(day, trip.dayCount());
+        return new MainPlanResult(stops, MainPlanResult.totalCost(stops));
+    }
+
+    /** The no-key fixture covers every trip day; each day reuses the city's stop list. */
+    private static List<MainPlanResult.PlannedStop> repeatForDays(List<MainPlanResult.PlannedStop> day, int days) {
+        List<MainPlanResult.PlannedStop> stops = new ArrayList<>();
+        int seq = 1;
+        for (int dayIndex = 1; dayIndex <= days; dayIndex++) {
+            for (MainPlanResult.PlannedStop stop : day) {
+                stops.add(new MainPlanResult.PlannedStop(seq++, stop.name(), stop.startTime(), stop.endTime(),
+                        stop.travelMinutesToNext(), stop.interests(), stop.address(), stop.city(),
+                        stop.costCents(), dayIndex));
+            }
         }
-        if (isLondon(destination)) {
-            return new MainPlanResult(LONDON, MainPlanResult.totalCost(LONDON));
-        }
-        if (isHefei(destination)) {
-            return new MainPlanResult(HEFEI, MainPlanResult.totalCost(HEFEI));
-        }
-        return new MainPlanResult(SINGAPORE, MainPlanResult.totalCost(SINGAPORE));
+        return stops;
     }
 
     private static boolean isHongKong(String destination) {

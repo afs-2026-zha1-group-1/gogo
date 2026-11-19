@@ -14,8 +14,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 class AiPlanValidator {
 
     private static final Pattern HH_MM = Pattern.compile("^([01]\\d|2[0-3]):([0-5]\\d)$");
+    private static final int MIN_STOPS_PER_DAY = 2;
+    private static final int MAX_STOPS_PER_DAY = 10;
+    private static final int MAX_TRIP_DAYS = 14;
 
+    /** Single-day contract kept for existing callers and fixtures. */
     MainPlanResult validate(String content, ObjectMapper objectMapper) {
+        return validate(content, objectMapper, 1);
+    }
+
+    MainPlanResult validate(String content, ObjectMapper objectMapper, int expectedDays) {
+        int days = Math.max(1, expectedDays);
+        if (days > MAX_TRIP_DAYS) {
+            throw invalid("the trip spans more than " + MAX_TRIP_DAYS + " days");
+        }
         JsonNode root = read(objectMapper, content);
         if (!root.isObject()) {
             throw invalid("The plan root must be a JSON object");
@@ -25,9 +37,11 @@ class AiPlanValidator {
             throw invalid("costPerPersonCents must be a nonnegative integer");
         }
         JsonNode stopsNode = root.path("stops");
-        if (!stopsNode.isArray() || stopsNode.size() < 2) {
+        if (!stopsNode.isArray() || stopsNode.size() < MIN_STOPS_PER_DAY) {
             throw invalid("stops must contain at least two entries");
         }
+        int[] stopsPerDay = new int[days + 1];
+        int previousDay = 0;
         List<MainPlanResult.PlannedStop> stops = new ArrayList<>();
         for (int i = 0; i < stopsNode.size(); i++) {
             JsonNode stop = stopsNode.get(i);
@@ -35,18 +49,25 @@ class AiPlanValidator {
             if (seq != i + 1) {
                 throw invalid("seq must start at 1 and be contiguous");
             }
+            int dayIndex = dayIndex(stop, days, previousDay);
+            previousDay = dayIndex;
+            stopsPerDay[dayIndex] += 1;
+            if (stopsPerDay[dayIndex] > MAX_STOPS_PER_DAY) {
+                throw invalid("every day allows at most " + MAX_STOPS_PER_DAY + " stops");
+            }
             String name = text(stop, "name");
             int start = minutes(text(stop, "startTime"));
             int end = minutes(text(stop, "endTime"));
             if (end <= start) {
                 throw invalid("every stop must end after it starts");
             }
-            boolean last = i == stopsNode.size() - 1;
+            boolean lastOfDay = i == stopsNode.size() - 1
+                    || nextDayIndex(stopsNode, i + 1, days) != dayIndex;
             Integer leg = null;
-            if (last) {
+            if (lastOfDay) {
                 JsonNode legNode = stop.path("travelMinutesToNext");
                 if (!legNode.isMissingNode() && !legNode.isNull()) {
-                    throw invalid("the last stop must have a null travel leg");
+                    throw invalid("the last stop of each day must have a null travel leg");
                 }
             } else {
                 leg = integer(stop, "travelMinutesToNext");
@@ -55,9 +76,42 @@ class AiPlanValidator {
                 }
             }
             stops.add(new MainPlanResult.PlannedStop(seq, name, text(stop, "startTime"),
-                    text(stop, "endTime"), leg, interests(stop), address(stop), optText(stop, "city"), 0));
+                    text(stop, "endTime"), leg, interests(stop), address(stop), optText(stop, "city"), 0,
+                    dayIndex));
+        }
+        for (int day = 1; day <= days; day++) {
+            if (stopsPerDay[day] < MIN_STOPS_PER_DAY) {
+                throw invalid("every trip day needs at least " + MIN_STOPS_PER_DAY + " stops");
+            }
         }
         return new MainPlanResult(stops, costNode.asInt());
+    }
+
+    /**
+     * dayIndex is optional for a one-day trip (legacy outputs default to 1), but mandatory and
+     * gap-free for a multi-day trip.
+     */
+    private static int dayIndex(JsonNode stop, int expectedDays, int previousDay) {
+        JsonNode value = stop.path("dayIndex");
+        if (expectedDays <= 1 && (value.isMissingNode() || value.isNull())) {
+            return 1;
+        }
+        int day = integer(stop, "dayIndex");
+        if (day < 1 || day > expectedDays) {
+            throw invalid("dayIndex must be between 1 and " + expectedDays);
+        }
+        if (day < previousDay) {
+            throw invalid("stops must be ordered by dayIndex");
+        }
+        return day;
+    }
+
+    private static int nextDayIndex(JsonNode stops, int position, int expectedDays) {
+        JsonNode value = stops.get(position).path("dayIndex");
+        if (value.isIntegralNumber()) {
+            return value.asInt();
+        }
+        return expectedDays > 1 ? Integer.MIN_VALUE : 1;
     }
 
     private static JsonNode read(ObjectMapper objectMapper, String content) {

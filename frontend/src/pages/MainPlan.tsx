@@ -6,6 +6,7 @@ import ConfirmDialog from '../components/ui/confirm-dialog'
 import StopMapButton from '../components/StopMapButton'
 import { AiGeneratingNotice } from '../components/AiGeneratingNotice'
 import { completeStopLocations } from '../lib/stop-locations'
+import { dayLabel, groupByDay } from '../lib/day-groups'
 import type {
   BudgetOverrun,
   MainPlan,
@@ -311,6 +312,7 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
     lat: stop.lat ?? null,
     lon: stop.lng ?? null,
   })
+  const dayGroups = groupByDay(plan.stops, (stop) => stop.dayIndex ?? 1)
 
   return (
     <div className="screen">
@@ -345,9 +347,11 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
           </section>
         )}
 
-        <div className="sec-title"><Icon name="clock" className="sm" /> Day 1 · {trip.startDate}</div>
-        <div className="timeline">
-          {plan.stops.map((stop, index) => (
+        {dayGroups.map((group) => (
+          <section className="day-group" key={group.dayIndex}>
+            <div className="sec-title day-tag"><Icon name="clock" className="sm" /> {dayLabel(trip.startDate, group.dayIndex)}</div>
+            <div className="timeline">
+              {group.items.map((stop, index) => (
             <div className="tl-item" key={stop.seq}>
               <div className="tl-rail">
                 <div className="tl-node" />
@@ -369,7 +373,7 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
                 <StopMapButton
                   item={mapStop(stop)}
                   destination={trip.destination}
-                  from={index > 0 ? mapStop(plan.stops[index - 1]) : null}
+                  from={index > 0 ? mapStop(group.items[index - 1]) : null}
                   showCopy={false}
                 />
                 {isOrganizer && !plan.confirmed && (
@@ -420,8 +424,10 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
                 )}
               </div>
             </div>
-          ))}
-        </div>
+              ))}
+            </div>
+          </section>
+        ))}
 
         <section className="card pad" style={{ marginTop: 12 }}>
           <div className="valid-item" style={{ borderBottom: 0 }}>

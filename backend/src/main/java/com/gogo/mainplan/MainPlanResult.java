@@ -20,7 +20,15 @@ public record MainPlanResult(List<PlannedStop> stops, int costPerPersonCents) {
             List<String> interests,
             String address,
             String city,
-            int costCents) {
+            int costCents,
+            int dayIndex) {
+
+        /** Single-day convenience for fixtures and legacy providers. */
+        public PlannedStop(int seq, String name, String startTime, String endTime,
+                Integer travelMinutesToNext, List<String> interests, String address, String city,
+                int costCents) {
+            this(seq, name, startTime, endTime, travelMinutesToNext, interests, address, city, costCents, 1);
+        }
     }
 
     /** Sum of the fixture stop costs; providers build the total from their stops. */

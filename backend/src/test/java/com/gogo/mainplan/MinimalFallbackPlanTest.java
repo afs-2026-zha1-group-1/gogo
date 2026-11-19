@@ -39,5 +39,8 @@ class MinimalFallbackPlanTest {
 
         assertEquals("大英博物馆", result.stops().get(0).name());
         assertEquals("伦敦眼", result.stops().get(1).name());
+        assertEquals(14, result.stops().size());
+        assertEquals(7, result.stops().get(12).dayIndex());
+        assertEquals("大英博物馆", result.stops().get(12).name());
     }
 }

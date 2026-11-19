@@ -8,9 +8,18 @@
  * embedded map modal; the address + navigation live on the countdown card's
  * next-stop row, not on the timeline; map failures never blank the trip.
  */
+import { useState } from 'react'
 import Icon from '../Icons'
 import StopMapButton from './StopMapButton'
 import { formatClock, type ScheduleItem } from '../lib/countdown'
+import {
+  dayIndexOfInstant,
+  dayLabel,
+  defaultDayIndex,
+  groupByDay,
+  shortDayLabel,
+  weekdayLabel,
+} from '../lib/day-groups'
 import { stopIcon } from '../lib/stop-icon'
 
 interface MyPlanTimelineProps {
@@ -29,13 +38,8 @@ interface MyPlanTimelineProps {
   destination: string
 }
 
-const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
-
-function dayLabel(startDate: string): string {
-  const [year, month, day] = startDate.split('-').map(Number)
-  const date = new Date(year, month - 1, day)
-  return `DAY 1 · ${month}月${day}日（周${WEEKDAYS[date.getDay()]}）`
-}
+/** Above this many days the tab row would crowd the title, so it collapses into a date select. */
+const PAGER_TAB_LIMIT = 6
 
 function timeLabel(item: ScheduleItem): string {
   if (item.start == null || item.end == null) return '时间待确认'
@@ -53,9 +57,60 @@ export default function MyPlanTimeline({
   busy = false,
   destination,
 }: MyPlanTimelineProps) {
+  const [selectedDay, setSelectedDay] = useState<number | null>(null)
+  const groups = groupByDay(schedule, (item) => item.dayIndex ?? dayIndexOfInstant(item.start, startDate))
+  const todayDay = dayIndexOfInstant(Date.now(), startDate)
+  const defaultDay = defaultDayIndex(groups.map((group) => group.dayIndex), todayDay)
+  const activeDay = selectedDay != null && groups.some((group) => group.dayIndex === selectedDay)
+    ? selectedDay
+    : defaultDay
+  const activeGroup = groups.find((group) => group.dayIndex === activeDay) ?? groups[0]
+  const showPager = groups.length > 1
+  const showTabs = groups.length <= PAGER_TAB_LIMIT
+
   return (
     <>
-      <div className="sec-title"><Icon name="list" className="sm" /> 我的方案</div>
+      <div className="plan-head">
+        <div className="sec-title"><Icon name="list" className="sm" /> 我的方案</div>
+        {showPager && (showTabs ? (
+          <div className="day-pager" role="tablist" aria-label="按天切换行程">
+            {groups.map((group) => (
+              <button
+                key={group.dayIndex}
+                type="button"
+                role="tab"
+                id={`day-tab-${group.dayIndex}`}
+                className="day-tab"
+                title={dayLabel(startDate, group.dayIndex)}
+                aria-label={dayLabel(startDate, group.dayIndex)}
+                aria-selected={group.dayIndex === activeGroup?.dayIndex}
+                aria-controls={group.dayIndex === activeGroup?.dayIndex
+                  ? `day-panel-${group.dayIndex}`
+                  : undefined}
+                onClick={() => setSelectedDay(group.dayIndex)}
+              >
+                {shortDayLabel(startDate, group.dayIndex)}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="day-select">
+            <select
+              value={activeGroup?.dayIndex ?? ''}
+              aria-label="选择行程日期"
+              aria-controls={`day-panel-${activeGroup?.dayIndex}`}
+              onChange={(event) => setSelectedDay(Number(event.target.value))}
+            >
+              {groups.map((group) => (
+                <option key={group.dayIndex} value={group.dayIndex}>
+                  {`${shortDayLabel(startDate, group.dayIndex)} ${weekdayLabel(startDate, group.dayIndex)}`}
+                </option>
+              ))}
+            </select>
+            <Icon name="right" className="sm day-select-chevron" />
+          </div>
+        ))}
+      </div>
       {schedule.length === 0 ? (
         <section className="card pad empty-state">
           <h2>还没有方案</h2>
@@ -65,15 +120,22 @@ export default function MyPlanTimeline({
               : '组织者还没有生成方案，生成后会自动显示在这里。'}
           </p>
         </section>
-      ) : (
+      ) : activeGroup ? (
         <>
-          <div className="sec-title day-tag"><Icon name="clock" className="sm" /> {dayLabel(startDate)}</div>
-          <div className="timeline">
-            {schedule.map((item, index) => (
+          <div className="sec-title day-tag">
+            <Icon name="clock" className="sm" /> {dayLabel(startDate, activeGroup.dayIndex)}
+          </div>
+          <div
+            className="timeline"
+            id={`day-panel-${activeGroup.dayIndex}`}
+            role={showPager && showTabs ? 'tabpanel' : undefined}
+            aria-labelledby={showPager && showTabs ? `day-tab-${activeGroup.dayIndex}` : undefined}
+          >
+            {activeGroup.items.map((item, index) => (
               <div className="tl-item" key={item.key}>
                 <div className="tl-rail">
                   <div className="tl-node" />
-                  {index < schedule.length - 1 && <div className="tl-line" />}
+                  {index < activeGroup.items.length - 1 && <div className="tl-line" />}
                 </div>
                 <div className="tl-card">
                   <div className="tl-time">{timeLabel(item)}</div>
@@ -83,7 +145,7 @@ export default function MyPlanTimeline({
                     </span>
                     <div className="act-main">
                       <div className="act-name">{item.name}</div>
-<div className="act-sub">
+                      <div className="act-sub">
                         {item.kind === 'split-departure'
                           ? '全员 · 分头'
                           : `${item.note ? `${item.note} · ` : ''}${item.groupLabel ? `${item.groupLabel} 组` : '全员'} · 免费`}
@@ -118,7 +180,11 @@ export default function MyPlanTimeline({
                         <Icon name="trash" className="sm" />
                       </button>
                     ) : null}
-                    <StopMapButton item={item} destination={destination} from={index > 0 ? schedule[index - 1] : null} />
+                    <StopMapButton
+                      item={item}
+                      destination={destination}
+                      from={index > 0 ? activeGroup.items[index - 1] : null}
+                    />
                   </div>
                   {item.travelMinutesToNext != null && (
                     <div className="tl-leg">
@@ -135,7 +201,7 @@ export default function MyPlanTimeline({
             </button>
           ) : null}
         </>
-      )}
+      ) : null}
     </>
   )
 }

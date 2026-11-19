@@ -21,7 +21,23 @@ public class MainPlanRepository {
 
     public record StopRow(long id, int seq, String name, String startLocal, String endLocal,
             String locationName, String note, Integer travelMinutesToNext, String interestsJson,
-            String address, Double lat, Double lng, int costCents) {
+            String address, Double lat, Double lng, int costCents, int dayIndex) {
+
+        /** Single-day rows and callers keep day 1. */
+        public StopRow(long id, int seq, String name, String startLocal, String endLocal,
+                String locationName, String note, Integer travelMinutesToNext, String interestsJson,
+                String address, Double lat, Double lng, int costCents) {
+            this(id, seq, name, startLocal, endLocal, locationName, note, travelMinutesToNext, interestsJson,
+                    address, lat, lng, costCents, 1);
+        }
+
+        /** Multi-day fixture convenience. */
+        public StopRow(int seq, String name, String startLocal, String endLocal,
+                Integer travelMinutesToNext, String interestsJson, String address, Double lat, Double lng,
+                int costCents, int dayIndex) {
+            this(0L, seq, name, startLocal, endLocal, null, null, travelMinutesToNext, interestsJson,
+                    address, lat, lng, costCents, dayIndex);
+        }
 
         /** Cost-less convenience for schedule-only fixtures (US-045 adds the cost column). */
         public StopRow(int seq, String name, String startLocal, String endLocal,
@@ -101,10 +117,11 @@ public class MainPlanRepository {
     public void insertStop(long draftId, MainPlanResult.PlannedStop stop, String interestsJson,
             String address, Double lat, Double lng) {
         jdbc.update("INSERT INTO main_plan_stop (draft_id, seq, name, start_local, end_local, "
-                + "travel_minutes_to_next, interests_json, address, lat, lng, cost_cents) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                + "travel_minutes_to_next, interests_json, address, lat, lng, cost_cents, day_index) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 draftId, stop.seq(), stop.name(), stop.startTime(), stop.endTime(),
-                stop.travelMinutesToNext(), interestsJson, address, lat, lng, stop.costCents());
+                stop.travelMinutesToNext(), interestsJson, address, lat, lng, stop.costCents(),
+                stop.dayIndex());
     }
 
     /** US-079 路线1：程序查坐标回写当前草稿站点；地址可缺（null 保留原值）。 */
@@ -145,7 +162,8 @@ public class MainPlanRepository {
     public List<StopRow> stopsForDraft(long draftId) {
         return jdbc.query(
                 "SELECT id, seq, name, start_local, end_local, location_name, note, travel_minutes_to_next, "
-                        + "interests_json, address, lat, lng, cost_cents FROM main_plan_stop WHERE draft_id = ? ORDER BY seq",
+                        + "interests_json, address, lat, lng, cost_cents, day_index "
+                        + "FROM main_plan_stop WHERE draft_id = ? ORDER BY seq",
                 MainPlanRepository::toStopRow,
                 draftId);
     }
@@ -163,7 +181,8 @@ public class MainPlanRepository {
     public Optional<StopRow> findStop(long tripId, long stopId) {
         List<StopRow> rows = jdbc.query(
                 "SELECT s.id, s.seq, s.name, s.start_local, s.end_local, s.location_name, s.note, "
-                        + "s.travel_minutes_to_next, s.interests_json, s.address, s.lat, s.lng, s.cost_cents "
+                        + "s.travel_minutes_to_next, s.interests_json, s.address, s.lat, s.lng, s.cost_cents, "
+                        + "s.day_index "
                         + "FROM main_plan_stop s JOIN main_plan_draft d ON d.id = s.draft_id "
                         + "WHERE s.id = ? AND d.trip_id = ?",
                 MainPlanRepository::toStopRow,
@@ -191,12 +210,12 @@ public class MainPlanRepository {
     }
 
     /** Appends a manually authored stop (US-090 新增节点); no legs, interests or cost invented. */
-    public void insertStopRow(long draftId, int seq, String name, String startLocal, String endLocal,
-            String locationName, String note) {
-        jdbc.update("INSERT INTO main_plan_stop (draft_id, seq, name, start_local, end_local, location_name, note, "
-                        + "travel_minutes_to_next, interests_json, cost_cents) "
-                        + "VALUES (?, ?, ?, ?, ?, ?, ?, NULL, '[]', 0)",
-                draftId, seq, name, startLocal, endLocal, locationName, note);
+    public void insertStopRow(long draftId, int seq, int dayIndex, String name, String startLocal,
+            String endLocal, String locationName, String note) {
+        jdbc.update("INSERT INTO main_plan_stop (draft_id, seq, day_index, name, start_local, end_local, "
+                        + "location_name, note, travel_minutes_to_next, interests_json, cost_cents) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, '[]', 0)",
+                draftId, seq, dayIndex, name, startLocal, endLocal, locationName, note);
     }
 
     /** Removes one stop (US-090 删除节点); the remaining positions keep their seq so plan_node ids stay put. */
@@ -218,7 +237,7 @@ public class MainPlanRepository {
                 rs.getString("note"),
                 (Integer) rs.getObject("travel_minutes_to_next"), rs.getString("interests_json"),
                 rs.getString("address"), (Double) rs.getObject("lat"), (Double) rs.getObject("lng"),
-                rs.getInt("cost_cents"));
+                rs.getInt("cost_cents"), rs.getInt("day_index"));
     }
 
     public void markDraftConfirmed(long draftId) {

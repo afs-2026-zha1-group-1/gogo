@@ -5,7 +5,9 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
-// The five schedule rules (design D9) on single-day HH:MM-as-minutes.
+// The five schedule rules (design D9) on per-day HH:MM-as-minutes. Every stop
+// belongs to one trip day (day_index); ordering, overlap and travel checks only
+// compare stops of the same day, and each day ends where its last stop ends.
 // Equality is allowed everywhere: a leg landing exactly on the next start
 // passes, and the day window 00:00–23:59 is inclusive. Out-of-window values
 // still take part in pair comparisons; unparseable times only raise
@@ -32,7 +34,9 @@ public class ScheduleValidator {
                 errors.add(new ScheduleError("OUT_OF_DAY", stop.seq(),
                         "Stop " + stop.seq() + " ends outside the day window (00:00-23:59)"));
             }
-            if (i < stops.size() - 1 && stop.travelMinutesToNext() == null) {
+            boolean lastOfDay = i == stops.size() - 1
+                    || stops.get(i + 1).dayIndex() != stop.dayIndex();
+            if (!lastOfDay && stop.travelMinutesToNext() == null) {
                 errors.add(new ScheduleError("MISSING_LEG", stop.seq(),
                         "Stop " + stop.seq() + " is missing travel minutes to the next stop"));
             }
@@ -40,6 +44,9 @@ public class ScheduleValidator {
         for (int i = 0; i + 1 < stops.size(); i++) {
             MainPlanRepository.StopRow current = stops.get(i);
             MainPlanRepository.StopRow next = stops.get(i + 1);
+            if (current.dayIndex() != next.dayIndex()) {
+                continue;
+            }
             if (starts[i] == null || starts[i + 1] == null || ends[i] == null) {
                 continue;
             }

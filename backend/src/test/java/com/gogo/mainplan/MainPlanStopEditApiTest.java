@@ -30,7 +30,8 @@ import com.gogo.auth.TestAuth;
  */
 @SpringBootTest(classes = com.gogo.hello.HelloApplication.class, properties = {
         "spring.datasource.url=jdbc:sqlite:file:main-plan-stop-edit?mode=memory&cache=shared",
-        "spring.datasource.hikari.maximum-pool-size=1"
+        "spring.datasource.hikari.maximum-pool-size=1",
+        "gogo.plan.ai.api-key="
 })
 @AutoConfigureMockMvc
 class MainPlanStopEditApiTest {

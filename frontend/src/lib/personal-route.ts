@@ -12,27 +12,31 @@ import { cleanStationName } from '../features/split/station-name.ts'
 /** Combine main-plan `HH:mm` stops with the trip start date in the device-local timezone. */
 export function scheduleFromMainPlan(plan: MainPlan | null, startDate: string): ScheduleItem[] {
   if (!plan || plan.stops.length === 0) return []
-  return plan.stops.map((stop) => ({
-    key: `stop-${stop.seq}`,
-    stopId: stop.id,
-    name: stop.name,
-    note: stop.note ?? null,
-    start: localClock(startDate, stop.startTime),
-    end: localClock(startDate, stop.endTime),
-    groupLabel: null,
-    interests: stop.interests,
-    address: stop.address ?? null,
-    lat: stop.lat ?? null,
-    lon: stop.lng ?? null,
-    travelMinutesToNext: stop.travelMinutesToNext,
-  }))
+  return plan.stops.map((stop) => {
+    const dayIndex = stop.dayIndex ?? 1
+    return {
+      key: `stop-${stop.seq}`,
+      stopId: stop.id,
+      dayIndex,
+      name: stop.name,
+      note: stop.note ?? null,
+      start: localClock(startDate, stop.startTime, dayIndex - 1),
+      end: localClock(startDate, stop.endTime, dayIndex - 1),
+      groupLabel: null,
+      interests: stop.interests,
+      address: stop.address ?? null,
+      lat: stop.lat ?? null,
+      lon: stop.lng ?? null,
+      travelMinutesToNext: stop.travelMinutesToNext,
+    }
+  })
 }
 
-function localClock(dateStr: string, clock: string): number | null {
+function localClock(dateStr: string, clock: string, dayOffset = 0): number | null {
   const match = /^(\d{1,2}):(\d{2})$/.exec(clock)
   if (!match) return null
   const [year, month, day] = dateStr.split('-').map(Number)
-  return new Date(year, month - 1, day, Number(match[1]), Number(match[2]), 0, 0).getTime()
+  return new Date(year, month - 1, day + dayOffset, Number(match[1]), Number(match[2]), 0, 0).getTime()
 }
 
 function toMs(iso: string | null): number | null {
