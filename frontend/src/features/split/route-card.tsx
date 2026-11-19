@@ -36,7 +36,7 @@ export function RouteCard({
   stale?: boolean
   windowMinutes?: number | null
 }) {
-  const head = tone === "a" ? "from-a to-[#1e40af]" : "from-b to-[#9a3412]"
+  const head = tone === "a" ? "from-a to-[#2f6a5a]" : "from-b to-[#8f5f42]"
   const legsTotal = route.travelLegsMinutes.reduce((sum, minutes) => sum + minutes, 0)
   const legsKnown = route.travelLegsMinutes.every((minutes) => minutes != null)
   const total = route.activityMinutes != null && route.bufferMinutes != null && legsKnown
@@ -75,7 +75,7 @@ export function RouteCard({
         ) : overrun != null ? (
           <span className={cn(
             "shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-bold",
-            overrun > 0 ? "bg-white text-[#b91c1c]" : "bg-white/20 text-white",
+            overrun > 0 ? "bg-white text-[#b95a55]" : "bg-white/20 text-white",
           )}>
             {overrun > 0 ? `超窗 ${overrun} 分` : `合计 ${total} 分`}
           </span>
@@ -136,7 +136,7 @@ export function RouteCard({
         {activitiesCost > 0 ? <Row label="人均" value={formatCost(activitiesCost, destination)} /> : null}
       </div>
 
-      <div className="flex items-center gap-2 border-t border-line-2 bg-ok-soft px-4 py-2.5 text-[12px] font-semibold text-[#047857]">
+      <div className="flex items-center gap-2 border-t border-line-2 bg-ok-soft px-4 py-2.5 text-[12px] font-semibold text-[#2e8061]">
         <IconFlag className="size-3.5" /> {reunionClock} {reunionName}会合
       </div>
     </Card>

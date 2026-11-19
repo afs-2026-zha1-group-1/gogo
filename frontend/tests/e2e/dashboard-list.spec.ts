@@ -70,7 +70,7 @@ test('signed-out visitors cannot see member trip cards', async ({ page }) => {
 
 test('shows an honest empty state for a member with no trips', async ({ page }) => {
   await login(page, 'eve@example.com')
-  await expect(page.getByText('尚未选择行程')).toBeVisible()
+  await expect(page.getByText('当前还没有行程')).toBeVisible()
   await expect(page.getByText('Singapore Friends Day')).toHaveCount(0)
 })
 
@@ -86,7 +86,7 @@ test('shows loading and errors rather than an empty dashboard when the current t
   await expect(page.getByText('正在加载当前行程…')).toBeVisible()
   release?.()
   await expect(page.getByRole('alert')).toBeVisible()
-  await expect(page.getByText('尚未选择行程')).toHaveCount(0)
+  await expect(page.getByText('当前还没有行程')).toHaveCount(0)
 })
 
 test('rejects a malformed current-trip response on the dashboard', async ({ page }) => {
@@ -94,7 +94,7 @@ test('rejects a malformed current-trip response on the dashboard', async ({ page
   await page.route('**/api/trips/current', (route) => route.fulfill({ json: [] }))
   await page.reload()
   await expect(page.getByRole('alert')).toContainText('当前行程数据无效')
-  await expect(page.getByText('尚未选择行程')).toHaveCount(0)
+  await expect(page.getByText('当前还没有行程')).toHaveCount(0)
 })
 
 test('opening a trip by id remains available through the dashboard guard', async ({ page }) => {

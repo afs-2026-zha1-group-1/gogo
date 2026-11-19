@@ -152,12 +152,12 @@ export function ScreenPreview() {
               selectedId={selectedNode?.id}
             />
           ) : (
-            <Card className="flex items-start gap-2.5 border-[#fde68a] bg-warn-soft p-3.5">
+            <Card className="flex items-start gap-2.5 border-[#f2e0c4] bg-warn-soft p-3.5">
               <span className="grid size-7 shrink-0 place-items-center rounded-full bg-warn/15 text-warn [&_svg]:size-4">
                 <IconRoute />
               </span>
               <div className="min-w-0">
-                <div className="text-[13px] font-bold text-[#b45309]">尚无完整路线对</div>
+                <div className="text-[13px] font-bold text-[#ae793b]">尚无完整路线对</div>
                 <p className="mt-0.5 text-[11.5px] leading-relaxed text-ink-2">
                   第 2 步保存路线并通过时间窗校验后，这里才会显示路线图。
                 </p>

@@ -227,7 +227,7 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
       <a className="iconbtn" href={dashboardOrigin ? `#/dashboard/trips/${tripId}` : `#/trips/${tripId}`} aria-label="Back"><Icon name="left" /></a>
       <div className="grow">
         <div className="title">主线方案</div>
-        <div className="sub">US-037 · 校验通过后方可确认</div>
+        <div className="sub">校验通过后方可确认</div>
       </div>
       {state.kind === 'ready' && (
         <span className={state.plan.confirmed ? 'pill ok' : 'pill warn'}>

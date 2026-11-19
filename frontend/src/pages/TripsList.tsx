@@ -4,6 +4,7 @@ import Icon from '../Icons'
 import type { CurrentTripResponse, TripListItem, TripListResponse } from '../types'
 import { isEnded, todayIso } from '../lib/trip-date'
 import { isCurrentTripResponse } from '../lib/current-trip'
+import { tripPhoto } from '../lib/trip-photo'
 
 type ListState =
   | { kind: 'loading' }
@@ -175,7 +176,13 @@ export default function TripsList({
           const selected = selectable && selectedId === trip.id
           const body = (
             <>
-              <span className="qi"><Icon name="pin" /></span>
+              <span
+                className="qi trip-thumb"
+                aria-hidden="true"
+                style={{ ['--thumb-photo' as string]: tripPhoto(trip.destination, trip.id) }}
+              >
+                <Icon name="pin" />
+              </span>
               <span style={{ minWidth: 0, flex: 1 }}>
                 <span className="qt" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', overflowWrap: 'anywhere' }}>
                   {trip.name}

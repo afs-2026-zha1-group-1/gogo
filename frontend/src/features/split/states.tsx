@@ -90,10 +90,10 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
   const permission = PERMISSION_CODES.has(code)
   const text = ERROR_TEXT[code] ?? apiError?.message ?? "发生未知错误。"
   const title = permission ? "无权限 / 身份不足" : "操作被拒绝"
-  const ink = permission ? "text-[#b45309]" : "text-[#b91c1c]"
+  const ink = permission ? "text-[#ae793b]" : "text-[#b95a55]"
 
   return (
-    <Card className={cn("p-4", permission ? "border-[#fde68a] bg-warn-soft" : "border-[#fecaca] bg-err-soft")}>
+    <Card className={cn("p-4", permission ? "border-[#f2e0c4] bg-warn-soft" : "border-[#f3d9d4] bg-err-soft")}>
       <div className="flex items-start gap-2.5">
         <span
           className={cn(

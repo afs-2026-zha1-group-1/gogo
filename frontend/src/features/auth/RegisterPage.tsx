@@ -52,6 +52,8 @@ export default function RegisterPage() {
   const [formError, setFormError] = useState('')
   const [busy, setBusy] = useState(false)
   const [dialog, setDialog] = useState<DialogKind>(null)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   useEffect(() => {
     if (status === 'signedIn') window.location.assign('/')
@@ -123,103 +125,163 @@ export default function RegisterPage() {
 
   return (
     <div className="app register-app">
-      <div className="register-page">
-        <header className="register-top">
-          <a className="iconbtn" href="/login" aria-label="返回登录">
-            <Icon name="left" />
+      <div className="screen register-page">
+        <header className="reg-top">
+          <a className="reg-back" href="/login" aria-label="返回登录">
+            <Icon name="left" className="sm" />
           </a>
-          <div className="register-top-title">创建 GoGo 账号</div>
+          <div className="reg-top-title">加入 GoGo</div>
+          <span className="reg-step">01 / 开启旅程</span>
         </header>
 
-        <div className="register-body">
-          <div className="register-brand">
-            <div className="register-logo"><Icon name="branch" /></div>
-            <div>
-              <div className="register-brand-name">GoGo</div>
-              <div className="register-brand-sub">一起出发，各有所爱</div>
+        <div className="body reg-body">
+          <section className="reg-cover" aria-label="GoGo">
+            <div className="reg-cover-shade" aria-hidden="true" />
+            <div className="reg-brandline">
+              <span className="reg-wordmark">gogo.</span>
+              <span className="reg-tagline">GOOD DAYS TOGETHER</span>
             </div>
-          </div>
-
-          <form onSubmit={submit} noValidate>
-            <div className="field">
-              <label className="label" htmlFor="register-name">名字</label>
-              <input
-                id="register-name"
-                className={`input${errors.name ? ' invalid' : ''}`}
-                type="text"
-                autoComplete="nickname"
-                value={name}
-                maxLength={NAME_MAX}
-                onChange={(event) => {
-                  setName(event.target.value)
-                  setErrors((current) => ({ ...current, name: undefined }))
-                }}
-                required
-              />
-              {errors.name && <p className="error">{errors.name}</p>}
+            <span className="reg-cover-star" aria-hidden="true">✳</span>
+            <div className="reg-cover-copy">
+              <div className="reg-kicker">THE NEXT CHAPTER</div>
+              <h1>旅行不只是去哪里，<br />更是和谁一起。</h1>
             </div>
+          </section>
 
-            <div className="field">
-              <label className="label" htmlFor="register-email">邮箱</label>
-              <input
-                id="register-email"
-                className={`input${errors.email ? ' invalid' : ''}`}
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(event) => {
-                  setEmail(event.target.value)
-                  setErrors((current) => ({ ...current, email: undefined }))
-                }}
-                placeholder="you@example.com"
-                required
-              />
-              {errors.email && <p className="error">{errors.email}</p>}
-            </div>
+          <section className="reg-card">
+            <div className="reg-welcome">LET'S GET TOGETHER</div>
+            <h2 className="reg-title">从这里，<em>一起出发。</em></h2>
+            <p className="reg-sub">只需一分钟，开启属于我们的下一段旅程。</p>
 
-            <div className="field">
-              <label className="label" htmlFor="register-password">密码</label>
-              <input
-                id="register-password"
-                className={`input${errors.password ? ' invalid' : ''}`}
-                type="password"
-                autoComplete="new-password"
-                value={password}
-                onChange={(event) => {
-                  setPassword(event.target.value)
-                  setErrors((current) => ({ ...current, password: undefined, confirm: undefined }))
-                }}
-                required
-              />
-              <p className="help">至少 8 个字符</p>
-              {errors.password && <p className="error">{errors.password}</p>}
-            </div>
+            <ol className="reg-steps" aria-label="注册流程">
+              <li className="reg-step-chip on">
+                <Icon name="sparkle" className="sm" /> 发起旅行
+              </li>
+              <li className="reg-step-line" aria-hidden="true" />
+              <li className="reg-step-chip">
+                <Icon name="users" className="sm" /> 邀请朋友
+              </li>
+              <li className="reg-step-line" aria-hidden="true" />
+              <li className="reg-step-chip">
+                <Icon name="nav" className="sm" /> 一起出发
+              </li>
+            </ol>
 
-            <div className="field">
-              <label className="label" htmlFor="register-confirm">确认密码</label>
-              <input
-                id="register-confirm"
-                className={`input${errors.confirm ? ' invalid' : ''}`}
-                type="password"
-                autoComplete="new-password"
-                value={confirm}
-                onChange={(event) => {
-                  setConfirm(event.target.value)
-                  setErrors((current) => ({ ...current, confirm: undefined }))
-                }}
-                required
-              />
-              {errors.confirm && <p className="error">{errors.confirm}</p>}
-            </div>
+            <form onSubmit={submit} noValidate>
+              <div className="field">
+                <label className="label" htmlFor="register-name">怎么称呼你</label>
+                <div className="inp-ic reg-inp">
+                  <Icon name="user" />
+                  <input
+                    id="register-name"
+                    className={`input${errors.name ? ' invalid' : ''}`}
+                    type="text"
+                    autoComplete="nickname"
+                    value={name}
+                    maxLength={NAME_MAX}
+                    placeholder="输入你的昵称"
+                    onChange={(event) => {
+                      setName(event.target.value)
+                      setErrors((current) => ({ ...current, name: undefined }))
+                    }}
+                    required
+                  />
+                </div>
+                {errors.name && <p className="error">{errors.name}</p>}
+              </div>
 
-            {formError && <p role="alert" className="error">{formError}</p>}
-            <button className="btn btn-primary register-submit" type="submit" disabled={busy}>
-              <Icon name="user" className="sm" />
-              {busy ? '正在注册…' : '创建账号'}
-            </button>
-          </form>
+              <div className="field">
+                <label className="label" htmlFor="register-email">邮箱地址</label>
+                <div className="inp-ic reg-inp">
+                  <Icon name="link" />
+                  <input
+                    id="register-email"
+                    className={`input${errors.email ? ' invalid' : ''}`}
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(event) => {
+                      setEmail(event.target.value)
+                      setErrors((current) => ({ ...current, email: undefined }))
+                    }}
+                    placeholder="you@example.com"
+                    required
+                  />
+                </div>
+                {errors.email && <p className="error">{errors.email}</p>}
+              </div>
 
-          <a className="btn btn-ghost register-login" href="/login">已有账号？去登录</a>
+              <div className="field">
+                <label className="label" htmlFor="register-password">设置密码</label>
+                <div className="inp-ic reg-inp">
+                  <Icon name="lock" />
+                  <input
+                    id="register-password"
+                    className={`input${errors.password ? ' invalid' : ''}`}
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    value={password}
+                    placeholder="至少 8 个字符"
+                    onChange={(event) => {
+                      setPassword(event.target.value)
+                      setErrors((current) => ({ ...current, password: undefined, confirm: undefined }))
+                    }}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="reg-reveal"
+                    aria-label={showPassword ? '隐藏输入内容' : '显示输入内容'}
+                    onClick={() => setShowPassword((value) => !value)}
+                  >
+                    {showPassword ? '隐藏' : '显示'}
+                  </button>
+                </div>
+                <p className="help reg-help">—— 至少 8 位 · 搭配字母与数字组合</p>
+                {errors.password && <p className="error">{errors.password}</p>}
+              </div>
+
+              <div className="field">
+                <label className="label" htmlFor="register-confirm">再次确认密码</label>
+                <div className="inp-ic reg-inp">
+                  <Icon name="check" />
+                  <input
+                    id="register-confirm"
+                    className={`input${errors.confirm ? ' invalid' : ''}`}
+                    type={showConfirm ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    value={confirm}
+                    placeholder="再输入一次密码"
+                    onChange={(event) => {
+                      setConfirm(event.target.value)
+                      setErrors((current) => ({ ...current, confirm: undefined }))
+                    }}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="reg-reveal"
+                    aria-label={showConfirm ? '隐藏确认输入内容' : '显示确认输入内容'}
+                    onClick={() => setShowConfirm((value) => !value)}
+                  >
+                    {showConfirm ? '隐藏' : '显示'}
+                  </button>
+                </div>
+                {errors.confirm && <p className="error">{errors.confirm}</p>}
+              </div>
+
+              <p className="reg-hint">填写完成后即可创建账号</p>
+              {formError && <p role="alert" className="error">{formError}</p>}
+              <button className="btn btn-primary reg-submit" type="submit" disabled={busy}>
+                <span>{busy ? '正在注册…' : '创建账号，开启旅程'}</span>
+                <Icon name="right" className="sm" />
+              </button>
+            </form>
+
+            <p className="reg-alt">
+              已经是 GoGo 的朋友？<a href="/login">直接登录</a>
+            </p>
+          </section>
         </div>
       </div>
 

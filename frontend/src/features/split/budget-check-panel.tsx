@@ -47,8 +47,8 @@ export function BudgetCheckPanel({
   }
   if (error || !check) {
     return (
-      <Card className="border-[#fde68a] bg-warn-soft p-3.5">
-        <div className="flex items-center gap-1.5 text-[13px] font-bold text-[#b45309]">
+      <Card className="border-[#f2e0c4] bg-warn-soft p-3.5">
+        <div className="flex items-center gap-1.5 text-[13px] font-bold text-[#ae793b]">
           <IconAlert className="size-3.5" /> 费用检查不可用
         </div>
         <p className="mt-1 text-[11.5px] leading-relaxed text-ink-2">

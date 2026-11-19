@@ -1,3 +1,5 @@
+import type { IconName } from '../Icons'
+
 export interface ProgressSources {
   mainPlanConfirmed: boolean
   joiningClosed: boolean
@@ -9,9 +11,28 @@ export interface ProgressSources {
   split: 'absent' | 'active' | 'confirmed' | 'cancelled'
 }
 
-type MilestoneState = 'done' | 'active' | 'pending'
-type MilestoneLabel = '建局' | '偏好' | '邀请' | '主线' | '分队'
-type Milestone = { label: MilestoneLabel; detail: string; state: MilestoneState }
+export type MilestoneState = 'done' | 'active' | 'pending'
+export type MilestoneLabel = '建局' | '偏好' | '邀请' | '主线' | '分队'
+export type Milestone = { label: MilestoneLabel; detail: string; state: MilestoneState }
+
+/** One icon per milestone, shared by the trip dashboard and the no-trip dashboard. */
+export const MILESTONE_ICONS: Record<MilestoneLabel, IconName> = {
+  建局: 'check', 偏好: 'star', 邀请: 'link', 主线: 'list', 分队: 'branch',
+}
+
+/**
+ * US-002: a member with no trip yet still sees the same five milestones, all pending —
+ * the flow is identical, only nothing has started. No counts are invented.
+ */
+export function emptyMilestones(): Milestone[] {
+  return [
+    { label: '建局', detail: '未创建', state: 'pending' },
+    { label: '偏好', detail: '待开始', state: 'pending' },
+    { label: '邀请', detail: '待开始', state: 'pending' },
+    { label: '主线', detail: '未生成', state: 'pending' },
+    { label: '分队', detail: '未发起', state: 'pending' },
+  ]
+}
 
 export function dashboardMilestones(sources: ProgressSources): Milestone[] {
   const plan = {

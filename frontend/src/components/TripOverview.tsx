@@ -9,6 +9,7 @@ import { fetchDraftDetail, saveRoutes, SplitApiError } from '../features/split/a
 import { cleanStationName } from '../features/split/station-name'
 import { useCountdown } from '../hooks/useCountdown'
 import { localEndOfDay, localMidnight, type ScheduleItem } from '../lib/countdown'
+import { tripPhoto } from '../lib/trip-photo'
 import { useAuth } from '../features/auth/AuthProvider'
 import type { TripOverviewState } from '../hooks/useTripOverview'
 import type { MainPlan, PlanStop } from '../types/mainPlan'
@@ -311,13 +312,25 @@ export default function TripOverview({ state }: { state: ReadyState }) {
     : state.readiness.readyCount === state.readiness.memberCount ? '偏好全部就绪'
       : `${state.readiness.readyCount}/${state.readiness.memberCount} 位成员已就绪`
 
+  // US-083: plan / split / personal-route status are the trip's real states, shown as chips.
+  const planState = state.plan == null
+    ? { label: '主线未生成', tone: 'wait' as const }
+    : state.plan.confirmed
+      ? { label: '主线已确认', tone: 'ok' as const }
+      : state.plan.stale
+        ? { label: '主线草稿已过期', tone: 'warn' as const }
+        : { label: '主线草稿', tone: 'wait' as const }
+  const splitState = state.split == null
+    ? { label: '分队未确认', tone: 'wait' as const }
+    : { label: '分队已确认', tone: 'ok' as const }
+
   return (
     <div className="screen">
       <header className="appbar">
         <a className="iconbtn" href="#/" aria-label="Back"><Icon name="left" /></a>
         <div className="grow">
           <div className="title">行程详情</div>
-          <div className="sub">US-002 · 全员可见</div>
+          <div className="sub">全员可见</div>
         </div>
         <a className="iconbtn" href={`#/trips/${state.trip.id}/edit`} aria-label="编辑行程信息">
           <Icon name="edit" />
@@ -327,15 +340,33 @@ export default function TripOverview({ state }: { state: ReadyState }) {
         </a>
       </header>
       <div className="body">
-        <section className="hero">
-          <h1 style={{ marginTop: 0 }}>{state.trip.name}</h1>
-          <div className="hdest">
+        <section className="hero has-photo" style={{ ['--hero-photo' as string]: tripPhoto(state.trip.destination, state.trip.id) }}>
+          <div className="htop">
             <Icon name="cal" className="sm" />
             {state.trip.startDate} – {state.trip.endDate}
+          </div>
+          <h1>{state.trip.name}</h1>
+          <div className="hdest">
             <Icon name="pin" className="sm" />
             {state.trip.destination}
           </div>
+          <div className="hmeta">
+            <div>出发地<b>{state.trip.startLocation ?? '未设置'}</b></div>
+            <div>返程地<b>{state.trip.endLocation ?? '未设置'}</b></div>
+            <div>同行<b>{state.members.length} 人</b></div>
+          </div>
         </section>
+
+        <div className="status-chips" aria-label="行程状态">
+          <span className={`status-chip ${planState.tone}`}>{planState.label}</span>
+          <span className={`status-chip ${splitState.tone}`}>{splitState.label}</span>
+          {state.myGroupLabel && (
+            <span className="status-chip group">
+              <span className="status-chip-letter">{state.myGroupLabel}</span>
+              我的路线
+            </span>
+          )}
+        </div>
 
         <CountdownCard state={countdown} schedule={state.schedule} destination={state.trip.destination} />
 
@@ -373,6 +404,7 @@ export default function TripOverview({ state }: { state: ReadyState }) {
           onAddStop={state.plan ? openAdd : undefined}
           busy={saving}
           destination={state.trip.destination}
+          countdown={countdown}
         />
         {mutateError && !adding && (
           <p role="alert" className="error" style={{ marginTop: 8 }}>{mutateError}</p>

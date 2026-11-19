@@ -1,10 +1,16 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
 import Icon from '../Icons'
-import type { IconName } from '../Icons'
 import { useAuth } from '../features/auth/AuthProvider'
+import { tripPhoto } from '../lib/trip-photo'
+import DashboardQuickEntries from './DashboardQuickEntries'
 import { dashboardDateString } from './dashboardDate'
-import { dashboardMilestones, dashboardNextStep, type ProgressSources } from './dashboardProgress'
+import {
+  dashboardMilestones,
+  dashboardNextStep,
+  MILESTONE_ICONS,
+  type ProgressSources,
+} from './dashboardProgress'
 
 interface TripSummary {
   id: number
@@ -202,14 +208,10 @@ export default function DashboardTrip({ tripId, onTripReady }: {
     split: split ?? 'absent',
   }
   const nextStep = dashboardNextStep(sources)
-  const milestoneIcons: Record<string, IconName> = {
-    建局: 'check', 偏好: 'star', 邀请: 'link', 主线: 'list',
-    分队: 'branch',
-  }
 
   return (
     <>
-      <section className="hero">
+      <section className="hero has-photo" style={{ ['--hero-photo' as string]: tripPhoto(trip.destination, trip.id) }}>
         <div className="htop"><Icon name="cal" className="sm" /> {trip.startDate} – {trip.endDate}</div>
         <h1>{trip.name}</h1>
         <div className="hdest"><Icon name="pin" className="sm" /> {trip.destination}</div>
@@ -229,7 +231,7 @@ export default function DashboardTrip({ tripId, onTripReady }: {
                 data-state={milestone.state}
                 aria-label={`${milestone.label}：${milestone.detail}${milestone.state === 'done' ? '，已完成' : milestone.state === 'active' ? '，进行中' : ''}`}
               >
-                <span className="dashboard-progress-icon"><Icon name={milestone.state === 'done' ? 'check' : milestoneIcons[milestone.label]} className="sm" /></span>
+                <span className="dashboard-progress-icon"><Icon name={milestone.state === 'done' ? 'check' : MILESTONE_ICONS[milestone.label]} className="sm" /></span>
                 <strong>{milestone.label}</strong>
                 <span>{milestone.detail}</span>
               </li>
@@ -270,27 +272,7 @@ export default function DashboardTrip({ tripId, onTripReady }: {
           </a>
         )}
       </section>
-      <section aria-label="快捷入口">
-        <div className="sec-title"><Icon name="list" className="sm" /> 快捷入口</div>
-        <div className="dashboard-quick">
-          <a className="qcard" href="#/create">
-            <span className="qi"><Icon name="plus" /></span>
-            <span><span className="qt">创建行程</span><span className="qd">开启新的旅程</span></span>
-          </a>
-          <a className="qcard" href={`#/dashboard/trips/${trip.id}/invite`}>
-            <span className="qi"><Icon name="link" /></span>
-            <span><span className="qt">邀请朋友</span><span className="qd">分享邀请链接</span></span>
-          </a>
-          <a className="qcard" href={`#/dashboard/trips/${trip.id}/preferences`}>
-            <span className="qi"><Icon name="star" /></span>
-            <span><span className="qt">我的偏好</span><span className="qd">查看和编辑偏好</span></span>
-          </a>
-          <a className="qcard" href={`#/dashboard/trips/${trip.id}/main-plan`}>
-            <span className="qi"><Icon name="list" /></span>
-            <span><span className="qt">主线方案</span><span className="qd">查看共同路线</span></span>
-          </a>
-        </div>
-      </section>
+      <DashboardQuickEntries tripId={trip.id} />
     </>
   )
 }

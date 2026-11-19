@@ -149,7 +149,7 @@ export default function EditTrip({ tripId, backHref }: EditTripProps) {
       <a className="iconbtn" href={`#/trips/${tripId}`} aria-label="Back"><Icon name="left" /></a>
       <div className="grow">
         <div className="title">编辑行程信息</div>
-        <div className="sub">US-003 · 规划字段所有成员可改，名称仅组织者</div>
+        <div className="sub">规划字段所有成员可改，名称仅组织者</div>
       </div>
     </header>
   )

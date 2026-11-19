@@ -15,7 +15,7 @@ export default function TripDetails({ tripId }: TripDetailsProps) {
       <a className="iconbtn" href="#/" aria-label="Back"><Icon name="left" /></a>
       <div className="grow">
         <div className="title">行程详情</div>
-        <div className="sub">US-002 · 全员可见</div>
+        <div className="sub">全员可见</div>
       </div>
     </header>
   )

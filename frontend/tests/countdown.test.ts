@@ -5,6 +5,7 @@ import {
   localEndOfDay,
   localMidnight,
   resolveCountdown,
+  stopVisualState,
   type ScheduleItem,
 } from '../src/lib/countdown.ts'
 
@@ -92,4 +93,24 @@ test('C11 items with unknown times never produce during/between', () => {
 test('localMidnight/localEndOfDay use local calendar fields', () => {
   assert.equal(localMidnight('2026-11-20'), new Date(2026, 10, 20, 0, 0, 0, 0).getTime())
   assert.equal(localEndOfDay('2026-11-20'), new Date(2026, 10, 20, 23, 59, 59, 999).getTime())
+})
+
+test('S1 stopVisualState marks the running and next stops', () => {
+  const during = resolveCountdown(at(10, 0), departure, schedule, tripEnd)
+  assert.equal(stopVisualState(schedule[0], during), 'current')
+  assert.equal(stopVisualState(schedule[1], during), 'upcoming')
+})
+
+test('S2 stopVisualState treats ended stops as done and the upcoming one as next', () => {
+  const between = resolveCountdown(at(10, 45), departure, schedule, tripEnd)
+  assert.equal(stopVisualState(schedule[0], between), 'done')
+  assert.equal(stopVisualState(schedule[1], between), 'next')
+})
+
+test('S3 stopVisualState keeps undated stops upcoming and everything done after the trip', () => {
+  const undated = item('x', null, null)
+  assert.equal(stopVisualState(undated, resolveCountdown(at(10, 45), departure, schedule, tripEnd)), 'upcoming')
+  const finished = resolveCountdown(at(12, 30), departure, schedule, tripEnd)
+  assert.equal(stopVisualState(schedule[0], finished), 'done')
+  assert.equal(stopVisualState(schedule[1], finished), 'done')
 })

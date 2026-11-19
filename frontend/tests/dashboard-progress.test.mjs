@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { dashboardMilestones, dashboardNextStep } from '../src/pages/dashboardProgress.ts'
+import { dashboardMilestones, dashboardNextStep, emptyMilestones, MILESTONE_ICONS } from '../src/pages/dashboardProgress.ts'
 
 const sources = {
   mainPlanConfirmed: false,
@@ -68,6 +68,16 @@ test('member invitation milestone reflects membership and joining cutoff', () =>
     { label: '邀请', detail: '已有成员加入', state: 'done' })
   assert.deepEqual(dashboardMilestones({ ...member, mainPlanConfirmed: true, joiningClosed: true, plan: 'confirmed' })[1],
     { label: '邀请', detail: '已关闭', state: 'done' })
+})
+
+test('no-trip dashboard shows the same five milestones, all pending', () => {
+  const milestones = emptyMilestones()
+  assert.deepEqual(milestones.map((item) => item.label), ['建局', '偏好', '邀请', '主线', '分队'])
+  assert.deepEqual(milestones.map((item) => item.state), ['pending', 'pending', 'pending', 'pending', 'pending'])
+  for (const item of milestones) {
+    assert.ok(item.detail.length > 0, `${item.label} needs a detail`)
+    assert.ok(MILESTONE_ICONS[item.label], `${item.label} needs an icon`)
+  }
 })
 
 test('joining remains closed after an unconfirmed plan is reopened', () => {

@@ -442,7 +442,7 @@ for (const email of ['alice@example.com', 'ben@example.com']) {
   test(`loading the selected dashboard does not change persisted state for ${email}`, async ({ page }) => {
     const before = persistedState()
     await login(page, email)
-    await expect(page.getByText('尚未选择行程')).toBeVisible()
+    await expect(page.getByText('当前还没有行程')).toBeVisible()
     expect(persistedState()).toBe(before)
   })
 

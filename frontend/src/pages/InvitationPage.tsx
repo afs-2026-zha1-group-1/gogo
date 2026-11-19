@@ -59,7 +59,7 @@ export default function InvitationPage({ tripId, backHref = `#/trips/${tripId}` 
       <a className="iconbtn" href={backHref} aria-label="Back"><Icon name="left" /></a>
       <div className="grow">
         <div className="title">邀请朋友</div>
-        <div className="sub">US-008 · 分享邀请链接</div>
+        <div className="sub">分享邀请链接</div>
       </div>
       {invitationReady && (
         joiningClosed

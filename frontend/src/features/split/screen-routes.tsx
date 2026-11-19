@@ -560,15 +560,15 @@ export function ScreenRoutes() {
               <div key={route.groupLabel} className="rounded-card border border-line-2 bg-surface-2 px-3 py-2">
                 <div className="flex items-center justify-between gap-2 text-[12.5px] font-bold text-ink">
                   <span>{route.groupLabel} 组</span>
-                  <span className={route.overrunMinutes && route.overrunMinutes > 0 ? "text-[#b91c1c]" : "text-ink-2"}>
+                  <span className={route.overrunMinutes && route.overrunMinutes > 0 ? "text-[#b95a55]" : "text-ink-2"}>
                     合计 {route.totalMinutes ?? "—"} 分 / 窗口 {dialog.windowMinutes} 分
                   </span>
                 </div>
                 {route.overrunMinutes != null && route.overrunMinutes > 0 ? (
-                  <p className="mt-1 text-[11.5px] font-semibold text-[#b91c1c]">超窗 {route.overrunMinutes} 分</p>
+                  <p className="mt-1 text-[11.5px] font-semibold text-[#b95a55]">超窗 {route.overrunMinutes} 分</p>
                 ) : null}
                 {route.missingInputs.length > 0 ? (
-                  <p className="mt-1 text-[11.5px] text-[#b45309]">缺失：{route.missingInputs.join("、")}</p>
+                  <p className="mt-1 text-[11.5px] text-[#ae793b]">缺失：{route.missingInputs.join("、")}</p>
                 ) : null}
               </div>
             ))}
@@ -618,7 +618,7 @@ function EditableRouteCard({
   onAddStep: () => void
   onRemoveStep: (stepIndex: number) => void
 }) {
-  const head = tone === "a" ? "from-a to-[#1e40af]" : "from-b to-[#9a3412]"
+  const head = tone === "a" ? "from-a to-[#2f6a5a]" : "from-b to-[#8f5f42]"
   const total = formTotal(form)
   const costTotal = formCostTotal(form)
   const [editingRow, setEditingRow] = useState<string | null>(null)
@@ -703,7 +703,7 @@ function EditableRouteCard({
           </div>
         </div>
         {overrun != null && overrun > 0 ? (
-          <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[10.5px] font-bold text-[#b91c1c]">
+          <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[10.5px] font-bold text-[#b95a55]">
             超窗 {overrun} 分
           </span>
         ) : null}
@@ -941,7 +941,7 @@ function EditableRouteCard({
         ) : null}
       </div>
 
-      <div className="flex items-center gap-2 border-t border-line-2 bg-ok-soft px-4 py-2.5 text-[12px] font-semibold text-[#047857]">
+      <div className="flex items-center gap-2 border-t border-line-2 bg-ok-soft px-4 py-2.5 text-[12px] font-semibold text-[#2e8061]">
         <IconFlag className="size-3.5" /> {reunionClock} {reunionName}会合
       </div>
     </Card>
@@ -988,7 +988,7 @@ function GroupCard({
       <div className="grid grid-cols-2 gap-2.5">
         {Object.entries(groups).map(([label, ids]) => {
           const isA = label === "A"
-          const head = isA ? "from-a to-[#1e40af]" : label === "B" ? "from-b to-[#9a3412]" : "from-ink-3 to-ink-3"
+          const head = isA ? "from-a to-[#2f6a5a]" : label === "B" ? "from-b to-[#8f5f42]" : "from-ink-3 to-ink-3"
           const border = isA ? "border-a-line" : label === "B" ? "border-b-line" : "border-line"
           const chipOn = isA ? "border-a bg-a" : label === "B" ? "border-b bg-b" : "border-ink bg-ink"
           const target: "A" | "B" = label === "B" ? "A" : "B"

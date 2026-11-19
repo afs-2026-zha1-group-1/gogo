@@ -404,7 +404,7 @@ export default function PreferencesPage({ tripId, memberId, backHref = `#/trips/
           {isMemberView ? `${targetProfile?.displayName ?? '成员'} 的偏好` : '我的偏好'}
         </div>
         <div className="sub">
-          {isMemberView ? '成员偏好 · 组织者可代编辑' : account ? `${account.name} · US-019~027` : 'US-019~027'}
+          {isMemberView ? '成员偏好 · 组织者可代编辑' : account ? `${account.name} · 偏好设置` : '偏好设置'}
         </div>
       </div>
       {/* US-026: the badge reports submission, not whether a section happens to be saved. */}
@@ -518,7 +518,7 @@ export default function PreferencesPage({ tripId, memberId, backHref = `#/trips/
             <div className="switch-row">
               <div className="txt">
                 <b>我没有特别偏好</b>
-                <p>显式选择后按默认参与规划（US-027）</p>
+                <p>显式选择后按默认参与规划</p>
               </div>
               <button
                 type="button"
@@ -536,7 +536,7 @@ export default function PreferencesPage({ tripId, memberId, backHref = `#/trips/
         {!isMemberView && noPreference && (
           <div
             className="card pad"
-            style={{ borderColor: '#99f6e4', background: 'linear-gradient(135deg,#f0fdfa,#fff)' }}
+            style={{ borderColor: '#c9dec8', background: 'linear-gradient(135deg,#f2f8f0,#fff)' }}
           >
             <div
               style={{
@@ -565,7 +565,7 @@ export default function PreferencesPage({ tripId, memberId, backHref = `#/trips/
         )}
 
         <div className="sec-title">
-          <Icon name="star" className="sm" /> 兴趣（US-019 · 预设列表、不重复）
+          <Icon name="star" className="sm" /> 兴趣（预设列表、不重复）
         </div>
 
         {query.isLoading ? (
@@ -598,7 +598,7 @@ export default function PreferencesPage({ tripId, memberId, backHref = `#/trips/
         </p>
 
         <div className="sec-title" style={{ marginTop: 22 }}>
-          <Icon name="target" className="sm" /> 必做项（US-020 · 可增删改）
+          <Icon name="target" className="sm" /> 必做项（可增删改）
         </div>
 
         {mustDosQuery.isLoading ? (
@@ -790,7 +790,7 @@ export default function PreferencesPage({ tripId, memberId, backHref = `#/trips/
         )}
 
         <div className="sec-title" style={{ marginTop: 22 }}>
-          <Icon name="wallet" className="sm" /> 预算（US-024 · 可选、人均全程）
+          <Icon name="wallet" className="sm" /> 预算（可选、人均全程）
         </div>
 
         {budgetsQuery.isLoading ? (

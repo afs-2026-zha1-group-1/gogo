@@ -4,6 +4,7 @@ import Icon from '../Icons'
 import InvitationPanel from './InvitationPanel'
 import type { Trip } from '../types'
 import { useAuth } from '../features/auth/AuthProvider'
+import { tripPhoto } from '../lib/trip-photo'
 
 interface TripDetailsProps {
   tripId: number
@@ -55,7 +56,7 @@ export default function TripDetailsLegacy({ tripId }: TripDetailsProps) {
       <a className="iconbtn" href="#/" aria-label="Back"><Icon name="left" /></a>
       <div className="grow">
         <div className="title">行程详情</div>
-        <div className="sub">US-002 · 全员可见</div>
+        <div className="sub">全员可见</div>
       </div>
       {state.kind === 'ready' && (
         <a className="iconbtn" href={`#/trips/${state.trip.id}/invitation`} aria-label="邀请朋友">
@@ -106,7 +107,7 @@ export default function TripDetailsLegacy({ tripId }: TripDetailsProps) {
     <div className="screen">
       {appbar}
       <div className="body">
-        <section className="hero">
+        <section className="hero has-photo" style={{ ['--hero-photo' as string]: tripPhoto(trip.destination, trip.id) }}>
           <div className="htop">
             <Icon name="cal" className="sm" />
             {trip.startDate} – {trip.endDate}

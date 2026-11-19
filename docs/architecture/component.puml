@@ -1,0 +1,60 @@
+@startuml component
+' L3 — Component view of the backend API container.
+' Evidence (packages under backend/src/main/java/com/gogo):
+'   auth/          AuthController, SecurityConfig, AccountService, CredentialUserDetailsService
+'   trip/          TripController, TripRepository, TripZones
+'   invitation/    InvitationController, InvitationRepository, InvitationTokens
+'   preference/    PreferenceController, UserPreferenceController, PreferenceService, MustDoService,
+'                  BudgetService, SubmissionService, PreferenceRepository
+'   mainplan/      MainPlanController, MainPlanService, MainPlanRepository, MainPlanProviderConfig,
+'                  FakeMainPlanProvider / AiMainPlanProvider, HttpDeepSeekPlanClient,
+'                  LocationCompletion, ScheduleValidator, BudgetOverruns
+'   hello/splits/  SplitDraftController, SplitDraftService, SplitDraftRepository, MemberGuard,
+'                  domain/* (SplitBudgetCalculator, ReunionTimingCalculator, ...),
+'                  provider/ (FixtureBranchCandidateProvider / AiBranchCandidateProvider),
+'                  MockSquadActivityRecommender, MainPlanStopsChangedListener
+'   hello/common/  ApiResponse, ApiException, ErrorCode, GlobalExceptionHandler
+!include <C4/C4_Component>
+
+title GoGo 后端 API 服务 — L3 组件视图
+
+Person_Ext(traveler, "旅行者", "已登录成员 / 组织者")
+System_Ext(llm, "LLM 推理网关", "OpenAI 兼容 chat/completions")
+ContainerDb_Ext(db, "嵌入式数据库 SQLite", "WAL · 单写入连接")
+
+Container_Boundary(api, "后端 API 服务 — Spring Boot 3.5 / Java 21") {
+  Component(security, "会话与安全", "Spring Security + BCrypt", "登录态 · Cookie CSRF · 接口鉴权")
+  Component(authc, "账号与认证", "AuthController, AccountService", "注册 · 登录 · 资料 · 登出")
+  Component(tripc, "行程与成员", "TripController", "行程创建编辑 · 当前行程 · 成员")
+  Component(invc, "邀请与加入", "InvitationController", "签发令牌 · 预览 · 一次性接受")
+  Component(planc, "主线方案", "MainPlanController, MainPlanService", "生成 · 排期校验 · 编辑 · 确认")
+  Component(splitc, "分组路线", "SplitDraftController, SplitDraftService", "边界 · 路线 · 时机与预算 · 多轮")
+  Component(prefc, "偏好与预算", "Preference / MustDo / Budget / Submission", "兴趣 · 必做项 · 预算 · 就绪")
+  Component(provider, "AI 提供者适配", "MainPlanProvider, BranchCandidateProvider", "有 Key 走网关，否则确定性样例")
+  Component(geo, "坐标补全与校验", "LocationCompletion, place_cache", "起终点补全 · 坐标缓存")
+  Component(repos, "持久化访问层", "8 个 Repository", "JdbcClient 手写 SQL")
+}
+
+Rel(traveler, security, "所有接口先校验会话与 CSRF", "HTTPS")
+Rel(security, authc, "放行登录 / 注册 / CSRF", "")
+Rel(authc, tripc, "已认证身份", "")
+Rel(prefc, planc, "就绪状态与偏好输入", "")
+Rel(planc, splitc, "确认的主线供分组只读", "")
+Rel(planc, provider, "请求主线方案", "")
+Rel(splitc, provider, "请求分支路线", "")
+Rel(planc, geo, "生成时补全坐标", "")
+Rel(provider, llm, "POST /chat/completions", "HTTPS / Bearer")
+Rel(tripc, invc, "组织者签发邀请", "")
+Rel(tripc, repos, "行程与成员", "")
+Rel(invc, repos, "邀请令牌", "")
+Rel(prefc, repos, "member_preference", "")
+Rel(planc, repos, "main_plan_draft / main_plan_stop", "")
+Rel(splitc, repos, "split_draft / plan_node", "")
+Rel(repos, db, "SQL 读写", "JDBC")
+
+LAYOUT_LEFT_RIGHT()
+Lay_D(tripc, invc)
+Lay_D(planc, splitc)
+Lay_D(provider, geo)
+
+@enduml

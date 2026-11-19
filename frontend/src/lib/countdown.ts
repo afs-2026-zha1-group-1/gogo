@@ -100,3 +100,24 @@ export function formatClock(ms: number): string {
   const pad = (value: number) => String(value).padStart(2, '0')
   return `${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
+
+/** Visual state of one timeline stop, derived from the resolved countdown state. */
+export type StopState = 'current' | 'next' | 'done' | 'upcoming'
+
+/**
+ * US-083 presentation only: maps a schedule item to how the timeline should read.
+ * The business rule (which stop is running / next) stays in `resolveCountdown`; this
+ * only labels the same truth for the rail, the badge and the card surface.
+ */
+export function stopVisualState(item: ScheduleItem, state: CountdownState): StopState {
+  const currentKey = state.kind === 'during' ? state.item.key : null
+  const nextKey = state.kind === 'between' ? state.next.key : null
+  if (item.key === currentKey) return 'current'
+  if (item.key === nextKey) return 'next'
+  if (item.start == null || item.end == null) return 'upcoming'
+  if (state.kind === 'finished') return 'done'
+  // Anything already ended before the currently running activity counts as done.
+  if (state.kind === 'during' && state.item.end != null && item.end <= state.item.end) return 'done'
+  if (state.kind === 'between' && state.next.start != null && item.end <= state.next.start) return 'done'
+  return 'upcoming'
+}
