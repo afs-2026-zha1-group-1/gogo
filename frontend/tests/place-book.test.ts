@@ -20,6 +20,19 @@ test('地址簿覆盖三套演示夹具的全部站点名', () => {
   for (const name of names) assert.ok(lookupPlaceAddress(name), `应收录：${name}`)
 })
 
+test('珠海/香港 mock 地点都有地址和有限坐标', () => {
+  const names = [
+    '日月贝（珠海大剧院）', '爱情邮局', '情侣路', '圆明新园', '珠海长隆海洋王国', '野狸岛',
+    '维多利亚港', '太平山顶', '旺角', '尖沙咀', '香港迪士尼乐园', '星光大道',
+  ]
+  for (const name of names) {
+    const place = lookupPlaceBook(name)
+    assert.ok(place, `应收录：${name}`)
+    assert.ok(place.address.length > 0)
+    assert.ok(Number.isFinite(place.lat) && Number.isFinite(place.lon))
+  }
+})
+
 test('未收录站点返回 null，弹窗退回站点名搜索', () => {
   assert.equal(lookupPlaceAddress('日月贝'), null)
   assert.equal(lookupPlaceBook('日月贝'), null)

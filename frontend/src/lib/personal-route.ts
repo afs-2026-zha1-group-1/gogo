@@ -45,12 +45,22 @@ function toMs(iso: string | null): number | null {
   return Number.isNaN(value) ? null : value
 }
 
-function sharedItem(stop: SplitPlanStop, plan: MainPlan | null, roundIndex?: number): ScheduleItem {
-  // The split snapshot carries no interests; enrich from the main plan by name when available. Matching also
-  // recovers the main-plan stop id so a shared line item stays editable (it is the same stop the dialog edits).
-  const matched = plan?.stops.find(
-    (candidate) => cleanStationName(candidate.name) === cleanStationName(stop.name),
+function mainStopFor(plan: MainPlan | null, name: string | null | undefined) {
+  if (plan == null || name == null) return undefined
+  return plan.stops.find(
+    (candidate) => cleanStationName(candidate.name) === cleanStationName(name),
   )
+}
+
+function activityForRoute(route: SplitDraftDetail['routes'][number] | null, name: string | null | undefined) {
+  if (route == null || name == null) return null
+  return route.activities?.find((activity) => cleanStationName(activity.name) === cleanStationName(name)) ?? null
+}
+
+function sharedItem(stop: SplitPlanStop, plan: MainPlan | null, roundIndex?: number): ScheduleItem {
+  // The split snapshot carries no interests/address; enrich from the main plan by name when available. Matching also
+  // recovers the main-plan stop id so a shared line item stays editable (it is the same stop the dialog edits).
+  const matched = mainStopFor(plan, stop.name)
   return {
     key: roundIndex == null ? stop.id : `r${roundIndex}-${stop.id}`,
     stopId: matched?.id,
@@ -60,9 +70,9 @@ function sharedItem(stop: SplitPlanStop, plan: MainPlan | null, roundIndex?: num
     groupLabel: null,
     roundIndex,
     interests: matched?.interests ?? [],
-    address: null,
-    lat: null,
-    lon: null,
+    address: matched?.address ?? null,
+    lat: matched?.lat ?? null,
+    lon: matched?.lng ?? null,
     travelMinutesToNext: null,
   }
 }
@@ -129,6 +139,8 @@ export function derivePersonalRoute(
       const nextLeg = legs[index + 1]
       cursor = end == null || !validMinutes(nextLeg) ? null : end + nextLeg * 60_000
       const name = cleanStationName(step.name)
+      const mainStop = mainStopFor(plan, name)
+      const activity = activityForRoute(myRoute, name)
       return {
         key: `group-${myGroupLabel}-step-${index}`,
         name,
@@ -136,10 +148,10 @@ export function derivePersonalRoute(
         end,
         groupLabel: myGroupLabel,
         splitStep: { roundIndex: detail.roundIndex, groupLabel: myGroupLabel, stepIndex: index, minutes: step.minutes },
-        interests: plan?.stops.find((candidate) => candidate.name === name)?.interests ?? [],
-        address: null,
-        lat: null,
-        lon: null,
+        interests: mainStop?.interests ?? [],
+        address: activity?.location ?? mainStop?.address ?? null,
+        lat: mainStop?.lat ?? null,
+        lon: mainStop?.lng ?? null,
         travelMinutesToNext: validMinutes(nextLeg) ? nextLeg : null,
       }
     })
@@ -169,18 +181,18 @@ export function derivePersonalRoute(
     }
   }
   // T7.3 验收缺陷修复：组活动与共同段一样按名从 main plan 补全 interests（无匹配保持空）。
-  const groupInterests =
-    plan?.stops.find((candidate) => candidate.name === myRoute.activityName)?.interests ?? []
+  const groupActivity = activityForRoute(myRoute, myRoute.activityName)
+  const mainStop = mainStopFor(plan, myRoute.activityName)
   const groupItem: ScheduleItem = {
     key: `group-${myGroupLabel}`,
     name: myRoute.activityName ?? '小组活动',
     start: activityStart,
     end: activityEnd,
     groupLabel: myGroupLabel,
-    interests: groupInterests,
-    address: null,
-    lat: null,
-    lon: null,
+    interests: mainStop?.interests ?? [],
+    address: groupActivity?.location ?? mainStop?.address ?? null,
+    lat: mainStop?.lat ?? null,
+    lon: mainStop?.lng ?? null,
     travelMinutesToNext: legs.length > 0 ? legs[legs.length - 1] : null,
   }
 
@@ -214,6 +226,8 @@ function branchItemsForRound(
     const nextLeg = legs[index + 1]
     cursor = end == null || !valid(nextLeg) ? null : end + nextLeg * 60_000
     const name = cleanStationName(step.name)
+    const mainStop = mainStopFor(plan, name)
+    const activity = activityForRoute(route, name)
     return {
       key: `r${round.roundIndex}-group-${groupLabel}-step-${index}`,
       name,
@@ -222,10 +236,10 @@ function branchItemsForRound(
       groupLabel,
       roundIndex: round.roundIndex,
       splitStep: { roundIndex: round.roundIndex, groupLabel, stepIndex: index, minutes: step.minutes },
-      interests: plan?.stops.find((candidate) => candidate.name === name)?.interests ?? [],
-      address: null,
-      lat: null,
-      lon: null,
+      interests: mainStop?.interests ?? [],
+      address: activity?.location ?? mainStop?.address ?? null,
+      lat: mainStop?.lat ?? null,
+      lon: mainStop?.lng ?? null,
       travelMinutesToNext: valid(nextLeg) ? nextLeg : null,
     }
   })
@@ -290,6 +304,8 @@ export function derivePersonalRouteFromRounds(
           activityEnd = center + activityMs / 2
         }
       }
+      const groupActivity = activityForRoute(route, route.activityName)
+      const mainStop = mainStopFor(plan, route.activityName)
       items.push({
         key: `r${round.roundIndex}-group-${groupLabel}`,
         name: route.activityName ?? '小组活动',
@@ -297,10 +313,10 @@ export function derivePersonalRouteFromRounds(
         end: activityEnd,
         groupLabel,
         roundIndex: round.roundIndex,
-        interests: plan?.stops.find((candidate) => candidate.name === route.activityName)?.interests ?? [],
-        address: null,
-        lat: null,
-        lon: null,
+        interests: mainStop?.interests ?? [],
+        address: groupActivity?.location ?? mainStop?.address ?? null,
+        lat: mainStop?.lat ?? null,
+        lon: mainStop?.lng ?? null,
         travelMinutesToNext: null,
       })
     }
