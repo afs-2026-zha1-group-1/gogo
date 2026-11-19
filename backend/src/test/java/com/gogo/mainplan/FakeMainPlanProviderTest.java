@@ -70,6 +70,8 @@ class FakeMainPlanProviderTest {
                 result.stops().stream().map(MainPlanResult.PlannedStop::name).toList());
         assertEquals(List.of(1, 1, 1, 1, 2, 2, 2, 2),
                 result.stops().stream().map(MainPlanResult.PlannedStop::dayIndex).toList());
+        assertEquals("珠海市香洲区野狸岛渔湾路 129 号珠海大剧院", result.stops().get(0).address());
+        assertEquals("珠海市香洲区情侣中路爱情邮局（海滨公园旁）", result.stops().get(3).address());
         assertEquals(0, result.costPerPersonCents());
     }
 
@@ -82,6 +84,8 @@ class FakeMainPlanProviderTest {
                 result.stops().stream().map(MainPlanResult.PlannedStop::name).toList());
         assertEquals(List.of(1, 1, 1, 1, 2, 2, 2, 2),
                 result.stops().stream().map(MainPlanResult.PlannedStop::dayIndex).toList());
+        assertEquals("香港尖沙咀海滨长廊（维多利亚港）", result.stops().get(0).address());
+        assertEquals("香港山顶道 128 号凌霄阁", result.stops().get(3).address());
         assertEquals(0, result.costPerPersonCents());
     }
 

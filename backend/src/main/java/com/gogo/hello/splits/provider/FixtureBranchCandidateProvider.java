@@ -22,7 +22,7 @@ import java.util.Locale;
 public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
 
     private record Branch(String activityName, int activityMinutes, List<Integer> travelLegsMinutes,
-            int bufferMinutes, int costCents) {
+            int bufferMinutes, int costCents, String address) {
     }
 
     private static final String SINGAPORE = "Singapore";
@@ -48,7 +48,8 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
         int roundIndex = context == null ? 1 : context.roundIndex();
         Branch branch = branchFor(cityOf(destination), groupLabel, excluded, roundIndex);
         String activityName = RoutePairEdit.cleanStationName(branch.activityName());
-        String location = destination == null || destination.isBlank() ? activityName : destination.trim();
+        String location = branch.address() != null ? branch.address()
+                : destination == null || destination.isBlank() ? activityName : destination.trim();
         List<RouteStep> steps = List.of(new RouteStep(activityName, branch.activityMinutes()));
         List<RouteActivity> activities = List.of(new RouteActivity(activityName, location,
                 branch.costCents(), RouteActivity.SOURCE_AI));
@@ -120,20 +121,24 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
     private static Branch branchFor(String city, String groupLabel, List<String> excludeActivityNames, int roundIndex) {
         List<Branch> candidates = switch (city) {
             case HONG_KONG -> List.of(
-                    new Branch("香港迪士尼乐园", 60, List.of(20, 20), 0, 0),
-                    new Branch("星光大道", 30, List.of(20, 20), 0, 0));
+                    new Branch("香港迪士尼乐园", 60, List.of(20, 20), 0, 0,
+                            "香港新界大屿山竹篙湾香港迪士尼乐园度假区"),
+                    new Branch("星光大道", 30, List.of(20, 20), 0, 0,
+                            "香港九龙尖沙咀海滨长廊星光大道"));
             case ZHUHAI -> List.of(
-                    new Branch("珠海长隆海洋王国", 60, List.of(20, 20), 0, 0),
-                    new Branch("野狸岛", 30, List.of(20, 20), 0, 0));
+                    new Branch("珠海长隆海洋王国", 60, List.of(20, 20), 0, 0,
+                            "珠海市香洲区横琴新区富祥湾长隆旅游度假区"),
+                    new Branch("野狸岛", 30, List.of(20, 20), 0, 0,
+                            "珠海市香洲区野狸岛（名亭公园）"));
             case LONDON -> List.of(
-                    new Branch("博罗市场美食探索", 50, List.of(20, 20), 10, 3000),
-                    new Branch("格林威治市场", 50, List.of(20, 20), 10, 2500));
+                    new Branch("博罗市场美食探索", 50, List.of(20, 20), 10, 3000, null),
+                    new Branch("格林威治市场", 50, List.of(20, 20), 10, 2500, null));
             case HEFEI -> List.of(
-                    new Branch("合柴 1972 文创园", 50, List.of(20, 20), 10, 4000),
-                    new Branch("安徽博物院", 50, List.of(20, 20), 10, 3000));
+                    new Branch("合柴 1972 文创园", 50, List.of(20, 20), 10, 4000, null),
+                    new Branch("安徽博物院", 50, List.of(20, 20), 10, 3000, null));
             default -> List.of(
-                    new Branch("Gardens by the Bay", 60, List.of(20, 20), 10, 2500),
-                    new Branch("新加坡国家博物馆", 60, List.of(20, 20), 10, 2000));
+                    new Branch("Gardens by the Bay", 60, List.of(20, 20), 10, 2500, null),
+                    new Branch("新加坡国家博物馆", 60, List.of(20, 20), 10, 2000, null));
         };
         if (!"B".equals(groupLabel)) {
             throw new IllegalArgumentException("unknown group label: " + groupLabel);
