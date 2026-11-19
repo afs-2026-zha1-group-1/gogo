@@ -212,6 +212,27 @@ class SplitDraftDetailApiTest extends AbstractSplitApiTest {
         assertThat(splitRouteCount()).isZero();
     }
 
+    @Test
+    @DisplayName("getDetail_afterGeneration_exposesPersistedNodeTasksInOrder")
+    void getDetail_afterGeneration_exposesPersistedNodeTasksInOrder() throws Exception {
+        startDraft();
+        saveBoundaries(1);
+        assignAs("Chloe", "B", 2);
+        postGenerate(memberId("Ben"), 3).andExpect(status().isOk());
+        String cityHall = stopId("City Hall MRT");
+        String merlion = stopId("Merlion Park");
+
+        getDetail(memberId("Chloe"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.nodeTasks['stop:" + cityHall + "'][0]").value("按计划时间到达"))
+                .andExpect(jsonPath("$.data.nodeTasks['stop:" + cityHall + "'][2]").value("预留 10 分钟缓冲"))
+                .andExpect(jsonPath("$.data.nodeTasks['r1:fork:" + cityHall + "'][0]").value("核对 A/B 分组名单"))
+                .andExpect(jsonPath("$.data.nodeTasks['r1:join:" + merlion + "'][0]").value("在会合点集合"))
+                .andExpect(jsonPath("$.data.nodeTasks['r1:a:step:0'][0]").value("提前 10 分钟到达"))
+                .andExpect(jsonPath("$.data.nodeTasks['r1:a:step:0'][1]").value("完成活动后在群里打卡"))
+                .andExpect(jsonPath("$.data.nodeTasks['r1:a:leg:0'][0]").value("按导航前往会合点"));
+    }
+
     private void startDraft() throws Exception {
         mockMvc.perform(post("/api/trips/{tripId}/split-draft", sgfTripId())
                         .with(TestAuth.asUser(memberId("Ben"))))

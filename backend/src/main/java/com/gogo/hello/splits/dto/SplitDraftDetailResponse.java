@@ -29,5 +29,7 @@ public record SplitDraftDetailResponse(
         Instant reunionAt,
         Long windowMinutes,
         List<GroupRoute> routes,
+        /** US-092: persisted per-node ordered todos, keyed by graph node (`stop:<id>`, `r1:a:step:0`, ...). */
+        Map<String, List<String>> nodeTasks,
         String destination) {
 }

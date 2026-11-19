@@ -90,6 +90,28 @@ function activityFor(route: GroupRoute | null, name: string | null | undefined) 
   return route.activities.find((activity) => cleanStationName(activity.name) === target) ?? null
 }
 
+/** US-092 node key shared with the backend document (`stop:<id>`, `r1:a:step:0`, ...). */
+function nodeKeyFor(row: GraphRow, round: SplitDraftDetail | null): string | null {
+  if (row.kind === "main") return `stop:${row.stopId}`
+  if (!round) return null
+  if (row.kind === "fork") return `r${round.roundIndex}:fork:${row.stopId}`
+  if (row.kind === "join") return `r${round.roundIndex}:join:${row.stopId}`
+  if (row.kind === "join-fork") return `r${round.roundIndex}:join:${row.stopId}`
+  if (row.kind !== "branch") return null
+  const suffix = branchSuffix(row)
+  const taskSuffix = suffix.startsWith("step-") ? `step:${suffix.slice(5)}`
+    : suffix.startsWith("leg-") ? `leg:${suffix.slice(4)}`
+      : suffix
+  return `r${round.roundIndex}:${row.route}:${taskSuffix}`
+}
+
+function tasksFor(row: GraphRow, round: SplitDraftDetail | null, context: NodeDetailContext): string[] {
+  // Main rows belong to no single round; every round snapshot carries the same stop keys.
+  const source = round ?? context.rounds[context.rounds.length - 1] ?? null
+  const key = nodeKeyFor(row, round)
+  return key == null ? [] : source?.nodeTasks?.[key] ?? []
+}
+
 function branchDetail(row: BranchRow, context: NodeDetailContext): NodeDetailView {
   const round = roundFor(row, context)
   const route = routeFor(round, row.route)
@@ -102,7 +124,7 @@ function branchDetail(row: BranchRow, context: NodeDetailContext): NodeDetailVie
     time: row.meta,
     title: row.title,
     people: count > 0 ? `${routeName} · ${count} 人` : routeName,
-    tasks: [],
+    tasks: tasksFor(row, round, context),
   }
 
   if (suffix === "buffer") {
@@ -153,6 +175,6 @@ export function buildNodeDetail(row: GraphRow, context: NodeDetailContext): Node
     location: locationLabel(stop?.locationName),
     people: total > 0 ? `全员 · ${total} 人` : "全员",
     fee: feeLabel(stop?.costCents, context.destination),
-    tasks: [],
+    tasks: tasksFor(row, round, context),
   }
 }

@@ -26,7 +26,22 @@ public record SplitDraftDocument(
         Map<String, RouteDurations> routes,
         Map<String, List<RouteActivity>> activities,
         String createdAt,
-        String updatedAt) {
+        String updatedAt,
+        /** US-092 lightweight node todos: node key -> ordered task copy. Empty for pre-US-092 documents. */
+        Map<String, List<String>> nodeTasks) {
+
+    public SplitDraftDocument {
+        nodeTasks = nodeTasks == null ? Map.of() : new LinkedHashMap<>(nodeTasks);
+    }
+
+    /** Documents/tests written before node tasks keep an empty map. */
+    public SplitDraftDocument(String initiatorMemberId, int mainPlanVersion, int draftVersion, String status,
+            String departureStopId, String reunionStopId, String splitMode, Map<String, List<String>> groups,
+            Map<String, RouteDurations> routes, Map<String, List<RouteActivity>> activities,
+            String createdAt, String updatedAt) {
+        this(initiatorMemberId, mainPlanVersion, draftVersion, status, departureStopId, reunionStopId, splitMode,
+                groups, routes, activities, createdAt, updatedAt, Map.of());
+    }
 
     /**
      * Per-group duration breakdown (design D6/D8): activity + every travel leg + buffer, in whole minutes. The three
@@ -74,7 +89,7 @@ public record SplitDraftDocument(
         updated.computeIfAbsent(groupLabel, key -> new ArrayList<>()).add(memberId);
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion + 1, status,
-                departureStopId, reunionStopId, splitMode, updated, routes, activities, createdAt, now);
+                departureStopId, reunionStopId, splitMode, updated, routes, activities, createdAt, now, nodeTasks);
     }
 
     /**
@@ -86,7 +101,7 @@ public record SplitDraftDocument(
             String now) {
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion + 1, status,
-                departureStopId, reunionStopId, splitMode, groups, null, null, createdAt, now);
+                departureStopId, reunionStopId, splitMode, groups, null, null, createdAt, now, Map.of());
     }
 
     /**
@@ -95,10 +110,16 @@ public record SplitDraftDocument(
      * preserved; updatedAt advances.
      */
     public SplitDraftDocument withRoutes(Map<String, RouteDurations> routes,
-            Map<String, List<RouteActivity>> activities, String now) {
+            Map<String, List<RouteActivity>> activities, Map<String, List<String>> nodeTasks, String now) {
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion + 1, status,
-                departureStopId, reunionStopId, splitMode, groups, routes, activities, createdAt, now);
+                departureStopId, reunionStopId, splitMode, groups, routes, activities, createdAt, now, nodeTasks);
+    }
+
+    /** Pre-US-092 callers keep an empty node-task map. */
+    public SplitDraftDocument withRoutes(Map<String, RouteDurations> routes,
+            Map<String, List<RouteActivity>> activities, String now) {
+        return withRoutes(routes, activities, Map.of(), now);
     }
 
     /**
@@ -113,7 +134,7 @@ public record SplitDraftDocument(
         copy.put(groupLabel, List.copyOf(updated));
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion + 1, status,
-                departureStopId, reunionStopId, splitMode, groups, routes, copy, createdAt, now);
+                departureStopId, reunionStopId, splitMode, groups, routes, copy, createdAt, now, nodeTasks);
     }
 
     /**
@@ -124,7 +145,7 @@ public record SplitDraftDocument(
     public SplitDraftDocument withClearedRoutes(String now) {
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion + 1, status,
-                departureStopId, reunionStopId, splitMode, groups, null, null, createdAt, now);
+                departureStopId, reunionStopId, splitMode, groups, null, null, createdAt, now, Map.of());
     }
 
     /**
@@ -135,7 +156,7 @@ public record SplitDraftDocument(
     public SplitDraftDocument withClearedBoundariesAndRoutes(String now) {
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion + 1, status,
-                null, null, null, groups, null, null, createdAt, now);
+                null, null, null, groups, null, null, createdAt, now, Map.of());
     }
 
     /**
@@ -145,7 +166,7 @@ public record SplitDraftDocument(
     public SplitDraftDocument confirmed(String now) {
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion, "confirmed",
-                departureStopId, reunionStopId, splitMode, groups, routes, activities, createdAt, now);
+                departureStopId, reunionStopId, splitMode, groups, routes, activities, createdAt, now, nodeTasks);
     }
 
     /**
@@ -156,7 +177,7 @@ public record SplitDraftDocument(
     public SplitDraftDocument cancelled(String now) {
         return new SplitDraftDocument(
                 initiatorMemberId, mainPlanVersion, draftVersion, "cancelled",
-                departureStopId, reunionStopId, splitMode, groups, null, null, createdAt, now);
+                departureStopId, reunionStopId, splitMode, groups, null, null, createdAt, now, Map.of());
     }
 
     /**
