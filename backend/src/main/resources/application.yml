@@ -22,5 +22,6 @@ gogo:
       api-key: ${LLM_API_KEY:}
       base-url: ${PLAN_AI_BASE_URL:https://mlop-llm-gateway-dev.home-np.oocl.com/v2/openai/deployments/ali-copilot}
       model: ${PLAN_AI_MODEL:deepseek-v4.1-flash}
-      max-tokens: ${PLAN_AI_MAX_TOKENS:8192}
-      timeout: ${PLAN_AI_TIMEOUT:30s}
+      # Reasoning models spend tokens before emitting content; multi-day plans need headroom.
+      max-tokens: ${PLAN_AI_MAX_TOKENS:16384}
+      timeout: ${PLAN_AI_TIMEOUT:90s}
