@@ -74,18 +74,33 @@ class AiPlanValidatorTest {
     }
 
     @Test
+    void rejectsMoreThanSixStopsInADay() {
+        assertInvalid("""
+                {"stops":[
+                  {"seq":1,"name":"A","startTime":"09:00","endTime":"09:30","travelMinutesToNext":15},
+                  {"seq":2,"name":"B","startTime":"09:45","endTime":"10:15","travelMinutesToNext":15},
+                  {"seq":3,"name":"C","startTime":"10:30","endTime":"11:00","travelMinutesToNext":15},
+                  {"seq":4,"name":"D","startTime":"11:15","endTime":"11:45","travelMinutesToNext":15},
+                  {"seq":5,"name":"E","startTime":"12:00","endTime":"12:30","travelMinutesToNext":15},
+                  {"seq":6,"name":"F","startTime":"12:45","endTime":"13:15","travelMinutesToNext":15},
+                  {"seq":7,"name":"G","startTime":"13:30","endTime":"14:00","travelMinutesToNext":null}],
+                 "costPerPersonCents":0}
+                """);
+    }
+
+    @Test
     void rejectsNonContiguousSeq() {
         assertInvalid(VALID.replace("\"seq\":2", "\"seq\":3"));
     }
 
     @Test
     void rejectsBadClockFormat() {
-        assertInvalid(VALID.replace("\"09:00\"", "\"9:00\""));
+        assertInvalid(VALID.replace("\"startTime\":\"09:00\"", "\"startTime\":\"9:00\""));
     }
 
     @Test
     void rejectsEndNotAfterStart() {
-        assertInvalid(VALID.replace("\"10:00\"", "\"09:00\""));
+        assertInvalid(VALID.replace("\"endTime\":\"10:00\"", "\"endTime\":\"09:00\""));
     }
 
     @Test

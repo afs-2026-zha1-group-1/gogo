@@ -94,11 +94,42 @@ class FixtureBranchCandidateProviderTest {
     @DisplayName("candidateFor_groupB_returnsCityFixture")
     void candidateFor_groupB_returnsCityFixture() {
         assertThat(provider.candidateFor("B", departure, reunion, "香港", mainPlanStops).activityName())
-                .isEqualTo("香港故宫文化博物馆");
+                .isEqualTo("香港迪士尼乐园");
         assertThat(provider.candidateFor("B", departure, reunion, "伦敦", mainPlanStops).activityName())
                 .isEqualTo("博罗市场美食探索");
         assertThat(provider.candidateFor("B", departure, reunion, "合肥", mainPlanStops).activityName())
                 .isEqualTo("合柴 1972 文创园");
+    }
+
+    @Test
+    @DisplayName("candidateFor_groupB_zhuhaiAlternatesTheRemainingTwoPlaces")
+    void candidateFor_groupB_zhuhaiAlternatesTheRemainingTwoPlaces() {
+        RouteCandidate first = provider.candidateFor("B", departure, reunion, "珠海", mainPlanStops);
+        assertThat(first.activityName()).isEqualTo("珠海长隆海洋王国");
+        assertThat(first.activityMinutes()).isEqualTo(60);
+        assertThat(first.travelLegsMinutes()).containsExactly(20, 20);
+
+        BranchCandidateContext secondRound = new BranchCandidateContext(
+                2, null, null, List.of("珠海长隆海洋王国"));
+        RouteCandidate second = provider.candidateFor("B", departure, reunion, "珠海", mainPlanStops, secondRound);
+        assertThat(second.activityName()).isEqualTo("野狸岛");
+        assertThat(second.activityMinutes()).isEqualTo(30);
+        assertThat(second.steps()).extracting("name").containsExactly("野狸岛");
+        assertThat(second.travelLegsMinutes()).containsExactly(20, 20);
+    }
+
+    @Test
+    @DisplayName("candidateFor_groupB_hongKongAlternatesTheRemainingTwoPlaces")
+    void candidateFor_groupB_hongKongAlternatesTheRemainingTwoPlaces() {
+        RouteCandidate first = provider.candidateFor("B", departure, reunion, "香港", mainPlanStops);
+        assertThat(first.activityName()).isEqualTo("香港迪士尼乐园");
+        assertThat(first.activityMinutes()).isEqualTo(60);
+
+        BranchCandidateContext secondRound = new BranchCandidateContext(
+                2, null, null, List.of("香港迪士尼乐园"));
+        RouteCandidate second = provider.candidateFor("B", departure, reunion, "香港", mainPlanStops, secondRound);
+        assertThat(second.activityName()).isEqualTo("星光大道");
+        assertThat(second.activityMinutes()).isEqualTo(30);
     }
 
     @Test

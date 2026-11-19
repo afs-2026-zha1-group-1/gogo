@@ -63,6 +63,9 @@ class AiMainPlanProviderTest {
     void promptRequiresAddressInsideDestinationCity() {
         assertTrue(AiMainPlanProvider.SYSTEM_PROMPT.contains("\"address\""));
         assertTrue(AiMainPlanProvider.SYSTEM_PROMPT.contains("destination city"));
+        assertTrue(AiMainPlanProvider.SYSTEM_PROMPT.contains("2 to 4 activity"));
+        assertTrue(AiMainPlanProvider.SYSTEM_PROMPT.contains("09:00"));
+        assertTrue(AiMainPlanProvider.SYSTEM_PROMPT.contains("返回酒店休息"));
     }
 
     @Test

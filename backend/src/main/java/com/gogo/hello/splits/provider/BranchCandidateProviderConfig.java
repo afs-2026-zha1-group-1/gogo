@@ -20,11 +20,13 @@ class BranchCandidateProviderConfig {
     @Bean
     BranchCandidateProvider branchCandidateProvider(PlanAiProperties properties, ObjectMapper objectMapper,
             ObjectProvider<DeepSeekPlanClient> clientProvider) {
+        FixtureBranchCandidateProvider mock = new FixtureBranchCandidateProvider();
         if (properties.apiKey().isBlank()) {
-            return new FixtureBranchCandidateProvider();
+            return mock;
         }
         DeepSeekPlanClient client = clientProvider.getIfAvailable(
                 () -> HttpDeepSeekPlanClient.create(properties, objectMapper));
-        return new AiBranchCandidateProvider(client, new AiBranchValidator(), objectMapper);
+        AiBranchCandidateProvider ai = new AiBranchCandidateProvider(client, new AiBranchValidator(), objectMapper);
+        return new MockDestinationBranchCandidateProvider(mock, ai);
     }
 }

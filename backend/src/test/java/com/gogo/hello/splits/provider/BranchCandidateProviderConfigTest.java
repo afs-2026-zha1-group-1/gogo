@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Duration;
+import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -47,6 +48,8 @@ class BranchCandidateProviderConfigTest {
 
         BranchCandidateProvider bean = config.branchCandidateProvider(properties, objectMapper, provider);
 
-        assertThat(bean).isInstanceOf(AiBranchCandidateProvider.class);
+        assertThat(bean).isInstanceOf(MockDestinationBranchCandidateProvider.class);
+        assertThat(bean.candidateFor("B", null, null, "香港", List.of()).activityName())
+                .isEqualTo("香港迪士尼乐园");
     }
 }
