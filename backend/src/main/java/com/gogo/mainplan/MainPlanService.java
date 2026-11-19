@@ -69,7 +69,6 @@ public class MainPlanService {
     public PlanResponse generate(long tripId, long caller) {
         TripResponse trip = requireTrip(tripId);
         requireMember(tripId, caller);
-        requireOrganizer(trip, caller);
         if (plans.findDraftByStatus(tripId, "confirmed").isPresent()) {
             throw new MainPlanApiException(409, "ALREADY_CONFIRMED",
                     "The main plan is already confirmed; replanning is not available");

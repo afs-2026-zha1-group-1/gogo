@@ -1,7 +1,7 @@
 # Pipeline Report: us-068-070-account-register
 
 **Date:** 2026-11-17 (timezone: Asia/Shanghai, +08:00)
-**Root:** C:/Users/JIANGEL5/code/bootcamp/GoGo
+**Root:** [original checkout path redacted]
 **Phase:** ci
 **Data source:** gh API (GitHub Actions, read-only)
 **Change id:** us-068-070-account-register

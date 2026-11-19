@@ -13,7 +13,7 @@ Emily + SA Lumi; C1/C2 ratified); the delta fixes 7 requirements / 24
 scenarios and the fixtures fix the wire contract.
 
 Links: [ATDD design](atdd-design.md) · [delta spec](specs/main-itinerary/spec.md) ·
-[tasks](tasks.md) · [fixtures](../../../requirement-workspace/acceptance-test-fixtures.md) ·
+[tasks](tasks.md) · [fixtures](../../../../requirement-workspace/acceptance-test-fixtures.md) ·
 [G1 record](g1-decision.md).
 
 ## Goals / Non-Goals

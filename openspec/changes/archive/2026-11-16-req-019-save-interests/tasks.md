@@ -3,7 +3,7 @@
 - Change: `req-019-save-interests` (REQ-019, US-019)
 - Inputs: [proposal](proposal.md) · [delta spec](specs/preferences/spec.md) ·
   [ATDD design](atdd-design.md) · [design](design.md) ·
-  [fixtures](../../../requirement-workspace/acceptance-test-fixtures.md)
+  [fixtures](../../../../requirement-workspace/acceptance-test-fixtures.md)
 - G1: Pass closed 2026-11-16 (IO Emily 2026-11-15, SA evelyn.huang 2026-11-15 + sibling
   re-review), then **Pass again on the revised delta, 2026-11-16** (IO Emily + SA
   evelyn.huang; `g1-decision.md` revision re-review). P3 rulings: D15 own error advice, D16

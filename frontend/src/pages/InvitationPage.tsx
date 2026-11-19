@@ -3,7 +3,6 @@ import { api, errorMessage } from '../api'
 import Icon from '../Icons'
 import InvitationPanel from './InvitationPanel'
 import type { Trip } from '../types'
-import { useAuth } from '../features/auth/AuthProvider'
 
 interface InvitationPageProps {
   tripId: number
@@ -18,12 +17,11 @@ type PageState =
   | { kind: 'failed'; message: string | undefined }
 
 // US-083 R4: dedicated full-screen invitation page (no bottom dock, app-shell
-// delta). Reuses the InvitationPanel issuance contract; the organizer sees QR +
-// link + copy with a 生效中 pill, a non-organizer sees the permission state
+// delta). Reuses the InvitationPanel issuance contract; members see QR +
+// link + copy with a 生效中 pill, and non-members see the permission state
 // without any link/token/QR payload. Prototype extras (WeChat share, expiry,
 // revoke) are deviation D-1 and intentionally absent.
 export default function InvitationPage({ tripId, backHref = `#/trips/${tripId}` }: InvitationPageProps) {
-  const { account } = useAuth()
   const [state, setState] = useState<PageState>({ kind: 'loading' })
   const [invitationReady, setInvitationReady] = useState(false)
 
@@ -98,15 +96,12 @@ export default function InvitationPage({ tripId, backHref = `#/trips/${tripId}` 
     )
   }
 
-  const isOrganizer = state.trip.organizerId === account?.id
-
   return (
     <div className="screen">
       {appbar}
       <div className="body">
         <InvitationPanel
           tripId={tripId}
-          isOrganizer={isOrganizer}
           joiningClosed={state.trip.joiningClosed === true}
           showTitle={false}
           onReadyChange={setInvitationReady}

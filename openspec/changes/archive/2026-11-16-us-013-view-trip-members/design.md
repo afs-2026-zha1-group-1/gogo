@@ -13,7 +13,7 @@ G2.
 
 Links: [ATDD design](atdd-design.md) · [trips delta](specs/trips/spec.md) ·
 [app-shell delta](specs/app-shell/spec.md) · [tasks](tasks.md) ·
-[fixtures](../../../requirement-workspace/acceptance-test-fixtures.md) ·
+[fixtures](../../../../requirement-workspace/acceptance-test-fixtures.md) ·
 [G1 record](g1-decision.md).
 
 ## Goals / Non-Goals

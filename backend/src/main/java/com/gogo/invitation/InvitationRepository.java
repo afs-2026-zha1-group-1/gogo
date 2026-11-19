@@ -26,8 +26,8 @@ public class InvitationRepository {
     public IssuedInvitation issue(long tripId, long callerId) {
         TripResponse trip = trips.findById(tripId)
                 .orElseThrow(() -> new InvitationApiException(404, "TRIP_NOT_FOUND", "No trip with id " + tripId));
-        if (trip.organizerId() != callerId) {
-            throw new InvitationApiException(403, "NOT_ORGANIZER", "Only the trip organizer can issue an invitation");
+        if (!trips.isMember(tripId, callerId)) {
+            throw new InvitationApiException(403, "NOT_A_MEMBER", "Caller is not a member of this trip");
         }
         Optional<String> existing = findToken(tripId);
         if (existing.isPresent()) {

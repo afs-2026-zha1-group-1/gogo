@@ -3,7 +3,7 @@
 ## Context
 
 `MainPlanProvider` 是主线生成的唯一接缝：
-`MainPlanService.generate`（[MainPlanService.java:111](file:///C:/Users/JIANGEL5/code/bootcamp/GoGo/backend/src/main/java/com/gogo/mainplan/MainPlanService.java#L111)）
+`MainPlanService.generate`（[MainPlanService.java](../../../backend/src/main/java/com/gogo/mainplan/MainPlanService.java)）
 把 `TripContext` + 就绪成员的 `MemberInput` 交给 provider，再持久化
 `main_plan_draft` / `main_plan_stop`。当前唯一实现 `FakeMainPlanProvider`
 （`@Component`）按目的地返回固定站点，忽略输入。测试（`MainPlanApiTest`、

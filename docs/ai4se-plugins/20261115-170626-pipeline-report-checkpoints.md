@@ -2,7 +2,7 @@
 
 - skill: skill.verify.pipeline-report
 - command: /sdd:pipeline-report
-- root: /c/Users/JIANGEL5/code/bootcamp/GoGo
+- root: [original checkout path redacted]
 - started_at: 2026-11-15T17:06:27+0800
 - host_agent: unknown
 

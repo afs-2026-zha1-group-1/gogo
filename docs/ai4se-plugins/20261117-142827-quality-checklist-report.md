@@ -1,7 +1,7 @@
 # Quality Checklist Report: p3
 
 **Date:** 2026-11-17 (timezone: +0800)
-**Root:** C:/Users/JIANGEL5/code/bootcamp/GoGo
+**Root:** [original checkout path redacted]
 **Stages:** p3
 **Focus:** full-stage
 **Change:** `us-086-team-route-graph`

@@ -3,7 +3,7 @@
 - Change: `us-013-view-trip-members`
 - Inputs: [proposal](proposal.md) · [trips delta](specs/trips/spec.md) ·
   [app-shell delta](specs/app-shell/spec.md) · [ATDD design](atdd-design.md) ·
-  [design](design.md) · [fixtures](../../../requirement-workspace/acceptance-test-fixtures.md) ·
+  [design](design.md) · [fixtures](../../../../requirement-workspace/acceptance-test-fixtures.md) ·
   [G1 record](g1-decision.md)
 - Order rule: acceptance checks red before production code (ATDD design §2).
 - Commit rule: local commit at each phase end only with the user's typed

@@ -2,7 +2,7 @@
 
 - skill: skill.verify.local-verify-report
 - command: /sdd:local-verify-report
-- root: /c/Users/JIANGEL5/code/bootcamp/GoGo
+- root: [original checkout path redacted]
 - started_at: 2026-11-17T14:46:49+0800
 - host_agent: unknown
 

@@ -1,7 +1,7 @@
 # Local Verify Report: us-068-070-account-register
 
 **Date:** 2026-11-17 (timezone: Asia/Shanghai, +08:00)
-**Root:** C:/Users/JIANGEL5/code/bootcamp/GoGo
+**Root:** [original checkout path redacted]
 **Scope:** local+evidence
 **Change id:** us-068-070-account-register
 

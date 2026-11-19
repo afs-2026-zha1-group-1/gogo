@@ -2,7 +2,7 @@
 
 - skill: skill.common.quality-checklist
 - command: /sdd:quality-checklist
-- root: /c/Users/JIANGEL5/code/bootcamp/GoGo
+- root: [original checkout path redacted]
 - started_at: 2026-11-16T14:07:48+0800
 - host_agent: unknown
 

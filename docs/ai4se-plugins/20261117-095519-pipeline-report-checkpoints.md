@@ -2,7 +2,7 @@
 
 - skill: skill.verify.pipeline-report
 - command: /sdd:pipeline-report
-- root: /c/Users/JIANGEL5/code/bootcamp/GoGo
+- root: [original checkout path redacted]
 - started_at: 2026-11-17T09:55:19+0800
 - host_agent: unknown
 
@@ -18,7 +18,7 @@
 - summary: GitHub origin; workflow runs found via gh full path (script PATH probe reported gh:no)
 - host: github
 - tool_glab: no
-- tool_gh: yes (C:/Users/JIANGEL5/AppData/Local/Programs/gh/bin/gh.exe)
+- tool_gh: yes ([original executable path redacted])
 - remotes: origin https://github.com/afs-2026-zha1-group-1/gogo.git
 
 ## Fetch

@@ -28,7 +28,7 @@ G1 Pass was closed on 2026-11-16 (IO Emily 2026-11-15, SA evelyn.huang 2026-11-1
 D1–D14 live in `requirement-workspace/intents/2026-11-15-req-019.md`.
 
 Links: [ATDD design](atdd-design.md) · [delta spec](specs/preferences/spec.md) ·
-[tasks](tasks.md) · [fixtures](../../../requirement-workspace/acceptance-test-fixtures.md) ·
+[tasks](tasks.md) · [fixtures](../../../../requirement-workspace/acceptance-test-fixtures.md) ·
 UI reference `ui-design-reference/screenshots/screen-08-preferences.png`.
 
 ## Goals / Non-Goals

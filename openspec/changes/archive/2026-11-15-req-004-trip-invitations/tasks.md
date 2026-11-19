@@ -3,7 +3,7 @@
 - Change: `req-004-trip-invitations` (REQ-004, US-008/US-010/US-012)
 - Inputs: [proposal](proposal.md) · [invitations delta](specs/invitations/spec.md) ·
   [trips delta](specs/trips/spec.md) · [ATDD design](atdd-design.md) ·
-  [design](design.md) · [fixtures](../../../requirement-workspace/acceptance-test-fixtures.md)
+  [design](design.md) · [fixtures](../../../../requirement-workspace/acceptance-test-fixtures.md)
 - Order rule: acceptance checks red before production code (ATDD design §2).
 - Commit rule: local commit at each phase end only with the user's typed
   authorization; never push without separate authorization.

@@ -11,7 +11,7 @@ destination required, both locations optional and normalized to null, non-member
 read `403` without trip values, location completion deferred to US-031.
 
 Links: [ATDD design](atdd-design.md) · [delta spec](specs/trips/spec.md) ·
-[tasks](tasks.md) · [fixtures](../../../requirement-workspace/acceptance-test-fixtures.md) ·
+[tasks](tasks.md) · [fixtures](../../../../requirement-workspace/acceptance-test-fixtures.md) ·
 UI reference `ui-design-reference/` screens 02 (create) and 03 (detail).
 
 ## Goals / Non-Goals

@@ -1,7 +1,7 @@
 # Local Verify Report: us-086-team-route-graph
 
 **Date:** 2026-11-17 (timezone: +0800)
-**Root:** C:/Users/JIANGEL5/code/bootcamp/GoGo
+**Root:** [original checkout path redacted]
 **Scope:** local+evidence
 **Change id:** us-086-team-route-graph
 **Branch:** US-086-team-route-graph（未提交）

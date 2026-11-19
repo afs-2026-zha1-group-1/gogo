@@ -8,6 +8,7 @@ VALUES (9001, 1, 'current', 0,
 
 INSERT INTO trip (id, name, destination, start_date, end_date, start_location, end_location, organizer_id, main_plan_confirmed)
 VALUES (9002, 'Active split trip', 'Malacca', '2026-12-15', '2026-12-16', 'Station', 'Harbour', 1, 1);
+UPDATE trip SET joining_closed = 1 WHERE id = 9002;
 INSERT INTO trip_member (trip_id, user_id, ready, preference_revision) VALUES
   (9002, 1, 1, 1), (9002, 2, 1, 1), (9002, 3, 1, 1), (9002, 4, 1, 1);
 INSERT INTO main_plan_draft (trip_id, version, status, cost_per_person_cents, input_revisions_json)

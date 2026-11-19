@@ -15,7 +15,7 @@ main-plan state column. P0–P3 artifacts are independent of that ordering.
 
 Links: [ATDD design](atdd-design.md) · [delta specs](specs/invitations/spec.md)
 and [trips delta](specs/trips/spec.md) · [tasks](tasks.md) ·
-[fixtures](../../../requirement-workspace/acceptance-test-fixtures.md).
+[fixtures](../../../../requirement-workspace/acceptance-test-fixtures.md).
 
 ## Goals / Non-Goals
 

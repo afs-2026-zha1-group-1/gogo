@@ -1,7 +1,7 @@
 # Pipeline Report: us-086-team-route-graph
 
 **Date:** 2026-11-17 (timezone: +0800)
-**Root:** C:/Users/JIANGEL5/code/bootcamp/GoGo
+**Root:** [original checkout path redacted]
 **Phase:** ci
 **Data source:** API（gh CLI 全路径，已认证）
 **Change id:** us-086-team-route-graph

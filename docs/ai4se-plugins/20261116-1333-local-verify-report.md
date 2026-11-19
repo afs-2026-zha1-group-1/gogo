@@ -7,11 +7,11 @@
 **Stage:** P4 (`/sdd:atdd-apply`) — this report is the P4 evidence bundle handed to
 `/sdd:local-verify-report` and then to G2. It records implementation, not approval.
 
-Inputs: [proposal](../../openspec/changes/req-019-save-interests/proposal.md) ·
-[delta spec](../../openspec/changes/req-019-save-interests/specs/preferences/spec.md) ·
-[ATDD design](../../openspec/changes/req-019-save-interests/atdd-design.md) ·
-[design](../../openspec/changes/req-019-save-interests/design.md) ·
-[tasks](../../openspec/changes/req-019-save-interests/tasks.md)
+Inputs: [proposal](../../openspec/changes/archive/2026-11-16-req-019-save-interests/proposal.md) ·
+[delta spec](../../openspec/changes/archive/2026-11-16-req-019-save-interests/specs/preferences/spec.md) ·
+[ATDD design](../../openspec/changes/archive/2026-11-16-req-019-save-interests/atdd-design.md) ·
+[design](../../openspec/changes/archive/2026-11-16-req-019-save-interests/design.md) ·
+[tasks](../../openspec/changes/archive/2026-11-16-req-019-save-interests/tasks.md)
 
 ## Summary
 
