@@ -5,17 +5,23 @@ import { IconInfo, IconNav, IconUsers, IconX } from "@/components/icons"
 import type { NodeDetailView } from "./node-detail"
 
 /**
- * Bottom sheet for a route node (ui-design-reference Screen 11 node sheet). Content comes from
- * `node-detail.ts` (mock for now). Overlay / close button / Esc dismiss it; the graph remains visible.
+ * Bottom sheet for a route node (ui-design-reference Screen 11 node sheet, US-092). Content is the
+ * real split-snapshot view-model from `node-detail.ts`; absent location/fee/todo values are omitted
+ * rather than mocked. Closing restores the background scroll position; the graph stays mounted.
  */
 export function NodeDetailSheet({ detail, onClose }: { detail: NodeDetailView | null; onClose: () => void }) {
   useEffect(() => {
     if (!detail) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose()
     }
     window.addEventListener("keydown", onKey)
-    return () => window.removeEventListener("keydown", onKey)
+    return () => {
+      window.removeEventListener("keydown", onKey)
+      document.body.style.overflow = previousOverflow
+    }
   }, [detail, onClose])
 
   if (!detail) return null
@@ -53,22 +59,26 @@ export function NodeDetailSheet({ detail, onClose }: { detail: NodeDetailView | 
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          <Meta icon={<IconNav />} text={detail.location} />
+          {detail.location ? <Meta icon={<IconNav />} text={detail.location} /> : null}
           <Meta icon={<IconUsers />} text={detail.people} />
-          <Meta icon={<IconInfo />} text={detail.fee} />
+          {detail.fee ? <Meta icon={<IconInfo />} text={detail.fee} /> : null}
         </div>
 
-        <div className="mt-5 text-[11px] font-bold tracking-wide text-ink-3">需要做的事</div>
-        <ol className="mt-1 flex flex-col">
-          {detail.tasks.map((task, index) => (
-            <li key={task} className="flex items-start gap-2.5 border-b border-line-2 py-2.5 last:border-b-0">
-              <span className="grid size-[22px] shrink-0 place-items-center rounded-full bg-surface-3 text-[11px] font-bold text-ink-2">
-                {index + 1}
-              </span>
-              <span className="pt-0.5 text-[12.5px] leading-relaxed text-ink">{task}</span>
-            </li>
-          ))}
-        </ol>
+        {detail.tasks.length > 0 ? (
+          <>
+            <div className="mt-5 text-[11px] font-bold tracking-wide text-ink-3">需要做的事</div>
+            <ol className="mt-1 flex flex-col">
+              {detail.tasks.map((task, index) => (
+                <li key={task} className="flex items-start gap-2.5 border-b border-line-2 py-2.5 last:border-b-0">
+                  <span className="grid size-[22px] shrink-0 place-items-center rounded-full bg-surface-3 text-[11px] font-bold text-ink-2">
+                    {index + 1}
+                  </span>
+                  <span className="pt-0.5 text-[12.5px] leading-relaxed text-ink">{task}</span>
+                </li>
+              ))}
+            </ol>
+          </>
+        ) : null}
 
         <Button className="mt-5 w-full" onClick={onClose}>
           知道了

@@ -3,7 +3,7 @@
  * windows and feasibility; these helpers only render the values it returns (no client-side judgment).
  * Stop instants are ISO-8601 UTC; clocks render in the trip's destination zone.
  */
-import { tripZone } from './trip-zone'
+import { tripZone } from './trip-zone.ts'
 
 /** Render an ISO instant as HH:MM in the trip's local zone, or an em dash when absent/invalid. */
 export function formatClock(iso: string | null | undefined, destination?: string | null): string {

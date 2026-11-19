@@ -6,7 +6,7 @@ import { SplitLayout } from "./split-layout"
 import { ErrorState, LoadingState } from "./states"
 import { TeamRouteGraph } from "./team-route-graph"
 import { NodeDetailSheet } from "./node-detail-sheet"
-import { buildNodeDetail } from "./node-detail"
+import { buildNodeDetail, type NodeStopInfo } from "./node-detail"
 import { buildGraphRows, formatTime, type GraphRow, type StopInput } from "./graph-model"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -54,6 +54,15 @@ export function ScreenStart() {
         endLabel: stop.endTime,
       }))
 
+  // US-092: node details read the same snapshot the graph draws — no mock copy.
+  const stopsById = new Map<string, NodeStopInfo>()
+  for (const stop of source?.mainPlanStops ?? []) {
+    stopsById.set(stop.id, { locationName: stop.locationName ?? null, costCents: stop.costCents })
+  }
+  for (const stop of mainPlanQuery.data?.stops ?? []) {
+    stopsById.set(String(stop.seq), { locationName: stop.locationName ?? null })
+  }
+
   const confirmedRounds = rounds.filter((round) => round.status === "confirmed")
   const model = buildGraphRows({
     stops,
@@ -78,7 +87,13 @@ export function ScreenStart() {
   }
   const totalMembers = Object.values(lastRound?.groups ?? {}).reduce((sum, ids) => sum + ids.length, 0)
   const selectedDetail = selectedNode
-    ? buildNodeDetail(selectedNode, { groupCounts, totalMembers })
+    ? buildNodeDetail(selectedNode, {
+        rounds: confirmedRounds,
+        stopsById,
+        destination: lastRound?.destination ?? null,
+        groupCounts,
+        totalMembers,
+      })
     : null
 
   const pending = startDraft.isPending || startNext.isPending
@@ -223,7 +238,11 @@ export function ScreenStart() {
                   </div>
                 ) : null}
 
-                <TeamRouteGraph model={model} onNodeClick={setSelectedNode} />
+                <TeamRouteGraph
+                  model={model}
+                  onNodeClick={setSelectedNode}
+                  selectedId={selectedNode?.id}
+                />
 
                 {rounds.map((round) => (
                   <RoundCard key={round.roundIndex} round={round} nameOf={(id) => membersQuery.data?.find((member) => String(member.userId) === id)?.displayName ?? id} onOpen={() => {

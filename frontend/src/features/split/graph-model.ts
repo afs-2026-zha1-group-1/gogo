@@ -33,6 +33,8 @@ export interface RouteInput {
 export interface MainRow {
   kind: "main"
   id: string
+  /** Main-plan stop the row represents (US-092 detail lookup). */
+  stopId: string
   title: string
   meta: string
   side: LabelSide
@@ -41,6 +43,8 @@ export interface MainRow {
 export interface JunctionRow {
   kind: "fork" | "join" | "join-fork"
   id: string
+  /** Main-plan stop the junction sits on (US-092 detail lookup). */
+  stopId: string
   title: string
   meta: string
   side: LabelSide
@@ -244,6 +248,7 @@ function mainRow(stop: StopInput, counter: number): MainRow {
   return {
     kind: "main",
     id: stop.id,
+    stopId: stop.id,
     title: cleanStationName(stop.name),
     meta,
     side: counter % 2 === 0 ? "right" : "left",
@@ -302,6 +307,7 @@ export function buildGraphRows(input: {
   rows.push({
     kind: "fork",
     id: fork.id,
+    stopId: fork.id,
     title: forkTitle,
     meta: fromStart
       ? `行程起点 · 分头${sameDeparture && firstA ? ` · A 组${firstA.meta}` : ""}`
@@ -316,6 +322,7 @@ export function buildGraphRows(input: {
   rows.push({
     kind: "join",
     id: join.id,
+    stopId: join.id,
     title: cleanStationName(join.name),
     meta: `${join.startLabel} · 会合`,
     side: "left",
@@ -418,6 +425,7 @@ function buildMultiRoundGraphRows(stops: StopInput[], rounds: RoundInput[]): Gra
       rows.push({
         kind: "fork",
         id: `${round.roundIndex}-fork-${stops[round.depIndex].id}`,
+        stopId: stops[round.depIndex].id,
         title: round.forkTitle,
         meta: forkMeta,
         side: "right",
@@ -433,6 +441,7 @@ function buildMultiRoundGraphRows(stops: StopInput[], rounds: RoundInput[]): Gra
       rows.push({
         kind: "join-fork",
         id: `${round.roundIndex}-${next.roundIndex}-join-fork-${stops[round.reuIndex].id}`,
+        stopId: stops[round.reuIndex].id,
         title: round.joinTitle,
         meta: `${round.joinStartLabel} · 会合 · 再分头`,
         side: "left",
@@ -446,6 +455,7 @@ function buildMultiRoundGraphRows(stops: StopInput[], rounds: RoundInput[]): Gra
       rows.push({
         kind: "join",
         id: `${round.roundIndex}-join-${stops[round.reuIndex].id}`,
+        stopId: stops[round.reuIndex].id,
         title: round.joinTitle,
         meta: `${round.joinStartLabel} · 第 ${round.roundIndex} 次会合`,
         side: "left",

@@ -1,10 +1,13 @@
+import { useState } from "react"
 import { useParams } from "react-router-dom"
 import { useSplitNavigate } from "./split-navigation"
 import { useRoundIndex, useSplitDraft, useSplitRounds } from "./hooks"
 import { SplitLayout } from "./split-layout"
 import { EmptyState, ErrorState, LoadingState } from "./states"
 import { TeamRouteGraph } from "./team-route-graph"
-import { buildGraphRows, formatTime, PENDING_LABEL } from "./graph-model"
+import { NodeDetailSheet } from "./node-detail-sheet"
+import { buildNodeDetail, type NodeStopInfo } from "./node-detail"
+import { buildGraphRows, formatTime, PENDING_LABEL, type GraphRow } from "./graph-model"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -26,6 +29,7 @@ export function ScreenPreview() {
   const detail = draft.data
   const status = detail?.status ?? null
   const routes = detail?.routes ?? []
+  const [selectedNode, setSelectedNode] = useState<GraphRow | null>(null)
 
   const roundDetails = (rounds.data?.rounds ?? []).filter((round) => round.status !== "cancelled")
   const stopsSource = detail ?? roundDetails[0] ?? null
@@ -35,6 +39,10 @@ export function ScreenPreview() {
     startLabel: formatTime(stop.startAt, "iso", stopsSource?.destination),
     endLabel: formatTime(stop.endAt, "iso", stopsSource?.destination),
   }))
+  const stopsById = new Map<string, NodeStopInfo>()
+  for (const stop of stopsSource?.mainPlanStops ?? []) {
+    stopsById.set(stop.id, { locationName: stop.locationName ?? null, costCents: stop.costCents })
+  }
   const model = roundDetails.length > 0
     ? buildGraphRows({
         stops,
@@ -59,6 +67,16 @@ export function ScreenPreview() {
     a: detail?.groups.A?.length ?? 0,
     b: detail?.groups.B?.length ?? 0,
   }
+  const totalMembers = Object.values(detail?.groups ?? {}).reduce((sum, ids) => sum + ids.length, 0)
+  const selectedDetail = selectedNode
+    ? buildNodeDetail(selectedNode, {
+        rounds: roundDetails,
+        stopsById,
+        destination: detail?.destination ?? stopsSource?.destination ?? null,
+        groupCounts: counts,
+        totalMembers,
+      })
+    : null
 
   // A blocked plan lists every missing precondition, so "不可确认" is never a dead end without an explanation.
   const blockedReasons: string[] = []
@@ -128,7 +146,11 @@ export function ScreenPreview() {
           </div>
 
           {hasPair ? (
-            <TeamRouteGraph model={model} />
+            <TeamRouteGraph
+              model={model}
+              onNodeClick={setSelectedNode}
+              selectedId={selectedNode?.id}
+            />
           ) : (
             <Card className="flex items-start gap-2.5 border-[#fde68a] bg-warn-soft p-3.5">
               <span className="grid size-7 shrink-0 place-items-center rounded-full bg-warn/15 text-warn [&_svg]:size-4">
@@ -173,6 +195,8 @@ export function ScreenPreview() {
               路线图是本页唯一的路线呈现；确认前请前往复核页，服务端会再次复算时间窗。
             </p>
           ) : null}
+
+          <NodeDetailSheet detail={selectedDetail} onClose={() => setSelectedNode(null)} />
         </div>
       )}
     </SplitLayout>
