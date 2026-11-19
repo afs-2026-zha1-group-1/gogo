@@ -24,15 +24,18 @@ class AiMainPlanProvider implements MainPlanProvider {
             Rules:
             - The trip runs from startDate through endDate. Cover every date: dayIndex
               starts at 1 for startDate and runs to N for endDate with no gaps, and
-              every day has 2 to 4 stops.
-            - Keep each day realistic and relaxed instead of cramming sights. Include
-              a meal stop (lunch or dinner) when the day spans a meal time, and an
-              end-of-day return to the hotel or rest point when it fits. A generic
-              stop name such as 返回酒店休息 is fine when the lodging is unknown;
-              never invent a specific hotel name or address.
-            - Start every day at 14:00 or later, local time. Times are local HH:mm on
-              that stop's day, ascending and non-overlapping within the day; every
-              stop ends after it starts.
+              every day has 2 to 4 activity or attraction stops.
+            - Build a realistic day instead of cramming sights: start the first
+              activity in the morning (around 09:00), add a lunch stop, a midday
+              hotel or rest break around 13:00-14:00 when it fits, continue with
+              afternoon activities from 14:00, and end with dinner or a return to
+              the hotel. Meal and rest stops are additional to the 2-4 activities;
+              keep the whole day at 6 stops or fewer, combining lunch/rest or
+              dinner/hotel when needed.
+            - Use a generic stop name such as 返回酒店休息 when the lodging is
+              unknown; never invent a specific hotel name or address.
+            - Times are local HH:mm on that stop's day, ascending and non-overlapping
+              within the day; every stop ends after it starts.
             - seq starts at 1 and is contiguous across the whole plan.
             - travelMinutesToNext is a nonnegative integer on every stop except the
               last stop of each day, which must be null.

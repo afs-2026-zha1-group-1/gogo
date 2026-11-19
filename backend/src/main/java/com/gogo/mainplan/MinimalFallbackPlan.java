@@ -15,9 +15,9 @@ final class MinimalFallbackPlan {
         List<MainPlanResult.PlannedStop> stops = new ArrayList<>();
         int seq = 1;
         for (int day = 1; day <= trip.dayCount(); day++) {
-            stops.add(new MainPlanResult.PlannedStop(seq++, trip.startLocation(), "14:00", "14:30", 30,
+            stops.add(new MainPlanResult.PlannedStop(seq++, trip.startLocation(), "09:00", "09:30", 30,
                     List.of(), null, null, 0, day));
-            stops.add(new MainPlanResult.PlannedStop(seq++, trip.endLocation(), "19:00", "19:30", null,
+            stops.add(new MainPlanResult.PlannedStop(seq++, trip.endLocation(), "17:00", "17:30", null,
                     List.of(), null, null, 0, day));
         }
         return new MainPlanResult(stops, 0);

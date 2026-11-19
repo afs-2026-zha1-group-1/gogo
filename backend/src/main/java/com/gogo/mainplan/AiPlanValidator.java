@@ -15,8 +15,7 @@ class AiPlanValidator {
 
     private static final Pattern HH_MM = Pattern.compile("^([01]\\d|2[0-3]):([0-5]\\d)$");
     private static final int MIN_STOPS_PER_DAY = 2;
-    private static final int MAX_STOPS_PER_DAY = 4;
-    private static final int EARLIEST_START_MINUTES = 14 * 60;
+    private static final int MAX_STOPS_PER_DAY = 6;
     private static final int MAX_TRIP_DAYS = 14;
 
     /** Single-day contract kept for existing callers and fixtures. */
@@ -51,7 +50,6 @@ class AiPlanValidator {
                 throw invalid("seq must start at 1 and be contiguous");
             }
             int dayIndex = dayIndex(stop, days, previousDay);
-            boolean firstOfDay = i == 0 || dayIndex != previousDay;
             previousDay = dayIndex;
             stopsPerDay[dayIndex] += 1;
             if (stopsPerDay[dayIndex] > MAX_STOPS_PER_DAY) {
@@ -60,9 +58,6 @@ class AiPlanValidator {
             String name = text(stop, "name");
             int start = minutes(text(stop, "startTime"));
             int end = minutes(text(stop, "endTime"));
-            if (firstOfDay && start < EARLIEST_START_MINUTES) {
-                throw invalid("each day must start at 14:00 or later");
-            }
             if (end <= start) {
                 throw invalid("every stop must end after it starts");
             }
