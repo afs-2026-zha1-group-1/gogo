@@ -31,6 +31,17 @@ test('dashboard follows the trip selected in my trips and keeps it after reload'
   }
 })
 
+test('the invitation page marks itself expired once joining is closed', async ({ page }) => {
+  await login(page)
+  await page.goto('/#/dashboard/trips/9002/invite')
+  await expect(page.getByLabel('Invitation URL')).toBeVisible()
+  // 9002 has joining_closed = 1: the badge must follow that state instead of always saying 生效中.
+  const appbar = page.locator('.appbar')
+  await expect(appbar.getByText('已失效')).toBeVisible()
+  await expect(appbar.getByText('生效中')).toHaveCount(0)
+  await expect(page.getByText('加入已关闭：新成员不能再通过邀请链接加入。')).toBeVisible()
+})
+
 test('Trips opens the saved trip instead of a different direct dashboard trip and survives reload', async ({ page }) => {
   const db = new DatabaseSync(process.env.GOGO_E2E_DB_PATH!)
   const previous = db.prepare('SELECT current_trip_id FROM app_user WHERE id = 2').get()?.current_trip_id
