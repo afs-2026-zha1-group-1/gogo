@@ -2200,6 +2200,7 @@ body {
 
 .act-card {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   gap: 10px;
   margin-top: 6px;
@@ -2208,6 +2209,12 @@ body {
   border-radius: var(--r);
   background: var(--surface);
   box-shadow: var(--sh-1);
+}
+
+/* 兴趣标签占满卡片一整行，多个 tag 并排（不再一个 tag 占一行）。 */
+.act-tags {
+  flex-basis: 100%;
+  margin-top: 2px;
 }
 
 .act-ic {

@@ -12,6 +12,7 @@ import { localEndOfDay, localMidnight, type ScheduleItem } from '../lib/countdow
 import { useAuth } from '../features/auth/AuthProvider'
 import type { TripOverviewState } from '../hooks/useTripOverview'
 import type { MainPlan, PlanStop } from '../types/mainPlan'
+import type { SplitDraftDetail } from '../features/split/types'
 
 type ReadyState = Extract<TripOverviewState, { kind: 'ready' }>
 
@@ -28,6 +29,15 @@ function nextHour(clock: string): string {
   return `${pad(Math.floor(total / 60))}:${pad(total % 60)}`
 }
 
+/** Whole minutes between two ISO instants, clamped at zero (fallback legs follow the main-line schedule). */
+function minutesBetween(from: string | null, to: string | null): number {
+  if (from == null || to == null) return 0
+  const start = Date.parse(from)
+  const finish = Date.parse(to)
+  if (Number.isNaN(start) || Number.isNaN(finish)) return 0
+  return Math.max(0, Math.round((finish - start) / 60_000))
+}
+
 /** One readable line for a rejected stop mutation (code plus message, or the HTTP status). */
 function apiFailure(result: { status: number; ok: boolean; data: unknown }): string {
   if (!result.ok) {
@@ -35,6 +45,36 @@ function apiFailure(result: { status: number; ok: boolean; data: unknown }): str
     if (error?.message) return error.code ? `${error.code}: ${error.message}` : error.message
   }
   return `操作失败（HTTP ${result.status}）`
+}
+
+/**
+ * When a group's last own node is deleted it walks the main-line stops inside the split window instead; a route
+ * always needs at least one station, so empty step lists are never sent (A: legs per stop, B: surrounding legs).
+ */
+function mainLineFallback(detail: SplitDraftDetail, label: 'A' | 'B') {
+  const stops = detail.mainPlanStops
+  const departureIndex = detail.splitMode === 'FROM_START'
+    ? 0
+    : stops.findIndex((stop) => stop.id === detail.departureStopId)
+  const reunionIndex = stops.findIndex((stop) => stop.id === detail.reunionStopId)
+  const from = departureIndex >= 0 ? departureIndex : 0
+  const windowStops = reunionIndex > from
+    ? stops.slice(from, reunionIndex)
+    : stops.slice(from, from + 1)
+  if (windowStops.length === 0) {
+    return { steps: [{ name: '待定', minutes: 0 }], travelLegsMinutes: label === 'B' ? [0, 0] : [0] }
+  }
+  const steps = windowStops.map((stop) => ({
+    name: stop.name,
+    minutes: minutesBetween(stop.startAt, stop.endAt),
+  }))
+  const legs: number[] = []
+  if (label === 'B') legs.push(minutesBetween(detail.departureAt, windowStops[0].startAt))
+  windowStops.forEach((stop, index) => {
+    const nextStart = index + 1 < windowStops.length ? windowStops[index + 1].startAt : detail.reunionAt
+    legs.push(minutesBetween(stop.endAt, nextStart))
+  })
+  return { steps, travelLegsMinutes: legs }
 }
 
 // US-083/084/085: compact overview (hero → countdown → fellow members → 我的方案),
@@ -243,8 +283,14 @@ export default function TripOverview({ state }: { state: ReadyState }) {
         const legs = route.travelLegsMinutes ?? []
         if (label !== step.groupLabel) return { groupLabel: label, steps, travelLegsMinutes: legs }
         const remainingSteps = steps.filter((_, index) => index !== step.stepIndex)
-        // Legs run steps + 1: dropping the step also drops the leg that leaves it.
-        const remainingLegs = legs.slice(0, step.stepIndex + 1).concat(legs.slice(step.stepIndex + 2))
+        if (remainingSteps.length === 0) {
+          // Deleting the group's only node leaves it walking the main-line stops inside the window (a route always
+          // needs at least one station).
+          return { groupLabel: label, ...mainLineFallback(detail, label) }
+        }
+        // Legs follow each stop for group A and surround them for group B; drop the one that left the removed step.
+        const legIndex = label === 'B' ? step.stepIndex + 1 : Math.min(step.stepIndex, legs.length - 1)
+        const remainingLegs = legs.filter((_, index) => index !== legIndex)
         return { groupLabel: label, steps: remainingSteps, travelLegsMinutes: remainingLegs }
       })
       await saveRoutes(tripId, step.roundIndex, { draftVersion: detail.draftVersion, routes })
