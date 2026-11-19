@@ -141,6 +141,18 @@ test('buildGraphRows: a different edited first A stop remains visible', () => {
   assert.ok(model.rows.some((row) => row.kind === 'branch' && row.route === 'a' && row.title === '新活动'))
 })
 
+test('travel rows are drawn as connectors instead of nodes', () => {
+  const rows = buildBranchRows([
+    { groupLabel: 'A', activityName: null, activityMinutes: null,
+      travelLegsMinutes: [20, 15], bufferMinutes: 0,
+      steps: [{ name: 'City Hall MRT', minutes: 30 }, { name: 'Merlion Park', minutes: 60 }] },
+  ])
+  const legs = rows.filter((row) => row.kind === 'branch' && row.leg)
+  assert.deepEqual(legs.map((row) => row.legMinutes), [20, 15])
+  assert.ok(legs.every((row) => row.title === '路程'))
+  assert.equal(rows.filter((row) => row.kind === 'branch' && !row.leg).length, 2)
+})
+
 test('station names drop the generated 主线 marker for display and saving', () => {
   assert.equal(cleanStationName('主线·旧城早餐'), '旧城早餐')
   assert.equal(cleanStationName('主线：滨海美术馆'), '滨海美术馆')
