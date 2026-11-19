@@ -1,4 +1,5 @@
 import {
+  PENDING_LABEL,
   truncateLabel,
   type GraphModel,
   type GraphRow,
@@ -8,8 +9,9 @@ import {
 /**
  * Team-route graph (US-086, ui-design-reference Screen 11). Three lanes: Route B on the left, the
  * shared main line in the middle and Route A on the right. Main labels alternate sides; branch
- * labels stay outside their lane. Rows are clickable when an `onNodeClick` handler is supplied;
- * the sheet content itself lives in the screen (currently mock data).
+ * labels stay outside their lane. Travel rows are connectors, not nodes: they render as a small
+ * minutes tag on the lane line (so a split can start with two lines instead of a 路程 dot). Rows are
+ * clickable when an `onNodeClick` handler is supplied; the sheet content itself lives in the screen.
  */
 
 const WIDTH = 320
@@ -193,6 +195,29 @@ export function TeamRouteGraph({
           const label = labelAnchor(row)
           const isJunction = isJunctionRow(row)
           const isBranch = row.kind === "branch"
+          // Travel legs are drawn on the line between two nodes: no dot, no big title, no click target.
+          if (isBranch && row.leg) {
+            const minutesLabel = row.legMinutes == null ? PENDING_LABEL : `${row.legMinutes} 分`
+            const color = row.route === "a" ? "#2563eb" : "#ea580c"
+            return (
+              <g key={row.id} aria-label={`${row.route === "a" ? "A 组" : "B 组"}路程 ${minutesLabel}`}>
+                <rect
+                  x={cx - 21}
+                  y={cy - 8}
+                  width={42}
+                  height={16}
+                  rx={8}
+                  fill="#fff"
+                  fillOpacity={0.94}
+                  stroke={color}
+                  strokeOpacity={0.35}
+                />
+                <text x={cx} y={cy + 3.5} textAnchor="middle" fontSize={9} fontWeight={700} fill={color}>
+                  {minutesLabel}
+                </text>
+              </g>
+            )
+          }
           const isJoinFork = row.kind === "join-fork"
           const titleSize = isJunction ? 13 : isBranch ? 11.5 : 12.5
           const titleWeight = isJunction ? 750 : isBranch ? 620 : 650
