@@ -624,16 +624,20 @@ opencode (not a new stack).
   configured. It calls the internal `llm-gateway-alicloud` endpoint
   (`https://mlop-llm-gateway-dev.home-np.oocl.com/v2/openai/deployments/ali-copilot/chat/completions`)
   with `Authorization: Bearer $LLM_API_KEY`, `deepseek-v4.1-flash`, JSON-object
-  mode, `max_tokens` 8192, 5s connect / 30s read, one attempt.
+  mode, `max_tokens` 16384, 5s connect / 90s read, one attempt. The reasoning
+  model spends tokens before content, so a 5-day plan needed the larger budget
+  (8192 ended with `finish_reason=length` and empty content).
 - **Config:** `gogo.plan.ai.api-key = ${LLM_API_KEY:}`,
   `PLAN_AI_BASE_URL`, `PLAN_AI_MODEL`, `PLAN_AI_MAX_TOKENS`,
   `PLAN_AI_TIMEOUT`. A blank key keeps `FakeMainPlanProvider` (city fixtures)
   for tests, CI and offline demos.
-- **Validation + fallback:** AI output must have ≥2 stops, contiguous `seq`,
-  `HH:mm` times with end > start, valid travel legs and nonnegative cost. Any
-  timeout/HTTP/empty/invalid output persists `MinimalFallbackPlan` instead:
-  start location 09:00–09:30 (30-minute leg) → end location 17:00–17:30
-  (null leg), per-person cost 0, using the already-completed trip locations.
+- **Validation + fallback:** AI output must cover every trip day
+  (`dayIndex` 1..N, 2–10 stops each), keep `seq` contiguous across the plan,
+  use `HH:mm` times with end > start, valid travel legs and nonnegative cost.
+  Any timeout/HTTP/empty/invalid output persists `MinimalFallbackPlan` instead:
+  every trip day gets start location 09:00–09:30 (30-minute leg) → end location
+  17:00–17:30 (null leg), per-person cost 0, using the already-completed trip
+  locations.
 - **API / data:** no endpoint, error-code, schema or migration change.
 - **Frontend:** `AiGeneratingNotice` shows a non-blocking “AI 正在生成中…”
   strip on the inputs screen and plan-page regeneration; confirm is unaffected.
