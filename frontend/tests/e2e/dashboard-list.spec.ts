@@ -453,3 +453,67 @@ test('a pending dashboard selection cannot use an older trip in the split tab', 
     release?.()
   }
 })
+
+test('the organizer deletes an owned trip from my trips', async ({ page }) => {
+  const db = isolatedDatabase()
+  try {
+    await login(page, 'alice@example.com')
+    const trip = await createTrip(page, 'Delete Me', 'Bintan')
+    await page.goto('/#/my-trips')
+
+    const row = page.locator('.qcard').filter({ hasText: 'Delete Me' })
+    const deleteButton = row.getByRole('button', { name: '删除行程' })
+    await expect(deleteButton).toBeVisible()
+
+    // Opening the dialog sends no request and keeps the trip.
+    await deleteButton.click()
+    await expect(page.getByRole('dialog')).toContainText('删除这个行程？')
+    expect(db.prepare('SELECT COUNT(*) AS n FROM trip WHERE id = ?').get(trip.id)?.n).toBe(1)
+
+    await page.getByRole('button', { name: '取消', exact: true }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(row).toBeVisible()
+
+    await deleteButton.click()
+    await page.getByRole('button', { name: '删除', exact: true }).click()
+    await expect(row).toHaveCount(0)
+    await expect.poll(() => db.prepare('SELECT COUNT(*) AS n FROM trip WHERE id = ?').get(trip.id)?.n).toBe(0)
+    await expect.poll(() =>
+      db.prepare('SELECT COUNT(*) AS n FROM trip_member WHERE trip_id = ?').get(trip.id)?.n).toBe(0)
+  } finally {
+    db.close()
+  }
+})
+
+test('a joined trip exposes no delete button', async ({ page }) => {
+  await login(page, 'ben@example.com')
+  await page.goto('/#/my-trips')
+  const joined = page.locator('.qcard').filter({ hasText: 'Active split trip' })
+  await expect(joined.getByRole('button', { name: /Active split trip/ })).toBeVisible()
+  await expect(joined.getByRole('button', { name: '删除行程' })).toHaveCount(0)
+  await expect(joined.getByText('我创建的')).toHaveCount(0)
+})
+
+test('a failed delete keeps the trip and reports the reason', async ({ page }) => {
+  const db = isolatedDatabase()
+  try {
+    await login(page, 'alice@example.com')
+    const trip = await createTrip(page, 'Stubborn Trip', 'Batam')
+    await page.goto('/#/my-trips')
+    await page.route('**/api/trips/*', (route) =>
+      route.request().method() === 'DELETE'
+        ? route.fulfill({ status: 500, json: { code: 'INTERNAL_ERROR', message: '服务器错误' } })
+        : route.continue())
+    await page.locator('.qcard').filter({ hasText: 'Stubborn Trip' })
+      .getByRole('button', { name: '删除行程' }).click()
+    await page.getByRole('button', { name: '删除', exact: true }).click()
+    await expect(page.getByRole('alert')).toContainText('无法删除「Stubborn Trip」')
+    await expect(page.getByRole('button', { name: /Stubborn Trip/ })).toBeVisible()
+    expect(db.prepare('SELECT COUNT(*) AS n FROM trip WHERE id = ?').get(trip.id)?.n).toBe(1)
+  } finally {
+    await page.unrouteAll({ behavior: 'wait' })
+    db.prepare('DELETE FROM trip_member WHERE trip_id IN (SELECT id FROM trip WHERE name = ?)').run('Stubborn Trip')
+    db.prepare('DELETE FROM trip WHERE name = ?').run('Stubborn Trip')
+    db.close()
+  }
+})

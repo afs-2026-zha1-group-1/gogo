@@ -3733,6 +3733,64 @@ body {
   box-shadow: 0 0 0 3px #e8f3e6;
 }
 
+/* The card body is its own control so the organizer's delete button can sit beside it
+   instead of inside it (a button inside a button is invalid HTML). */
+.qcard-row {
+  padding: 0;
+  gap: 0;
+}
+
+.qcard-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  padding: 15px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.qcard-main:disabled {
+  cursor: not-allowed;
+  color: inherit;
+}
+
+.qcard.busy {
+  opacity: .6;
+  transform: none;
+}
+
+.qcard-delete {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-right: 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: 0.16s;
+}
+
+.qcard-delete:hover {
+  color: var(--err);
+  border-color: var(--err);
+}
+
+.qcard-delete:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+
 /* Centered empty state, aligned with the prototype .empty block. */
 .empty {
   text-align: center;

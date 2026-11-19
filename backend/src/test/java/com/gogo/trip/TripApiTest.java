@@ -219,13 +219,104 @@ class TripApiTest {
         mockMvc.perform(put("/api/trips/" + id).with(TestAuth.asUser("1"))
                         .contentType(MediaType.APPLICATION_JSON).content(FULL_BODY))
                 .andExpect(status().isOk());
-        mockMvc.perform(delete("/api/trips/" + id).with(TestAuth.asUser("1")))
-                .andExpect(status().isMethodNotAllowed());
         // US-071 supersedes the former "no list route" rule: the collection is now a
-        // read-only member list, while delete stays unsupported.
+        // read-only member list. Deleting is the organizer's separate, confirmed action below.
         mockMvc.perform(get("/api/trips").with(TestAuth.asUser("1")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.trips").isArray());
+    }
+
+    @Test
+    void organizerDeletesTripAndItsMemberships() throws Exception {
+        MvcResult created = create("""
+                {"name":"Delete Me","destination":"Bintan",
+                 "startDate":"2027-02-01","endDate":"2027-02-02"}""", "1");
+        long id = objectMapper.readTree(created.getResponse().getContentAsString()).get("id").asLong();
+        org.junit.jupiter.api.Assertions.assertEquals(1, memberCount(id));
+
+        mockMvc.perform(delete("/api/trips/" + id).with(TestAuth.asUser("1")))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/trips/" + id).with(TestAuth.asUser("1")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("TRIP_NOT_FOUND"));
+        org.junit.jupiter.api.Assertions.assertEquals(0, memberCount(id));
+    }
+
+    @Test
+    void nonOrganizerMemberCannotDeleteTrip() throws Exception {
+        long id = seededTripId();
+        long before = tripCount();
+        mockMvc.perform(delete("/api/trips/" + id).with(TestAuth.asUser("2")))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("NOT_ORGANIZER"));
+        org.junit.jupiter.api.Assertions.assertEquals(before, tripCount());
+    }
+
+    @Test
+    void nonMemberCannotDeleteTripAndUnknownTripIsReported() throws Exception {
+        long id = seededTripId();
+        mockMvc.perform(delete("/api/trips/" + id).with(TestAuth.asUser("5")))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("NOT_A_MEMBER"));
+        mockMvc.perform(delete("/api/trips/999999").with(TestAuth.asUser("1")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("TRIP_NOT_FOUND"));
+    }
+
+    @Test
+    void deleteWithoutIdentityIsRejected() throws Exception {
+        long id = seededTripId();
+        mockMvc.perform(delete("/api/trips/" + id).with(TestAuth.csrfOnly()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("USER_REQUIRED"));
+    }
+
+    @Test
+    void organizerDeleteRemovesTripGraphAndClearsCurrentTrip() throws Exception {
+        MvcResult created = create("""
+                {"name":"Graph Trip","destination":"Batam",
+                 "startDate":"2027-03-01","endDate":"2027-03-02"}""", "1");
+        long id = objectMapper.readTree(created.getResponse().getContentAsString()).get("id").asLong();
+        jdbcTemplate.update("INSERT INTO trip_member (trip_id, user_id) VALUES (?, 2)", id);
+        jdbcTemplate.update("INSERT INTO trip_invitation (trip_id, token) VALUES (?, ?)", id, "tok-" + id);
+        jdbcTemplate.update("INSERT INTO member_preference (trip_id, user_id, kind, payload, updated_at) "
+                + "VALUES (?, 1, 'interest', '{\"codes\":[]}', datetime('now'))", id);
+        jdbcTemplate.update("INSERT INTO main_plan_draft (trip_id, version, status, cost_per_person_cents, "
+                + "input_revisions_json) VALUES (?, 1, 'current', 0, '[]')", id);
+        long draftId = jdbcTemplate.queryForObject(
+                "SELECT MIN(id) FROM main_plan_draft WHERE trip_id = ?", Long.class, id);
+        jdbcTemplate.update("INSERT INTO main_plan_stop (draft_id, seq, name, start_local, end_local) "
+                + "VALUES (?, 1, 'Stop', '09:00', '10:00')", draftId);
+        jdbcTemplate.update("INSERT INTO split_draft (id, trip_id, document, draft_version, created_at, updated_at) "
+                + "VALUES (?, ?, NULL, 1, datetime('now'), datetime('now'))", "split-" + id, id);
+        jdbcTemplate.update("INSERT INTO plan_node (id, trip_id, plan_version, branch_id, node_type, title, "
+                + "sort_order, created_at) VALUES (?, ?, 1, 'main', 'activity', 'Node', 1, datetime('now'))",
+                "node-" + id, id);
+        jdbcTemplate.update("UPDATE app_user SET current_trip_id = ? WHERE id = 1", id);
+
+        mockMvc.perform(delete("/api/trips/" + id).with(TestAuth.asUser("1")))
+                .andExpect(status().isNoContent());
+
+        long[] remaining = {
+                count("SELECT COUNT(*) FROM trip WHERE id = ?", id),
+                count("SELECT COUNT(*) FROM trip_member WHERE trip_id = ?", id),
+                count("SELECT COUNT(*) FROM trip_invitation WHERE trip_id = ?", id),
+                count("SELECT COUNT(*) FROM member_preference WHERE trip_id = ?", id),
+                count("SELECT COUNT(*) FROM main_plan_draft WHERE trip_id = ?", id),
+                count("SELECT COUNT(*) FROM main_plan_stop WHERE draft_id = ?", draftId),
+                count("SELECT COUNT(*) FROM split_draft WHERE trip_id = ?", id),
+                count("SELECT COUNT(*) FROM plan_node WHERE trip_id = ?", id),
+                count("SELECT COUNT(*) FROM app_user WHERE current_trip_id = ?", id),
+        };
+        for (long value : remaining) {
+            org.junit.jupiter.api.Assertions.assertEquals(0, value);
+        }
+    }
+
+    private long count(String sql, long id) {
+        Long value = jdbcTemplate.queryForObject(sql, Long.class, id);
+        return value == null ? 0 : value;
     }
 
     @Test

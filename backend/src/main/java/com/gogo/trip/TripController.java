@@ -6,6 +6,7 @@ import java.time.format.DateTimeParseException;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -43,6 +44,15 @@ public class TripController {
             @PathVariable long id,
             @RequestBody TripCreateRequest request) {
         return repository.updateBasics(id, principal.id(), validate(request));
+    }
+
+    /** Only the organizer may delete a trip; the whole trip graph goes with it. */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(
+            @AuthenticationPrincipal AccountPrincipal principal,
+            @PathVariable long id) {
+        repository.deleteTrip(id, principal.id());
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping

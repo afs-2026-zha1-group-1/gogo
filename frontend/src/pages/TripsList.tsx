@@ -5,6 +5,7 @@ import type { CurrentTripResponse, TripListItem, TripListResponse } from '../typ
 import { isEnded, todayIso } from '../lib/trip-date'
 import { isCurrentTripResponse } from '../lib/current-trip'
 import { tripPhoto } from '../lib/trip-photo'
+import ConfirmDialog from '../components/ui/confirm-dialog'
 
 type ListState =
   | { kind: 'loading' }
@@ -33,6 +34,9 @@ export default function TripsList({
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [currentTripLoading, setCurrentTripLoading] = useState(true)
   const [selectError, setSelectError] = useState('')
+  const [deleteError, setDeleteError] = useState('')
+  const [pendingDelete, setPendingDelete] = useState<TripListItem | null>(null)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
   const [selecting, setSelecting] = useState(false)
 
@@ -108,6 +112,31 @@ export default function TripsList({
     }
   }
 
+  /** Deleting is organizer-only and confirmed first; the list reloads from the server. */
+  async function confirmDelete() {
+    const trip = pendingDelete
+    if (!trip) return
+    setPendingDelete(null)
+    setDeleteError('')
+    setDeletingId(trip.id)
+    try {
+      const result = await api<unknown>(`/api/trips/${trip.id}`, { method: 'DELETE' })
+      if (result.ok) {
+        if (selectedId === trip.id) setSelectedId(null)
+        setReloadKey((key) => key + 1)
+        return
+      }
+      const message = result.data?.message ?? `请求失败（HTTP ${result.status}）`
+      console.error('Unable to delete the trip', message)
+      setDeleteError(`无法删除「${trip.name}」：${message}`)
+    } catch (cause: unknown) {
+      console.error('Unable to delete the trip', cause)
+      setDeleteError(`无法删除「${trip.name}」：${errorMessage(cause)}`)
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   const count = state.kind === 'ready' ? state.trips.length : 0
   const appbar = (
     <header className="appbar">
@@ -152,6 +181,7 @@ export default function TripsList({
         {appbar}
         <div className="body">
           {selectError && <p role="alert" className="error" style={{ marginBottom: 10 }}>{selectError}</p>}
+          {deleteError && <p role="alert" className="error" style={{ marginBottom: 10 }}>{deleteError}</p>}
           <div className="empty">
             <Icon name="list" />
             <p>还没有行程</p>
@@ -172,8 +202,10 @@ export default function TripsList({
       {appbar}
       <div className="body">
         {selectError && <p role="alert" className="error" style={{ marginBottom: 10 }}>{selectError}</p>}
+        {deleteError && <p role="alert" className="error" style={{ marginBottom: 10 }}>{deleteError}</p>}
         {state.trips.map((trip) => {
           const selected = selectable && selectedId === trip.id
+          const busy = selecting || selectionInFlight || deletingId === trip.id
           const body = (
             <>
               <span
@@ -196,21 +228,41 @@ export default function TripsList({
               {selected && <span className="pill ok qtag">已选择</span>}
             </>
           )
-          return selectable ? (
-            <button
-              key={trip.id}
-              type="button"
-              className={`qcard${selected ? ' selected' : ''}`}
-              aria-pressed={selected}
-              disabled={selecting || selectionInFlight}
-              onClick={() => pick(trip)}
-            >
-              {body}
-            </button>
-          ) : (
-            <a key={trip.id} className="qcard" href={`#/trips/${trip.id}`}>
-              {body}
-            </a>
+          // The delete control is a sibling of the card body, never a nested button,
+          // and only the organizer's own trips expose it.
+          return (
+            <div key={trip.id} className={`qcard qcard-row${selected ? ' selected' : ''}${busy ? ' busy' : ''}`}>
+              {selectable ? (
+                <button
+                  type="button"
+                  className="qcard-main"
+                  aria-pressed={selected}
+                  disabled={busy}
+                  onClick={() => pick(trip)}
+                >
+                  {body}
+                </button>
+              ) : (
+                <a className="qcard-main" href={`#/trips/${trip.id}`}>
+                  {body}
+                </a>
+              )}
+              {trip.organizer && (
+                <button
+                  type="button"
+                  className="qcard-delete"
+                  aria-label="删除行程"
+                  title="删除行程"
+                  disabled={busy}
+                  onClick={() => {
+                    setDeleteError('')
+                    setPendingDelete(trip)
+                  }}
+                >
+                  <Icon name="trash" className="sm" />
+                </button>
+              )}
+            </div>
           )
         })}
         <a className="btn btn-ghost" style={{ marginTop: 16 }} href="#/create">
@@ -218,6 +270,19 @@ export default function TripsList({
           创建行程
         </a>
       </div>
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        tone="warn"
+        title="删除这个行程？"
+        lines={[
+          `「${pendingDelete?.name ?? ''}」的成员、邀请、偏好和方案会一并删除。`,
+          '删除后无法恢复。',
+        ]}
+        confirmLabel="删除"
+        cancelLabel="取消"
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   )
 }

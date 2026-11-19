@@ -159,6 +159,32 @@ public class TripRepository {
         return statuses.isEmpty() ? null : statuses.get(0);
     }
 
+    /**
+     * Delete a trip and everything that belongs to it. Only the organizer may do this; the
+     * cascade is written out by hand because no foreign key declares ON DELETE CASCADE.
+     */
+    @Transactional
+    public void deleteTrip(long tripId, long callerId) {
+        TripResponse existing = findById(tripId)
+                .orElseThrow(() -> new TripApiException(404, "TRIP_NOT_FOUND", "No trip with id " + tripId));
+        if (!isMember(tripId, callerId)) {
+            throw new TripApiException(403, "NOT_A_MEMBER", "Caller is not a member of this trip");
+        }
+        if (existing.organizerId() != callerId) {
+            throw new TripApiException(403, "NOT_ORGANIZER", "Only the organizer can delete the trip");
+        }
+        jdbc.update("DELETE FROM main_plan_stop WHERE draft_id IN "
+                + "(SELECT id FROM main_plan_draft WHERE trip_id = ?)", tripId);
+        jdbc.update("DELETE FROM main_plan_draft WHERE trip_id = ?", tripId);
+        jdbc.update("DELETE FROM plan_node WHERE trip_id = ?", tripId);
+        jdbc.update("DELETE FROM split_draft WHERE trip_id = ?", tripId);
+        jdbc.update("DELETE FROM member_preference WHERE trip_id = ?", tripId);
+        jdbc.update("DELETE FROM trip_invitation WHERE trip_id = ?", tripId);
+        jdbc.update("UPDATE app_user SET current_trip_id = NULL WHERE current_trip_id = ?", tripId);
+        jdbc.update("DELETE FROM trip_member WHERE trip_id = ?", tripId);
+        jdbc.update("DELETE FROM trip WHERE id = ?", tripId);
+    }
+
     public TripListResponse findTripsForUser(long userId) {
         List<TripListItem> trips = jdbc.query(
                 "SELECT t.id, t.name, t.destination, t.start_date, t.end_date, t.main_plan_confirmed, "
