@@ -27,6 +27,7 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
 
     private static final String SINGAPORE = "Singapore";
     private static final String HONG_KONG = "香港";
+    private static final String ZHUHAI = "珠海";
     private static final String LONDON = "伦敦";
     private static final String HEFEI = "合肥";
 
@@ -43,8 +44,12 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
         if ("A".equals(groupLabel)) {
             return mainLineCandidate(groupLabel, departure, reunion, mainPlanStops);
         }
-        Branch branch = branchFor(cityOf(destination), groupLabel,
+        List<Branch> branches = branchesFor(cityOf(destination), groupLabel,
                 context == null ? List.of() : context.excludeActivityNames());
+        if (branches.size() > 1) {
+            return multiBranchCandidate(groupLabel, departure, destination, branches);
+        }
+        Branch branch = branches.get(0);
         String activityName = RoutePairEdit.cleanStationName(branch.activityName());
         String location = destination == null || destination.isBlank() ? activityName : destination.trim();
         List<RouteStep> steps = List.of(new RouteStep(activityName, branch.activityMinutes()));
@@ -56,6 +61,32 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
                 : branch.travelLegsMinutes();
         return new RouteCandidate(groupLabel, activityName, location, branch.activityMinutes(), legs, 0, steps,
                 activities);
+    }
+
+    /** 珠海/香港 group B gets the two remaining places as consecutive steps. */
+    private static RouteCandidate multiBranchCandidate(String groupLabel, PlanStop departure, String destination,
+            List<Branch> branches) {
+        List<RouteStep> steps = new ArrayList<>();
+        List<RouteActivity> activities = new ArrayList<>();
+        int activityMinutes = 0;
+        for (Branch branch : branches) {
+            String name = RoutePairEdit.cleanStationName(branch.activityName());
+            steps.add(new RouteStep(name, branch.activityMinutes()));
+            activityMinutes += branch.activityMinutes();
+            activities.add(new RouteActivity(name, name, branch.costCents(), RouteActivity.SOURCE_AI));
+        }
+        List<Integer> legs = new ArrayList<>();
+        legs.add(20);
+        for (int index = 1; index < branches.size(); index++) {
+            legs.add(20);
+        }
+        legs.add(20);
+        if (departure == null) {
+            legs.remove(0);
+        }
+        String activityName = steps.get(0).name() + " → " + steps.get(steps.size() - 1).name();
+        String location = destination == null || destination.isBlank() ? steps.get(0).name() : destination.trim();
+        return new RouteCandidate(groupLabel, activityName, location, activityMinutes, legs, 0, steps, activities);
     }
 
     // Group A follows the confirmed itinerary: every main-plan stop from the departure (inclusive) to the reunion
@@ -115,11 +146,14 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
         return (int) Duration.between(from, to).toMinutes();
     }
 
-    private static Branch branchFor(String city, String groupLabel, List<String> excludeActivityNames) {
+    private static List<Branch> branchesFor(String city, String groupLabel, List<String> excludeActivityNames) {
         List<Branch> candidates = switch (city) {
             case HONG_KONG -> List.of(
-                    new Branch("香港故宫文化博物馆", 50, List.of(20, 10), 10, 12000),
-                    new Branch("香港艺术馆", 50, List.of(20, 10), 10, 10000));
+                    new Branch("香港迪士尼乐园", 60, List.of(20, 20), 0, 0),
+                    new Branch("星光大道", 30, List.of(20, 20), 0, 0));
+            case ZHUHAI -> List.of(
+                    new Branch("珠海长隆海洋王国", 60, List.of(20, 20), 0, 0),
+                    new Branch("野狸岛", 30, List.of(20, 20), 0, 0));
             case LONDON -> List.of(
                     new Branch("博罗市场美食探索", 50, List.of(20, 20), 10, 3000),
                     new Branch("格林威治市场", 50, List.of(20, 20), 10, 2500));
@@ -133,14 +167,19 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
         if (!"B".equals(groupLabel)) {
             throw new IllegalArgumentException("unknown group label: " + groupLabel);
         }
+        boolean multi = HONG_KONG.equals(city) || ZHUHAI.equals(city);
+        List<Branch> kept = new ArrayList<>();
         for (Branch candidate : candidates) {
             String cleaned = RoutePairEdit.cleanStationName(candidate.activityName());
             if (!excludeActivityNames.contains(candidate.activityName())
                     && !excludeActivityNames.contains(cleaned)) {
-                return candidate;
+                kept.add(candidate);
             }
         }
-        return candidates.get(0);
+        if (multi) {
+            return kept.isEmpty() ? candidates : kept;
+        }
+        return kept.isEmpty() ? List.of(candidates.get(0)) : List.of(kept.get(0));
     }
 
     private static String cityOf(String destination) {
@@ -148,6 +187,9 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
         String lower = value.toLowerCase(Locale.ROOT);
         if (value.contains("香港") || lower.contains("hong kong")) {
             return HONG_KONG;
+        }
+        if (value.contains("珠海") || lower.contains("zhuhai")) {
+            return ZHUHAI;
         }
         if (value.contains("伦敦") || lower.contains("london")) {
             return LONDON;

@@ -34,7 +34,7 @@ function money(cents: number, destination?: string | null) {
     ? 'HK$'
     : /伦敦|london/i.test(value)
       ? '£'
-      : /合肥|hefei/i.test(value)
+      : /合肥|hefei|珠海|zhuhai/i.test(value)
         ? '¥'
         : 'S$'
   return `${symbol}${cents / 100}`

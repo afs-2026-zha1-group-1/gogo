@@ -4,10 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-// The no-key implementation (design D2): deterministic stops with supplied
-// times, legs and a per-person cost. Fixtures are keyed by destination so a
-// demo selecting 香港 or 伦敦 gets a city-appropriate day; anything else keeps
-// the original Singapore fixture. No external HTTP client anywhere.
+import com.gogo.hello.common.MockDestinations;
+
+// The deterministic implementation (design D2): supplied times, legs and a per-person cost.
+// 珠海/香港 always use their fixed two-day plan, even when an LLM key is configured; other
+// destinations use the city fixture only when no key is configured. No external HTTP client here.
 // US-045: the plan total is the sum of the stop costs, so the split budget check
 // can subtract a replaced activity exactly.
 // US-079: address/city are the AI-generation contract fields; coordinates are
@@ -24,19 +25,31 @@ public class FakeMainPlanProvider implements MainPlanProvider {
             new MainPlanResult.PlannedStop(4, "Merlion Park", "11:30", "12:00", null,
                     List.of("culture"), "1 Fullerton Rd, Singapore 049213", "Singapore", 1000));
 
-    private static final List<MainPlanResult.PlannedStop> HONG_KONG = List.of(
-            new MainPlanResult.PlannedStop(1, "西九文化区 M+ 博物馆", "09:00", "10:20", 20,
-                    List.of("heritage", "photo"), "香港西九文化区博物馆道 38 号 M+ 博物馆", "香港", 12000),
-            new MainPlanResult.PlannedStop(2, "天星小轮（尖沙咀 → 中环）", "10:40", "11:10", 15,
-                    List.of("slow", "photo"), "香港尖沙咀天星码头（乘船往中环天星码头）", "香港", 4000),
-            new MainPlanResult.PlannedStop(3, "中环街市与半山扶梯", "11:25", "12:45", 20,
-                    List.of("food", "craft"), "香港中环皇后大道中 93 号中环街市 / 中环半山扶梯", "香港", 6000),
-            new MainPlanResult.PlannedStop(4, "太平山顶与凌霄阁", "13:05", "14:35", 40,
-                    List.of("nature", "photo"), "香港山顶山顶道 128 号凌霄阁", "香港", 24000),
-            new MainPlanResult.PlannedStop(5, "铜锣湾时代广场", "15:15", "16:30", 25,
-                    List.of("food", "craft"), "香港铜锣湾勿地臣街 1 号时代广场", "香港", 14000),
-            new MainPlanResult.PlannedStop(6, "尖沙咀海滨长廊与星光大道", "16:55", "18:10", null,
-                    List.of("photo", "slow"), "香港尖沙咀海滨长廊 / 星光大道", "香港", 8000));
+    // 珠海/香港 demos are fixed regardless of the LLM key: two days, two main-plan stops per day.
+    // The remaining two places are added to group B by FixtureBranchCandidateProvider.
+    private static final List<List<MainPlanResult.PlannedStop>> ZHUHAI_DAYS = List.of(
+            List.of(
+                    new MainPlanResult.PlannedStop(1, "日月贝（珠海大剧院）", "09:00", "10:30", 30,
+                            List.of("photo", "culture"), null, "珠海", 0),
+                    new MainPlanResult.PlannedStop(2, "爱情邮局", "14:00", "16:00", null,
+                            List.of("photo", "slow"), null, "珠海", 0)),
+            List.of(
+                    new MainPlanResult.PlannedStop(1, "情侣路", "09:00", "11:00", 30,
+                            List.of("slow", "nature"), null, "珠海", 0),
+                    new MainPlanResult.PlannedStop(2, "圆明新园", "14:00", "16:30", null,
+                            List.of("culture", "heritage"), null, "珠海", 0)));
+
+    private static final List<List<MainPlanResult.PlannedStop>> HONG_KONG_DAYS = List.of(
+            List.of(
+                    new MainPlanResult.PlannedStop(1, "维多利亚港", "09:00", "10:30", 20,
+                            List.of("photo", "slow"), null, "香港", 0),
+                    new MainPlanResult.PlannedStop(2, "太平山顶", "14:00", "16:00", null,
+                            List.of("nature", "photo"), null, "香港", 0)),
+            List.of(
+                    new MainPlanResult.PlannedStop(1, "旺角", "09:00", "11:00", 20,
+                            List.of("food", "craft"), null, "香港", 0),
+                    new MainPlanResult.PlannedStop(2, "尖沙咀", "14:00", "16:30", null,
+                            List.of("food", "photo"), null, "香港", 0)));
 
     private static final List<MainPlanResult.PlannedStop> LONDON = List.of(
             new MainPlanResult.PlannedStop(1, "大英博物馆", "09:00", "10:30", 20,
@@ -70,11 +83,31 @@ public class FakeMainPlanProvider implements MainPlanProvider {
     @Override
     public MainPlanResult plan(TripContext trip, List<MemberInput> inputs) {
         String destination = trip.destination() == null ? "" : trip.destination().trim();
-        List<MainPlanResult.PlannedStop> day = isHongKong(destination) ? HONG_KONG
-                : isLondon(destination) ? LONDON
+        if (MockDestinations.isZhuhai(destination)) {
+            return twoDayPlan(ZHUHAI_DAYS, trip.dayCount());
+        }
+        if (MockDestinations.isHongKong(destination)) {
+            return twoDayPlan(HONG_KONG_DAYS, trip.dayCount());
+        }
+        List<MainPlanResult.PlannedStop> day = isLondon(destination) ? LONDON
                 : isHefei(destination) ? HEFEI
                 : SINGAPORE;
         List<MainPlanResult.PlannedStop> stops = repeatForDays(day, trip.dayCount());
+        return new MainPlanResult(stops, MainPlanResult.totalCost(stops));
+    }
+
+    /** 珠海/香港 demos are capped at two days, two main-plan stops each. */
+    private static MainPlanResult twoDayPlan(List<List<MainPlanResult.PlannedStop>> days, int tripDays) {
+        int useDays = Math.min(Math.max(1, tripDays), days.size());
+        List<MainPlanResult.PlannedStop> stops = new ArrayList<>();
+        int seq = 1;
+        for (int dayIndex = 1; dayIndex <= useDays; dayIndex++) {
+            for (MainPlanResult.PlannedStop stop : days.get(dayIndex - 1)) {
+                stops.add(new MainPlanResult.PlannedStop(seq++, stop.name(), stop.startTime(), stop.endTime(),
+                        stop.travelMinutesToNext(), stop.interests(), stop.address(), stop.city(),
+                        stop.costCents(), dayIndex));
+            }
+        }
         return new MainPlanResult(stops, MainPlanResult.totalCost(stops));
     }
 
@@ -90,11 +123,6 @@ public class FakeMainPlanProvider implements MainPlanProvider {
             }
         }
         return stops;
-    }
-
-    private static boolean isHongKong(String destination) {
-        String lower = destination.toLowerCase(Locale.ROOT);
-        return destination.contains("香港") || lower.contains("hong kong");
     }
 
     private static boolean isLondon(String destination) {

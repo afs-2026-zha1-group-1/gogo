@@ -19,6 +19,7 @@ public class MockSquadActivityRecommender {
     }
 
     private static final String HONG_KONG = "香港";
+    private static final String ZHUHAI = "珠海";
     private static final String LONDON = "伦敦";
     private static final String HEFEI = "合肥";
 
@@ -28,9 +29,14 @@ public class MockSquadActivityRecommender {
             new Suggestion("新加坡国家美术馆", "National Gallery Singapore", 1500));
 
     private static final List<Suggestion> HONG_KONG_SUGGESTIONS = List.of(
-            new Suggestion("中环街市咖啡", "中环街市", 900),
-            new Suggestion("PMQ 元创方手作体验", "PMQ 元创方", 2500),
-            new Suggestion("香港故宫文化博物馆", "西九文化区", 6000));
+            new Suggestion("香港迪士尼乐园", "香港迪士尼乐园", 0),
+            new Suggestion("星光大道", "尖沙咀海滨长廊", 0),
+            new Suggestion("旺角", "旺角", 0));
+
+    private static final List<Suggestion> ZHUHAI_SUGGESTIONS = List.of(
+            new Suggestion("珠海长隆海洋王国", "横琴", 0),
+            new Suggestion("野狸岛", "野狸岛", 0),
+            new Suggestion("圆明新园", "兰埔路", 0));
 
     private static final List<Suggestion> LONDON_SUGGESTIONS = List.of(
             new Suggestion("考文特花园咖啡", "Covent Garden", 700),
@@ -72,6 +78,9 @@ public class MockSquadActivityRecommender {
         String lower = value.toLowerCase(Locale.ROOT);
         if (value.contains("香港") || lower.contains("hong kong")) {
             return HONG_KONG_SUGGESTIONS;
+        }
+        if (value.contains("珠海") || lower.contains("zhuhai")) {
+            return ZHUHAI_SUGGESTIONS;
         }
         if (value.contains("伦敦") || lower.contains("london")) {
             return LONDON_SUGGESTIONS;

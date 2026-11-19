@@ -17,11 +17,13 @@ class MainPlanProviderConfig {
     @Bean
     MainPlanProvider mainPlanProvider(PlanAiProperties properties, ObjectMapper objectMapper,
             ObjectProvider<DeepSeekPlanClient> clientProvider) {
+        FakeMainPlanProvider mock = new FakeMainPlanProvider();
         if (properties.apiKey().isBlank()) {
-            return new FakeMainPlanProvider();
+            return mock;
         }
         DeepSeekPlanClient client = clientProvider.getIfAvailable(
                 () -> HttpDeepSeekPlanClient.create(properties, objectMapper));
-        return new AiMainPlanProvider(client, new AiPlanValidator(), objectMapper);
+        AiMainPlanProvider ai = new AiMainPlanProvider(client, new AiPlanValidator(), objectMapper);
+        return new MockDestinationMainPlanProvider(mock, ai);
     }
 }

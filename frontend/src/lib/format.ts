@@ -45,7 +45,7 @@ export function formatCost(cents: number | null | undefined, destination?: strin
     ? "HK$"
     : /伦敦|london/i.test(value)
       ? "£"
-      : /合肥|hefei/i.test(value)
+      : /合肥|hefei|珠海|zhuhai/i.test(value)
         ? "¥"
         : "S$"
   const major = cents / 100

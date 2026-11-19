@@ -640,6 +640,11 @@ opencode (not a new stack).
   `MinimalFallbackPlan` instead: every trip day gets start location
   09:00–09:30 (30-minute leg) → end location 17:00–17:30 (null leg), per-person
   cost 0, using the already-completed trip locations.
+- **珠海/香港 demo fixtures (2026-11-19):** both destinations always use a fixed
+  two-day plan, even when a key is configured. 珠海 day 1: 日月贝 / 爱情邮局,
+  day 2: 情侣路 / 圆明新园; 香港 day 1: 维多利亚港 / 太平山顶, day 2: 旺角 /
+  尖沙咀. The split fixture adds the remaining two places to group B
+  (珠海: 长隆 / 野狸岛; 香港: 港迪 / 星光大道).
 - **API / data:** no endpoint, error-code, schema or migration change.
 - **Frontend:** `AiGeneratingNotice` shows a non-blocking “AI 正在生成中…”
   strip on the inputs screen and plan-page regeneration; confirm is unaffected.
