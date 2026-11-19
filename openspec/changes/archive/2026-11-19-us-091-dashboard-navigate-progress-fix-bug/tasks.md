@@ -6,6 +6,7 @@ Implementation design: [design](design.md). Acceptance strategy:
 ## 1. P4 handoff
 
 - [ ] 1.1 Push the change branch and open a PR, never push to main; verify its branch and PR exist. Do not merge main merely to stay current.
+  - 已确认原变更分支 `us-091-dashboard-navigate-progress-fix-bug` 存在，且 [PR #172](https://github.com/afs-2026-zha1-group-1/gogo/pull/172) 已合并。该分支历史包含合并 `origin/main` 的提交 `ffe98b3`；合并原因未确认，因此暂不将整项标记完成。
 
 ## 2. Current-trip navigation
 
@@ -27,6 +28,7 @@ Implementation design: [design](design.md). Acceptance strategy:
 - [x] 4a.2 Permit members to generate and regenerate drafts while retaining readiness, confirmed-plan, outsider and organizer-only confirmation checks.
 - [x] 4a.3 Obtain IO and SA G1 approval for the expanded generation-permission scope; the requester reported both approvals in the [G1 decision](g1-decision.md).
 - [ ] 4a.4 Complete post-merge acceptance verification for both roles, invitation and plan authorization, joining closure and creation entry; record actual results in the local verification report.
+  - [合并后 CI 报告](ci-report.md)记录了浏览器验收和后端测试任务成功，但现有本地验证报告仍有独立验证与完整验收证据缺口；不能仅凭 CI 任务结果关闭此项。
 
 ## 5. Integration and pre-archive
 

@@ -95,10 +95,13 @@ to the `auth` capability.
 The shell SHALL show a bottom dock with exactly five tabs in the order
 仪表盘 / 行程 / 分队 / 成员 / 我的, each with an icon and text label. The active tab
 SHALL identify the current area, including dashboard views. Activating an
-hash-routed tab SHALL update the hash without a full reload; the split tab may
-use its existing path route. Navigation SHALL retain the authenticated
-account and preserve browser back/forward behavior. Every tab SHALL have a
-unique visible heading or state.
+hash-routed tab SHALL update the hash without a full reload when its target
+differs from the current route; the split tab may use its existing path route.
+When the split fallback targets the current Trips route, the hash remains
+unchanged and the Trips tab remains active. Navigation SHALL retain the
+authenticated account and preserve browser back/forward behavior. Tabs SHALL
+have distinct visible headings or states, except that the split tab MAY reuse
+trip selection guidance when no trip is available.
 
 #### Scenario: The dock shows five ordered tabs with an active highlight
 
@@ -111,8 +114,9 @@ unique visible heading or state.
 #### Scenario: Tab switching updates the hash without reload and keeps identity
 
 - **WHEN** a traveler authenticated as Alice activates a hash-routed dock tab
-- **THEN** the hash route changes without a full page reload
-- **AND** Alice remains authenticated and the newly active tab is highlighted
+- **THEN** the hash route changes without a full page reload when the target differs from the current route
+- **AND** Alice remains authenticated and the tab owning the resulting route is highlighted
+- **AND** if the split fallback targets the current Trips route, the hash remains unchanged and Trips stays highlighted
 
 #### Scenario: Create belongs to the 行程 tab
 
@@ -124,7 +128,7 @@ unique visible heading or state.
 
 - **WHEN** the traveler activates the tabs in order 仪表盘 → 行程 → 分队 → 成员 → 我的
   and then in reverse
-- **THEN** every activation yields a unique visible heading or state
+- **THEN** each activation yields a distinct visible heading or state, except that the split tab may reuse trip selection guidance when no trip is available
 - **AND** no demo data is required
 
 #### Scenario: Browser back/forward follows tab history
@@ -136,13 +140,9 @@ unique visible heading or state.
 
 #### Scenario: Trip tab cannot bypass the details restriction
 
-The historical scenario name is retained for MODIFIED-requirement
-compatibility; the current behavior is described below.
-
 - **WHEN** the traveler selects the 行程 tab from a dashboard view
-- **THEN** the trip-entry page offers an ID lookup
-- **AND** opening a trip can reach its existing details page, whose organizer
-  invitation panel posts on load
+- **THEN** the saved current trip's details or the existing empty or error state is shown
+- **AND** the existing details authorization remains enforced
 
 ### Requirement: Dashboard tab placement
 
@@ -347,13 +347,11 @@ route. The login and register pages SHALL link to each other through the
 
 The 我的 page SHALL expose 我的行程 at `#/my-trips`, listing the caller's trips
 as cards without a trailing arrow. Activating a picker card SHALL persist the
-current trip, highlight it and show 已选择 without navigating. Outside
-dashboard-origin navigation, the 行程 tab SHALL target `#/trips`, rendering the
-current trip's details or an empty state linking to `#/my-trips`.
-`#/trips/<id>` SHALL keep opening details directly. Dashboard-origin trip-tab
-navigation SHALL use `#/dashboard/trip-entry`, whose ID lookup can open the
-existing details page. For organizers, loading details invokes the existing
-invitation POST.
+current trip, highlight it and show 已选择 without navigating. The 行程 tab SHALL
+target `#/trips` from all origins, rendering the current trip's details or an
+empty state linking to `#/my-trips`. `#/trips/<id>` SHALL keep opening details
+directly. Invitation issuance on detail views SHALL follow the invitations
+capability.
 
 #### Scenario: The account page exposes the my-trips entry
 
@@ -384,7 +382,7 @@ invitation POST.
 
 #### Scenario: The trips tab shows the current trip's details
 
-- **WHEN** the traveler activates the 行程 tab outside dashboard-origin navigation with a current trip set
+- **WHEN** the traveler activates the 行程 tab from any origin with a current trip set
 - **THEN** `#/trips` renders that trip's details screen under the shell with the 行程 tab active
 - **AND** the details' loading, denied and missing states behave as before
 
@@ -417,7 +415,7 @@ invitation POST.
 #### Scenario: Create is reachable and returns to the trips tab
 
 - **WHEN** the traveler opens `#/create` from the shell and uses the back action
-- **THEN** the app returns to the applicable trip tab, including the dashboard-origin entry
+- **THEN** the app returns to the applicable trip tab
 - **AND** a successful create still navigates to `#/trips/<id>`
 
 #### Scenario: No second list source is introduced
@@ -431,3 +429,14 @@ invitation POST.
 - **WHEN** a traveler opens a direct trip dashboard
 - **THEN** that direct route does not update the stored current trip
 - **AND** a late current-trip response cannot replace the direct selection
+
+#### Scenario: Direct dashboard and saved selection differ
+
+- **GIVEN** a traveler has saved trip A and opens trip B's dashboard directly
+- **WHEN** the traveler selects 行程
+- **THEN** trip A's details are displayed without changing the saved selection
+
+#### Scenario: Current trip read fails
+
+- **WHEN** the current-trip read fails from the Trips tab
+- **THEN** an error and retry are shown rather than an empty or fabricated trip

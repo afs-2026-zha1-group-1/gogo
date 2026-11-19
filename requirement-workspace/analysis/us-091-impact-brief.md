@@ -25,7 +25,7 @@ confirmation, outsider denial, token reuse and closed joining.
 silently replace it. Non-members must never receive the token.
 **Approval:** the requester reported renewed IO and SA G1 approval for the
 expanded scope; the historical G1 approval did not cover member plan generation.
-See the [G1 decision](../../openspec/changes/us-091-dashboard-navigate-progress-fix-bug/g1-decision.md).
+See the [G1 decision](../../openspec/changes/archive/2026-11-19-us-091-dashboard-navigate-progress-fix-bug/g1-decision.md).
 **Split:** one change for the related dashboard and trip collaboration fixes;
 no mandatory external change dependency.
 OpenSpec is the proposed delivery track; a separate agile story split is optional.

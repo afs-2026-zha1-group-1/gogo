@@ -16,7 +16,7 @@
   [trip-dashboard delta](specs/trip-dashboard/spec.md),
   [invitations delta](specs/invitations/spec.md),
   [main-itinerary delta](specs/main-itinerary/spec.md),
-  [requirements](../../../requirement-workspace/requirements/us-091-dashboard-navigate-progress-fix-bug.md),
+  [requirements](../../../../requirement-workspace/requirements/us-091-dashboard-navigate-progress-fix-bug.md),
   [design](design.md), [tasks](tasks.md), and the expanded-scope AC/DoV
   self-review below.
 - **Findings:** The updated deltas specify the expanded behavior and retain
@@ -37,7 +37,7 @@ and covered only the original scope.
 - **Inputs:** [proposal](proposal.md), [app-shell delta](specs/app-shell/spec.md),
   [trip-dashboard delta](specs/trip-dashboard/spec.md),
   [invitations delta](specs/invitations/spec.md),
-  [requirement and acceptance hints](../../../requirement-workspace/requirements/us-091-dashboard-navigate-progress-fix-bug.md),
+  [requirement and acceptance hints](../../../../requirement-workspace/requirements/us-091-dashboard-navigate-progress-fix-bug.md),
   [design](design.md), [tasks](tasks.md), and the AC/DoV review below.
 
 ## AC / DoV review
@@ -50,7 +50,7 @@ reference was supplied.
 | Current-trip navigation | The app-shell delta specifies saved selection, direct-dashboard separation, reload, empty and read-error behavior. Tasks 2.1–2.2 call for focused browser coverage. |
 | Progress milestones | The dashboard delta specifies the remaining role-specific milestones and source-backed states. Task 3.1 calls for unit and browser coverage. |
 | Member invitations | The invitations delta specifies member issuance, shared token reuse, non-member and anonymous denial, and invitation sharing. Tasks 4.1–4.2 call for API and browser coverage. |
-| Joining cutoff | The unchanged [invitation acceptance requirement](../../specs/invitations/spec.md) preserves rejection of new members after confirmation and idempotent acceptance by existing members; task 4.1 calls for cutoff coverage. |
+| Joining cutoff | The unchanged [invitation acceptance requirement](../../../specs/invitations/spec.md) preserves rejection of new members after confirmation and idempotent acceptance by existing members; task 4.1 calls for cutoff coverage. |
 
 `openspec validate us-091-dashboard-navigate-progress-fix-bug --strict`
 reported the change valid on 2026-11-18. This checks artifact structure; it
@@ -72,7 +72,7 @@ does not establish that the implementation passes acceptance tests.
 ## Implementation status
 
 This decision aligns the change; it is not implementation or acceptance
-sign-off. The [local verification report](../../../docs/ai4se-plugins/20261118-145452-local-verify-report.md)
+sign-off. The [local verification report](../../../../docs/ai4se-plugins/20261118-145452-local-verify-report.md)
 reports incomplete implementation, unchecked tasks and missing change-specific
 test evidence. Those findings remain to be resolved through the implementation
 and verification workflow.

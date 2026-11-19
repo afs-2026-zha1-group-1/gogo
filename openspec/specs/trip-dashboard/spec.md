@@ -73,21 +73,18 @@ dashboard progress.
 
 ### Requirement: Role-specific journey milestones
 
-The dashboard SHALL show setup, preferences, invitations, main plan, split,
-reunion and completion to organizers, and preferences, main plan, split,
-reunion and completion to other members. Planning milestone details and
-done/active/pending presentation SHALL derive from the existing readiness,
-membership, main-plan and split data. Reunion and completion SHALL remain
-unknown; dates and split state SHALL NOT establish trip completion.
+仪表盘 SHALL 向组织者显示建局、偏好、邀请、主线方案和分队，向其他成员显示
+偏好、邀请、主线方案和分队。规划里程碑的详情和完成、进行中、待处理状态 SHALL
+基于现有就绪、成员、主线方案和分队数据；进度条 SHALL NOT 显示汇合和完成。
 
 #### Scenario: Organizer and member milestones
 
 - **GIVEN** the source reads are valid
 - **WHEN** an organizer views the dashboard
-- **THEN** the seven organizer milestones appear in the specified order
+- **THEN** the five organizer milestones appear in the specified order
 - **WHEN** another member views it
-- **THEN** the five member milestones appear in the specified order
-- **AND** reunion and completion remain unknown
+- **THEN** the four member milestones appear in the specified order
+- **AND** reunion and completion do not appear in the progress strip
 
 #### Scenario: Planning state changes
 
@@ -96,7 +93,21 @@ unknown; dates and split state SHALL NOT establish trip completion.
 - **THEN** it shows the viewer's readiness and ready/member count
 - **AND** it distinguishes absent, draft, stale and confirmed main plans and
   absent, active, confirmed and cancelled splits
-- **AND** organizers see invitation joining status and membership context
+- **AND** organizers and other members see invitation joining status and membership context
+
+#### Scenario: Ready members can still invite before generation
+
+- **GIVEN** 查看者的偏好已就绪、加入未关闭且尚无主线方案草稿
+- **WHEN** 组织者或其他成员查看仪表盘
+- **THEN** 邀请仍为进行中，且可使用生成主线方案和邀请朋友两个操作
+- **AND** 下一步推荐生成主线方案
+
+#### Scenario: Generated plan and closed joining
+
+- **GIVEN** 主线方案草稿已存在
+- **WHEN** 组织者或其他成员查看仪表盘
+- **THEN** 邀请里程碑显示完成
+- **AND** 加入状态反映行程实际的关闭状态，即使确认随后被取消
 
 ### Requirement: Source-backed next step and quick links
 
@@ -112,9 +123,7 @@ a plan or split.
 - **THEN** it offers the split destination
 - **WHEN** the main plan is unconfirmed and the viewer is not ready
 - **THEN** it offers preferences
-- **WHEN** a ready organizer is the only member and no plan exists
-- **THEN** it offers invitations
-- **WHEN** a ready viewer has no plan in other cases
+- **WHEN** a ready viewer has no plan, including an organizer who is the only member
 - **THEN** it offers main-plan inputs
 - **WHEN** a draft or stale plan exists
 - **THEN** it offers the main-plan view
@@ -151,6 +160,16 @@ membership boundaries SHALL apply; no other trip SHALL be substituted.
 
 - **WHEN** an earlier request completes after the account or trip changes
 - **THEN** it does not replace the new selection with the earlier private data
+
+### Requirement: Dashboard create-trip quick entry
+
+仪表盘 SHALL 在左上角显示创建行程快捷入口，并导航到我的行程所使用的同一创建页。
+
+#### Scenario: Create a trip from the dashboard
+
+- **WHEN** 成员选择仪表盘的创建行程快捷入口
+- **THEN** 应用导航至 `#/create`
+- **AND** 显示现有创建行程页面
 
 ### Requirement: Dashboard destination side effects
 

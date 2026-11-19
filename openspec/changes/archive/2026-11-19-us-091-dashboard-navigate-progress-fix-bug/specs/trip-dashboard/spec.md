@@ -39,6 +39,36 @@ SHALL NOT appear in the progress strip.
 - **THEN** the invitation milestone is done
 - **AND** joining status reflects the trip's actual joining-closed state, even if a confirmation was subsequently cancelled
 
+### Requirement: Source-backed next step and quick links
+
+After valid required reads, the dashboard SHALL provide a source-backed next
+step and links to invitation, preferences and main plan. It SHALL preserve
+existing destination authorization and SHALL NOT itself generate or confirm
+a plan or split.
+
+#### Scenario: Guidance depends on role and planning state
+
+- **GIVEN** the main plan is confirmed
+- **WHEN** the dashboard selects the next step
+- **THEN** it offers the split destination
+- **WHEN** the main plan is unconfirmed and the viewer is not ready
+- **THEN** it offers preferences
+- **WHEN** a ready viewer has no plan, including an organizer who is the only member
+- **THEN** it offers main-plan inputs
+- **WHEN** a draft or stale plan exists
+- **THEN** it offers the main-plan view
+
+#### Scenario: Required source is unavailable
+
+- **WHEN** required source reads are pending, invalid or failed
+- **THEN** the dashboard does not present a source-backed recommendation
+
+#### Scenario: Quick links
+
+- **WHEN** an authorized member views the selected dashboard
+- **THEN** invitation, preferences and main-plan links target the selected trip
+- **AND** the destination applies its existing access rules and behavior
+
 ## ADDED Requirements
 
 ### Requirement: Dashboard create-trip quick entry
