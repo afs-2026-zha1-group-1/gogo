@@ -13,9 +13,7 @@
 - 「主线已确认」谓词 = `trip.main_plan_confirmed`（V3 列，0/1）。
 - `draftVersion` 从 1 起，任何草稿变更（边界重选/路线重生成/取消后重建）+1；写操作携带版本条件更新，不符即 stale 拒绝。确认与取消 SHALL NOT 改变 `draftVersion`。
 - 草稿状态机：`active`（可编辑/可确认/可取消）→ `confirmed`（冻结）／`cancelled`（终止，可被替换重建）；`cancelled → active` 仅限同行重建；`confirmed → *` 禁止。
-
 ## Requirements
-
 ### Requirement: Split draft start
 
 系统 SHALL 提供 `POST /api/trips/{tripId}/split-draft`（认证会话），允许任意行程成员从已确认主线发起该行程唯一的拆分草稿。系统 SHALL 依序校验成员资格、主线确认前置、活跃唯一性、当前行程成员数至少 2（双组分队要求每组至少一人），并以条件写入在 `split_draft` 表创建 JSON 文档（`initiatorMemberId`、`mainPlanVersion`、`draftVersion = 1`、`status = active`、可空边界字段、`groups`、`createdAt`、`updatedAt`）；`groups` SHALL 初始化为 `{"A": [全部行程成员 id], "B": []}`（`app_user.id`，按 `display_name` 升序），不再按成员数量前后均分；每 trip 至多一行（`trip_id` UNIQUE），撞车即冲突。当且仅当已存在行的文档 `status = cancelled` 时，系统 SHALL 在该行重建草稿：以调用者为新发起人、`draftVersion` 重置为 1、`status = active`、边界与路线清空、`groups` 同样初始化为全员 A 组；`active` 或 `confirmed` 行 SHALL 返回冲突。当前成员数少于 2 时，创建与重建 SHALL 均以 `409 SPLIT_MEMBERS_INSUFFICIENT` 拒绝，不创建或改写任何行（单人行程无法满足「两组非空」）。系统 SHALL 通过既有 V4 Flyway 迁移提供 `split_draft` 与 `plan_node` 两表，且落地 SQLite 三铁律（池=1、WAL、busy_timeout=5000、foreign_keys=on）。
@@ -690,3 +688,78 @@ The system SHALL expose member-only `GET /api/trips/{tripId}/split-draft` using 
 - **WHEN** Eve（非成员）或未认证会话调用保存
 - **THEN** 分别响应 `403 NOT_A_MEMBER` 或 `401 MEMBER_REQUIRED`，`data = null`
 - **AND** 不返回草稿或路线私有值
+
+### Requirement: Confirmed split cancellation
+
+The system SHALL expose `POST /api/trips/{tripId}/split:cancel` with
+`{draftVersion}` for the trip organizer to cancel a `confirmed` split before
+departure. The endpoint SHALL use the shared splits identity guards and the
+`{data,error}` envelope: a missing session SHALL return 401 `MEMBER_REQUIRED`, an
+unknown trip 404 `TRIP_NOT_FOUND`, a non-member 403 `NOT_A_MEMBER`, and a
+non-organizer 403 `NOT_SPLIT_ORGANIZER`. A draft whose status is not `confirmed`
+SHALL return 409 `SPLIT_DRAFT_NOT_ACTIVE`, a mismatched `draftVersion` SHALL
+return 409 `STALE_DRAFT_VERSION`, and a split whose scheduled departure start is
+at or before the server time SHALL return 409 `SPLIT_ALREADY_DEPARTED`. The
+departure instant SHALL be the confirmed draft's departure stop `start_at`; when
+that value is absent the split SHALL be treated as not departed in this MVP. On
+success the draft status SHALL become `cancelled`, the `split-a` and `split-b`
+`plan_node` rows SHALL be deleted and `document.routes` cleared in one
+transaction, while the `main` plan rows, the trip's confirmed main plan, the
+trip basics, memberships and the `joiningClosed` state SHALL remain unchanged. A
+replacement split SHALL be startable afterwards through the existing split-draft
+start operation. Every rejection SHALL leave the draft, routes and main plan
+unchanged.
+
+#### Scenario: The organizer cancels a confirmed split before departure
+
+- **GIVEN** a split at version 3 is `confirmed`, its departure stop starts in the future and Alice is the trip organizer
+- **WHEN** Alice submits `{draftVersion: 3}` to `POST /api/trips/{tripId}/split:cancel`
+- **THEN** the response status is 200 with `data.status = cancelled`
+- **AND** the `split-a` and `split-b` `plan_node` rows are deleted and `document.routes` is empty
+- **AND** the `main` plan nodes and the trip's confirmed main plan are unchanged
+- **AND** Alice can start a replacement split with a fresh `draftVersion = 1`
+
+#### Scenario: A non-organizer member cannot cancel a confirmed split
+
+- **WHEN** Ben, a member but not the organizer, submits the cancellation for a confirmed split
+- **THEN** the response status is 403 with `error.code = NOT_SPLIT_ORGANIZER`
+- **AND** the split, routes and main plan are unchanged
+
+#### Scenario: A non-member cannot cancel a confirmed split
+
+- **WHEN** Eve, who is not a member, submits the cancellation
+- **THEN** the response status is 403 with `error.code = NOT_A_MEMBER`
+- **AND** no split data changes
+
+#### Scenario: Cancellation after departure is rejected
+
+- **GIVEN** the confirmed split's departure stop start is at or before the server time
+- **WHEN** the organizer submits the cancellation
+- **THEN** the response status is 409 with `error.code = SPLIT_ALREADY_DEPARTED`
+- **AND** the split, routes and main plan are unchanged
+
+#### Scenario: Only a confirmed split can use this endpoint
+
+- **WHEN** the organizer submits the cancellation for an `active` or `cancelled` draft
+- **THEN** the response status is 409 with `error.code = SPLIT_DRAFT_NOT_ACTIVE`
+- **AND** no state changes
+
+#### Scenario: A stale draft version is rejected
+
+- **WHEN** the organizer submits a `draftVersion` that does not match the confirmed draft
+- **THEN** the response status is 409 with `error.code = STALE_DRAFT_VERSION`
+- **AND** the confirmed draft remains active
+
+#### Scenario: Missing departure time is treated as not departed
+
+- **GIVEN** the confirmed draft's departure stop has no `start_at` value (documented test-only setup)
+- **WHEN** the organizer submits the cancellation
+- **THEN** the response status is 200 with `data.status = cancelled`
+
+#### Scenario: The main plan and joining state are preserved
+
+- **WHEN** a confirmed split is cancelled successfully
+- **THEN** the trip remains main-plan-confirmed and `joiningClosed` remains true
+- **AND** the trip basics and membership rows are unchanged
+- **AND** the main plan remains readable as the confirmed plan
+

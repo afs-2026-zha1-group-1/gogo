@@ -9,9 +9,7 @@ server-side session. A duplicate email is reported as `EMAIL_TAKEN` at the
 user's 2026-11-17 direction, replacing the earlier non-disclosure response;
 logout ends only the current session and leaves the account, name, memberships
 and shared trip data intact.
-
 ## Requirements
-
 ### Requirement: Account credential login
 
 The system SHALL authenticate a seeded or registered account by email and
@@ -437,10 +435,17 @@ membership checks SHALL continue to use the account id. A failed update SHALL
 keep the previously saved name and show a recoverable error. My Account SHALL
 render inside the shell with the 我的 tab active and SHALL require
 authentication; a signed-out attempt SHALL open the login page or return
-`401 USER_REQUIRED` without profile data. Following the supplied mobile
-reference, My Account SHALL show a back action and the 我的 title, a profile
-header with the account's initial avatar, display name and email, a 名字 field,
-a primary 保存名字 action and an outlined 退出登录 action.
+`401 USER_REQUIRED` without profile data. My Account SHALL show a back action
+and the 我的 title, a profile header with the account's initial avatar, display
+name and email, an edit-name icon button beside the display name, and an
+outlined 退出登录 action. The page SHALL NOT render a persistent name form: the
+name input, a primary 保存 action and a 取消 action SHALL appear only while the
+name editor is open. Opening the editor SHALL prefill the saved name. 保存
+SHALL apply the same 1–30 character validation and submit the same
+`PATCH /api/auth/me` request; on success the editor SHALL collapse and the
+profile header SHALL show the new name; on failure the editor SHALL stay open
+and show the recoverable error. 取消 SHALL discard unsaved input and collapse
+the editor without sending any request.
 
 #### Scenario: Read own profile
 
@@ -506,9 +511,42 @@ a primary 保存名字 action and an outlined 退出登录 action.
 - **THEN** the page shows a back action and the 我的 title
 - **AND** the profile header shows the account's initial avatar, display name
   and email
-- **AND** a 名字 field, a primary 保存名字 action and an outlined 退出登录 action
-  are present
+- **AND** an edit-name icon button is present beside the display name
+- **AND** no persistent name input or 保存名字 form is rendered while the editor
+  is closed
+- **AND** an outlined 退出登录 action is present
 - **AND** the bottom dock keeps 我的 active
+
+#### Scenario: Opening the name editor prefills the saved name
+
+- **GIVEN** a signed-in traveler on My Account with the editor closed
+- **WHEN** they activate the edit-name button
+- **THEN** a name input appears prefilled with the saved display name
+- **AND** a primary 保存 action and a 取消 action appear
+- **AND** no request is sent by opening the editor
+
+#### Scenario: Saving a valid name collapses the editor
+
+- **GIVEN** the name editor is open with a valid changed name
+- **WHEN** the traveler activates 保存 and the update succeeds
+- **THEN** the editor collapses back to the profile header
+- **AND** the header shows the new name and the avatar initial derives from it
+
+#### Scenario: Cancelling discards the draft
+
+- **GIVEN** the name editor is open with unsaved input
+- **WHEN** the traveler activates 取消
+- **THEN** the editor collapses without sending any request
+- **AND** the profile header keeps the saved name
+
+#### Scenario: A failed save keeps the editor open
+
+- **GIVEN** the name editor is open
+- **WHEN** the traveler activates 保存 and the update fails validation or the
+  server is unreachable
+- **THEN** the recoverable error is shown inside the editor
+- **AND** the editor stays open with the entered value
+- **AND** the saved name is unchanged
 
 #### Scenario: My Account requires authentication
 
@@ -580,3 +618,4 @@ invalidated or clear local state as if it had succeeded.
 - **THEN** a recoverable error is shown
 - **AND** the app does not claim the session was invalidated
 - **AND** local authentication state is not cleared as if logout succeeded
+
