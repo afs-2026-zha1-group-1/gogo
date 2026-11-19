@@ -60,6 +60,10 @@ export interface BranchRow {
   title: string
   meta: string
   roundIndex?: number
+  /** Travel connector: drawn as a label on the lane line, never as a node. */
+  leg?: boolean
+  /** Minutes of that leg (null/undefined = 待补全). */
+  legMinutes?: number | null
 }
 
 export type GraphRow = MainRow | JunctionRow | BranchRow
@@ -170,6 +174,8 @@ function branchRowsFor(route: RouteInput, key: RouteKey, roundIndex?: number, fr
       title: "路程",
       meta: minutes == null ? `路程 · ${PENDING_LABEL}` : `路程 · ${minutes} 分钟`,
       roundIndex,
+      leg: true,
+      legMinutes: minutes,
     })
   }
   if (steps.length > 0) {
