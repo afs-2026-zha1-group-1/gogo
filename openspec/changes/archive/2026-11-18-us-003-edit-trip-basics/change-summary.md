@@ -2,6 +2,7 @@
 
 - Story: GitHub issue #60（US-003；合并 US-003~007 / US-016 / US-017 / US-018 / US-051）
 - PR: [#120](https://github.com/afs-2026-zha1-group-1/gogo/pull/120) → merge `136265a`（2026-11-18）
+- 归档 PR: [#163](https://github.com/afs-2026-zha1-group-1/gogo/pull/163) → merge `4569a01`（2026-11-19）
 - 分支：`US-003-edit-trip-basics`（对账到 `group1/main` `b173c6a`），关键提交 `5babdc7` / `f6cfd1b` / `8e78238` / `dcf8c0c` / `019e0a2` / `8738ab8`
 
 ## 交付内容

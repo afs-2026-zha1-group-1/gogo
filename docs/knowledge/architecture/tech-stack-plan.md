@@ -684,7 +684,7 @@ requirements (`trips` +2, `main-itinerary` 3 MODIFIED + 2 ADDED,
   Playwright 85/85, `openspec validate --strict` / `--specs --strict` valid;
   CI runs 44256708568 / 44256718535 green in all three jobs; local-verify Pass
   (`docs/ai4se-plugins/20261118-143428-local-verify-report.md`).
-- **Open:** G3 signature, issue #60 and board closure after the archive PR.
+- **Open:** none; G3 Pass (SA Johnson), archived via PR #163 `4569a01`.
 
 ## 30. Landed reconciliation – ai-split-route-generation (archived 2026-11-18)
 
