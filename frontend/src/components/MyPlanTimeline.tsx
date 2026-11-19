@@ -12,7 +12,14 @@ import { useState } from 'react'
 import Icon from '../Icons'
 import StopMapButton from './StopMapButton'
 import { formatClock, type ScheduleItem } from '../lib/countdown'
-import { dayIndexOfInstant, dayLabel, defaultDayIndex, groupByDay } from '../lib/day-groups'
+import {
+  dayIndexOfInstant,
+  dayLabel,
+  defaultDayIndex,
+  groupByDay,
+  shortDayLabel,
+  weekdayLabel,
+} from '../lib/day-groups'
 import { stopIcon } from '../lib/stop-icon'
 
 interface MyPlanTimelineProps {
@@ -30,6 +37,9 @@ interface MyPlanTimelineProps {
   /** US-079: trip destination passed to the embedded Amap modal. */
   destination: string
 }
+
+/** Above this many days the tab row would crowd the title, so it collapses into a date select. */
+const PAGER_TAB_LIMIT = 6
 
 function timeLabel(item: ScheduleItem): string {
   if (item.start == null || item.end == null) return '时间待确认'
@@ -56,12 +66,13 @@ export default function MyPlanTimeline({
     : defaultDay
   const activeGroup = groups.find((group) => group.dayIndex === activeDay) ?? groups[0]
   const showPager = groups.length > 1
+  const showTabs = groups.length <= PAGER_TAB_LIMIT
 
   return (
     <>
       <div className="plan-head">
         <div className="sec-title"><Icon name="list" className="sm" /> 我的方案</div>
-        {showPager && (
+        {showPager && (showTabs ? (
           <div className="day-pager" role="tablist" aria-label="按天切换行程">
             {groups.map((group) => (
               <button
@@ -70,17 +81,35 @@ export default function MyPlanTimeline({
                 role="tab"
                 id={`day-tab-${group.dayIndex}`}
                 className="day-tab"
+                title={dayLabel(startDate, group.dayIndex)}
+                aria-label={dayLabel(startDate, group.dayIndex)}
                 aria-selected={group.dayIndex === activeGroup?.dayIndex}
                 aria-controls={group.dayIndex === activeGroup?.dayIndex
                   ? `day-panel-${group.dayIndex}`
                   : undefined}
                 onClick={() => setSelectedDay(group.dayIndex)}
               >
-                {group.dayIndex}
+                {shortDayLabel(startDate, group.dayIndex)}
               </button>
             ))}
           </div>
-        )}
+        ) : (
+          <div className="day-select">
+            <select
+              value={activeGroup?.dayIndex ?? ''}
+              aria-label="选择行程日期"
+              aria-controls={`day-panel-${activeGroup?.dayIndex}`}
+              onChange={(event) => setSelectedDay(Number(event.target.value))}
+            >
+              {groups.map((group) => (
+                <option key={group.dayIndex} value={group.dayIndex}>
+                  {`${shortDayLabel(startDate, group.dayIndex)} ${weekdayLabel(startDate, group.dayIndex)}`}
+                </option>
+              ))}
+            </select>
+            <Icon name="right" className="sm day-select-chevron" />
+          </div>
+        ))}
       </div>
       {schedule.length === 0 ? (
         <section className="card pad empty-state">
@@ -99,8 +128,8 @@ export default function MyPlanTimeline({
           <div
             className="timeline"
             id={`day-panel-${activeGroup.dayIndex}`}
-            role={showPager ? 'tabpanel' : undefined}
-            aria-labelledby={showPager ? `day-tab-${activeGroup.dayIndex}` : undefined}
+            role={showPager && showTabs ? 'tabpanel' : undefined}
+            aria-labelledby={showPager && showTabs ? `day-tab-${activeGroup.dayIndex}` : undefined}
           >
             {activeGroup.items.map((item, index) => (
               <div className="tl-item" key={item.key}>

@@ -1,6 +1,14 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { dayDate, dayIndexOfInstant, dayLabel, defaultDayIndex, groupByDay } from '../src/lib/day-groups.ts'
+import {
+  dayDate,
+  dayIndexOfInstant,
+  dayLabel,
+  defaultDayIndex,
+  groupByDay,
+  shortDayLabel,
+  weekdayLabel,
+} from '../src/lib/day-groups.ts'
 
 test('dayDate walks forward from the trip start', () => {
   assert.equal(dayDate('2026-11-19', 1), '2026-11-19')
@@ -11,6 +19,11 @@ test('dayDate walks forward from the trip start', () => {
 test('dayLabel keeps the DAY N · M月D日（周X） shape', () => {
   assert.equal(dayLabel('2026-11-19', 1), 'DAY 1 · 11月19日（周四）')
   assert.equal(dayLabel('2026-11-19', 2), 'DAY 2 · 11月20日（周五）')
+})
+
+test('shortDayLabel and weekdayLabel feed the compact day switcher', () => {
+  assert.equal(shortDayLabel('2026-11-19', 4), '11/22')
+  assert.equal(weekdayLabel('2026-11-19', 4), '周日')
 })
 
 test('groupByDay orders days and keeps item order', () => {

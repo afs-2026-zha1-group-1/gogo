@@ -2349,7 +2349,7 @@ body {
 .day-pager {
   display: flex;
   gap: 4px;
-  max-width: 62%;
+  max-width: 74%;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -2361,14 +2361,14 @@ body {
 .day-tab {
   all: unset;
   flex: none;
-  min-width: 26px;
+  min-width: 44px;
   height: 26px;
-  padding: 0 7px;
+  padding: 0 8px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
   color: var(--ink-2);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   text-align: center;
   cursor: pointer;
@@ -2381,6 +2381,42 @@ body {
 }
 
 .day-tab:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Many days: the tab row folds into one date selector */
+.day-select {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+
+.day-select select {
+  appearance: none;
+  height: 30px;
+  max-width: 136px;
+  padding: 0 26px 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.day-select .day-select-chevron {
+  position: absolute;
+  right: 8px;
+  transform: rotate(90deg);
+  pointer-events: none;
+}
+
+.day-select select:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
 }

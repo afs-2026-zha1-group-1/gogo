@@ -13,11 +13,22 @@ export function dayDate(startDate: string, dayIndex: number): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 
+/** `M/D`, compact enough for a day tab. */
+export function shortDayLabel(startDate: string, dayIndex: number): string {
+  const [, month, day] = dayDate(startDate, dayIndex).split('-').map(Number)
+  return `${month}/${day}`
+}
+
+/** `周X` of a trip day. */
+export function weekdayLabel(startDate: string, dayIndex: number): string {
+  const [year, month, day] = dayDate(startDate, dayIndex).split('-').map(Number)
+  return `周${WEEKDAYS[new Date(year, month - 1, day).getDay()]}`
+}
+
 /** `DAY N · M月D日（周X）`, matching the existing timeline label. */
 export function dayLabel(startDate: string, dayIndex: number): string {
-  const [year, month, day] = dayDate(startDate, dayIndex).split('-').map(Number)
-  const date = new Date(year, month - 1, day)
-  return `DAY ${dayIndex} · ${month}月${day}日（周${WEEKDAYS[date.getDay()]}）`
+  const [, month, day] = dayDate(startDate, dayIndex).split('-').map(Number)
+  return `DAY ${dayIndex} · ${month}月${day}日（${weekdayLabel(startDate, dayIndex)}）`
 }
 
 /** Day index of an instant relative to the trip start; an unknown time keeps day 1. */
