@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { dayDate, dayIndexOfInstant, dayLabel, groupByDay } from '../src/lib/day-groups.ts'
+import { dayDate, dayIndexOfInstant, dayLabel, defaultDayIndex, groupByDay } from '../src/lib/day-groups.ts'
 
 test('dayDate walks forward from the trip start', () => {
   assert.equal(dayDate('2026-11-19', 1), '2026-11-19')
@@ -22,6 +22,15 @@ test('groupByDay orders days and keeps item order', () => {
   const groups = groupByDay(items, (item) => item.day)
   assert.deepEqual(groups.map((group) => group.dayIndex), [1, 2])
   assert.deepEqual(groups[1].items.map((item) => item.key), ['b', 'c'])
+})
+
+test('defaultDayIndex opens today, then clamps outside the trip', () => {
+  const days = [1, 2, 3, 4, 5]
+  assert.equal(defaultDayIndex(days, 4), 4)
+  assert.equal(defaultDayIndex(days, 1), 1)
+  assert.equal(defaultDayIndex(days, 9), 5)
+  assert.equal(defaultDayIndex([1, 3], 2), 1)
+  assert.equal(defaultDayIndex([], 2), undefined)
 })
 
 test('dayIndexOfInstant compares local calendar dates', () => {

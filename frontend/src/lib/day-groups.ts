@@ -35,6 +35,17 @@ export interface DayGroup<T> {
   items: T[]
 }
 
+/**
+ * Tab shown on first render: today when it has a page, the last page after the
+ * trip, the first page before it or when today's data is missing.
+ */
+export function defaultDayIndex(availableDays: number[], todayDay: number): number | undefined {
+  if (availableDays.length === 0) return undefined
+  if (availableDays.includes(todayDay)) return todayDay
+  const last = availableDays[availableDays.length - 1]
+  return todayDay > last ? last : availableDays[0]
+}
+
 /** Groups in ascending day order; the items keep their incoming order. */
 export function groupByDay<T>(items: T[], dayOf: (item: T) => number): DayGroup<T>[] {
   const groups = new Map<number, T[]>()
