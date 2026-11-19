@@ -20,9 +20,10 @@ public record PlanAiProperties(
                 ? "https://mlop-llm-gateway-dev.home-np.oocl.com/v2/openai/deployments/ali-copilot"
                 : baseUrl;
         model = model == null || model.isBlank() ? "deepseek-v4.1-flash" : model;
-        maxTokens = maxTokens == null || maxTokens <= 0 ? 8192 : maxTokens;
+        // The reasoning model spends tokens before content; 8192 ran out on 5-day plans.
+        maxTokens = maxTokens == null || maxTokens <= 0 ? 16_384 : maxTokens;
         timeout = timeout == null || timeout.isNegative() || timeout.isZero()
-                ? Duration.ofSeconds(30)
+                ? Duration.ofSeconds(90)
                 : timeout;
     }
 }
