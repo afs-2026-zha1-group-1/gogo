@@ -289,6 +289,25 @@ class SplitRoundApiTest extends AbstractSplitApiTest {
     }
 
     @Test
+    @DisplayName("a trip without rounds can start the first round from the rounds gate")
+    void firstRound_onFreshTrip_isStartable() throws Exception {
+        // Fresh trip: no split round exists yet, so the gate must allow round 1 instead of demanding a previous
+        // confirmation (the disabled 发起分队 button on the team-route page).
+        mockMvc.perform(get("/api/trips/{tripId}/split-draft/rounds", sgfTripId())
+                        .with(TestAuth.asUser(memberId("Ben"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.rounds.length()").value(0))
+                .andExpect(jsonPath("$.data.canStartNextRound").value(true));
+
+        mockMvc.perform(post("/api/trips/{tripId}/split-draft/rounds", sgfTripId())
+                        .with(TestAuth.asUser(memberId("Ben"))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.roundIndex").value(1))
+                .andExpect(jsonPath("$.data.draft.status").value("active"));
+        assertThat(roundDocument(1).path("status").asText()).isEqualTo("active");
+    }
+
+    @Test
     @DisplayName("a cancelled first round can be started again from the rounds gate")
     void restartRoundOne_afterCancellation_rebuildsRoundOne() throws Exception {
         int version = startDraftAs("Ben");

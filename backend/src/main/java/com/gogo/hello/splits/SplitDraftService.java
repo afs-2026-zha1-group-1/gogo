@@ -188,11 +188,12 @@ public class SplitDraftService {
         return rebuilt;
     }
 
-    /** Next round index: max+1 when the max round is confirmed, otherwise the max round itself. */
+    /** Next round index: 1 when no round exists yet, max+1 when the max round is confirmed, otherwise the max round itself. */
     private int nextRoundIndex(String tripId) {
         int max = repository.findMaxRoundIndex(tripId).orElse(0);
         if (max == 0) {
-            return 2;
+            // A trip without any round starts at round 1 (the first round has no predecessor to confirm).
+            return 1;
         }
         SplitDraftDocument current = currentDraft(tripId, max);
         return current != null && "confirmed".equals(current.status()) ? max + 1 : max;
