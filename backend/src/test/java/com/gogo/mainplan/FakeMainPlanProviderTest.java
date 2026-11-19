@@ -64,15 +64,20 @@ class FakeMainPlanProviderTest {
     @Test
     void zhuhaiDestinationReturnsTheFixedTwoDayPlan() {
         MainPlanResult result = planFor("珠海", "2026-11-21", "2026-11-22");
-        assertEquals(8, result.stops().size());
-        assertEquals(List.of("日月贝（珠海大剧院）", "午餐", "回酒店午休", "爱情邮局",
-                        "情侣路", "午餐", "回酒店午休", "圆明新园"),
+        assertEquals(11, result.stops().size());
+        assertEquals(List.of("日月贝（珠海大剧院）", "午餐", "回酒店午休", "珠海星湾飞行营地", "海泉湾渔人码头",
+                        "情侣路", "午餐", "回酒店午休", "圆明新园", "湾仔海鲜街", "返回酒店"),
                 result.stops().stream().map(MainPlanResult.PlannedStop::name).toList());
-        assertEquals(List.of(1, 1, 1, 1, 2, 2, 2, 2),
+        assertEquals(List.of(1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2),
                 result.stops().stream().map(MainPlanResult.PlannedStop::dayIndex).toList());
         assertEquals("珠海市香洲区野狸岛渔湾路 129 号珠海大剧院", result.stops().get(0).address());
-        assertEquals("珠海市香洲区情侣中路爱情邮局（海滨公园旁）", result.stops().get(3).address());
-        assertEquals(0, result.costPerPersonCents());
+        assertEquals("珠海市金湾区平沙镇海泉湾度假区内", result.stops().get(3).address());
+        assertEquals("14:15", result.stops().get(3).startTime());
+        assertEquals("16:00", result.stops().get(3).endTime());
+        assertEquals(248800, result.stops().get(3).costCents());
+        assertEquals("湾仔海鲜街", result.stops().get(9).name());
+        assertEquals("返回酒店", result.stops().get(10).name());
+        assertEquals(248800, result.costPerPersonCents());
     }
 
     @Test
@@ -92,8 +97,8 @@ class FakeMainPlanProviderTest {
     @Test
     void mockDestinationsAreCappedAtTwoDays() {
         MainPlanResult result = planFor("珠海", "2026-11-21", "2026-11-25");
-        assertEquals(8, result.stops().size());
-        assertEquals(2, result.stops().get(7).dayIndex());
+        assertEquals(11, result.stops().size());
+        assertEquals(2, result.stops().get(10).dayIndex());
     }
 
     @Test

@@ -25,8 +25,11 @@ public class FakeMainPlanProvider implements MainPlanProvider {
             new MainPlanResult.PlannedStop(4, "Merlion Park", "11:30", "12:00", null,
                     List.of("culture"), "1 Fullerton Rd, Singapore 049213", "Singapore", 1000));
 
-    // 珠海/香港 demos are fixed regardless of the LLM key: two days, two main-plan stops per day.
-    // The remaining two places are added to group B by FixtureBranchCandidateProvider.
+    // 珠海/香港 demos are fixed regardless of the LLM key: two days of 上午景点 → 午餐 →
+    // 回酒店午休 → 下午景点. 珠海 day 1 spends the afternoon at 星湾飞行营地 (海泉湾度假区,
+    // 平沙镇) and its dinner stays inside the same resort, so the leg between them is short;
+    // day 2 ends with a 湾仔海鲜街 dinner and the drive back to the hotel. 爱情邮局 moved out
+    // of the main line: it is group B's round-1 split activity (FixtureBranchCandidateProvider).
     private static final List<List<MainPlanResult.PlannedStop>> ZHUHAI_DAYS = List.of(
             List.of(
                     new MainPlanResult.PlannedStop(1, "日月贝（珠海大剧院）", "09:00", "10:30", 20,
@@ -35,8 +38,12 @@ public class FakeMainPlanProvider implements MainPlanProvider {
                             List.of("food"), "珠海市香洲区情侣中路（就近餐厅）", "珠海", 0),
                     new MainPlanResult.PlannedStop(3, "回酒店午休", "12:05", "13:45", 30,
                             List.of("slow"), "珠海市香洲区（入住酒店）", "珠海", 0),
-                    new MainPlanResult.PlannedStop(4, "爱情邮局", "14:15", "16:00", null,
-                            List.of("photo", "slow"), "珠海市香洲区情侣中路爱情邮局（海滨公园旁）", "珠海", 0)),
+                    new MainPlanResult.PlannedStop(4, "珠海星湾飞行营地", "14:15", "16:00", 20,
+                            List.of("adventure", "photo", "nature"),
+                            "珠海市金湾区平沙镇海泉湾度假区内", "珠海", 248800),
+                    new MainPlanResult.PlannedStop(5, "海泉湾渔人码头", "16:20", "17:50", null,
+                            List.of("food", "slow"),
+                            "珠海市金湾区平沙镇海泉湾度假区渔人码头", "珠海", 0)),
             List.of(
                     new MainPlanResult.PlannedStop(1, "情侣路", "09:00", "11:00", 20,
                             List.of("slow", "nature"), "珠海市香洲区情侣路（沿海观光道）", "珠海", 0),
@@ -44,8 +51,13 @@ public class FakeMainPlanProvider implements MainPlanProvider {
                             List.of("food"), "珠海市香洲区情侣中路（就近餐厅）", "珠海", 0),
                     new MainPlanResult.PlannedStop(3, "回酒店午休", "12:35", "14:15", 30,
                             List.of("slow"), "珠海市香洲区（入住酒店）", "珠海", 0),
-                    new MainPlanResult.PlannedStop(4, "圆明新园", "14:45", "16:30", null,
-                            List.of("culture", "heritage"), "珠海市香洲区兰埔路 1 号圆明新园", "珠海", 0)));
+                    new MainPlanResult.PlannedStop(4, "圆明新园", "14:45", "16:45", 25,
+                            List.of("culture", "heritage"), "珠海市香洲区兰埔路 1 号圆明新园", "珠海", 0),
+                    new MainPlanResult.PlannedStop(5, "湾仔海鲜街", "17:10", "18:40", 25,
+                            List.of("food", "craft"),
+                            "珠海市香洲区湾仔南湾南路湾仔海鲜街", "珠海", 0),
+                    new MainPlanResult.PlannedStop(6, "返回酒店", "19:05", "19:40", null,
+                            List.of("slow"), "珠海市香洲区（入住酒店）", "珠海", 0)));
 
     private static final List<List<MainPlanResult.PlannedStop>> HONG_KONG_DAYS = List.of(
             List.of(

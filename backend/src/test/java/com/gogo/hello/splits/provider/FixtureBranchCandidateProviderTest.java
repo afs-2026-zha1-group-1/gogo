@@ -102,22 +102,30 @@ class FixtureBranchCandidateProviderTest {
     }
 
     @Test
-    @DisplayName("candidateFor_groupB_zhuhaiAlternatesTheRemainingTwoPlaces")
-    void candidateFor_groupB_zhuhaiAlternatesTheRemainingTwoPlaces() {
+    @DisplayName("candidateFor_groupB_zhuhaiStartsWithTheLovePostOfficeThenAlternates")
+    void candidateFor_groupB_zhuhaiStartsWithTheLovePostOfficeThenAlternates() {
         RouteCandidate first = provider.candidateFor("B", departure, reunion, "珠海", mainPlanStops);
-        assertThat(first.activityName()).isEqualTo("珠海长隆海洋王国");
-        assertThat(first.locationName()).isEqualTo("珠海市香洲区横琴新区富祥湾长隆旅游度假区");
+        assertThat(first.activityName()).isEqualTo("爱情邮局");
+        assertThat(first.locationName()).isEqualTo("珠海市香洲区情侣中路爱情邮局（海滨公园旁）");
         assertThat(first.activityMinutes()).isEqualTo(60);
         assertThat(first.travelLegsMinutes()).containsExactly(20, 20);
 
         BranchCandidateContext secondRound = new BranchCandidateContext(
-                2, null, null, List.of("珠海长隆海洋王国"));
+                2, null, null, List.of("爱情邮局"));
         RouteCandidate second = provider.candidateFor("B", departure, reunion, "珠海", mainPlanStops, secondRound);
-        assertThat(second.activityName()).isEqualTo("野狸岛");
-        assertThat(second.locationName()).isEqualTo("珠海市香洲区野狸岛（名亭公园）");
-        assertThat(second.activityMinutes()).isEqualTo(30);
-        assertThat(second.steps()).extracting("name").containsExactly("野狸岛");
+        assertThat(second.activityName()).isEqualTo("珠海长隆海洋王国");
+        assertThat(second.locationName()).isEqualTo("珠海市香洲区横琴新区富祥湾长隆旅游度假区");
+        assertThat(second.activityMinutes()).isEqualTo(60);
         assertThat(second.travelLegsMinutes()).containsExactly(20, 20);
+
+        BranchCandidateContext thirdRound = new BranchCandidateContext(
+                3, null, null, List.of("爱情邮局", "珠海长隆海洋王国"));
+        RouteCandidate third = provider.candidateFor("B", departure, reunion, "珠海", mainPlanStops, thirdRound);
+        assertThat(third.activityName()).isEqualTo("野狸岛");
+        assertThat(third.locationName()).isEqualTo("珠海市香洲区野狸岛（名亭公园）");
+        assertThat(third.activityMinutes()).isEqualTo(30);
+        assertThat(third.steps()).extracting("name").containsExactly("野狸岛");
+        assertThat(third.travelLegsMinutes()).containsExactly(20, 20);
     }
 
     @Test

@@ -10,6 +10,9 @@ test('A1 a stored per-stop amount always wins over the mock book', () => {
 test('A2 the simulated Zhuhai and Hong Kong itineraries carry their own prices', () => {
   assert.equal(activityCostCents('日月贝（珠海大剧院）'), 4000)
   assert.equal(activityCostCents('珠海长隆海洋王国'), 35000)
+  assert.equal(activityCostCents('珠海星湾飞行营地'), 248800)
+  assert.equal(activityCostCents('海泉湾渔人码头'), 0)
+  assert.equal(activityCostCents('湾仔海鲜街'), 0)
   assert.equal(activityCostCents('西九文化区 M+ 博物馆'), 12000)
   assert.equal(activityCostCents('天星小轮（尖沙咀 → 中环）'), 400)
   assert.equal(activityCostCents('香港迪士尼乐园'), 63900)

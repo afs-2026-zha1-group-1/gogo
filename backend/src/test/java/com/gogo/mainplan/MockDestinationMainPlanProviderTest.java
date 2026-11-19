@@ -21,7 +21,7 @@ class MockDestinationMainPlanProviderTest {
 
         MainPlanResult result = provider.plan(zhuhai, List.of());
 
-        assertEquals(8, result.stops().size());
+        assertEquals(11, result.stops().size());
         assertEquals("日月贝（珠海大剧院）", result.stops().get(0).name());
     }
 

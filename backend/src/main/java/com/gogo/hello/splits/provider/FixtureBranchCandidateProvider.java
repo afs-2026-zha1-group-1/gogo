@@ -125,7 +125,11 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
                             "香港新界大屿山竹篙湾香港迪士尼乐园度假区"),
                     new Branch("星光大道", 30, List.of(20, 20), 0, 0,
                             "香港九龙尖沙咀海滨长廊星光大道"));
+            // 珠海 round 1 sends group B to the 爱情邮局 the main line no longer visits, so the two
+            // lanes visibly diverge; later rounds cycle through the remaining city places.
             case ZHUHAI -> List.of(
+                    new Branch("爱情邮局", 60, List.of(20, 20), 0, 0,
+                            "珠海市香洲区情侣中路爱情邮局（海滨公园旁）"),
                     new Branch("珠海长隆海洋王国", 60, List.of(20, 20), 0, 0,
                             "珠海市香洲区横琴新区富祥湾长隆旅游度假区"),
                     new Branch("野狸岛", 30, List.of(20, 20), 0, 0,
