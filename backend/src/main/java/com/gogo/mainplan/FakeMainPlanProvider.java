@@ -30,42 +30,42 @@ public class FakeMainPlanProvider implements MainPlanProvider {
     private static final List<List<MainPlanResult.PlannedStop>> ZHUHAI_DAYS = List.of(
             List.of(
                     new MainPlanResult.PlannedStop(1, "日月贝（珠海大剧院）", "09:00", "10:30", 20,
-                            List.of("photo", "culture"), null, "珠海", 0),
+                            List.of("photo", "culture"), "珠海市香洲区野狸岛渔湾路 129 号珠海大剧院", "珠海", 0),
                     new MainPlanResult.PlannedStop(2, "午餐", "10:50", "11:50", 15,
-                            List.of("food"), null, "珠海", 0),
+                            List.of("food"), "珠海市香洲区情侣中路（就近餐厅）", "珠海", 0),
                     new MainPlanResult.PlannedStop(3, "回酒店午休", "12:05", "13:45", 30,
-                            List.of("slow"), null, "珠海", 0),
+                            List.of("slow"), "珠海市香洲区（入住酒店）", "珠海", 0),
                     new MainPlanResult.PlannedStop(4, "爱情邮局", "14:15", "16:00", null,
-                            List.of("photo", "slow"), null, "珠海", 0)),
+                            List.of("photo", "slow"), "珠海市香洲区情侣中路爱情邮局（海滨公园旁）", "珠海", 0)),
             List.of(
                     new MainPlanResult.PlannedStop(1, "情侣路", "09:00", "11:00", 20,
-                            List.of("slow", "nature"), null, "珠海", 0),
+                            List.of("slow", "nature"), "珠海市香洲区情侣路（沿海观光道）", "珠海", 0),
                     new MainPlanResult.PlannedStop(2, "午餐", "11:20", "12:20", 15,
-                            List.of("food"), null, "珠海", 0),
+                            List.of("food"), "珠海市香洲区情侣中路（就近餐厅）", "珠海", 0),
                     new MainPlanResult.PlannedStop(3, "回酒店午休", "12:35", "14:15", 30,
-                            List.of("slow"), null, "珠海", 0),
+                            List.of("slow"), "珠海市香洲区（入住酒店）", "珠海", 0),
                     new MainPlanResult.PlannedStop(4, "圆明新园", "14:45", "16:30", null,
-                            List.of("culture", "heritage"), null, "珠海", 0)));
+                            List.of("culture", "heritage"), "珠海市香洲区兰埔路 1 号圆明新园", "珠海", 0)));
 
     private static final List<List<MainPlanResult.PlannedStop>> HONG_KONG_DAYS = List.of(
             List.of(
                     new MainPlanResult.PlannedStop(1, "维多利亚港", "09:00", "10:30", 20,
-                            List.of("photo", "slow"), null, "香港", 0),
+                            List.of("photo", "slow"), "香港尖沙咀海滨长廊（维多利亚港）", "香港", 0),
                     new MainPlanResult.PlannedStop(2, "午餐", "10:50", "11:50", 15,
-                            List.of("food"), null, "香港", 0),
+                            List.of("food"), "香港九龙尖沙咀（就近餐厅）", "香港", 0),
                     new MainPlanResult.PlannedStop(3, "回酒店午休", "12:05", "13:45", 30,
-                            List.of("slow"), null, "香港", 0),
+                            List.of("slow"), "香港九龙尖沙咀（入住酒店）", "香港", 0),
                     new MainPlanResult.PlannedStop(4, "太平山顶", "14:15", "16:00", null,
-                            List.of("nature", "photo"), null, "香港", 0)),
+                            List.of("nature", "photo"), "香港山顶道 128 号凌霄阁", "香港", 0)),
             List.of(
                     new MainPlanResult.PlannedStop(1, "旺角", "09:00", "11:00", 20,
-                            List.of("food", "craft"), null, "香港", 0),
+                            List.of("food", "craft"), "香港九龙旺角弥敦道", "香港", 0),
                     new MainPlanResult.PlannedStop(2, "午餐", "11:20", "12:20", 15,
-                            List.of("food"), null, "香港", 0),
+                            List.of("food"), "香港九龙尖沙咀（就近餐厅）", "香港", 0),
                     new MainPlanResult.PlannedStop(3, "回酒店午休", "12:35", "14:15", 30,
-                            List.of("slow"), null, "香港", 0),
+                            List.of("slow"), "香港九龙尖沙咀（入住酒店）", "香港", 0),
                     new MainPlanResult.PlannedStop(4, "尖沙咀", "14:45", "16:30", null,
-                            List.of("food", "photo"), null, "香港", 0)));
+                            List.of("food", "photo"), "香港九龙尖沙咀弥敦道南端", "香港", 0)));
 
     private static final List<MainPlanResult.PlannedStop> LONDON = List.of(
             new MainPlanResult.PlannedStop(1, "大英博物馆", "09:00", "10:30", 20,
