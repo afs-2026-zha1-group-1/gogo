@@ -5,7 +5,7 @@
  * trip's or another group's route. US-090: a main-plan stop carries an edit entry
  * (pencil) that opens the name/time/note dialog; a split node opens the
  * round-scoped node dialog instead (both update the route graph after saving),
- * and both carry the trash entry (a split node keeps at least one step).
+ * and both carry the trash entry (deleting a group's last step keeps it on the main line).
  * US-079: every stop card carries a mint Amap button on its right opening the
  * embedded map modal; the address + navigation live on the countdown card's
  * next-stop row, not on the timeline; map failures never blank the trip.
@@ -152,13 +152,6 @@ export default function MyPlanTimeline({
                           ? '全员 · 分头'
                           : `${item.note ? `${item.note} · ` : ''}${item.groupLabel ? `${item.groupLabel} 组` : '全员'} · 免费`}
                       </div>
-                      {item.interests.length > 0 && (
-                        <div className="chips" style={{ marginTop: 6 }}>
-                          {item.interests.map((tag) => (
-                            <span className="pill" key={tag}><Icon name="star" className="sm" /> {tag}</span>
-                          ))}
-                        </div>
-                      )}
                     </div>
                     {(item.stopId != null || item.splitStep != null) && onEditStop ? (
                       <button
@@ -171,7 +164,7 @@ export default function MyPlanTimeline({
                         <Icon name="edit" className="sm" />
                       </button>
                     ) : null}
-                    {((item.stopId != null) || (item.splitStep != null && item.splitStep.stepCount > 1)) && onDeleteStop ? (
+                    {(item.stopId != null || item.splitStep != null) && onDeleteStop ? (
                       <button
                         type="button"
                         className="tl-edit tl-edit-danger"
@@ -187,6 +180,13 @@ export default function MyPlanTimeline({
                       destination={destination}
                       from={index > 0 ? activeGroup.items[index - 1] : null}
                     />
+                    {item.interests.length > 0 && (
+                      <div className="chips act-tags">
+                        {item.interests.map((tag) => (
+                          <span className="pill" key={tag}><Icon name="star" className="sm" /> {tag}</span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   {item.travelMinutesToNext != null && (
                     <div className="tl-leg">
