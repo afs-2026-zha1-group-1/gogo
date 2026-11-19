@@ -116,8 +116,9 @@ test('Trips reports current-trip read failure and retries', async ({ page }) => 
 
 test('dashboard offers selection when no current trip exists and reports lookup errors', async ({ page }) => {
   await login(page, 'eve@example.com')
-  await expect(page.getByText('尚未选择行程')).toBeVisible()
-  await expect(page.getByRole('link', { name: '去我的行程选择' })).toHaveAttribute('href', '#/my-trips')
+  await expect(page.getByText('当前还没有行程')).toBeVisible()
+  await expect(page.getByRole('link', { name: '新建行程' })).toHaveAttribute('href', '#/create')
+  await expect(page.getByRole('link', { name: '扫码加入行程', exact: true })).toHaveAttribute('href', '#/scan')
   await page.route('**/api/trips/current', (route) => route.fulfill({ status: 503, json: { message: '服务不可用' } }))
   await page.reload()
   await expect(page.getByRole('alert')).toContainText('服务不可用')

@@ -536,7 +536,7 @@ export default function PreferencesPage({ tripId, memberId, backHref = `#/trips/
         {!isMemberView && noPreference && (
           <div
             className="card pad"
-            style={{ borderColor: '#99f6e4', background: 'linear-gradient(135deg,#f0fdfa,#fff)' }}
+            style={{ borderColor: '#c9dec8', background: 'linear-gradient(135deg,#f2f8f0,#fff)' }}
           >
             <div
               style={{

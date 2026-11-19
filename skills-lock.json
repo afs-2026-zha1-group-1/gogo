@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "skills": {
+    "c4-codebase-architecture": {
+      "source": "lmammino/c4-codebase-architecture-skill",
+      "commit": "41b9e00f33d71a0a60ac5fb79ea83bc69e6dbe61",
+      "sourceType": "github",
+      "skillPath": "skills/c4-codebase-architecture/SKILL.md",
+      "computedHash": "43dcc8492cd121f652b8ce488c8c9dfbc385d90c0246a5aa237ec694134f6ae5"
+    }
+  }
+}

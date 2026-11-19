@@ -56,3 +56,6 @@ test-results/
 
 # Browser acceptance screenshots (local evidence only, not committed)
 ui-design-reference/screenshots/us-083-085-acceptance/
+
+# Local toolchain binaries (PlantUML JAR etc.); reinstall with scripts or docs, never committed
+.tools/

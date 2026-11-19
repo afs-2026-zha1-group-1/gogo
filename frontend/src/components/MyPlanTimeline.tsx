@@ -13,7 +13,7 @@
 import { useState } from 'react'
 import Icon from '../Icons'
 import StopMapButton from './StopMapButton'
-import { formatClock, type ScheduleItem } from '../lib/countdown'
+import { formatClock, stopVisualState, type CountdownState, type ScheduleItem, type StopState } from '../lib/countdown'
 import {
   dayIndexOfInstant,
   dayLabel,
@@ -38,10 +38,19 @@ interface MyPlanTimelineProps {
   busy?: boolean
   /** US-079: trip destination passed to the embedded Amap modal. */
   destination: string
+  /** US-083: resolved countdown state; only used to label current/next/done stops visually. */
+  countdown?: CountdownState
 }
 
 /** Above this many days the tab row would crowd the title, so it collapses into a date select. */
 const PAGER_TAB_LIMIT = 6
+
+const STATE_LABEL: Record<StopState, string> = {
+  current: '进行中',
+  next: '下一站',
+  done: '已完成',
+  upcoming: '未开始',
+}
 
 function timeLabel(item: ScheduleItem): string {
   if (item.start == null || item.end == null) return '时间待确认'
@@ -58,6 +67,7 @@ export default function MyPlanTimeline({
   onAddStop,
   busy = false,
   destination,
+  countdown,
 }: MyPlanTimelineProps) {
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
   const groups = groupByDay(schedule, (item) => item.dayIndex ?? dayIndexOfInstant(item.start, startDate))
@@ -134,13 +144,30 @@ export default function MyPlanTimeline({
             aria-labelledby={showPager && showTabs ? `day-tab-${activeGroup.dayIndex}` : undefined}
           >
             {activeGroup.items.map((item, index) => (
-              <div className="tl-item" key={item.key}>
+              <div
+                className="tl-item"
+                key={item.key}
+                data-stop-state={countdown ? stopVisualState(item, countdown) : undefined}
+              >
                 <div className="tl-rail">
                   <div className="tl-node" />
                   {index < activeGroup.items.length - 1 && <div className="tl-line" />}
                 </div>
                 <div className="tl-card">
-                  <div className="tl-time">{timeLabel(item)}</div>
+                  <div className="tl-time">
+                    <span>{timeLabel(item)}</span>
+                    {countdown && (() => {
+                      const visual = stopVisualState(item, countdown)
+                      // 未开始是默认态，不额外加徽章，避免每条都挂标签。
+                      if (visual === 'upcoming') return null
+                      return (
+                        <span className={`stop-state-badge${visual === 'next' ? ' next' : visual === 'done' ? ' done' : ''}`}>
+                          <Icon name={visual === 'done' ? 'check' : visual === 'current' ? 'clock' : 'nav'} className="sm" />
+                          {STATE_LABEL[visual]}
+                        </span>
+                      )
+                    })()}
+                  </div>
                   <div className="act-card">
                     <span className="act-ic">
                       <Icon name={stopIcon(item)} className="sm" />

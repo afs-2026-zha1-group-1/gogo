@@ -1,0 +1,23 @@
+@startuml system-context
+' L1 — System Context. Evidence: README.md, openspec/specs/*, backend application.yml
+' (gogo.plan.ai.base-url), frontend/src/lib/amap*.ts, frontend/.env.example
+!include <C4/C4_Context>
+
+title GoGo 行程协作应用 — L1 系统上下文
+
+Person(traveler, "旅行者", "组织者或成员：创建行程、填写偏好、确认方案、规划分组路线")
+Person(guest, "受邀访客", "通过邀请链接或二维码加入行程的外部参与者")
+
+System(gogo, "GoGo 行程协作应用", "多人协作行程规划：创建行程、收集偏好、AI 生成主线方案、分组路线规划")
+
+System_Ext(llm, "LLM 推理网关", "OpenAI 兼容 chat/completions；未配置 Key 时改用内置确定性样例")
+System_Ext(amap, "高德地图 Web 服务", "浏览器端 JS API 地理编码与导航深链")
+
+Rel(traveler, gogo, "创建行程、填偏好、生成并确认方案", "HTTPS")
+Rel(guest, gogo, "预览邀请并加入行程", "HTTPS")
+Rel(gogo, llm, "请求结构化行程与分支路线 JSON", "HTTPS / Bearer")
+Rel(gogo, amap, "查坐标、打开外部导航", "HTTPS（浏览器直连）")
+
+LAYOUT_LEFT_RIGHT()
+
+@enduml

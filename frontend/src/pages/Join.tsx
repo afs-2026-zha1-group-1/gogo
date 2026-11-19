@@ -226,14 +226,14 @@ export default function Join({ token }: JoinProps) {
     <Screen>
       <section
         className="card pad"
-        style={{ textAlign: 'center', background: 'linear-gradient(135deg,#f0fdfa,#fff)', borderColor: '#99f6e4' }}
+        style={{ textAlign: 'center', background: 'linear-gradient(135deg,#f2f8f0,#fff)', borderColor: '#c9dec8' }}
       >
         <div
           className="logo"
           style={{
             width: 44, height: 44, margin: '0 auto 10px', borderRadius: 13,
             display: 'grid', placeItems: 'center', color: '#fff',
-            background: 'linear-gradient(135deg,var(--brand),#0891b2)',
+            background: 'linear-gradient(135deg,var(--brand),#76a887)',
           }}
         >
           <Icon name="branch" />
@@ -276,7 +276,7 @@ export default function Join({ token }: JoinProps) {
         </>
       ) : isOrganizer ? (
         <>
-          <section className="card pad" style={{ marginTop: 14, background: 'var(--brand-soft)', borderColor: '#99f6e4' }}>
+          <section className="card pad" style={{ marginTop: 14, background: 'var(--brand-soft)', borderColor: '#c9dec8' }}>
             <p className="hint" style={{ color: 'var(--brand-ink)' }}>
               <Icon name="check" className="sm" /> 你是这个行程的创建者，已在行程中，无需再加入。
             </p>

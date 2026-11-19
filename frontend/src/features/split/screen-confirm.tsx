@@ -200,12 +200,12 @@ export function ScreenConfirm() {
           ) : null}
 
           {status === "confirmed" ? (
-            <Card className="flex items-start gap-2.5 border-[#a7f3d0] bg-ok-soft p-3.5">
+            <Card className="flex items-start gap-2.5 border-[#cde5d0] bg-ok-soft p-3.5">
               <span className="grid size-7 shrink-0 place-items-center rounded-full bg-ok/15 text-ok [&_svg]:size-4">
                 <IconCheck />
               </span>
               <div className="min-w-0">
-                <div className="text-[13px] font-bold text-[#047857]">拆分已确认</div>
+                <div className="text-[13px] font-bold text-[#2e8061]">拆分已确认</div>
                 <p className="mt-0.5 text-[11.5px] leading-relaxed text-ink-2">
                   两条路线、分组与边界已作为唯一方案成对生效，草稿不可再编辑；组织者可在出发前取消。
                 </p>
@@ -214,12 +214,12 @@ export function ScreenConfirm() {
           ) : null}
 
           {status === "cancelled" ? (
-            <Card className="flex items-start gap-2.5 border-[#fde68a] bg-warn-soft p-3.5">
+            <Card className="flex items-start gap-2.5 border-[#f2e0c4] bg-warn-soft p-3.5">
               <span className="grid size-7 shrink-0 place-items-center rounded-full bg-warn/15 text-warn [&_svg]:size-4">
                 <IconAlert />
               </span>
               <div className="min-w-0">
-                <div className="text-[13px] font-bold text-[#b45309]">草稿已取消</div>
+                <div className="text-[13px] font-bold text-[#ae793b]">草稿已取消</div>
                 <p className="mt-0.5 text-[11.5px] leading-relaxed text-ink-2">
                   主线方案未改变；可在分队首页发起替换草稿。
                 </p>

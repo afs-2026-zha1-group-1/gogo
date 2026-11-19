@@ -37,10 +37,10 @@ function labelAnchor(row: GraphRow): { x: number; anchor: "start" | "end" } {
 }
 
 function nodeFill(row: GraphRow): string {
-  if (row.kind === "fork" || row.kind === "join-fork") return "#0d9488"
-  if (row.kind === "join") return "#059669"
-  if (row.kind === "branch") return row.route === "a" ? "#2563eb" : "#ea580c"
-  return "#0d9488"
+  if (row.kind === "fork" || row.kind === "join-fork") return "#245b46"
+  if (row.kind === "join") return "#2e8061"
+  if (row.kind === "branch") return row.route === "a" ? "#39806e" : "#ae7957"
+  return "#245b46"
 }
 
 function isJunctionRow(row: GraphRow): boolean {
@@ -147,7 +147,7 @@ export function TeamRouteGraph({
           <path
             key={`main-${from}-${to}`}
             d={`M${LANE.m} ${y(from)} V${y(to)}`}
-            stroke="#0d9488"
+            stroke="#245b46"
             strokeWidth={3}
             fill="none"
             strokeLinecap="round"
@@ -159,7 +159,7 @@ export function TeamRouteGraph({
             <path
               key={`dash-${span.roundIndex}`}
               d={`M${LANE.m} ${y(span.forkRow)} V${y(span.joinRow)}`}
-              stroke="#cfccc6"
+              stroke="#cbdacb"
               strokeWidth={2}
               strokeDasharray="4 6"
               fill="none"
@@ -177,14 +177,14 @@ export function TeamRouteGraph({
             <g key={`branches-${span.roundIndex}`}>
               <path
                 d={`M${LANE.m} ${y(span.forkRow)} C${LANE.m} ${y(span.forkRow) + 28} ${LANE.a} ${y(first) - 28} ${LANE.a} ${y(first)} V${y(lastA)} C${LANE.a} ${y(span.joinRow) - 28} ${LANE.m} ${y(span.joinRow) - 28} ${LANE.m} ${y(span.joinRow)}`}
-                stroke="#2563eb"
+                stroke="#39806e"
                 strokeWidth={3}
                 fill="none"
                 strokeLinecap="round"
               />
               <path
                 d={`M${LANE.m} ${y(span.forkRow)} C${LANE.m} ${y(span.forkRow) + 28} ${LANE.b} ${y(first) - 28} ${LANE.b} ${y(first)} V${y(lastB)} C${LANE.b} ${y(span.joinRow) - 28} ${LANE.m} ${y(span.joinRow) - 28} ${LANE.m} ${y(span.joinRow)}`}
-                stroke="#ea580c"
+                stroke="#ae7957"
                 strokeWidth={3}
                 fill="none"
                 strokeLinecap="round"
@@ -202,7 +202,7 @@ export function TeamRouteGraph({
           // Travel legs are drawn on the line between two nodes: no dot, no big title, no click target.
           if (isBranch && row.leg) {
             const minutesLabel = row.legMinutes == null ? PENDING_LABEL : `${row.legMinutes} 分`
-            const color = row.route === "a" ? "#2563eb" : "#ea580c"
+            const color = row.route === "a" ? "#39806e" : "#ae7957"
             return (
               <g key={row.id} aria-label={`${row.route === "a" ? "A 组" : "B 组"}路程 ${minutesLabel}`}>
                 <rect
@@ -256,8 +256,8 @@ export function TeamRouteGraph({
                   width={316}
                   height={52}
                   rx={10}
-                  fill="#f0fdfa"
-                  stroke="#5eead4"
+                  fill="#edf5ee"
+                  stroke="#a7c9b3"
                   strokeWidth={1.5}
                 />
               ) : null}
@@ -277,11 +277,11 @@ export function TeamRouteGraph({
                   cx={cx}
                   cy={cy}
                   r={13}
-                  fill={row.kind === "fork" ? "#ccfbf1" : row.kind === "join" ? "#d7f5e6" : "#ccfbf1"}
+                  fill={row.kind === "fork" ? "#e4f0e3" : row.kind === "join" ? "#e1f1de" : "#e4f0e3"}
                 />
               ) : null}
               {isJoinFork ? (
-                <circle cx={cx} cy={cy} r={16} fill="none" stroke="#5eead4" strokeWidth={1.5} />
+                <circle cx={cx} cy={cy} r={16} fill="none" stroke="#a7c9b3" strokeWidth={1.5} />
               ) : null}
               <circle
                 cx={cx}
@@ -297,7 +297,7 @@ export function TeamRouteGraph({
                 textAnchor={label.anchor}
                 fontSize={isBranch ? 9 : 9.5}
                 fontWeight={700}
-                fill="#a8a29e"
+                fill="#94a499"
               >
                 {meta}
               </text>
@@ -307,7 +307,7 @@ export function TeamRouteGraph({
                 textAnchor={label.anchor}
                 fontSize={titleSize}
                 fontWeight={titleWeight}
-                fill={row.kind === "fork" || row.kind === "join-fork" ? "#0f766e" : row.kind === "join" ? "#047857" : "#1c1917"}
+                fill={row.kind === "fork" || row.kind === "join-fork" ? "#235b45" : row.kind === "join" ? "#2e8061" : "#1c382e"}
               >
                 {title}
               </text>

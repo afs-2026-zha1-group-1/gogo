@@ -1,0 +1,37 @@
+@startuml container
+' L2 — Container view.
+' Evidence:
+'   backend/pom.xml            Spring Boot 3.5.14 web/jdbc/validation/security, flyway-core, sqlite-jdbc, Java 21
+'   application.yml            jdbc:sqlite:./data/gogo.db?journal_mode=WAL, hikari maximum-pool-size=1,
+'                              flyway locations=classpath:db/migration, server.port=8080, session timeout 30m
+'   SecurityConfig.java        HttpSession security context + CookieCsrfTokenRepository, IF_REQUIRED
+'   frontend/package.json      React 19, Vite, React Router 7, TanStack Query 5, jsqr, qrcode
+'   frontend/vite.config.ts    dev proxy /api -> http://localhost:8080
+'   frontend/src/lib/amap*.ts  browser-side AMap JS API + www.amap.com links
+'   db/migration/V1..V18       13 business tables (greeting, app_user, account_credential, trip,
+'                              trip_member, trip_invitation, member_preference, user_default_interest,
+'                              main_plan_draft, main_plan_stop, plan_node, split_draft, place_cache)
+!include <C4/C4_Container>
+
+title GoGo 行程协作应用 — L2 容器视图
+
+Person(traveler, "旅行者", "组织者 / 成员 / 受邀访客\n\n创建行程 · 填写偏好\n生成并确认方案\n规划分组路线")
+
+System_Boundary(gogo, "GoGo 行程协作应用") {
+  Container(spa, "单页应用（SPA）", "React 19 + TypeScript + Vite", "Hash 路由 + 浏览器路由\n\n仪表盘 · 偏好录入\n主线方案 · 分组路线\n二维码扫描加入")
+  Container(api, "后端 API 服务", "Spring Boot 3.5 / Java 21", "REST 接口\n\n会话认证 + CSRF\n业务规则校验\nAI / 地理编排")
+  ContainerDb(db, "嵌入式数据库", "SQLite (WAL, pool=1)", "13 张业务表\n\n行程 · 成员 · 邀请\n偏好 · 方案 · 分组草稿\n坐标缓存")
+}
+
+System_Ext(llm, "LLM 推理网关", "OpenAI 兼容 chat/completions\n\n生成主线方案\n生成分支路线\n未配置 Key 时降级为样例")
+System_Ext(amap, "高德地图 Web 服务", "浏览器端直连\n\nJS API 地理编码\nWWW 导航深链\n离线坐标簿兜底")
+
+Rel(traveler, spa, "访问", "HTTPS")
+Rel(spa, api, "REST + 会话 Cookie + CSRF", "JSON / HTTPS")
+Rel(api, db, "JdbcClient + Flyway", "JDBC")
+Rel(api, llm, "生成方案", "HTTPS / Bearer")
+Rel(spa, amap, "地理编码 / 导航", "HTTPS")
+
+LAYOUT_LEFT_RIGHT()
+
+@enduml

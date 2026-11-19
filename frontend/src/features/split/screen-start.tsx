@@ -190,12 +190,12 @@ export function ScreenStart() {
             </div>
 
             {tooFewMembers ? (
-              <Card className="flex items-start gap-2.5 border-[#fde68a] bg-warn-soft p-3.5">
+              <Card className="flex items-start gap-2.5 border-[#f2e0c4] bg-warn-soft p-3.5">
                 <span className="grid size-7 shrink-0 place-items-center rounded-full bg-warn/15 text-warn [&_svg]:size-4">
                   <IconInfo />
                 </span>
                 <div className="min-w-0">
-                  <div className="text-[13px] font-bold text-[#b45309]">无法分队：成员不足</div>
+                  <div className="text-[13px] font-bold text-[#ae793b]">无法分队：成员不足</div>
                   <p className="mt-0.5 text-[11.5px] leading-relaxed text-ink-2">
                     当前行程只有 {membersQuery.data?.length ?? 0} 名成员。分队需要 A/B 两组各至少一人，请先在「成员」页邀请至少一名其他成员。
                   </p>

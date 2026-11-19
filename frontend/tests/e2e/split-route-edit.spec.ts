@@ -16,7 +16,7 @@ async function loginAs(page: import('@playwright/test').Page, email: string) {
 
 async function login(page: import('@playwright/test').Page) {
   await loginAs(page, 'ben@example.com')
-  await expect(page.getByText('你好，Ben')).toBeVisible()
+  await expect(page.getByText('嗨，Ben')).toBeVisible()
 }
 
 test('step-2 editing validates the window and hands off to the preview', async ({ page }) => {
@@ -109,7 +109,7 @@ test('step-2 editing validates the window and hands off to the preview', async (
 test('the per-stop cost is edited on the same card and persisted through the activity write', async ({ page }) => {
   // Only the initiator may write costed activities (backend gate), so this flow runs as alice.
   await loginAs(page, 'alice@example.com')
-  await expect(page.getByText(/你好/)).toBeVisible()
+  await expect(page.getByText(/嗨/)).toBeVisible()
   await page.goto('/trips/9101/split/routes')
 
   const activityWrites: string[] = []

@@ -4,6 +4,8 @@ import Icon from '../Icons'
 import { useAuth } from '../features/auth/AuthProvider'
 import { isCurrentTripResponse } from '../lib/current-trip'
 import DashboardTrip from './DashboardTrip'
+import DashboardNoTrip from './DashboardNoTrip'
+import type { TripListResponse } from '../types'
 
 type CurrentState =
   | { kind: 'loading' }
@@ -18,6 +20,22 @@ export default function Home({ tripId, onTripReady, selectionInFlight = false }:
   const { account } = useAuth()
   const [state, setState] = useState<CurrentState>({ kind: 'loading' })
   const [reloadKey, setReloadKey] = useState(0)
+  // 右上角行程数量：来自真实行程列表，取不到时不显示数字。
+  const [tripCount, setTripCount] = useState<number | null>(null)
+
+  useEffect(() => {
+    let active = true
+    api<TripListResponse>('/api/trips')
+      .then((result) => {
+        if (!active || !result.ok) return
+        const trips = result.data?.trips
+        if (Array.isArray(trips)) setTripCount(trips.length)
+      })
+      .catch(() => {
+        /* 数量只是装饰，失败时静默 */
+      })
+    return () => { active = false }
+  }, [account?.id])
 
   useEffect(() => {
     if (tripId !== undefined || selectionInFlight) return
@@ -43,15 +61,40 @@ export default function Home({ tripId, onTripReady, selectionInFlight = false }:
 
   return (
     <div className="screen">
-      <header className="appbar">
-        <div className="logo"><Icon name="branch" /></div>
-        <div className="grow">
-          <div className="title">我的行程</div>
-          <div className="sub">你好，{account?.name ?? '旅行者'}</div>
+      <header className="appbar dash-appbar">
+        <div className="dash-brand">
+          <span className="dash-wordmark">gogo.</span>
+          <span className="dash-tagline">GOOD DAYS TOGETHER</span>
         </div>
-        <a className="iconbtn" href="#/scan" aria-label="扫码加入行程"><Icon name="scan" /></a>
+        <a className="dash-scan" href="#/scan" aria-label="扫码加入行程">
+          <Icon name="scan" className="sm" />
+          一起去玩
+        </a>
       </header>
       <div className="body">
+        <section className="dash-greeting">
+          <div className="dash-greeting-main">
+            <div className="dash-greeting-line">
+              <span className="dash-hello">嗨，{account?.name ?? '旅行者'}</span>
+              <span className="dash-kicker">✳ GOOD DAYS AHEAD</span>
+            </div>
+            <h1 className="dash-title">
+              走吧，<em>一起去玩</em>
+            </h1>
+            <p className="dash-subtitle">把期待，变成一次真的相聚。</p>
+          </div>
+          <a className="dash-trip-card" href="#/my-trips" aria-label="我的行程">
+            <span className="dash-trip-icon"><Icon name="branch" className="sm" /></span>
+            <span className="dash-trip-count">
+              {tripCount == null ? '—' : String(tripCount).padStart(2, '0')}
+            </span>
+            <span className="dash-trip-label">
+              我的行程
+              <Icon name="right" className="sm" />
+            </span>
+          </a>
+        </section>
+        <div className="dash-upcoming">UPCOMING JOURNEY</div>
         {tripId !== undefined ? (
           <DashboardTrip tripId={tripId} onTripReady={onTripReady} />
         ) : selectionInFlight || state.kind === 'loading' ? (
@@ -62,12 +105,7 @@ export default function Home({ tripId, onTripReady, selectionInFlight = false }:
             <button className="btn btn-ghost" type="button" onClick={() => setReloadKey((key) => key + 1)}>重试</button>
           </section>
         ) : state.tripId === null ? (
-          <section className="card pad empty-state">
-            <h2>尚未选择行程</h2>
-            <p className="hint">在「我的行程」里选择一个行程，或创建新行程。</p>
-            <a className="btn btn-primary" href="#/my-trips">去我的行程选择</a>
-            <a className="btn btn-ghost" href="#/create">创建行程</a>
-          </section>
+          <DashboardNoTrip />
         ) : (
           <DashboardTrip tripId={state.tripId} onTripReady={onTripReady} />
         )}

@@ -4,6 +4,7 @@ import Icon from '../Icons'
 import InvitationPanel from './InvitationPanel'
 import type { Trip } from '../types'
 import { useAuth } from '../features/auth/AuthProvider'
+import { tripPhoto } from '../lib/trip-photo'
 
 interface TripDetailsProps {
   tripId: number
@@ -106,7 +107,7 @@ export default function TripDetailsLegacy({ tripId }: TripDetailsProps) {
     <div className="screen">
       {appbar}
       <div className="body">
-        <section className="hero">
+        <section className="hero has-photo" style={{ ['--hero-photo' as string]: tripPhoto(trip.destination, trip.id) }}>
           <div className="htop">
             <Icon name="cal" className="sm" />
             {trip.startDate} – {trip.endDate}
