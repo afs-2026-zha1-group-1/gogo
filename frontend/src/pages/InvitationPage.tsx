@@ -18,9 +18,11 @@ type PageState =
 
 // US-083 R4: dedicated full-screen invitation page (no bottom dock, app-shell
 // delta). Reuses the InvitationPanel issuance contract; members see QR +
-// link + copy with a 生效中 pill, and non-members see the permission state
-// without any link/token/QR payload. Prototype extras (WeChat share, expiry,
-// revoke) are deviation D-1 and intentionally absent.
+// link + copy with a pill that follows the invitation state: 生效中 while
+// joining is open, 已失效 once the main plan is confirmed and joining closed.
+// Non-members see the permission state without any link/token/QR payload.
+// Prototype extras (WeChat share, expiry, revoke) are deviation D-1 and
+// intentionally absent.
 export default function InvitationPage({ tripId, backHref = `#/trips/${tripId}` }: InvitationPageProps) {
   const [state, setState] = useState<PageState>({ kind: 'loading' })
   const [invitationReady, setInvitationReady] = useState(false)
@@ -50,6 +52,8 @@ export default function InvitationPage({ tripId, backHref = `#/trips/${tripId}` 
     }
   }, [tripId])
 
+  const joiningClosed = state.kind === "ready" && state.trip.joiningClosed === true
+
   const appbar = (
     <header className="appbar">
       <a className="iconbtn" href={backHref} aria-label="Back"><Icon name="left" /></a>
@@ -57,7 +61,11 @@ export default function InvitationPage({ tripId, backHref = `#/trips/${tripId}` 
         <div className="title">邀请朋友</div>
         <div className="sub">US-008 · 分享邀请链接</div>
       </div>
-      {invitationReady && <span className="pill ok"><span className="dot" /> 生效中</span>}
+      {invitationReady && (
+        joiningClosed
+          ? <span className="pill err"><span className="dot" /> 已失效</span>
+          : <span className="pill ok"><span className="dot" /> 生效中</span>
+      )}
     </header>
   )
 
