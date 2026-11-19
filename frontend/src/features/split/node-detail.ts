@@ -134,6 +134,9 @@ function branchDetail(row: BranchRow, context: NodeDetailContext): NodeDetailVie
 }
 
 export function buildNodeDetail(row: GraphRow, context: NodeDetailContext): NodeDetailView {
+  if (row.kind === "branch-pair") {
+    throw new Error("branch-pair rows are not direct node targets")
+  }
   if (row.kind === "branch") {
     return branchDetail(row, context)
   }

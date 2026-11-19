@@ -9,6 +9,7 @@ import {
   routeLabelsFor,
   type StopInput,
   type GraphRow,
+  type JunctionRow,
 } from '../src/features/split/graph-model.ts'
 import { cleanRouteName, cleanStationName } from '../src/features/split/station-name.ts'
 
@@ -120,11 +121,13 @@ test('buildGraphRows: the fork represents the matching first A stop without losi
         travelLegsMinutes: [10, 20], bufferMinutes: 0, steps: [{ name: '咖啡', minutes: 45 }] },
     ],
   })
-  const fork = model.rows.find((row) => row.kind === 'fork')
+  const fork = model.rows.find((row): row is JunctionRow => row.kind === 'fork')
   assert.ok(fork)
   assert.match(fork.meta, /A 组活动 · 30 分钟/)
-  assert.equal(model.rows.filter((row) => row.title === 'City Hall MRT').length, 1)
-  const a = model.rows.filter((row) => row.kind === 'branch' && row.route === 'a')
+  assert.equal(model.rows.filter((row) => row.kind !== 'branch-pair' && row.title === 'City Hall MRT').length, 1)
+  const a = model.rows.filter(
+    (row): row is Extract<GraphRow, { kind: 'branch' }> => row.kind === 'branch' && row.route === 'a',
+  )
   assert.deepEqual(a.map((row) => row.title), ['路程', 'Merlion Park', '路程'])
   assert.deepEqual(a.map((row) => row.meta), ['路程 · 20 分钟', '活动 · 60 分钟', '路程 · 15 分钟'])
   assert.ok(model.rows.some((row) => row.kind === 'branch' && row.route === 'b' && row.title === '咖啡'))
@@ -261,19 +264,66 @@ test('US-095 FROM_START: both lanes open on their own first place', () => {
   })
   assert.equal(model.hasBoundaries, true)
   assert.equal(model.fromStart, true)
-  assert.equal(model.forkRow, 0)
+  assert.equal(model.forkRow, null)
 
-  const fork = model.rows[0]
-  assert.equal(fork.kind, 'fork')
-  assert.equal(fork.kind === 'fork' ? fork.title : null, 'City Hall MRT')
-  assert.match(fork.kind === 'fork' ? fork.meta : '', /行程起点 · 分头/)
+  const firstStage = model.rows[0]
+  assert.equal(firstStage.kind, 'branch-pair')
+  assert.equal(firstStage.kind === 'branch-pair' ? firstStage.a?.title : null, 'City Hall MRT')
+  assert.equal(firstStage.kind === 'branch-pair' ? firstStage.a?.meta : null, '活动 · 30 分钟')
+  assert.equal(firstStage.kind === 'branch-pair' ? firstStage.b?.title : null, '咖啡')
+  assert.equal(firstStage.kind === 'branch-pair' ? firstStage.b?.meta : null, '活动 · 45 分钟')
+
+  // A's first activity is drawn once, on its own lane, and the span is marked paired
   assert.equal(
     model.rows.filter((row) => row.kind === 'branch' && row.route === 'a' && row.title === 'City Hall MRT').length,
     0,
   )
-  assert.ok(model.rows.some((row) => row.kind === 'branch' && row.route === 'b' && row.title === '咖啡'))
+  assert.equal(model.rounds[0]?.paired, true)
+  assert.equal(model.rounds[0]?.firstRow, 0)
   assert.equal(model.rows[model.joinRow ?? -1].kind, 'join')
   assert.equal(model.rows[model.rows.length - 1].kind, 'main')
+})
+
+test('US-095 FROM_START: a first round with rounds input keeps the paired start', () => {
+  const model = buildGraphRows({
+    stops,
+    rounds: [
+      {
+        roundIndex: 1,
+        splitMode: 'FROM_START',
+        departureStopId: null,
+        reunionStopId: 's3',
+        routes: [
+          {
+            groupLabel: 'A',
+            activityName: '主线',
+            activityMinutes: 60,
+            travelLegsMinutes: [20, 20],
+            bufferMinutes: 0,
+            steps: [
+              { name: 'City Hall MRT', minutes: 30 },
+              { name: 'Merlion Park', minutes: 30 },
+            ],
+          },
+          {
+            groupLabel: 'B',
+            activityName: '咖啡',
+            activityMinutes: 45,
+            travelLegsMinutes: [20],
+            bufferMinutes: 0,
+            steps: [{ name: '咖啡', minutes: 45 }],
+          },
+        ],
+      },
+    ],
+  })
+  assert.equal(model.rounds.length, 1)
+  assert.equal(model.rounds[0].paired, true)
+  assert.equal(model.rounds[0].forkRow, null)
+  assert.equal(model.forkRow, null)
+  assert.equal(model.fromStart, true)
+  assert.equal(model.rows[0].kind, 'branch-pair')
+  assert.equal(model.rows.some((row) => row.kind === 'fork'), false)
 })
 
 test('US-095 MIDDLE: the fork absorbs A first activity instead of repeating it', () => {
