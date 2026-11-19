@@ -50,6 +50,6 @@ class BranchCandidateProviderConfigTest {
 
         assertThat(bean).isInstanceOf(MockDestinationBranchCandidateProvider.class);
         assertThat(bean.candidateFor("B", null, null, "香港", List.of()).activityName())
-                .isEqualTo("香港迪士尼乐园 → 星光大道");
+                .isEqualTo("香港迪士尼乐园");
     }
 }

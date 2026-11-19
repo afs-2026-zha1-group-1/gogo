@@ -644,8 +644,9 @@ opencode (not a new stack).
   two-day plan, even when a key is configured. Each day is 上午景点 → 午餐 →
   回酒店午休 → 下午景点. 珠海 day 1: 日月贝 / 爱情邮局, day 2: 情侣路 /
   圆明新园; 香港 day 1: 维多利亚港 / 太平山顶, day 2: 旺角 / 尖沙咀.
-  The split fixture adds the remaining two places to group B
-  (珠海: 长隆 / 野狸岛; 香港: 港迪 / 星光大道).
+  The split fixture adds one remaining place to group B in round 1 and the
+  other in round 2 (round 3+ repeats the cycle): 珠海 round 1 长隆, round 2
+  野狸岛; 香港 round 1 港迪, round 2 星光大道.
 - **API / data:** no endpoint, error-code, schema or migration change.
 - **Frontend:** `AiGeneratingNotice` shows a non-blocking “AI 正在生成中…”
   strip on the inputs screen and plan-page regeneration; confirm is unaffected.

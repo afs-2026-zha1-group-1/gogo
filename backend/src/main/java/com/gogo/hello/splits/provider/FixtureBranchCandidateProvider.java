@@ -44,12 +44,9 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
         if ("A".equals(groupLabel)) {
             return mainLineCandidate(groupLabel, departure, reunion, mainPlanStops);
         }
-        List<Branch> branches = branchesFor(cityOf(destination), groupLabel,
-                context == null ? List.of() : context.excludeActivityNames());
-        if (branches.size() > 1) {
-            return multiBranchCandidate(groupLabel, departure, destination, branches);
-        }
-        Branch branch = branches.get(0);
+        List<String> excluded = context == null ? List.of() : context.excludeActivityNames();
+        int roundIndex = context == null ? 1 : context.roundIndex();
+        Branch branch = branchFor(cityOf(destination), groupLabel, excluded, roundIndex);
         String activityName = RoutePairEdit.cleanStationName(branch.activityName());
         String location = destination == null || destination.isBlank() ? activityName : destination.trim();
         List<RouteStep> steps = List.of(new RouteStep(activityName, branch.activityMinutes()));
@@ -61,32 +58,6 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
                 : branch.travelLegsMinutes();
         return new RouteCandidate(groupLabel, activityName, location, branch.activityMinutes(), legs, 0, steps,
                 activities);
-    }
-
-    /** 珠海/香港 group B gets the two remaining places as consecutive steps. */
-    private static RouteCandidate multiBranchCandidate(String groupLabel, PlanStop departure, String destination,
-            List<Branch> branches) {
-        List<RouteStep> steps = new ArrayList<>();
-        List<RouteActivity> activities = new ArrayList<>();
-        int activityMinutes = 0;
-        for (Branch branch : branches) {
-            String name = RoutePairEdit.cleanStationName(branch.activityName());
-            steps.add(new RouteStep(name, branch.activityMinutes()));
-            activityMinutes += branch.activityMinutes();
-            activities.add(new RouteActivity(name, name, branch.costCents(), RouteActivity.SOURCE_AI));
-        }
-        List<Integer> legs = new ArrayList<>();
-        legs.add(20);
-        for (int index = 1; index < branches.size(); index++) {
-            legs.add(20);
-        }
-        legs.add(20);
-        if (departure == null) {
-            legs.remove(0);
-        }
-        String activityName = steps.get(0).name() + " → " + steps.get(steps.size() - 1).name();
-        String location = destination == null || destination.isBlank() ? steps.get(0).name() : destination.trim();
-        return new RouteCandidate(groupLabel, activityName, location, activityMinutes, legs, 0, steps, activities);
     }
 
     // Group A follows the confirmed itinerary: every main-plan stop from the departure (inclusive) to the reunion
@@ -146,7 +117,7 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
         return (int) Duration.between(from, to).toMinutes();
     }
 
-    private static List<Branch> branchesFor(String city, String groupLabel, List<String> excludeActivityNames) {
+    private static Branch branchFor(String city, String groupLabel, List<String> excludeActivityNames, int roundIndex) {
         List<Branch> candidates = switch (city) {
             case HONG_KONG -> List.of(
                     new Branch("香港迪士尼乐园", 60, List.of(20, 20), 0, 0),
@@ -167,7 +138,6 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
         if (!"B".equals(groupLabel)) {
             throw new IllegalArgumentException("unknown group label: " + groupLabel);
         }
-        boolean multi = HONG_KONG.equals(city) || ZHUHAI.equals(city);
         List<Branch> kept = new ArrayList<>();
         for (Branch candidate : candidates) {
             String cleaned = RoutePairEdit.cleanStationName(candidate.activityName());
@@ -176,10 +146,13 @@ public class FixtureBranchCandidateProvider implements BranchCandidateProvider {
                 kept.add(candidate);
             }
         }
-        if (multi) {
-            return kept.isEmpty() ? candidates : kept;
+        if (HONG_KONG.equals(city) || ZHUHAI.equals(city)) {
+            if (!kept.isEmpty()) {
+                return kept.get(0);
+            }
+            return candidates.get(Math.floorMod(roundIndex - 1, candidates.size()));
         }
-        return kept.isEmpty() ? List.of(candidates.get(0)) : List.of(kept.get(0));
+        return kept.isEmpty() ? candidates.get(0) : kept.get(0);
     }
 
     private static String cityOf(String destination) {
