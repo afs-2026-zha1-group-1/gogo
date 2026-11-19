@@ -27,6 +27,25 @@ This G1 decision does not constitute implementation, verification, or G2
 sign-off. The earlier G1 decision below is preserved as a historical record
 and covered only the original scope.
 
+## 归档后证据对账
+
+- 原实现已通过 [PR #172](https://github.com/afs-2026-zha1-group-1/gogo/pull/172)
+  合并，变更及其四项增量规范已归档；详见[变更摘要](change-summary.md)。
+- 扩展范围的 G1 Pass 仍以请求者转述的 IO 和 SA 批准为依据，不是直接签名；
+  本次对账未记录新的 G1 决策。
+- 下方原范围实施状态引用的是历史验证快照，不代表当前实现状态。
+  后续验证与待完成事项分别见 [G2 决策](g2-decision.md)和[任务清单](tasks.md)。
+
+## IO 和 SA 签署区
+
+以下留待审批人本人填写；现有批准记录为请求者转述，尚无直接签署记录。
+请注明确认的决策及范围；签署不会自动构成 G2 或 G3 审批。
+
+| 角色 | 姓名 | 日期及时间 | 签名 |
+|---|---|---|---|
+| IO | Emily Li | 2026-11-18 | Emily |
+| SA | Sammi Ng | 2026-11-18 | Sammi |
+
 ## Original-scope decision (historical)
 
 - **Gate:** G1 (Align)
