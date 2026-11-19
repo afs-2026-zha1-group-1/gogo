@@ -4,7 +4,8 @@
  * tl-* markup pattern; an empty schedule shows the no-plan state, never another
  * trip's or another group's route. US-090: a main-plan stop carries an edit entry
  * (pencil) that opens the name/time/note dialog; a split node opens the
- * round-scoped node dialog instead (both update the route graph after saving).
+ * round-scoped node dialog instead (both update the route graph after saving),
+ * and both carry the trash entry (a split node keeps at least one step).
  * US-079: every stop card carries a mint Amap button on its right opening the
  * embedded map modal; the address + navigation live on the countdown card's
  * next-stop row, not on the timeline; map failures never blank the trip.
@@ -170,7 +171,7 @@ export default function MyPlanTimeline({
                         <Icon name="edit" className="sm" />
                       </button>
                     ) : null}
-                    {item.stopId != null && onDeleteStop ? (
+                    {((item.stopId != null) || (item.splitStep != null && item.splitStep.stepCount > 1)) && onDeleteStop ? (
                       <button
                         type="button"
                         className="tl-edit tl-edit-danger"

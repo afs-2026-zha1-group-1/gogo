@@ -10,7 +10,7 @@ export interface ScheduleItem {
   // Set only for main-plan stops: the stop a「我的方案」edit targets (US-090).
   stopId?: number
   /** 分队节点：分组路线的某个步骤，编辑后写回该轮 routes 并刷新路线图。 */
-  splitStep?: { roundIndex: number; groupLabel: string; stepIndex: number; minutes: number }
+  splitStep?: { roundIndex: number; groupLabel: string; stepIndex: number; minutes: number; stepCount: number }
   name: string
   // 站点备注（主线站可编辑）；null/省略 = 无备注，时间线不额外展示说明。
   note?: string | null

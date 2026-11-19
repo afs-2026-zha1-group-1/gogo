@@ -157,7 +157,7 @@ test('split step nodes carry their round so the timeline can edit them', () => {
   const d = detail({ routes: [route('A'), route('B', { steps: [{ name: '滨海湾花园', minutes: 60 }] })] })
   const step = derivePersonalRoute(d, '3', plan)?.find((item) => item.groupLabel === 'B')
   assert.ok(step)
-  assert.deepEqual(step.splitStep, { roundIndex: 1, groupLabel: 'B', stepIndex: 0, minutes: 60 })
+  assert.deepEqual(step.splitStep, { roundIndex: 1, groupLabel: 'B', stepIndex: 0, minutes: 60, stepCount: 1 })
 })
 
 test('P3 unassigned member gets no personal route', () => {
