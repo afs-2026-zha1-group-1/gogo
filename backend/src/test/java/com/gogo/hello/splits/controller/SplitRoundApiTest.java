@@ -289,6 +289,33 @@ class SplitRoundApiTest extends AbstractSplitApiTest {
     }
 
     @Test
+    @DisplayName("a cancelled first round can be started again from the rounds gate")
+    void restartRoundOne_afterCancellation_rebuildsRoundOne() throws Exception {
+        int version = startDraftAs("Ben");
+        mockMvc.perform(post("/api/trips/{tripId}/split-draft:cancel", sgfTripId())
+                        .with(TestAuth.asUser(memberId("Ben")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("draftVersion", version))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("cancelled"));
+
+        // The cancelled round 1 has no predecessor, so the gate must allow starting again instead of blocking on
+        // "previous round not confirmed" (the dead 发起分队 button).
+        mockMvc.perform(get("/api/trips/{tripId}/split-draft/rounds", sgfTripId())
+                        .with(TestAuth.asUser(memberId("Ben"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.aggregateStatus").value("cancelled"))
+                .andExpect(jsonPath("$.data.canStartNextRound").value(true));
+
+        mockMvc.perform(post("/api/trips/{tripId}/split-draft/rounds", sgfTripId())
+                        .with(TestAuth.asUser(memberId("Ben"))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.roundIndex").value(1))
+                .andExpect(jsonPath("$.data.draft.status").value("active"));
+        assertThat(roundDocument(1).path("status").asText()).isEqualTo("active");
+    }
+
+    @Test
     @DisplayName("second-round confirmation aggregates both rounds' budget")
     void secondRoundConfirmation_aggregatesBothRoundsBudget() throws Exception {
         prepareConfirmedRoundOne();
