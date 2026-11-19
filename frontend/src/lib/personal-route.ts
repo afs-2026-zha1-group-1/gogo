@@ -46,16 +46,20 @@ function toMs(iso: string | null): number | null {
 }
 
 function sharedItem(stop: SplitPlanStop, plan: MainPlan | null, roundIndex?: number): ScheduleItem {
-  // The split snapshot carries no interests; enrich from the main plan by name when available.
-  const interests = plan?.stops.find((candidate) => candidate.name === stop.name)?.interests ?? []
+  // The split snapshot carries no interests; enrich from the main plan by name when available. Matching also
+  // recovers the main-plan stop id so a shared line item stays editable (it is the same stop the dialog edits).
+  const matched = plan?.stops.find(
+    (candidate) => cleanStationName(candidate.name) === cleanStationName(stop.name),
+  )
   return {
     key: roundIndex == null ? stop.id : `r${roundIndex}-${stop.id}`,
+    stopId: matched?.id,
     name: stop.name,
     start: toMs(stop.startAt),
     end: toMs(stop.endAt),
     groupLabel: null,
     roundIndex,
-    interests,
+    interests: matched?.interests ?? [],
     address: null,
     lat: null,
     lon: null,

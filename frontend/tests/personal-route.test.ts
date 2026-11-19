@@ -83,6 +83,26 @@ test('P1 assigned member sees own group route with shared activities', () => {
   assert.ok(items.every((item) => item.groupLabel !== 'B'))
 })
 
+test('shared personal-route items keep the main-plan stop id so they stay editable', () => {
+  const idsPlan: MainPlan = {
+    ...plan,
+    stops: mainPlanStops.map((stop, index) => ({
+      id: index + 1,
+      seq: index + 1,
+      name: index === 0 ? '主线·早餐' : stop.name,
+      startTime: '09:00',
+      endTime: '09:30',
+      travelMinutesToNext: null,
+      interests: [`tag-${index}`],
+    })),
+  }
+  const items = derivePersonalRoute(detail(), '1', idsPlan)
+  assert.ok(items)
+  // 共同段（含清理「主线·」前缀后的同名匹配）拿到主计划站点 id；分组活动行没有 id，保持只读。
+  assert.deepEqual(items.map((item) => item.stopId), [1, 2, undefined, 3, 4])
+  assert.deepEqual(items[0].interests, ['tag-0'])
+})
+
 test('P12 main-line group fills the window with its scheduled stops', () => {
   const d = detail({
     routes: [
