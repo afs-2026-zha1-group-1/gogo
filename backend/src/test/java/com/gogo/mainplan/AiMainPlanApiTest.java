@@ -39,11 +39,14 @@ class AiMainPlanApiTest {
 
     private static final String VALID_PLAN = """
             {"stops":[
-              {"seq":1,"name":"Museum","startTime":"09:00","endTime":"10:00",
+              {"seq":1,"name":"Museum","address":"1 Museum Rd, Singapore",
+               "startTime":"09:00","endTime":"10:00",
                "travelMinutesToNext":15,"interests":["culture"]},
-              {"seq":2,"name":"Lunch","startTime":"10:15","endTime":"11:15",
+              {"seq":2,"name":"Lunch","address":"2 Lunch St, Singapore",
+               "startTime":"10:15","endTime":"11:15",
                "travelMinutesToNext":10,"interests":["food"]},
-              {"seq":3,"name":"Park","startTime":"11:25","endTime":"12:30",
+              {"seq":3,"name":"Park","address":"3 Park Ave, Singapore",
+               "startTime":"11:25","endTime":"12:30",
                "travelMinutesToNext":null,"interests":["nature"]}],
              "costPerPersonCents":4200}
             """;

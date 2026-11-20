@@ -94,6 +94,7 @@ public class SplitDraftRepository {
         if (stopId == null) {
             return Optional.empty();
         }
+        TripDayFacts facts = tripDayFacts(tripId);
         List<PlanStop> stops = jdbcTemplate.query(
                 "SELECT id, title, start_at, end_at, cost_cents, location_name FROM plan_node "
                         + "WHERE trip_id = ? AND id = ? AND branch_id = 'main' AND plan_version = ?",
@@ -103,7 +104,8 @@ public class SplitDraftRepository {
                         parseInstant(rs.getString("start_at")),
                         parseInstant(rs.getString("end_at")),
                         rs.getInt("cost_cents"),
-                        rs.getString("location_name")),
+                        rs.getString("location_name"),
+                        facts.dayIndexOf(parseInstant(rs.getString("start_at")))),
                 tripId, stopId, planVersion);
         return stops.stream().findFirst();
     }
@@ -282,6 +284,7 @@ public class SplitDraftRepository {
 
     /** Loads all confirmed main-plan stops at a version (design D14), ordered by sort_order. */
     public List<PlanStop> findMainPlanStops(String tripId, int planVersion) {
+        TripDayFacts facts = tripDayFacts(tripId);
         return jdbcTemplate.query(
                 "SELECT id, title, start_at, end_at, cost_cents, location_name FROM plan_node "
                         + "WHERE trip_id = ? AND branch_id = 'main' AND plan_version = ? ORDER BY sort_order",
@@ -291,8 +294,39 @@ public class SplitDraftRepository {
                         parseInstant(rs.getString("start_at")),
                         parseInstant(rs.getString("end_at")),
                         rs.getInt("cost_cents"),
-                        rs.getString("location_name")),
+                        rs.getString("location_name"),
+                        facts.dayIndexOf(parseInstant(rs.getString("start_at")))),
                 tripId, planVersion);
+    }
+
+    /** Trip start date + zone, so a plan_node row's own instant maps back to its trip day. */
+    private record TripDayFacts(String startDate, java.time.ZoneId zone) {
+
+        private static final TripDayFacts EMPTY = new TripDayFacts(null, com.gogo.trip.TripZones.of(null));
+
+        int dayIndexOf(Instant instant) {
+            if (startDate == null || instant == null) {
+                return 1;
+            }
+            try {
+                java.time.LocalDate start = java.time.LocalDate.parse(startDate);
+                java.time.LocalDate day = instant.atZone(zone).toLocalDate();
+                return (int) java.time.temporal.ChronoUnit.DAYS.between(start, day) + 1;
+            } catch (java.time.format.DateTimeParseException ex) {
+                return 1;
+            }
+        }
+    }
+
+    private TripDayFacts tripDayFacts(String tripId) {
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT start_date, destination FROM trip WHERE id = ?", tripId);
+        if (rows.isEmpty()) {
+            return TripDayFacts.EMPTY;
+        }
+        Map<String, Object> row = rows.get(0);
+        return new TripDayFacts((String) row.get("start_date"),
+                com.gogo.trip.TripZones.of((String) row.get("destination")));
     }
 
     /** Trip members keyed by user id, ordered by display name (US-045 budget result names). */

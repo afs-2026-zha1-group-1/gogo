@@ -62,6 +62,8 @@ export interface PlanStop {
   costCents?: number
   /** Saved display location from the main plan (US-090/US-092); null/absent = not recorded. */
   locationName?: string | null
+  /** Trip day this stop belongs to (1 = trip start date); absent on legacy payloads = day 1. */
+  dayIndex?: number
 }
 
 /** Per-group duration breakdown (backend SplitDraftDocument.RouteDurations); nullable estimates. */

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { buildAmapDirUrl, buildAmapSearchUrl, defaultDirOrigin, geocodeKeyword, resolveDirEnd, stopMapHref } from '../src/lib/amap.ts'
+import { buildAmapDirUrl, buildAmapSearchUrl, defaultDirOrigin, geocodeKeyword, resolveDirEnd, searchKeyword, stopMapHref } from '../src/lib/amap.ts'
 import { pickInDestination } from '../src/lib/amap-geocode.ts'
 
 // US-079：坐标路径已删除；导航=电脑版搜索页直链（不经 uri.amap.com 的 UA 跳转）。
@@ -66,21 +66,71 @@ test('stopMapHref：第二站起点=上一站', () => {
   assert.ok(params.get('to[lnglat]'))
 })
 
-test('stopMapHref：未收录站退搜索页（E6/E9）', () => {
+test('stopMapHref：未收录站也保留起点和终点（不再退化成搜索页）', () => {
   const { href, originName } = stopMapHref({ name: 'Penang Hill Funicular', lat: null, lon: null }, null, 'Penang')
-  assert.equal(originName, null)
-  const params = queryOf(href)
-  assert.equal(params.get('query'), 'Penang Hill Funicular Penang')
+  assert.ok(href.startsWith('https://www.amap.com/dir?'), `应为路线页：${href}`)
+  const params = new URLSearchParams(href.slice('https://www.amap.com/dir?'.length))
+  assert.ok(params.get('to[name]')?.includes('Penang Hill Funicular'))
+  assert.ok(params.get('from[name]'))
+  assert.equal(originName, '珠海南方软件园')
 })
 
-test('stopMapHref：上一站未收录时首站口径回退固定出发点', () => {
+test('stopMapHref：上一站未收录时起点用该站名称，不静默丢弃起点', () => {
   const { href, originName } = stopMapHref(
     { name: 'Merlion Park', lat: null, lon: null },
     { name: 'Unknown Stop', lat: null, lon: null },
     'Singapore',
   )
-  assert.equal(originName, '珠海南方软件园')
   assert.ok(href.startsWith('https://www.amap.com/dir?'))
+  const params = new URLSearchParams(href.slice('https://www.amap.com/dir?'.length))
+  assert.ok(params.get('from[name]')?.includes('Unknown Stop'))
+  assert.equal(originName, 'Unknown Stop Singapore')
+})
+
+// 导航必须永远带起点和终点：坐标缺失用名称定位，不退化成无起终点的搜索页。
+test('stopMapHref：无坐标但有地址时仍进路线页，起点与终点都保留', () => {
+  const { href } = stopMapHref(
+    { name: '午餐', address: '重庆市渝中区民权路 1 号洪崖洞附近餐厅', lat: null, lon: null },
+    null,
+    '重庆',
+  )
+  assert.ok(href.startsWith('https://www.amap.com/dir?'), `应为路线页：${href}`)
+  const params = new URLSearchParams(href.slice('https://www.amap.com/dir?'.length))
+  assert.ok(params.get('from[name]'), '起点名称必须保留')
+  assert.ok(params.get('to[name]'), '终点名称必须保留')
+  assert.ok(params.get('to[name]')?.includes('洪崖洞'))
+})
+
+test('stopMapHref：地址不含城市时终点仍以站名+地址+城市定位', () => {
+  const { href } = stopMapHref(
+    { name: '午餐', address: '人民路 1 号', lat: null, lon: null },
+    null,
+    '重庆',
+  )
+  const params = new URLSearchParams(href.slice('https://www.amap.com/dir?'.length))
+  assert.ok(params.get('to[name]')?.includes('人民路 1 号'))
+  assert.ok(params.get('from[name]'))
+})
+
+test('searchKeyword：地址已含城市时不重复拼目的地', () => {
+  assert.equal(
+    searchKeyword({ name: '午餐', address: '重庆市渝中区民权路 1 号' }, '重庆市'),
+    '重庆市渝中区民权路 1 号',
+  )
+  assert.equal(searchKeyword({ name: '午餐', address: '   ' }, '重庆'), '午餐 重庆')
+  assert.equal(searchKeyword({ name: '午餐' }, '重庆'), '午餐 重庆')
+})
+
+test('stopMapHref：上一站未收录时起点用该站名称，不静默丢弃起点', () => {
+  const { href, originName } = stopMapHref(
+    { name: 'Merlion Park', lat: null, lon: null },
+    { name: 'Unknown Stop', lat: null, lon: null },
+    'Singapore',
+  )
+  assert.ok(href.startsWith('https://www.amap.com/dir?'))
+  const params = new URLSearchParams(href.slice('https://www.amap.com/dir?'.length))
+  assert.ok(params.get('from[name]')?.includes('Unknown Stop'))
+  assert.equal(originName, 'Unknown Stop Singapore')
 })
 
 test('路线直链带起点与终点坐标（上一站→本站，lnglat 经度在前）', () => {
@@ -108,6 +158,15 @@ test('buildAmapDirUrl：起点=null 时只带终点参数（产品路径起点�
   assert.equal(params.get('from[name]'), null)
   assert.equal(params.get('from[lnglat]'), null)
   assert.ok(params.get('to[lnglat]'))
+})
+
+test('buildAmapDirUrl：坐标未知时仍写入起点与终点名称', () => {
+  const url = buildAmapDirUrl({ name: '上一站' }, { name: '本站 某路 1 号' })
+  const params = new URLSearchParams(url.slice('https://www.amap.com/dir?'.length))
+  assert.equal(params.get('from[name]'), '上一站')
+  assert.equal(params.get('to[name]'), '本站 某路 1 号')
+  assert.equal(params.get('from[lnglat]'), null)
+  assert.equal(params.get('to[lnglat]'), null)
 })
 
 // geocodeKeyword：AI 生成的站只有名字，用站名+城市查坐标；有地址优先地址。

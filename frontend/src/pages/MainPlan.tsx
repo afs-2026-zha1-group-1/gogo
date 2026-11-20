@@ -312,7 +312,15 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
     lat: stop.lat ?? null,
     lon: stop.lng ?? null,
   })
+  const mapStopOrNull = (stop: PlanStop | undefined) => (stop ? mapStop(stop) : null)
   const dayGroups = groupByDay(plan.stops, (stop) => stop.dayIndex ?? 1)
+  // 多天行程：每一天的首站以前一天最后一站为导航起点；只有行程首站才走 R1 固定出发点。
+  const previousDayLastByDay = new Map<number, PlanStop>(
+    dayGroups.map((group, groupIndex) => {
+      const previous = groupIndex > 0 ? dayGroups[groupIndex - 1] : null
+      return [group.dayIndex, previous ? previous.items[previous.items.length - 1] : undefined]
+    }).filter((entry): entry is [number, PlanStop] => entry[1] != null),
+  )
 
   return (
     <div className="screen">
@@ -373,7 +381,7 @@ export default function MainPlan({ tripId, dashboardOrigin = false }: MainPlanPr
                 <StopMapButton
                   item={mapStop(stop)}
                   destination={trip.destination}
-                  from={index > 0 ? mapStop(group.items[index - 1]) : null}
+                  from={index > 0 ? mapStop(group.items[index - 1]) : mapStopOrNull(previousDayLastByDay.get(group.dayIndex))}
                   showCopy={false}
                 />
                 {isOrganizer && !plan.confirmed && (

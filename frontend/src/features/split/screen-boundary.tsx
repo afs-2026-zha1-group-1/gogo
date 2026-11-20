@@ -10,6 +10,33 @@ import { Button } from "@/components/ui/button"
 import { Chip } from "@/components/ui/chip"
 import { IconArrowRight, IconBranch, IconClock, IconFlag, IconNav } from "@/components/icons"
 import { formatClock, formatWindow } from "@/lib/format"
+import { tripZone } from "@/lib/trip-zone"
+import type { PlanStop } from "./types"
+
+/**
+ * Day header for the grouped boundary pickers: the stop's own date in the trip zone, e.g. "DAY 1 · 11/20（周四）".
+ * Falls back to "DAY n" when the instant is missing or unparseable (legacy payloads).
+ */
+function dayHeader(startAt: string | null, dayIndex: number, destination?: string | null): string {
+  const fallback = `DAY ${dayIndex}`
+  if (!startAt) return fallback
+  const date = new Date(startAt)
+  if (Number.isNaN(date.getTime())) return fallback
+  const parts = new Intl.DateTimeFormat("zh-CN", {
+    month: "numeric",
+    day: "numeric",
+    weekday: "short",
+    timeZone: tripZone(destination),
+  }).formatToParts(date)
+  const value = (type: string) => parts.find((part) => part.type === type)?.value ?? ""
+  const month = value("month")
+  const day = value("day")
+  if (!month || !day) return fallback
+  const weekday = value("weekday")
+  return weekday
+    ? `${fallback} · ${month}/${day}（${weekday}）`
+    : `${fallback} · ${month}/${day}`
+}
 
 /**
  * Screen 12 — boundary selection (spec REQ-005, US-095). Pickers offer the confirmed main-plan stops plus two
@@ -51,6 +78,21 @@ export function ScreenBoundary() {
   const stops = detail?.mainPlanStops ?? []
   const departureIndex = stops.findIndex((stop) => stop.id === departureStop)
   const reunionIndex = stops.findIndex((stop) => stop.id === reunionStop)
+  // 按天分组：每段带全局 index，因为禁用规则（早于上一轮会合 / 不晚于分头）按整条主线顺序判断。
+  // 天标签直接用当天首个站点的实际日期，不依赖额外字段（兼容旧 payload）。
+  const daySections = (() => {
+    const sections: Array<{ dayIndex: number; label: string; stops: Array<{ stop: PlanStop; index: number }> }> = []
+    stops.forEach((stop, index) => {
+      const dayIndex = stop.dayIndex ?? 1
+      let section = sections.find((entry) => entry.dayIndex === dayIndex)
+      if (!section) {
+        section = { dayIndex, label: dayHeader(stop.startAt, dayIndex, detail?.destination), stops: [] }
+        sections.push(section)
+      }
+      section.stops.push({ stop, index })
+    })
+    return sections
+  })()
   const previousReunionIndex = previousReunionId
     ? stops.findIndex((stop) => stop.id === previousReunionId)
     : -1
@@ -139,20 +181,32 @@ export function ScreenBoundary() {
             <div className="mb-2 flex items-center gap-1.5 text-[13px] font-bold text-ink">
               <IconNav className="text-a" /> 分头节点（出发）
             </div>
-            <div className="flex flex-wrap gap-2">
-              {stops.map((stop, index) => (
-                <Chip
-                  key={stop.id}
-                  tone="a"
-                  selected={departureStop === stop.id}
-                  disabled={
-                    (previousReunionIndex >= 0 && index < previousReunionIndex)
-                    || (departureStop !== stop.id && reunionStop != null && index >= reunionIndex)
-                  }
-                  onClick={() => setDepartureStop(departureStop === stop.id ? null : stop.id)}
-                >
-                  {formatClock(stop.startAt, detail.destination)} · {stop.name}
-                </Chip>
+            <p className="mb-2 text-[11px] leading-relaxed text-ink-3">
+              按天选择：先选第几天分头，再在该天的站点里点一个作为出发站。
+            </p>
+            <div className="flex flex-col gap-2.5">
+              {daySections.map((section) => (
+                <div key={section.dayIndex}>
+                  <div className="mb-1 text-[10.5px] font-semibold tracking-wide text-ink-3 uppercase">
+                    {section.label}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {section.stops.map(({ stop, index }) => (
+                      <Chip
+                        key={stop.id}
+                        tone="a"
+                        selected={departureStop === stop.id}
+                        disabled={
+                          (previousReunionIndex >= 0 && index < previousReunionIndex)
+                          || (departureStop !== stop.id && reunionStop != null && index >= reunionIndex)
+                        }
+                        onClick={() => setDepartureStop(departureStop === stop.id ? null : stop.id)}
+                      >
+                        {formatClock(stop.startAt, detail.destination)} · {stop.name}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </Card>
@@ -161,20 +215,32 @@ export function ScreenBoundary() {
             <div className="mb-2 flex items-center gap-1.5 text-[13px] font-bold text-ink">
               <IconFlag className="text-ok" /> 会合节点（截止）
             </div>
-            <div className="flex flex-wrap gap-2">
-              {stops.map((stop, index) => (
-                <Chip
-                  key={stop.id}
-                  tone="b"
-                  selected={reunionStop === stop.id}
-                  disabled={
-                    reunionStop !== stop.id
-                    && departureStop != null && index <= departureIndex
-                  }
-                  onClick={() => setReunionStop(reunionStop === stop.id ? null : stop.id)}
-                >
-                  {formatClock(stop.startAt, detail.destination)} · {stop.name}
-                </Chip>
+            <p className="mb-2 text-[11px] leading-relaxed text-ink-3">
+              会合必须晚于分头；同样按天分组，可跨天会合（例如第 1 天分头、第 2 天会合）。
+            </p>
+            <div className="flex flex-col gap-2.5">
+              {daySections.map((section) => (
+                <div key={section.dayIndex}>
+                  <div className="mb-1 text-[10.5px] font-semibold tracking-wide text-ink-3 uppercase">
+                    {section.label}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {section.stops.map(({ stop, index }) => (
+                      <Chip
+                        key={stop.id}
+                        tone="b"
+                        selected={reunionStop === stop.id}
+                        disabled={
+                          reunionStop !== stop.id
+                          && departureStop != null && index <= departureIndex
+                        }
+                        onClick={() => setReunionStop(reunionStop === stop.id ? null : stop.id)}
+                      >
+                        {formatClock(stop.startAt, detail.destination)} · {stop.name}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </Card>

@@ -79,6 +79,10 @@ export default function MyPlanTimeline({
     ? selectedDay
     : defaultDay
   const activeGroup = groups.find((group) => group.dayIndex === activeDay) ?? groups[0]
+  // 多天行程：每一天的首站以前一天最后一站为导航起点；只有行程首站才走 R1 固定出发点。
+  const activeGroupIndex = groups.findIndex((group) => group === activeGroup)
+  const previousGroup = activeGroupIndex > 0 ? groups[activeGroupIndex - 1] : null
+  const previousDayLast = previousGroup ? previousGroup.items[previousGroup.items.length - 1] : null
   const showPager = groups.length > 1
   const showTabs = groups.length <= PAGER_TAB_LIMIT
 
@@ -225,7 +229,7 @@ export default function MyPlanTimeline({
                     <StopMapButton
                       item={item}
                       destination={destination}
-                      from={index > 0 ? activeGroup.items[index - 1] : null}
+                      from={index > 0 ? activeGroup.items[index - 1] : previousDayLast}
                     />
                     {item.interests.length > 0 && (
                       <div className="chips act-tags">

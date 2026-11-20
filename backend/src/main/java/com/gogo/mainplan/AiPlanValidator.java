@@ -139,16 +139,24 @@ class AiPlanValidator {
         return value.asText();
     }
 
-    /** US-079: address/city are optional in the AI contract; missing = null (cache completes later). */
+    /** city is optional in the AI contract; missing = null (the service falls back to the trip destination). */
     private static String optText(JsonNode stop, String field) {
         JsonNode value = stop.path(field);
         return value.isTextual() && !value.asText().isBlank() ? value.asText().trim() : null;
     }
 
-    /** 地址生成时即落库：去空白并限长，防模型输出超长文本撑爆展示与存储。 */
+    /**
+     * address is mandatory: navigation needs a point for every stop, and a stop without one
+     * degrades the Amap link to a plain search page (no origin/destination). A blank value is
+     * invalid output, which the provider turns into the minimal fallback.
+     */
     private static String address(JsonNode stop) {
-        String value = optText(stop, "address");
-        return value == null || value.length() <= 120 ? value : value.substring(0, 120);
+        JsonNode value = stop.path("address");
+        if (!value.isTextual() || value.asText().isBlank()) {
+            throw invalid("address must be a nonblank string on every stop");
+        }
+        String trimmed = value.asText().trim();
+        return trimmed.length() <= 120 ? trimmed : trimmed.substring(0, 120);
     }
 
     private static List<String> interests(JsonNode stop) {

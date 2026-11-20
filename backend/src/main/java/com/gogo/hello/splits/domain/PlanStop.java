@@ -7,8 +7,16 @@ import java.time.Instant;
  * starts when the departure stop starts and the group must be together by the reunion stop's start. {@code
  * costCents} is that stop's per-person cost; the split budget check uses it to compute the shared cost that remains
  * outside the split window and the cost of the activities the branch replaced. {@code locationName} carries the row's
- * real location so a manually editable group-A route can prefill it. Pure domain value object mapped from a
- * {@code plan_node} row with {@code branch_id = main}; no HTTP/DB dependencies.
+ * real location so a manually editable group-A route can prefill it. {@code dayIndex} is the trip day the stop
+ * belongs to (1 = trip start date), so the boundary picker can group stops by day instead of showing one long list.
+ * Pure domain value object mapped from a {@code plan_node} row with {@code branch_id = main}; no HTTP/DB
+ * dependencies.
  */
-public record PlanStop(String id, String name, Instant startAt, Instant endAt, int costCents, String locationName) {
+public record PlanStop(String id, String name, Instant startAt, Instant endAt, int costCents, String locationName,
+        int dayIndex) {
+
+    /** Single-day callers and tests keep day 1. */
+    public PlanStop(String id, String name, Instant startAt, Instant endAt, int costCents, String locationName) {
+        this(id, name, startAt, endAt, costCents, locationName, 1);
+    }
 }

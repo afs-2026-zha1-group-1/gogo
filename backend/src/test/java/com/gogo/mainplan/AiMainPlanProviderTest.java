@@ -17,9 +17,9 @@ class AiMainPlanProviderTest {
 
     private static final String VALID_PLAN = """
             {"stops":[
-              {"seq":1,"name":"Museum","startTime":"09:00","endTime":"10:00",
+              {"seq":1,"name":"Museum","address":"1 Museum Rd","startTime":"09:00","endTime":"10:00",
                "travelMinutesToNext":15,"interests":["culture"]},
-              {"seq":2,"name":"Lunch","startTime":"10:15","endTime":"11:15",
+              {"seq":2,"name":"Lunch","address":"2 Lunch St","startTime":"10:15","endTime":"11:15",
                "travelMinutesToNext":null,"interests":["food"]}],
              "costPerPersonCents":4200}
             """;
@@ -48,7 +48,8 @@ class AiMainPlanProviderTest {
                   {"seq":1,"name":"南山植物园","address":" 重庆市南岸区南山植物园路101号 ",
                    "startTime":"09:00","endTime":"10:00",
                    "travelMinutesToNext":15,"interests":["nature"]},
-                  {"seq":2,"name":"午餐","startTime":"10:15","endTime":"11:15",
+                  {"seq":2,"name":"午餐","address":"重庆市南岸区南山植物园路 5 号附近餐厅",
+                   "startTime":"10:15","endTime":"11:15",
                    "travelMinutesToNext":null,"interests":["food"]}],
                  "costPerPersonCents":4200}
                 """);
@@ -56,13 +57,32 @@ class AiMainPlanProviderTest {
         MainPlanResult result = provider.plan(trip, members);
 
         assertEquals("重庆市南岸区南山植物园路101号", result.stops().get(0).address());
-        assertNull(result.stops().get(1).address());
+        assertEquals("重庆市南岸区南山植物园路 5 号附近餐厅", result.stops().get(1).address());
+    }
+
+    @Test
+    void aMissingAddressDegradesToTheMinimalFallback() {
+        AiMainPlanProvider provider = provider(request -> """
+                {"stops":[
+                  {"seq":1,"name":"Museum","startTime":"09:00","endTime":"10:00",
+                   "travelMinutesToNext":15,"interests":["culture"]},
+                  {"seq":2,"name":"Lunch","startTime":"10:15","endTime":"11:15",
+                   "travelMinutesToNext":null,"interests":["food"]}],
+                 "costPerPersonCents":4200}
+                """);
+
+        MainPlanResult result = provider.plan(trip, members);
+
+        assertEquals("City Hall MRT", result.stops().get(0).name());
+        assertEquals("Merlion Park", result.stops().get(1).name());
     }
 
     @Test
     void promptRequiresAddressInsideDestinationCity() {
         assertTrue(AiMainPlanProvider.SYSTEM_PROMPT.contains("\"address\""));
         assertTrue(AiMainPlanProvider.SYSTEM_PROMPT.contains("destination city"));
+        assertTrue(AiMainPlanProvider.SYSTEM_PROMPT.contains("REQUIRED on every stop"));
+        assertTrue(AiMainPlanProvider.SYSTEM_PROMPT.contains("must never be empty"));
         assertTrue(AiMainPlanProvider.SYSTEM_PROMPT.contains("2 to 4 activity"));
         assertTrue(AiMainPlanProvider.SYSTEM_PROMPT.contains("09:00"));
         assertTrue(AiMainPlanProvider.SYSTEM_PROMPT.contains("返回酒店休息"));
@@ -72,9 +92,11 @@ class AiMainPlanProviderTest {
     void stripsTheGeneratedMainlineMarkerFromStopNames() {
         AiMainPlanProvider provider = provider(request -> """
                 {"stops":[
-                  {"seq":1,"name":"主线·旧城早餐","startTime":"09:00","endTime":"10:00",
+                  {"seq":1,"name":"主线·旧城早餐","address":"旧城 1 号",
+                   "startTime":"09:00","endTime":"10:00",
                    "travelMinutesToNext":15,"interests":["food"]},
-                  {"seq":2,"name":"主线：灯塔会合","startTime":"10:15","endTime":"11:15",
+                  {"seq":2,"name":"主线：灯塔会合","address":"灯塔路 2 号",
+                   "startTime":"10:15","endTime":"11:15",
                    "travelMinutesToNext":null,"interests":["nature"]}],
                  "costPerPersonCents":4200}
                 """);

@@ -15,22 +15,26 @@ class AiPlanValidatorTest {
 
     private static final String VALID = """
             {"stops":[
-              {"seq":1,"name":"Museum","startTime":"09:00","endTime":"10:00",
+              {"seq":1,"name":"Museum","address":"1 Museum Rd","startTime":"09:00","endTime":"10:00",
                "travelMinutesToNext":15,"interests":["culture"]},
-              {"seq":2,"name":"Lunch","startTime":"10:15","endTime":"11:15",
+              {"seq":2,"name":"Lunch","address":"2 Lunch St","startTime":"10:15","endTime":"11:15",
                "travelMinutesToNext":null,"interests":["food"]}],
              "costPerPersonCents":4200}
             """;
 
     private static final String MULTI_DAY = """
             {"stops":[
-              {"seq":1,"dayIndex":1,"name":"Museum","startTime":"09:00","endTime":"10:00",
+              {"seq":1,"dayIndex":1,"name":"Museum","address":"1 Museum Rd",
+               "startTime":"09:00","endTime":"10:00",
                "travelMinutesToNext":15,"interests":["culture"]},
-              {"seq":2,"dayIndex":1,"name":"Lunch","startTime":"10:15","endTime":"11:15",
+              {"seq":2,"dayIndex":1,"name":"Lunch","address":"2 Lunch St",
+               "startTime":"10:15","endTime":"11:15",
                "travelMinutesToNext":null,"interests":["food"]},
-              {"seq":3,"dayIndex":2,"name":"Park","startTime":"09:00","endTime":"10:00",
+              {"seq":3,"dayIndex":2,"name":"Park","address":"3 Park Ave",
+               "startTime":"09:00","endTime":"10:00",
                "travelMinutesToNext":15,"interests":["nature"]},
-              {"seq":4,"dayIndex":2,"name":"Dinner","startTime":"10:15","endTime":"11:15",
+              {"seq":4,"dayIndex":2,"name":"Dinner","address":"4 Dinner Rd",
+               "startTime":"10:15","endTime":"11:15",
                "travelMinutesToNext":null,"interests":["food"]}],
              "costPerPersonCents":8400}
             """;
@@ -123,6 +127,24 @@ class AiPlanValidatorTest {
     @Test
     void rejectsNegativeCost() {
         assertInvalid(VALID.replace("\"costPerPersonCents\":4200", "\"costPerPersonCents\":-1"));
+    }
+
+    @Test
+    void rejectsAStopWithoutAddress() {
+        assertInvalid(VALID.replace("\"address\":\"1 Museum Rd\",", ""));
+    }
+
+    @Test
+    void rejectsABlankAddress() {
+        assertInvalid(VALID.replace("\"address\":\"1 Museum Rd\"", "\"address\":\"  \""));
+    }
+
+    @Test
+    void keepsTheTrimmedAddressOnEveryStop() {
+        MainPlanResult result = validator.validate(VALID, objectMapper);
+
+        assertEquals("1 Museum Rd", result.stops().get(0).address());
+        assertEquals("2 Lunch St", result.stops().get(1).address());
     }
 
     @Test

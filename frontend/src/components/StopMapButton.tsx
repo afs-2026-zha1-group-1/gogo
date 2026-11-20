@@ -9,7 +9,6 @@ import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import Icon from '../Icons'
 import {
   buildAmapDirUrl,
-  buildAmapSearchUrl,
   defaultDirOrigin,
   geocodeKeyword,
   resolveDirEnd,
@@ -47,7 +46,8 @@ export default function StopMapButton({ item, destination, from = null, showCopy
   const title = originName != null ? `从 ${originName} 出发` : '高德导航'
 
   // 任一端点缺坐标：点击时先同步开空白标签页（保住用户手势不被弹窗拦截），
-  // 现查坐标补齐起终点后再跳转；查不到终点才退搜索页。
+  // 现查坐标补齐起终点后再跳转；即使查不到坐标也仍然进路线页（用名称定位），
+  // 不会退化成没有起终点的搜索页。
   const needsGeocode = resolveDirEnd(item) == null || (from != null && resolveDirEnd(from) == null)
   async function openWithCoords(event: MouseEvent<HTMLAnchorElement>) {
     if (!needsGeocode) return
@@ -71,10 +71,12 @@ export default function StopMapButton({ item, destination, from = null, showCopy
       const point = await geocodeAddress(geocodeKeyword(from, destination), destination)
       if (point) fromEnd = { name: from.name, lat: point.lat, lon: point.lon }
     }
-    fromEnd = fromEnd ?? defaultDirOrigin()
-    const url = to != null
-      ? buildAmapDirUrl(fromEnd, to)
-      : buildAmapSearchUrl([item.name, destination].filter(Boolean).join(' '))
+    // 坐标查不到时用名称端点，保证起点和终点都在链接里。
+    const toEnd = to ?? { name: geocodeKeyword(item, destination) }
+    const fromResolved = fromEnd
+      ?? (from != null ? { name: geocodeKeyword(from, destination) } : null)
+      ?? defaultDirOrigin()
+    const url = buildAmapDirUrl(fromResolved, toEnd)
     if (win) win.location.href = url
     else window.open(url, '_blank', 'noopener')
   }
